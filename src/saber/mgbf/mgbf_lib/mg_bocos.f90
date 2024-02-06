@@ -1,5 +1,5 @@
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-                        module mg_bocos
+                        submodule(mg_intstate)  mg_bocos
 !***********************************************************************
 !                                                                      !
 !  Provide communication between subdomains and supply halos on        !
@@ -10,25 +10,13 @@
 ! Modules: kinds, mg_mppstuff, mg_parameter, mg_domain                 !
 !                                                     M. Rancic (2022) !
 !***********************************************************************
-use mpi
+!use mpi
 use kinds, only: r_kind,i_kind
 !use mpimod, only: mype,mpi_comm_world
-use mg_mppstuff, only: mype,mpi_comm_world,mpi_comm_work
-use mg_mppstuff, only: itype,rtype,dtype,mpi_comm_comp,my_hgen     &
-                      ,barrierMPI,finishMPI,l_hgen,mype_hgen
-use mg_parameter, only: gm
+
 
 implicit none
 
-interface boco_2d
-  module procedure boco_2d_g1 
-  module procedure boco_2d_gh 
-endinterface
-
-interface bocoT_2d
-  module procedure bocoT_2d_g1 
-  module procedure bocoT_2d_gh 
-endinterface
 
 interface boco_3d
   module procedure boco_3d_g1 
@@ -74,7 +62,7 @@ endinterface
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-                        subroutine boco_2d_g1                           &
+                  module      subroutine boco_2d_g1                           &
 !**********************************************************************!
 !                                                                      !
 ! Side sending subroutine:                                             !
@@ -84,18 +72,17 @@ endinterface
 !                        - offset version -                            !
 !                                                                      !
 !**********************************************************************!
-(W,km,im,jm,nbx,nby)
+(this,W,km_in,im_in,jm_in,nbx,nby)
 !-----------------------------------------------------------------------
-use mg_domain, only: Fitarg_n,Fitarg_s,Fitarg_w,Fitarg_e                &
-                    ,Flwest,Fleast,Flsouth,Flnorth                     
 
-!clt use mpi
+use mpi !clt
 
 implicit none
+class(mg_intstate_type),target::this
 
 !-----------------------------------------------------------------------
-integer(i_kind), intent(in):: km,im,jm,nbx,nby
-real(r_kind),dimension(km,1-nbx:im+nbx,1-nby:jm+nby),intent(inout):: W
+integer(i_kind), intent(in):: km_in,im_in,jm_in,nbx,nby
+real(r_kind),dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
 !-----------------------------------------------------------------------
 
 real(r_kind), allocatable, dimension(:,:,:)::                           &
@@ -111,6 +98,10 @@ integer(i_kind) isend,irecv,nebpe
 integer(i_kind) ndatax,ndatay,nbxy
 integer(i_kind) g_ind,g
 logical l_sidesend
+include  "type_parameter_locpointer.inc"
+include "type_intstat_locpointer.inc"
+include  "type_parameter_point2this.inc"
+include "type_intstat_point2this.inc"
 !-----------------------------------------------------------------------
 !
 ! Limit communications to selected number of generations
@@ -132,13 +123,13 @@ logical l_sidesend
           lsouth  = Flsouth(g_ind)
           lnorth  = Flnorth(g_ind)                 
 
-          imax = im       
-          jmax = jm
+          imax = im_in       
+          jmax = jm_in
 
 
 !-----------------------------------------------------------------------
-      ndatay = km*imax*nby
-      ndatax = km*(jmax+2*nby)*nbx
+      ndatay = km_in*imax*nby
+      ndatax = km_in*(jmax+2*nby)*nbx
 
 !
 !  SEND boundaries toward SOUTH and NORTH
@@ -149,7 +140,7 @@ logical l_sidesend
       if( itarg_s >= 0 ) then
         nebpe = itarg_s
 
-            allocate( sBuf_S(1:km,1:imax,nby), stat = iaerr )
+            allocate( sBuf_S(1:km_in,1:imax,nby), stat = iaerr )
 
                 do j=1,nby
                   do i=1,imax
@@ -166,7 +157,7 @@ logical l_sidesend
       if( itarg_n >= 0 ) then
         nebpe = itarg_n
 
-            allocate( sBuf_N(1:km,1:imax,nby), stat = iaerr )
+            allocate( sBuf_N(1:km_in,1:imax,nby), stat = iaerr )
 
                 do j=1,nby
                   do i=1,imax
@@ -187,7 +178,7 @@ logical l_sidesend
       if( itarg_n >= 0 ) then
         nebpe = itarg_n
 
-          allocate( rBuf_N(1:km,1:imax,nby), stat = iaerr )
+          allocate( rBuf_N(1:km_in,1:imax,nby), stat = iaerr )
           call MPI_IRECV( rBuf_N, ndatay, dtype, nebpe, nebpe, &
                       mpi_comm_comp, rHandle(1), irecv)
           call MPI_WAIT( rHandle(1), istat, ierr )
@@ -199,7 +190,7 @@ logical l_sidesend
       if( itarg_s >= 0 ) then
         nebpe = itarg_s
 
-          allocate( rBuf_S(1:km,1:imax,nby), stat = iaerr )
+          allocate( rBuf_S(1:km_in,1:imax,nby), stat = iaerr )
           call MPI_IRECV( rBuf_S, ndatay, dtype, nebpe, nebpe,  &
                        mpi_comm_comp, rHandle(3), irecv)
           call MPI_WAIT( rHandle(3), istat, ierr )
@@ -259,7 +250,7 @@ logical l_sidesend
       if( itarg_w >= 0) then
         nebpe = itarg_w
 
-              allocate( sBuf_W(1:km,nbx,1-nby:jmax+nby), stat = iaerr )
+              allocate( sBuf_W(1:km_in,nbx,1-nby:jmax+nby), stat = iaerr )
 
                 do j=1-nby,jmax+nby
                   do i=1,nbx
@@ -277,7 +268,7 @@ logical l_sidesend
       if( itarg_e >= 0 ) then
         nebpe = itarg_e
 
-              allocate( sBuf_E(1:km,nbx,1-nby:jmax+nby), stat = iaerr )
+              allocate( sBuf_E(1:km_in,nbx,1-nby:jmax+nby), stat = iaerr )
 
                 do j=1-nby,jmax+nby
                   do i=1,nbx
@@ -299,7 +290,7 @@ logical l_sidesend
       if( itarg_e >= 0 ) then
         nebpe = itarg_e
 
-          allocate( rBuf_E(1:km,nbx,1-nby:jmax+nby), stat = iaerr )
+          allocate( rBuf_E(1:km_in,nbx,1-nby:jmax+nby), stat = iaerr )
           call MPI_IRECV( rBuf_E, ndatax, dtype, nebpe, nebpe,  &
                        mpi_comm_comp, rHandle(2), irecv)
           call MPI_WAIT( rHandle(2), istat, ierr )
@@ -311,7 +302,7 @@ logical l_sidesend
       if( itarg_w >= 0 ) then
         nebpe = itarg_w
 
-          allocate( rBuf_W(1:km,nbx,1-nby:jmax+nby), stat = iaerr )
+          allocate( rBuf_W(1:km_in,nbx,1-nby:jmax+nby), stat = iaerr )
           call MPI_IRECV( rBuf_W, ndatax, dtype, nebpe, nebpe,  &
                        mpi_comm_comp, rHandle(4), irecv)
           call MPI_WAIT( rHandle(4), istat, ierr )
@@ -411,7 +402,7 @@ logical l_sidesend
                         endsubroutine boco_2d_g1
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-                        subroutine boco_2d_gh                           &
+                    module    subroutine boco_2d_gh                           &
 !**********************************************************************!
 !                                                                      !
 ! Side sending subroutine:                                             !
@@ -421,19 +412,17 @@ logical l_sidesend
 !                       - offset version -                             !
 !                                                                      !
 !**********************************************************************!
-(W,km,im,jm,nbx,nby,Fimax,Fjmax,mygen_min,mygen_max)
+(this,W,km_in,im_in,jm_in,nbx,nby,Fimax_in,Fjmax_in,mygen_min,mygen_max)
 !-----------------------------------------------------------------------
-use mg_domain, only: Fitarg_n,Fitarg_s,Fitarg_w,Fitarg_e                &
-                    ,Flwest,Fleast,Flsouth,Flnorth                      
-
-!cltuse mpi
+use mpi !clt
 
 implicit none
+class(mg_intstate_type),target::this
 
 !-----------------------------------------------------------------------
-integer(i_kind), intent(in):: km,im,jm,nbx,nby,mygen_min,mygen_max
-real(r_kind),dimension(km,1-nbx:im+nbx,1-nby:jm+nby),intent(inout):: W
-integer(i_kind), dimension(gm), intent(in):: Fimax,Fjmax
+integer(i_kind), intent(in):: km_in,im_in,jm_in,nbx,nby,mygen_min,mygen_max
+real(r_kind),dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
+integer(i_kind), dimension(this%gm), intent(in):: Fimax_in,Fjmax_in
 !-----------------------------------------------------------------------
 
 real(r_kind), allocatable, dimension(:,:,:)::                           &
@@ -449,6 +438,10 @@ integer(i_kind) isend,irecv,nebpe
 integer(i_kind) ndatax,ndatay
 integer(i_kind) g_ind,g
 logical l_sidesend
+include  "type_parameter_locpointer.inc"
+include "type_intstat_locpointer.inc"
+include  "type_parameter_point2this.inc"
+include "type_intstat_point2this.inc"
 !-----------------------------------------------------------------------
 !
 ! Limit communications to selected number of generations
@@ -482,20 +475,20 @@ FILT_GRID:    if(l_sidesend) then
 
 
           if(least) then
-            imax = Fimax(g)
+            imax = Fimax_in(g)
           else 
-            imax = im       !   << Note that is not necesseraly im from
+            imax = im_in       !   << Note that is not necesseraly im from
           endif             !      mg_parameter.  Could be also imL >>>
           if(lnorth) then
-            jmax = Fjmax(g)
+            jmax = Fjmax_in(g)
           else  
-            jmax = jm
+            jmax = jm_in
           endif
 
 
 !-----------------------------------------------------------------------
-      ndatay = km*imax*nby
-      ndatax = km*(jmax+2*nby)*nbx
+      ndatay = km_in*imax*nby
+      ndatax = km_in*(jmax+2*nby)*nbx
 
 
 !
@@ -507,7 +500,7 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_s >= 0 ) then
         nebpe = itarg_s
 
-            allocate( sBuf_S(1:km,1:imax,nby), stat = iaerr )
+            allocate( sBuf_S(1:km_in,1:imax,nby), stat = iaerr )
 
                 do j=1,nby
                   do i=1,imax
@@ -524,7 +517,7 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_n >= 0 ) then
         nebpe = itarg_n
 
-            allocate( sBuf_N(1:km,1:imax,nby), stat = iaerr )
+            allocate( sBuf_N(1:km_in,1:imax,nby), stat = iaerr )
 
                 do j=1,nby
                   do i=1,imax
@@ -545,7 +538,7 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_n >= 0 ) then
         nebpe = itarg_n
 
-          allocate( rBuf_N(1:km,1:imax,nby), stat = iaerr )
+          allocate( rBuf_N(1:km_in,1:imax,nby), stat = iaerr )
           call MPI_IRECV( rBuf_N, ndatay, dtype, nebpe, nebpe, &
                       mpi_comm_work, rHandle(1), irecv)
           call MPI_WAIT( rHandle(1), istat, ierr )
@@ -557,7 +550,7 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_s >= 0 ) then
         nebpe = itarg_s
 
-          allocate( rBuf_S(1:km,1:imax,nby), stat = iaerr )
+          allocate( rBuf_S(1:km_in,1:imax,nby), stat = iaerr )
           call MPI_IRECV( rBuf_S, ndatay, dtype, nebpe, nebpe,  &
                        mpi_comm_work, rHandle(3), irecv)
           call MPI_WAIT( rHandle(3), istat, ierr )
@@ -619,7 +612,7 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_w >= 0) then
         nebpe = itarg_w
 
-              allocate( sBuf_W(1:km,nbx,1-nby:jmax+nby), stat = iaerr )
+              allocate( sBuf_W(1:km_in,nbx,1-nby:jmax+nby), stat = iaerr )
 
                 do j=1-nby,jmax+nby
                   do i=1,nbx
@@ -637,7 +630,7 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_e >= 0 ) then
         nebpe = itarg_e
 
-              allocate( sBuf_E(1:km,nbx,1-nby:jmax+nby), stat = iaerr )
+              allocate( sBuf_E(1:km_in,nbx,1-nby:jmax+nby), stat = iaerr )
 
                 do j=1-nby,jmax+nby
                   do i=1,nbx
@@ -659,7 +652,7 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_e >= 0 ) then
         nebpe = itarg_e
 
-          allocate( rBuf_E(1:km,nbx,1-nby:jmax+nby), stat = iaerr )
+          allocate( rBuf_E(1:km_in,nbx,1-nby:jmax+nby), stat = iaerr )
           call MPI_IRECV( rBuf_E, ndatax, dtype, nebpe, nebpe,  &
                        mpi_comm_work, rHandle(2), irecv)
           call MPI_WAIT( rHandle(2), istat, ierr )
@@ -671,7 +664,7 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_w >= 0 ) then
         nebpe = itarg_w
 
-          allocate( rBuf_W(1:km,nbx,1-nby:jmax+nby), stat = iaerr )
+          allocate( rBuf_W(1:km_in,nbx,1-nby:jmax+nby), stat = iaerr )
           call MPI_IRECV( rBuf_W, ndatax, dtype, nebpe, nebpe,  &
                        mpi_comm_work, rHandle(4), irecv)
           call MPI_WAIT( rHandle(4), istat, ierr )
@@ -772,7 +765,7 @@ FILT_GRID:    if(l_sidesend) then
                         endsubroutine boco_2d_gh
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-                        subroutine bocoT_2d_g1                          &
+              module          subroutine bocoT_2d_g1                          &
 !***********************************************************************
 !                                                                      !
 ! Adjoint of side sending subroutine:                                  !
@@ -783,17 +776,16 @@ FILT_GRID:    if(l_sidesend) then
 !                       - offset version -                             !
 !                                                                      !
 !***********************************************************************
-(W,km,im,jm,nbx,nby)
+(this,W,km_in,im_in,jm_in,nbx,nby)
 !-----------------------------------------------------------------------
-use mg_domain, only: Flwest,Fleast,Flsouth,Flnorth                      &
-                    ,Fitarg_n,Fitarg_s,Fitarg_w,Fitarg_e                
-!clt use mpi
+use mpi !clt
 
 implicit none
 
+class(mg_intstate_type),target::this
 !-----------------------------------------------------------------------
-integer(i_kind), intent(in):: km,im,jm,nbx,nby
-real(r_kind), dimension(km,1-nbx:im+nbx,1-nby:jm+nby),intent(inout):: W
+integer(i_kind), intent(in):: km_in,im_in,jm_in,nbx,nby
+real(r_kind), dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
 !-----------------------------------------------------------------------
 
 real(r_kind), allocatable, dimension(:,:,:)::                           &
@@ -810,6 +802,10 @@ integer(i_kind) ndatax,ndatay
 logical l_sidesend
 integer(i_kind) g_ind,g,k
 !-----------------------------------------------------------------------
+include  "type_parameter_locpointer.inc"
+include "type_intstat_locpointer.inc"
+include  "type_parameter_point2this.inc"
+include "type_intstat_point2this.inc"
 !
 ! Limit comminications to selected number of generations
 !
@@ -829,14 +825,13 @@ integer(i_kind) g_ind,g,k
           lsouth  = Flsouth(g_ind)
           lnorth  = Flnorth(g_ind)
 
-          imax = im    
-          jmax = jm
+          imax = im_in    
+          jmax = jm_in
 
 
 !----------------------------------------------------------------------
-      ndatax =km*(jmax+2*nby)*nbx
-      ndatay =km*imax*nby
-
+      ndatax =km_in*(jmax+2*nby)*nbx
+      ndatay =km_in*imax*nby
 !
 ! SEND extended halos toward WEST and EAST
 !
@@ -846,7 +841,7 @@ integer(i_kind) g_ind,g,k
       if( itarg_w >= 0) then
         nebpe = itarg_w
 
-              allocate( sBuf_W(1:km,1:nbx,1-nby:jmax+nby), stat = iaerr )
+              allocate( sBuf_W(1:km_in,1:nbx,1-nby:jmax+nby), stat = iaerr )
 
               do j=1-nby,jmax+nby
               do i=1,nbx
@@ -855,7 +850,7 @@ integer(i_kind) g_ind,g,k
               enddo
 
               call MPI_ISEND( sBuf_W, ndatax, dtype, nebpe, mype,       &
-                              mpi_comm_world, sHandle(4), isend)
+                              mpi_comm_comp, sHandle(4), isend)
 
       end if
 
@@ -864,7 +859,7 @@ integer(i_kind) g_ind,g,k
       if( itarg_e >= 0 ) then
         nebpe = itarg_e
 
-              allocate( sBuf_E(1:km,1:nbx,1-nby:jmax+nby), stat = iaerr )
+              allocate( sBuf_E(1:km_in,1:nbx,1-nby:jmax+nby), stat = iaerr )
 
               do j=1-nby,jmax+nby
               do i=1,nbx
@@ -873,7 +868,7 @@ integer(i_kind) g_ind,g,k
               enddo
 
               call MPI_ISEND( sBuf_E, ndatax, dtype, nebpe, mype,       &
-                              mpi_comm_world, sHandle(2), isend)
+                              mpi_comm_comp, sHandle(2), isend)
 
       end if
 
@@ -887,9 +882,9 @@ integer(i_kind) g_ind,g,k
         nebpe = itarg_e
 
 
-          allocate( rBuf_E(1:km,1:nbx,1-nby:jmax+nby), stat = iaerr )
+          allocate( rBuf_E(1:km_in,1:nbx,1-nby:jmax+nby), stat = iaerr )
           call MPI_IRECV( rBuf_E, ndatax, dtype, nebpe, nebpe,          &
-                       mpi_comm_world, rHandle(2), irecv)
+                       mpi_comm_comp, rHandle(2), irecv)
           call MPI_WAIT( rHandle(2), istat, ierr )
 
       end if
@@ -900,9 +895,9 @@ integer(i_kind) g_ind,g,k
         nebpe = itarg_w
 
 
-         allocate( rBuf_W(1:km,1:nbx,1-nby:jmax+nby), stat = iaerr )
+         allocate( rBuf_W(1:km_in,1:nbx,1-nby:jmax+nby), stat = iaerr )
           call MPI_IRECV( rBuf_W, ndatax, dtype, nebpe, nebpe,          &
-                       mpi_comm_world, rHandle(4), irecv)
+                       mpi_comm_comp, rHandle(4), irecv)
           call MPI_WAIT( rHandle(4), istat, ierr )
 
 
@@ -952,7 +947,7 @@ integer(i_kind) g_ind,g,k
       if( itarg_s >= 0 ) then
         nebpe = itarg_s
 
-              allocate( sBuf_S(1:km,1:imax,1:nby), stat = iaerr )
+              allocate( sBuf_S(1:km_in,1:imax,1:nby), stat = iaerr )
 
               do j=1-nby,0
               do i=1,imax
@@ -961,7 +956,7 @@ integer(i_kind) g_ind,g,k
               enddo
 
               call MPI_ISEND( sBuf_S, ndatay, dtype, nebpe, mype,  &
-                              mpi_comm_world, sHandle(3), isend)
+                              mpi_comm_comp, sHandle(3), isend)
       end if
 
 ! --- toward NORTH ---
@@ -969,7 +964,7 @@ integer(i_kind) g_ind,g,k
       if( itarg_n >= 0 ) then
         nebpe = itarg_n
 
-             allocate( sBuf_N(1:km,1:imax,1:nby), stat = iaerr )
+             allocate( sBuf_N(1:km_in,1:imax,1:nby), stat = iaerr )
 
               do j=1,nby
               do i=1,imax
@@ -978,7 +973,7 @@ integer(i_kind) g_ind,g,k
               enddo
 
              call MPI_ISEND( sBuf_N, ndatay, dtype, nebpe, mype,        &
-                             mpi_comm_world, sHandle(1), isend)
+                             mpi_comm_comp, sHandle(1), isend)
 
       end if
 
@@ -991,9 +986,9 @@ integer(i_kind) g_ind,g,k
         nebpe = itarg_n
 
 
-          allocate( rBuf_N(1:km,1:imax,1:nby), stat = iaerr )
+          allocate( rBuf_N(1:km_in,1:imax,1:nby), stat = iaerr )
           call MPI_IRECV( rBuf_N, ndatay, dtype, nebpe, nebpe,          &
-                      mpi_comm_world, rHandle(1), irecv)
+                      mpi_comm_comp, rHandle(1), irecv)
           call MPI_WAIT( rHandle(1), istat, ierr )
 
       end if
@@ -1004,9 +999,9 @@ integer(i_kind) g_ind,g,k
         nebpe = itarg_s
 
 
-          allocate( rBuf_S(1:km,1:imax,1:nby), stat = iaerr )
+          allocate( rBuf_S(1:km_in,1:imax,1:nby), stat = iaerr )
           call MPI_IRECV( rBuf_S, ndatay, dtype, nebpe, nebpe,          &
-                       mpi_comm_world, rHandle(3), irecv)
+                       mpi_comm_comp, rHandle(3), irecv)
           call MPI_WAIT( rHandle(3), istat, ierr )
 
 
@@ -1080,7 +1075,7 @@ integer(i_kind) g_ind,g,k
                         endsubroutine bocoT_2d_g1
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-                        subroutine bocoT_2d_gh                          &
+            module            subroutine bocoT_2d_gh                          &
 !***********************************************************************
 !                                                                      !
 !  Supply n-lines inside of domains, including edges, with halos from  !
@@ -1090,18 +1085,17 @@ integer(i_kind) g_ind,g,k
 !                       - offset version -                             !
 !                                                                      !
 !***********************************************************************
-(W,km,im,jm,nbx,nby,Fimax,Fjmax,mygen_min,mygen_max)
+(this,W,km_in,im_in,jm_in,nbx,nby,Fimax_in,Fjmax_in,mygen_min,mygen_max)
 !-----------------------------------------------------------------------
-use mg_domain, only: Flwest,Fleast,Flsouth,Flnorth                      &
-                    ,Fitarg_n,Fitarg_s,Fitarg_w,Fitarg_e                
-!clt use mpi
+use mpi !clt
 
 implicit none
+class(mg_intstate_type),target::this
 
 !-----------------------------------------------------------------------
-integer(i_kind), intent(in):: km,im,jm,nbx,nby,mygen_min,mygen_max
-real(r_kind), dimension(km,1-nbx:im+nbx,1-nby:jm+nby),intent(inout):: W
-integer(i_kind), dimension(gm), intent(in):: Fimax,Fjmax
+integer(i_kind), intent(in):: km_in,im_in,jm_in,nbx,nby,mygen_min,mygen_max
+real(r_kind), dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
+integer(i_kind), dimension(this%gm), intent(in):: Fimax_in,Fjmax_in
 !-----------------------------------------------------------------------
 
 real(r_kind), allocatable, dimension(:,:,:)::                           &
@@ -1117,6 +1111,10 @@ integer(i_kind) ndatax,ndatay
 logical l_sidesend
 integer(i_kind) g_ind,g,k
 !-----------------------------------------------------------------------
+include  "type_parameter_locpointer.inc"
+include "type_intstat_locpointer.inc"
+include  "type_parameter_point2this.inc"
+include "type_intstat_point2this.inc"
 !
 ! Limit comminications to selected number of generations
 !
@@ -1152,20 +1150,20 @@ FILT_GRID:    if(l_sidesend) then
 
 
           if(least) then
-            imax = Fimax(g)
+            imax = Fimax_in(g)
           else 
-            imax = im       !   << Note that is not necesseraly im from
+            imax = im_in       !   << Note that is not necesseraly im from
           endif             !      mg_parameter.  Could be also imL >>>
           if(lnorth) then
-            jmax = Fjmax(g)
+            jmax = Fjmax_in(g)
           else  
-            jmax = jm
+            jmax = jm_in
           endif
 
 
 !----------------------------------------------------------------------
-      ndatax =km*(jmax+2*nby)*nbx
-      ndatay =km*imax*nby
+      ndatax =km_in*(jmax+2*nby)*nbx
+      ndatay =km_in*imax*nby
 
 !
 ! SEND extended halos toward WEST and EAST
@@ -1176,7 +1174,7 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_w >= 0) then
         nebpe = itarg_w
 
-              allocate( sBuf_W(1:km,1:nbx,1-nby:jmax+nby), stat = iaerr )
+              allocate( sBuf_W(1:km_in,1:nbx,1-nby:jmax+nby), stat = iaerr )
 
               do j=1-nby,jmax+nby
               do i=1,nbx
@@ -1194,7 +1192,7 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_e >= 0 ) then
         nebpe = itarg_e
 
-              allocate( sBuf_E(1:km,1:nbx,1-nby:jmax+nby), stat = iaerr )
+              allocate( sBuf_E(1:km_in,1:nbx,1-nby:jmax+nby), stat = iaerr )
 
               do j=1-nby,jmax+nby
               do i=1,nbx
@@ -1216,7 +1214,7 @@ FILT_GRID:    if(l_sidesend) then
       if(  itarg_e >= 0 ) then
         nebpe = itarg_e
 
-          allocate( rBuf_E(1:km,1:nbx,1-nby:jmax+nby), stat = iaerr )
+          allocate( rBuf_E(1:km_in,1:nbx,1-nby:jmax+nby), stat = iaerr )
           call MPI_IRECV( rBuf_E, ndatax, dtype, nebpe, nebpe,          &
                        mpi_comm_work, rHandle(2), irecv)
           call MPI_WAIT( rHandle(2), istat, ierr )
@@ -1228,7 +1226,7 @@ FILT_GRID:    if(l_sidesend) then
       if(  itarg_w >= 0 ) then
         nebpe = itarg_w
 
-          allocate( rBuf_W(1:km,1:nbx,1-nby:jmax+nby), stat = iaerr )
+          allocate( rBuf_W(1:km_in,1:nbx,1-nby:jmax+nby), stat = iaerr )
           call MPI_IRECV( rBuf_W, ndatax, dtype, nebpe, nebpe,          &
                        mpi_comm_work, rHandle(4), irecv)
           call MPI_WAIT( rHandle(4), istat, ierr )
@@ -1278,7 +1276,7 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_s >= 0 ) then
         nebpe = itarg_s
 
-              allocate( sBuf_S(1:km,1:imax,1:nby), stat = iaerr )
+              allocate( sBuf_S(1:km_in,1:imax,1:nby), stat = iaerr )
 
               do j=1,nby  
               do i=1,imax
@@ -1295,7 +1293,7 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_n >= 0 ) then
         nebpe = itarg_n
 
-             allocate( sBuf_N(1:km,1:imax,1:nby), stat = iaerr )
+             allocate( sBuf_N(1:km_in,1:imax,1:nby), stat = iaerr )
 
               do j=1,nby
               do i=1,imax
@@ -1318,7 +1316,7 @@ FILT_GRID:    if(l_sidesend) then
         nebpe = itarg_n
 
 
-          allocate( rBuf_N(1:km,1:imax,1:nby), stat = iaerr )
+          allocate( rBuf_N(1:km_in,1:imax,1:nby), stat = iaerr )
           call MPI_IRECV( rBuf_N, ndatay, dtype, nebpe, nebpe,          &
                       mpi_comm_work, rHandle(1), irecv)
           call MPI_WAIT( rHandle(1), istat, ierr )
@@ -1331,7 +1329,7 @@ FILT_GRID:    if(l_sidesend) then
         nebpe = itarg_s
 
 
-          allocate( rBuf_S(1:km,1:imax,1:nby), stat = iaerr )
+          allocate( rBuf_S(1:km_in,1:imax,1:nby), stat = iaerr )
           call MPI_IRECV( rBuf_S, ndatay, dtype, nebpe, nebpe,          &
                        mpi_comm_work, rHandle(3), irecv)
           call MPI_WAIT( rHandle(3), istat, ierr )
@@ -1410,7 +1408,7 @@ FILT_GRID:    if(l_sidesend) then
                         endsubroutine bocoT_2d_gh
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-                        subroutine boco_3d_g1                           &
+             module           subroutine boco_3d_g1                           &
 !**********************************************************************!
 !                                                                      !
 ! Side sending subroutine:                                             !
@@ -1420,20 +1418,18 @@ FILT_GRID:    if(l_sidesend) then
 !                       - offset version -                             !
 !                                                                      !
 !**********************************************************************!
-(W,km3,im,jm,Lm,nbx,nby,nbz,Fimax,Fjmax)
+(this,W,km3_in,im_in,jm_in,Lm_in,nbx,nby,nbz,Fimax_in,Fjmax_in)
 !-----------------------------------------------------------------------
-use mg_domain, only: Fitarg_n,Fitarg_s,Fitarg_w,Fitarg_e                &
-                    ,Flwest,Fleast,Flsouth,Flnorth                      
-
-!clt use mpi
+use mpi !clt
 
 implicit none
 
+class(mg_intstate_type),target::this
 !-----------------------------------------------------------------------
-integer(i_kind), intent(in):: km3,im,jm,Lm,nbx,nby,nbz
-real(r_kind),dimension(km3,1-nbx:im+nbx,1-nby:jm+nby,1-nbz:Lm+nbz)    &
+integer(i_kind), intent(in):: km3_in,im_in,jm_in,Lm_in,nbx,nby,nbz
+real(r_kind),dimension(km3_in,1-nbx:im_in+nbx,1-nby:jm_in+nby,1-nbz:Lm_in+nbz)    &
                       ,intent(inout):: W
-integer(i_kind), dimension(gm), intent(in):: Fimax,Fjmax
+integer(i_kind), dimension(this%gm), intent(in):: Fimax_in,Fjmax_in
 !-----------------------------------------------------------------------
 
 real(r_kind), allocatable, dimension(:,:,:,:)::                         &
@@ -1450,6 +1446,10 @@ integer(i_kind) ndatax,ndatay
 integer(i_kind) g_ind,g
 logical l_sidesend
 !-----------------------------------------------------------------------
+include  "type_parameter_locpointer.inc"
+include "type_intstat_locpointer.inc"
+include  "type_parameter_point2this.inc"
+include "type_intstat_point2this.inc"
 !
 ! Limit communications to generation one
 !
@@ -1465,12 +1465,12 @@ logical l_sidesend
           lsouth  = Flsouth(g_ind)
           lnorth  = Flnorth(g_ind)                 
 
-          imax = im  
-          jmax = jm
+          imax = im_in  
+          jmax = jm_in
 
 !-----------------------------------------------------------------------
-      ndatay = km3*imax*nby*Lm
-      ndatax = km3*(jmax+2*nby)*nbx*Lm
+      ndatay = km3_in*imax*nby*Lm
+      ndatax = km3_in*(jmax+2*nby)*nbx*Lm_in
 
 
 !
@@ -1482,9 +1482,9 @@ logical l_sidesend
       if( itarg_s >= 0 ) then
         nebpe = itarg_s
 
-            allocate( sBuf_S(1:km3,1:imax,nby,1:Lm), stat = iaerr )
+            allocate( sBuf_S(1:km3_in,1:imax,nby,1:Lm_in), stat = iaerr )
 
-              do L=1,Lm
+              do L=1,Lm_in
                 do j=1,nby
                   do i=1,imax
                     sBuf_S(:,i,j,L) = W(:,i,j,L)
@@ -1501,9 +1501,9 @@ logical l_sidesend
       if( itarg_n >= 0 ) then
         nebpe = itarg_n
 
-            allocate( sBuf_N(1:km3,1:imax,nby,1:Lm), stat = iaerr )
+            allocate( sBuf_N(1:km3_in,1:imax,nby,1:Lm_in), stat = iaerr )
 
-              do L=1,Lm
+              do L=1,Lm_in
                 do j=1,nby
                   do i=1,imax
                     sBuf_N(:,i,j,L)=W(:,i,jmax-nby+j,L)
@@ -1524,7 +1524,7 @@ logical l_sidesend
       if( itarg_n >= 0 ) then
         nebpe = itarg_n
 
-          allocate( rBuf_N(1:km3,1:imax,nby,1:Lm), stat = iaerr )
+          allocate( rBuf_N(1:km3_in,1:imax,nby,1:Lm_in), stat = iaerr )
           call MPI_IRECV( rBuf_N, ndatay, dtype, nebpe, nebpe, &
                       mpi_comm_comp, rHandle(1), irecv)
           call MPI_WAIT( rHandle(1), istat, ierr )
@@ -1536,7 +1536,7 @@ logical l_sidesend
       if( itarg_s >= 0 ) then
         nebpe = itarg_s
 
-          allocate( rBuf_S(1:km3,1:imax,nby,1:Lm), stat = iaerr )
+          allocate( rBuf_S(1:km3_in,1:imax,nby,1:Lm_in), stat = iaerr )
           call MPI_IRECV( rBuf_S, ndatay, dtype, nebpe, nebpe,  &
                        mpi_comm_comp, rHandle(3), irecv)
           call MPI_WAIT( rHandle(3), istat, ierr )
@@ -1550,7 +1550,7 @@ logical l_sidesend
 
    if( lnorth) then
 
-     do L=1,Lm
+     do L=1,Lm_in
      do j=1,nby
      do i=1,imax
        W(:,i,jmax+j,L)=W(:,i,jmax+1-j,L)
@@ -1560,7 +1560,7 @@ logical l_sidesend
 
    else
 
-     do L=1,Lm
+     do L=1,Lm_in
      do j=1,nby
      do i=1,imax
        W(:,i,jmax+j,L)=rBuf_N(:,i,j,L)
@@ -1574,7 +1574,7 @@ logical l_sidesend
 
    if(lsouth) then
 
-     do L=1,Lm
+     do L=1,Lm_in
      do j=1,nby
      do i=1,imax
        W(:,i,-nby+j,L)=W(:,i,nby+1-j,L)
@@ -1584,7 +1584,7 @@ logical l_sidesend
 
    else
 
-     do L=1,Lm
+     do L=1,Lm_in
      do j=1,nby
      do i=1,imax
        W(:,i,-nby+j,L)=rBuf_S(:,i,j,L)
@@ -1602,9 +1602,9 @@ logical l_sidesend
       if( itarg_w >= 0) then
         nebpe = itarg_w
 
-              allocate( sBuf_W(1:km3,nbx,1-nby:jmax+nby,1:Lm), stat = iaerr )
+              allocate( sBuf_W(1:km3_in,nbx,1-nby:jmax+nby,1:Lm_in), stat = iaerr )
 
-              do L=1,Lm
+              do L=1,Lm_in
                 do j=1-nby,jmax+nby
                   do i=1,nbx
                     sBuf_W(:,i,j,L) = W(:,i,j,L)
@@ -1622,9 +1622,9 @@ logical l_sidesend
       if( itarg_e >= 0 ) then
         nebpe = itarg_e
 
-              allocate( sBuf_E(1:km3,nbx,1-nby:jmax+nby,1:Lm), stat = iaerr )
+              allocate( sBuf_E(1:km3_in,nbx,1-nby:jmax+nby,1:Lm_in), stat = iaerr )
 
-              do L=1,Lm
+              do L=1,Lm_in
                 do j=1-nby,jmax+nby
                   do i=1,nbx
                     sBuf_E(:,i,j,L) = W(:,imax-nbx+i,j,L)
@@ -1646,7 +1646,7 @@ logical l_sidesend
       if( itarg_w >= 0 ) then
         nebpe = itarg_w
 
-          allocate( rBuf_W(1:km3,nbx,1-nby:jmax+nby,1:Lm), stat = iaerr )
+          allocate( rBuf_W(1:km3_in,nbx,1-nby:jmax+nby,1:Lm_in), stat = iaerr )
           call MPI_IRECV( rBuf_W, ndatax, dtype, nebpe, nebpe,  &
                        mpi_comm_comp, rHandle(4), irecv)
           call MPI_WAIT( rHandle(4), istat, ierr )
@@ -1658,7 +1658,7 @@ logical l_sidesend
       if( itarg_e >= 0 ) then
         nebpe = itarg_e
 
-          allocate( rBuf_E(1:km3,nbx,1-nby:jmax+nby,1:Lm), stat = iaerr )
+          allocate( rBuf_E(1:km3_in,nbx,1-nby:jmax+nby,1:Lm_in), stat = iaerr )
           call MPI_IRECV( rBuf_E, ndatax, dtype, nebpe, nebpe,  &
                        mpi_comm_comp, rHandle(2), irecv)
           call MPI_WAIT( rHandle(2), istat, ierr )
@@ -1672,7 +1672,7 @@ logical l_sidesend
 
    if(lwest) then
 
-     do L=1,Lm
+     do L=1,Lm_in
      do j=1-nby,jmax+nby
      do i=1,nbx
        W(:,-nbx+i,j,L)= W(:,nbx+1-i,j,L)
@@ -1682,7 +1682,7 @@ logical l_sidesend
 
    else 
 
-     do L=1,Lm
+     do L=1,Lm_in
      do j=1-nby,jmax+nby
      do i=1,nbx
        W(:,-nbx+i,j,L)= rBuf_W(:,i,j,L)
@@ -1697,7 +1697,7 @@ logical l_sidesend
 
    if(least) then
 
-     do L=1,Lm
+     do L=1,Lm_in
      do j=1-nby,jmax+nby
      do i=1,nbx
        W(:,imax+i,j,L)=W(:,imax-i,j,L)
@@ -1707,7 +1707,7 @@ logical l_sidesend
 
    else 
 
-     do L=1,Lm
+     do L=1,Lm_in
      do j=1-nby,jmax+nby
      do i=1,nbx
        W(:,imax+i,j,L)=rBuf_E(:,i,j,L)
@@ -1762,7 +1762,7 @@ logical l_sidesend
                         endsubroutine boco_3d_g1
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-                        subroutine boco_3d_gh                           &
+            module      subroutine boco_3d_gh                           &
 !**********************************************************************!
 
 ! Side sending subroutine:                                             !
@@ -1772,20 +1772,19 @@ logical l_sidesend
 !                       - offset version -                             !
 !                                                                      !
 !**********************************************************************!
-(W,km3,im,jm,Lm,nbx,nby,nbz,Fimax,Fjmax,mygen_min,mygen_max)
+(this,W,km3_in,im_in,jm_in,Lm_in,nbx,nby,nbz,Fimax_in,Fjmax_in,mygen_min,mygen_max)
 !-----------------------------------------------------------------------
-use mg_domain, only: Fitarg_n,Fitarg_s,Fitarg_w,Fitarg_e                &
-                    ,Flwest,Fleast,Flsouth,Flnorth                      
 
-!clt use mpi
+use mpi !clt
 
 implicit none
 
+class(mg_intstate_type),target::this
 !-----------------------------------------------------------------------
-integer(i_kind), intent(in):: km3,im,jm,Lm,nbx,nby,nbz,mygen_min,mygen_max
-real(r_kind),dimension(km3,1-nbx:im+nbx,1-nby:jm+nby,1-nbz:Lm+nbz)    &
+integer(i_kind), intent(in):: km3_in,im_in,jm_in,Lm_in,nbx,nby,nbz,mygen_min,mygen_max
+real(r_kind),dimension(km3_in,1-nbx:im_in+nbx,1-nby:jm_in+nby,1-nbz:Lm_in+nbz)    &
                       ,intent(inout):: W
-integer(i_kind), dimension(gm), intent(in):: Fimax,Fjmax
+integer(i_kind), dimension(this%gm), intent(in):: Fimax_in,Fjmax_in
 !-----------------------------------------------------------------------
 
 real(r_kind), allocatable, dimension(:,:,:,:)::                         &
@@ -1801,6 +1800,10 @@ integer(i_kind) isend,irecv,nebpe
 integer(i_kind) ndatax,ndatay
 integer(i_kind) g_ind,g
 logical l_sidesend
+include  "type_parameter_locpointer.inc"
+include "type_intstat_locpointer.inc"
+include  "type_parameter_point2this.inc"
+include "type_intstat_point2this.inc"
 !-----------------------------------------------------------------------
 !
 ! Limit communications to selected number of generations
@@ -1832,20 +1835,20 @@ FILT_GRID:    if(l_sidesend) then
           lnorth  = Flnorth(g_ind)                 
 
           if(least) then
-            imax = Fimax(g)
+            imax = Fimax_in(g)
           else 
-            imax = im       !   << Note that is not necesseraly im from
+            imax = im_in       !   << Note that is not necesseraly im from
           endif             !      mg_parameter.  Could be also imL >>>
           if(lnorth) then
-            jmax = Fjmax(g)
+            jmax = Fjmax_in(g)
           else  
-            jmax = jm
+            jmax = jm_in
           endif
 
 
 !-----------------------------------------------------------------------
-      ndatay = km3*imax*nby*Lm
-      ndatax = km3*(jmax+2*nby)*nbx*Lm
+      ndatay = km3_in*imax*nby*Lm
+      ndatax = km3_in*(jmax+2*nby)*nbx*Lm
 
 !
 ! SEND boundaries to SOUTH and NORTH
@@ -1856,9 +1859,9 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_s >= 0 ) then
         nebpe = itarg_s
 
-            allocate( sBuf_S(1:km3,1:imax,nby,1:Lm), stat = iaerr )
+            allocate( sBuf_S(1:km3_in,1:imax,nby,1:Lm_in), stat = iaerr )
 
-              do L=1,Lm
+              do L=1,Lm_in
                 do j=1,nby
                   do i=1,imax
                     sBuf_S(:,i,j,L) = W(:,i,j,L)
@@ -1875,9 +1878,9 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_n >= 0 ) then
         nebpe = itarg_n
 
-            allocate( sBuf_N(1:km3,1:imax,nby,1:Lm), stat = iaerr )
+            allocate( sBuf_N(1:km3_in,1:imax,nby,1:Lm_in), stat = iaerr )
 
-              do L=1,Lm
+              do L=1,Lm_in
                 do j=1,nby
                   do i=1,imax
                     sBuf_N(:,i,j,L)=W(:,i,jmax-nby+j,L)
@@ -1898,7 +1901,7 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_n >= 0 ) then
         nebpe = itarg_n
 
-          allocate( rBuf_N(1:km3,1:imax,nby,1:Lm), stat = iaerr )
+          allocate( rBuf_N(1:km3_in,1:imax,nby,1:Lm_in), stat = iaerr )
           call MPI_IRECV( rBuf_N, ndatay, dtype, nebpe, nebpe, &
                       mpi_comm_work, rHandle(1), irecv)
           call MPI_WAIT( rHandle(1), istat, ierr )
@@ -1910,7 +1913,7 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_s >= 0 ) then
         nebpe = itarg_s
 
-          allocate( rBuf_S(1:km3,1:imax,nby,1:Lm), stat = iaerr )
+          allocate( rBuf_S(1:km3_in,1:imax,nby,1:Lm_in), stat = iaerr )
           call MPI_IRECV( rBuf_S, ndatay, dtype, nebpe, nebpe,  &
                        mpi_comm_work, rHandle(3), irecv)
           call MPI_WAIT( rHandle(3), istat, ierr )
@@ -1936,7 +1939,7 @@ FILT_GRID:    if(l_sidesend) then
 
    if( lnorth) then
 
-     do L=1,Lm
+     do L=1,Lm_in
      do j=1,nby
      do i=1,imax
        W(:,i,jmax+j,L)=W(:,i,jmax+1-j,L)
@@ -1946,7 +1949,7 @@ FILT_GRID:    if(l_sidesend) then
 
    else
 
-     do L=1,Lm
+     do L=1,Lm_in
      do j=1,nby
      do i=1,imax
        W(:,i,jmax+j,L)=rBuf_N(:,i,j,L)
@@ -1960,7 +1963,7 @@ FILT_GRID:    if(l_sidesend) then
 
    if(lsouth) then
 
-     do L=1,Lm
+     do L=1,Lm_in
      do j=1,nby
      do i=1,imax
        W(:,i,-nby+j,L)=W(:,i,nby+1-j,L)
@@ -1970,7 +1973,7 @@ FILT_GRID:    if(l_sidesend) then
 
    else
 
-     do L=1,Lm
+     do L=1,Lm_in
      do j=1,nby
      do i=1,imax
        W(:,i,-nby+j,L)=rBuf_S(:,i,j,L)
@@ -1999,9 +2002,9 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_w >= 0) then
         nebpe = itarg_w
 
-              allocate( sBuf_W(1:km3,nbx,1-nby:jmax+nby,1:Lm), stat = iaerr )
+              allocate( sBuf_W(1:km3_in,nbx,1-nby:jmax+nby,1:Lm_in), stat = iaerr )
 
-              do L=1,Lm
+              do L=1,Lm_in
                 do j=1-nby,jmax+nby
                   do i=1,nbx
                     sBuf_W(:,i,j,L) = W(:,i,j,L)
@@ -2019,9 +2022,9 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_e >= 0 ) then
         nebpe = itarg_e
 
-              allocate( sBuf_E(1:km3,nbx,1-nby:jmax+nby,1:Lm), stat = iaerr )
+              allocate( sBuf_E(1:km3_in,nbx,1-nby:jmax+nby,1:Lm_in), stat = iaerr )
 
-              do L=1,Lm
+              do L=1,Lm_in
                 do j=1-nby,jmax+nby
                   do i=1,nbx
                     sBuf_E(:,i,j,L) = W(:,imax-nbx+i,j,L)
@@ -2043,7 +2046,7 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_e >= 0 ) then
         nebpe = itarg_e
 
-          allocate( rBuf_E(1:km3,nbx,1-nby:jmax+nby,1:Lm), stat = iaerr )
+          allocate( rBuf_E(1:km3_in,nbx,1-nby:jmax+nby,1:Lm_in), stat = iaerr )
           call MPI_IRECV( rBuf_E, ndatax, dtype, nebpe, nebpe,  &
                        mpi_comm_work, rHandle(2), irecv)
           call MPI_WAIT( rHandle(2), istat, ierr )
@@ -2055,7 +2058,7 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_w >= 0 ) then
         nebpe = itarg_w
 
-          allocate( rBuf_W(1:km3,nbx,1-nby:jmax+nby,1:Lm), stat = iaerr )
+          allocate( rBuf_W(1:km3_in,nbx,1-nby:jmax+nby,1:Lm_in), stat = iaerr )
           call MPI_IRECV( rBuf_W, ndatax, dtype, nebpe, nebpe,  &
                        mpi_comm_work, rHandle(2), irecv)
           call MPI_WAIT( rHandle(2), istat, ierr )
@@ -2081,7 +2084,7 @@ FILT_GRID:    if(l_sidesend) then
 
    if(lwest) then
 
-     do L=1,Lm
+     do L=1,Lm_in
      do j=1-nby,jmax+nby
      do i=1,nbx
        W(:,-nbx+i,j,L)= W(:,nbx+1-i,j,L)
@@ -2091,7 +2094,7 @@ FILT_GRID:    if(l_sidesend) then
 
    else 
 
-     do L=1,Lm
+     do L=1,Lm_in
      do j=1-nby,jmax+nby
      do i=1,nbx
        W(:,-nbx+i,j,L)= rBuf_W(:,i,j,L)
@@ -2106,7 +2109,7 @@ FILT_GRID:    if(l_sidesend) then
 
    if(least) then
 
-     do L=1,Lm
+     do L=1,Lm_in
      do j=1-nby,jmax+nby
      do i=1,nbx
        W(:,imax+i,j,L)=W(:,imax+1-i,j,L)
@@ -2116,7 +2119,7 @@ FILT_GRID:    if(l_sidesend) then
 
    else 
 
-     do L=1,Lm
+     do L=1,Lm_in
      do j=1-nby,jmax+nby
      do i=1,nbx
        W(:,imax+i,j,L)=rBuf_E(:,i,j,L)
@@ -2158,7 +2161,7 @@ FILT_GRID:    if(l_sidesend) then
                         endsubroutine boco_3d_gh
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-                        subroutine bocoT_3d_g1                          &
+             module           subroutine bocoT_3d_g1                          &
 !***********************************************************************
 !                                                                      *
 !  Supply n-lines inside of domains, including edges, with halos from  *
@@ -2168,19 +2171,18 @@ FILT_GRID:    if(l_sidesend) then
 !                       - offset version -                             !
 !                                                                      *
 !***********************************************************************
-(W,km3,im,jm,Lm,nbx,nby,nbz,Fimax,Fjmax)
+(this,W,km3_in,im_in,jm_in,Lm_in,nbx,nby,nbz,Fimax_in,Fjmax_in)
 !-----------------------------------------------------------------------
-use mg_domain, only: Flwest,Fleast,Flsouth,Flnorth                      &
-                    ,Fitarg_n,Fitarg_s,Fitarg_w,Fitarg_e                
-!clt use mpi
+use mpi !clt
 
 implicit none
+class(mg_intstate_type),target::this
 
 !-----------------------------------------------------------------------
-integer(i_kind), intent(in):: km3,im,jm,Lm,nbx,nby,nbz
-real(r_kind), dimension(km3,1-nbx:im+nbx,1-nby:jm+nby,1-nbz:Lm+nbz)   &
+integer(i_kind), intent(in):: km3_in,im_in,jm_in,Lm_in,nbx,nby,nbz
+real(r_kind), dimension(km3_in,1-nbx:im_in+nbx,1-nby:jm_in+nby,1-nbz:Lm_in+nbz)   &
                        ,intent(inout):: W
-integer(i_kind), dimension(gm), intent(in):: Fimax,Fjmax
+integer(i_kind), dimension(this%gm), intent(in):: Fimax_in,Fjmax_in
 !-----------------------------------------------------------------------
 
 real(r_kind), allocatable, dimension(:,:,:,:)::                         &
@@ -2196,6 +2198,10 @@ integer(i_kind) isend,irecv,nebpe
 integer(i_kind) ndatax,ndatay
 logical l_sidesend
 integer(i_kind) g_ind,g,k
+include  "type_parameter_locpointer.inc"
+include "type_intstat_locpointer.inc"
+include  "type_parameter_point2this.inc"
+include "type_intstat_point2this.inc"
 !-----------------------------------------------------------------------
 !
 ! Limit comminications to selected number of generations
@@ -2221,8 +2227,8 @@ integer(i_kind) g_ind,g,k
           jmax = jm
 
 !----------------------------------------------------------------------
-      ndatax =km3*(jmax+2*nby)*nbx *Lm
-      ndatay =km3*imax*nby *Lm
+      ndatax =km3_in*(jmax+2*nby)*nbx *Lm_in
+      ndatay =km3_in*imax*nby *Lm_in
 
 !
 ! SEND extended halos toward WEST and EAST
@@ -2232,9 +2238,9 @@ integer(i_kind) g_ind,g,k
       if( itarg_w >= 0) then
         nebpe = itarg_w
 
-              allocate( sBuf_W(1:km3,1:nbx,1-nby:jmax+nby,1:Lm), stat = iaerr )
+              allocate( sBuf_W(1:km3_in,1:nbx,1-nby:jmax+nby,1:Lm_in), stat = iaerr )
 
-              do L=Lm,1,-1
+              do L=Lm_in,1,-1
               do j=1-nby,jmax+nby
               do i=1,nbx
                 sBuf_W(:,i,j,L) = W(:,-nbx+i,j,L)
@@ -2243,7 +2249,7 @@ integer(i_kind) g_ind,g,k
               enddo
 
               call MPI_ISEND( sBuf_W, ndatax, dtype, nebpe, mype,       &
-                              mpi_comm_world, sHandle(4), isend)
+                              mpi_comm_comp, sHandle(4), isend)
 
       end if
 
@@ -2252,9 +2258,9 @@ integer(i_kind) g_ind,g,k
       if( itarg_e >= 0 ) then
         nebpe = itarg_e
 
-              allocate( sBuf_E(1:km3,1:nbx,1-nby:jmax+nby,1:Lm), stat = iaerr )
+              allocate( sBuf_E(1:km3_in,1:nbx,1-nby:jmax+nby,1:Lm_in), stat = iaerr )
 
-              do L=Lm,1,-1
+              do L=Lm_in,1,-1
               do j=1-nby,jmax+nby
               do i=1,nbx
                 sBuf_E(:,i,j,L) = W(:,imax+i,j,L)
@@ -2263,7 +2269,7 @@ integer(i_kind) g_ind,g,k
               enddo
 
               call MPI_ISEND( sBuf_E, ndatax, dtype, nebpe, mype,       &
-                              mpi_comm_world, sHandle(2), isend)
+                              mpi_comm_comp, sHandle(2), isend)
 
       end if
 !
@@ -2275,9 +2281,9 @@ integer(i_kind) g_ind,g,k
         nebpe = itarg_e
 
 
-          allocate( rBuf_E(1:km3,1:nbx,1-nby:jmax+nby,1:Lm), stat = iaerr )
+          allocate( rBuf_E(1:km3_in,1:nbx,1-nby:jmax+nby,1:Lm_in), stat = iaerr )
           call MPI_IRECV( rBuf_E, ndatax, dtype, nebpe, nebpe,          &
-                       mpi_comm_world, rHandle(2), irecv)
+                       mpi_comm_comp, rHandle(2), irecv)
           call MPI_WAIT( rHandle(2), istat, ierr )
 
       end if
@@ -2288,9 +2294,9 @@ integer(i_kind) g_ind,g,k
         nebpe = itarg_w
 
 
-          allocate( rBuf_W(1:km3,1:nbx,1-nby:jmax+nby,1:Lm), stat = iaerr )
+          allocate( rBuf_W(1:km3_in,1:nbx,1-nby:jmax+nby,1:Lm_in), stat = iaerr )
           call MPI_IRECV( rBuf_W, ndatax, dtype, nebpe, nebpe,          &
-                       mpi_comm_world, rHandle(4), irecv)
+                       mpi_comm_comp, rHandle(4), irecv)
           call MPI_WAIT( rHandle(4), istat, ierr )
 
 
@@ -2302,7 +2308,7 @@ integer(i_kind) g_ind,g,k
 ! From west
 
    if(lwest) then
-     do L=1,lm
+     do L=1,lm_in
      do j=1-nby,jmax+nby
      do i=1,nbx
        W(:,i,j,L)= W(:,i,j,L)+W(:,1-i,j,L)
@@ -2310,7 +2316,7 @@ integer(i_kind) g_ind,g,k
      end do
      end do
    else
-     do L=1,lm
+     do L=1,lm_in
      do j=1-nby,jmax+nby
      do i=1,nbx
       W(:,i,j,L)= W(:,i,j,L)+rBuf_W(:,i,j,L)
@@ -2322,7 +2328,7 @@ integer(i_kind) g_ind,g,k
 ! From east
 
    if(least) then
-     do L=1,lm
+     do L=1,lm_in
      do j=1-nby,jmax+nby
      do i=1,nbx
        W(:,imax-nbx+i,j,L)= W(:,imax-nbx+i,j,L)+W(:,imax+nbx-i,j,L)
@@ -2330,7 +2336,7 @@ integer(i_kind) g_ind,g,k
      end do
      end do
    else 
-     do L=1,lm
+     do L=1,lm_in
      do j=1-nby,jmax+nby
      do i=1,nbx  
        W(:,imax-nbx+i,j,L)= W(:,imax-nbx+i,j,L)+rBuf_E(:,i,j,L)
@@ -2348,9 +2354,9 @@ integer(i_kind) g_ind,g,k
       if( itarg_s >= 0 ) then
         nebpe = itarg_s
 
-              allocate( sBuf_S(1:km3,1:imax,1:nby,1:Lm), stat = iaerr )
+              allocate( sBuf_S(1:km3_in,1:imax,1:nby,1:Lm_in), stat = iaerr )
 
-              do L=Lm,1,-1
+              do L=Lm_in,1,-1
               do j=1-nby,0
               do i=1,imax
                 sBuf_S(:,i,j+nby,L) = W(:,i,j,L)
@@ -2359,7 +2365,7 @@ integer(i_kind) g_ind,g,k
               enddo
 
               call MPI_ISEND( sBuf_S, ndatay, dtype, nebpe, mype,  &
-                              mpi_comm_world, sHandle(3), isend)
+                              mpi_comm_comp, sHandle(3), isend)
       end if
 
 ! --- toward NORTH ---
@@ -2367,9 +2373,9 @@ integer(i_kind) g_ind,g,k
       if( itarg_n >= 0 ) then
         nebpe = itarg_n
 
-             allocate( sBuf_N(1:km3,1:imax,1:nby,1:Lm), stat = iaerr )
+             allocate( sBuf_N(1:km3_in,1:imax,1:nby,1:Lm_in), stat = iaerr )
 
-              do L=Lm,1,-1
+              do L=Lm_in,1,-1
               do j=1,nby
               do i=1,imax
                 sBuf_N(:,i,j,L)=W(:,i,jmax+j,L)
@@ -2378,7 +2384,7 @@ integer(i_kind) g_ind,g,k
               enddo
 
              call MPI_ISEND( sBuf_N, ndatay, dtype, nebpe, mype,        &
-                             mpi_comm_world, sHandle(1), isend)
+                             mpi_comm_comp, sHandle(1), isend)
 
       end if
 
@@ -2392,9 +2398,9 @@ integer(i_kind) g_ind,g,k
         nebpe = itarg_n
 
 
-          allocate( rBuf_N(1:km3,1:imax,1:nby,1:Lm), stat = iaerr )
+          allocate( rBuf_N(1:km3_in,1:imax,1:nby,1:Lm_in), stat = iaerr )
           call MPI_IRECV( rBuf_N, ndatay, dtype, nebpe, nebpe,          &
-                      mpi_comm_world, rHandle(1), irecv)
+                      mpi_comm_comp, rHandle(1), irecv)
           call MPI_WAIT( rHandle(1), istat, ierr )
 
       end if
@@ -2405,9 +2411,9 @@ integer(i_kind) g_ind,g,k
         nebpe = itarg_s
 
 
-          allocate( rBuf_S(1:km3,1:imax,1:nby,1:Lm), stat = iaerr )
+          allocate( rBuf_S(1:km3_in,1:imax,1:nby,1:Lm_in), stat = iaerr )
           call MPI_IRECV( rBuf_S, ndatay, dtype, nebpe, nebpe,          &
-                       mpi_comm_world, rHandle(3), irecv)
+                       mpi_comm_comp, rHandle(3), irecv)
           call MPI_WAIT( rHandle(3), istat, ierr )
 
 
@@ -2420,7 +2426,7 @@ integer(i_kind) g_ind,g,k
 ! From south
 
    if(lsouth) then
-     do L=1,lm
+     do L=1,lm_in
      do j=1,nby
      do i=1,imax
        W(:,i,j,L)= W(:,i,j,L)+W(:,i,1-j,L)
@@ -2428,7 +2434,7 @@ integer(i_kind) g_ind,g,k
      end do
      end do
    else
-     do L=1,lm
+     do L=1,lm_in
      do j=1,nby
      do i=1,imax
        W(:,i,j,L)= W(:,i,j,L)+rBuf_S(:,i,j,L)
@@ -2440,7 +2446,7 @@ integer(i_kind) g_ind,g,k
 !  From north
 
    if(lnorth) then
-     do L=1,lm
+     do L=1,lm_in
      do j=1,nby
      do i=1,imax
        W(:,i,jmax-nby+j,L)= W(:,i,jmax-nby+j,L)+W(:,i,jmax+nby-j,L)
@@ -2448,7 +2454,7 @@ integer(i_kind) g_ind,g,k
      enddo
      enddo
    else
-     do L=1,lm
+     do L=1,lm_in
      do j=1,nby
      do i=1,imax
        W(:,i,jmax-nby+j,L)= W(:,i,jmax-nby+j,L)+rBuf_N(:,i,j,L)
@@ -2515,7 +2521,7 @@ integer(i_kind) g_ind,g,k
                         endsubroutine bocoT_3d_g1
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-                        subroutine bocoT_3d_gh                          &
+     module               subroutine bocoT_3d_gh                          &
 !***********************************************************************
 !                                                                      *
 !  Supply n-lines inside of domains, including edges, with halos from  *
@@ -2525,19 +2531,18 @@ integer(i_kind) g_ind,g,k
 !                       - offset version -                             !
 !                                                                      *
 !***********************************************************************
-(W,km,im,jm,Lm,nbx,nby,nbz,Fimax,Fjmax,mygen_min,mygen_max)
+(this,W,km_in,im_in,jm_in,Lm_in,nbx,nby,nbz,Fimax_in,Fjmax_in,mygen_min,mygen_max)
 
 !-----------------------------------------------------------------------
-use mg_domain, only: Flwest,Fleast,Flsouth,Flnorth                      &
-                    ,Fitarg_n,Fitarg_s,Fitarg_w,Fitarg_e                
-!cl use mpi
+use mpi !clt
 implicit none
+class(mg_intstate_type),target::this
 
 !-----------------------------------------------------------------------
-integer(i_kind), intent(in):: km,im,jm,Lm,nbx,nby,nbz,mygen_min,mygen_max
-real(r_kind), dimension(km,1-nbx:im+nbx,1-nby:jm+nby,1-nbz:Lm+nbz)    &
+integer(i_kind), intent(in):: km_in,im_in,jm_in,Lm_in,nbx,nby,nbz,mygen_min,mygen_max
+real(r_kind), dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby,1-nbz:Lm_in+nbz)    &
                        ,intent(inout):: W
-integer(i_kind), dimension(gm), intent(in):: Fimax,Fjmax
+integer(i_kind), dimension(this%gm), intent(in):: Fimax_in,Fjmax_in
 !-----------------------------------------------------------------------
 
 real(r_kind), allocatable, dimension(:,:,:,:)::                         &
@@ -2553,6 +2558,10 @@ integer(i_kind) isend,irecv,nebpe
 integer(i_kind) ndatax,ndatay
 logical l_sidesend
 integer(i_kind) g_ind,g,k
+include  "type_parameter_locpointer.inc"
+include "type_intstat_locpointer.inc"
+include  "type_parameter_point2this.inc"
+include "type_intstat_point2this.inc"
 !-----------------------------------------------------------------------
 !
 ! Limit comminications to selected number of generations
@@ -2587,20 +2596,20 @@ FILT_GRID:    if(l_sidesend) then
           lnorth  = Flnorth(g_ind)
 
           if(least) then
-            imax = Fimax(g)
+            imax = Fimax_in(g)
           else 
-            imax = im       !   << Note that is not necesseraly im from
+            imax = im_in       !   << Note that is not necesseraly im from
           endif             !      mg_parameter.  Could be also imL >>>
           if(lnorth) then
-            jmax = Fjmax(g)
+            jmax = Fjmax_in(g)
           else  
-            jmax = jm
+            jmax = jm_in
           endif
 
 
 !----------------------------------------------------------------------
-      ndatax =km*(jmax+2*nby)*nbx *Lm
-      ndatay =km*imax*nby *Lm
+      ndatax =km_in*(jmax+2*nby)*nbx *Lm_in
+      ndatay =km_in*imax*nby *Lm_in
 
 !
 ! SEND extended halos toward WEST and EAST
@@ -2610,9 +2619,9 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_w >= 0) then
         nebpe = itarg_w
 
-              allocate( sBuf_W(1:km,1:nbx,1-nby:jmax+nby,1:Lm), stat = iaerr )
+              allocate( sBuf_W(1:km_in,1:nbx,1-nby:jmax+nby,1:Lm_in), stat = iaerr )
 
-              do L=Lm,1,-1
+              do L=Lm_in,1,-1
               do j=1-nby,jmax+nby
               do i=1,nbx
                 sBuf_W(:,i,j,L) = W(:,-nbx+i,j,L)
@@ -2630,9 +2639,9 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_e >= 0 ) then
         nebpe = itarg_e
 
-              allocate( sBuf_E(1:km,1:nbx,1-nby:jmax+nby,1:Lm), stat = iaerr )
+              allocate( sBuf_E(1:km_in,1:nbx,1-nby:jmax+nby,1:Lm_in), stat = iaerr )
 
-              do L=Lm,1,-1
+              do L=Lm_in,1,-1
               do j=1-nby,jmax+nby
               do i=1,nbx
                 sBuf_E(:,i,j,L) = W(:,imax+i,j,L)
@@ -2654,7 +2663,7 @@ FILT_GRID:    if(l_sidesend) then
         nebpe = itarg_e
 
 
-          allocate( rBuf_E(1:km,1:nbx,1-nby:jmax+nby,1:Lm), stat = iaerr )
+          allocate( rBuf_E(1:km_in,1:nbx,1-nby:jmax+nby,1:Lm_in), stat = iaerr )
           call MPI_IRECV( rBuf_E, ndatax, dtype, nebpe, nebpe,          &
                        mpi_comm_work, rHandle(2), irecv)
           call MPI_WAIT( rHandle(2), istat, ierr )
@@ -2667,7 +2676,7 @@ FILT_GRID:    if(l_sidesend) then
         nebpe = itarg_w
 
 
-          allocate( rBuf_W(1:km,1:nbx,1-nby:jmax+nby,1:Lm), stat = iaerr )
+          allocate( rBuf_W(1:km_in,1:nbx,1-nby:jmax+nby,1:Lm_in), stat = iaerr )
           call MPI_IRECV( rBuf_W, ndatax, dtype, nebpe, nebpe,          &
                        mpi_comm_work, rHandle(4), irecv)
           call MPI_WAIT( rHandle(4), istat, ierr )
@@ -2682,7 +2691,7 @@ FILT_GRID:    if(l_sidesend) then
 ! From west
 
    if(lwest) then
-     do L=1,lm
+     do L=1,lm_in
      do j=1-nby,jmax+nby
      do i=1,nbx
        W(:,i,j,L)= W(:,i,j,L)+W(:,1-i,j,L)
@@ -2690,7 +2699,7 @@ FILT_GRID:    if(l_sidesend) then
      end do
      end do
    else
-     do L=1,lm
+     do L=1,lm_in
      do j=1-nby,jmax+nby
      do i=1,nbx
       W(:,i,j,L)= W(:,i,j,L)+rBuf_W(:,i,j,L)
@@ -2702,7 +2711,7 @@ FILT_GRID:    if(l_sidesend) then
 ! From east
 
    if(least) then
-     do L=1,lm
+     do L=1,lm_in
      do j=1-nby,jmax+nby
      do i=1,nbx
        W(:,imax-nbx+i,j,L)= W(:,imax-nbx+i,j,L)+W(:,imax+1+nbx-i,j,L)
@@ -2710,7 +2719,7 @@ FILT_GRID:    if(l_sidesend) then
      end do
      end do
    else 
-     do L=1,lm
+     do L=1,lm_in
      do j=1-nby,jmax+nby
      do i=1,nbx  
        W(:,imax-nbx+i,j,L)= W(:,imax-nbx+i,j,L)+rBuf_E(:,i,j,L)
@@ -2728,9 +2737,9 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_s >= 0 ) then
         nebpe = itarg_s
 
-              allocate( sBuf_S(1:km,1:imax,1:nby,1:Lm), stat = iaerr )
+              allocate( sBuf_S(1:km_in,1:imax,1:nby,1:Lm_in), stat = iaerr )
 
-              do L=Lm,1,-1
+              do L=Lm_in,1,-1
               do j=1-nby,0
               do i=1,imax
                 sBuf_S(:,i,j+nby,L) = W(:,i,j,L)
@@ -2747,9 +2756,9 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_n >= 0 ) then
         nebpe = itarg_n
 
-             allocate( sBuf_N(1:km,1:imax,1:nby,1:Lm), stat = iaerr )
+             allocate( sBuf_N(1:km_in,1:imax,1:nby,1:Lm_in), stat = iaerr )
 
-              do L=Lm,1,-1
+              do L=Lm_in,1,-1
               do j=1,nby
               do i=1,imax
                 sBuf_N(:,i,j,L)=W(:,i,jmax+j,L)
@@ -2772,7 +2781,7 @@ FILT_GRID:    if(l_sidesend) then
         nebpe = itarg_n
 
 
-          allocate( rBuf_N(1:km,1:imax,1:nby,1:Lm), stat = iaerr )
+          allocate( rBuf_N(1:km_in,1:imax,1:nby,1:Lm_in), stat = iaerr )
           call MPI_IRECV( rBuf_N, ndatay, dtype, nebpe, nebpe,          &
                       mpi_comm_work, rHandle(1), irecv)
           call MPI_WAIT( rHandle(1), istat, ierr )
@@ -2785,7 +2794,7 @@ FILT_GRID:    if(l_sidesend) then
         nebpe = itarg_s
 
 
-          allocate( rBuf_S(1:km,1:imax,1:nby,1:Lm), stat = iaerr )
+          allocate( rBuf_S(1:km_in,1:imax,1:nby,1:Lm_in), stat = iaerr )
           call MPI_IRECV( rBuf_S, ndatay, dtype, nebpe, nebpe,          &
                        mpi_comm_work, rHandle(3), irecv)
           call MPI_WAIT( rHandle(3), istat, ierr )
@@ -2800,7 +2809,7 @@ FILT_GRID:    if(l_sidesend) then
 !
 
    if(lsouth) then
-     do L=1,lm
+     do L=1,lm_in
      do j=1,nby
      do i=1,imax
        W(:,i,j,L)= W(:,i,j,L)+W(:,i,1-j,L)
@@ -2808,7 +2817,7 @@ FILT_GRID:    if(l_sidesend) then
      end do
      end do
    else
-     do L=1,lm
+     do L=1,lm_in
      do j=1,nby
      do i=1,imax
        W(:,i,j,L)= W(:,i,j,L)+rBuf_S(:,i,j,L)
@@ -2820,7 +2829,7 @@ FILT_GRID:    if(l_sidesend) then
 !  From north
 
    if(lnorth) then
-     do L=1,lm
+     do L=1,lm_in
      do j=1,nby
      do i=1,imax
        W(:,i,jmax-nby+j,L)= W(:,i,jmax-nby+j,L)+W(:,i,jmax+1+nby-j,L)
@@ -2828,7 +2837,7 @@ FILT_GRID:    if(l_sidesend) then
      enddo
      enddo
    else
-     do L=1,lm
+     do L=1,lm_in
      do j=1,nby
      do i=1,imax
        W(:,i,jmax-nby+j,L)= W(:,i,jmax-nby+j,L)+rBuf_N(:,i,j,L)
@@ -2896,7 +2905,7 @@ FILT_GRID:    if(l_sidesend) then
                         endsubroutine bocoT_3d_gh
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-                        subroutine upsend_all_g1                        &
+        module                subroutine upsend_all_g1                        &
 !***********************************************************************
 !                                                                      !
 !         Upsend data from generation one to generation two            !
@@ -2904,31 +2913,28 @@ FILT_GRID:    if(l_sidesend) then
 !                       - offset version -                             !
 !                                                                      !
 !***********************************************************************
-(Harray,Warray,Lm_all)
+(this,Harray,Warray,km_in)
 !-----------------------------------------------------------------------
-use mg_parameter, only: im,jm,imL,jmL,hx,hy
-use mg_domain, only: Flsendup_sw,Flsendup_se,Flsendup_nw,Flsendup_ne    &
-                    ,Fitarg_up                                          &
-                    ,itargdn_sw,itargdn_se,itargdn_ne,itargdn_nw    
-!clt use mpi
+use mpi  !cltthink
 
 implicit none
+class(mg_intstate_type),target::this
 
 !-----------------------------------------------------------------------
 
-integer(i_kind), intent(in):: Lm_all
-real(r_kind), dimension(lm_all,1:imL,1:jmL),intent(in):: Harray
-real(r_kind), dimension(lm_all,1-hx:im+hx,1-hy:jm+hy),intent(out):: Warray
+integer(i_kind), intent(in):: km_in
+real(r_kind), dimension(km_in,1:this%imL,1:this%jmL),intent(in):: Harray
+real(r_kind), dimension(km_in,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(out):: Warray
 
 !-----------------------------------------------------------------------
 real(r_kind), allocatable, dimension(:,:,:)::                            &
                                          sBuf_SW,sBuf_SE,sBuf_NW,sBuf_NE &
                                         ,rBuf_SW,rBuf_SE,rBuf_NW,rBuf_NE              
 
-real(r_kind),dimension(1:lm_all,1:imL,1:jmL):: dBuf_SW
-real(r_kind),dimension(1:lm_all,1:imL,1:jmL):: dBuf_SE
-real(r_kind),dimension(1:lm_all,1:imL,1:jmL):: dBuf_NW
-real(r_kind),dimension(1:lm_all,1:imL,1:jmL):: dBuf_NE
+real(r_kind),dimension(1:km_in,1:this%imL,1:this%jmL):: dBuf_SW
+real(r_kind),dimension(1:km_in,1:this%imL,1:this%jmL):: dBuf_SE
+real(r_kind),dimension(1:km_in,1:this%imL,1:this%jmL):: dBuf_NW
+real(r_kind),dimension(1:km_in,1:this%imL,1:this%jmL):: dBuf_NE
 
 integer(i_kind) sHandle(4),rHandle(4),ISTAT(MPI_STATUS_SIZE)
 integer(i_kind) iaerr,ierr,iderr,ndata,i,j
@@ -2938,6 +2944,10 @@ integer(i_kind):: mygen_dn,mygen_up
 logical:: lsendup_sw,lsendup_se,lsendup_nw,lsendup_ne,flag_up
 integer(i_kind):: itarg_up
 integer:: g_ind
+include  "type_parameter_locpointer.inc"
+include "type_intstat_locpointer.inc"
+include  "type_parameter_point2this.inc"
+include "type_intstat_point2this.inc"
 
 !-----------------------------------------------------------------------
    mygen_dn=1
@@ -2962,7 +2972,7 @@ integer:: g_ind
       Warray(:,:,:) = 0.0d0
    endif
 
-     ndata =lm_all*imL*jmL
+     ndata =km_in*imL*jmL
 
 !
 ! --- Send data to SW portion of processors at higher generation
@@ -2982,7 +2992,7 @@ integer:: g_ind
 
         else
 
-        allocate( sBuf_SW(1:lm_all,1:imL,1:jmL), stat = iaerr )
+        allocate( sBuf_SW(1:km_in,1:imL,1:jmL), stat = iaerr )
 
              do j=1,jmL
              do i=1,imL
@@ -3038,7 +3048,7 @@ integer:: g_ind
 
         else
 
-        allocate( sBuf_SE(1:lm_all,1:imL,1:jmL), stat = iaerr )
+        allocate( sBuf_SE(1:km_in,1:imL,1:jmL), stat = iaerr )
 
              do j=1,jmL
              do i=1,imL
@@ -3095,7 +3105,7 @@ integer:: g_ind
 
         else
 
-        allocate( sBuf_NW(1:lm_all,1:imL,1:jmL), stat = iaerr )
+        allocate( sBuf_NW(1:km_in,1:imL,1:jmL), stat = iaerr )
 
              do j=1,jmL
              do i=1,imL
@@ -3152,7 +3162,7 @@ integer:: g_ind
 
         else
 
-        allocate( sBuf_NE(1:lm_all,1:imL,1:jmL), stat = iaerr )
+        allocate( sBuf_NE(1:km_in,1:imL,1:jmL), stat = iaerr )
 
              do j=1,jmL
              do i=1,imL
@@ -3199,7 +3209,7 @@ integer:: g_ind
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-                        subroutine upsend_all_gh                        &
+             module           subroutine upsend_all_gh                        &
 !***********************************************************************
 !                                                                      *
 !         Upsend data from one grid generation to another              *
@@ -3208,21 +3218,19 @@ integer:: g_ind
 !                       - offset version -                             !
 !                                                                      *
 !***********************************************************************
-(Harray,Warray,Lm_all,mygen_dn,mygen_up)
+(this,Harray,Warray,km_in,mygen_dn,mygen_up)
+!cltthink km is this%km
 !-----------------------------------------------------------------------
-use mg_parameter, only: im,jm,imL,jmL,hx,hy
-use mg_domain, only: Flsendup_sw,Flsendup_se,Flsendup_nw,Flsendup_ne    &
-                    ,Fitarg_up                                          &
-                    ,itargdn_sw,itargdn_se,itargdn_ne,itargdn_nw    
-!clt use mpi
+use mpi !cltthink
 
 implicit none
+class(mg_intstate_type),target::this
 
 !-----------------------------------------------------------------------
 
-integer(i_kind), intent(in):: Lm_all
-real(r_kind), dimension(lm_all,1:imL,1:jmL),intent(in):: Harray
-real(r_kind), dimension(lm_all,1-hx:im+hx,1-hy:jm+hy),intent(out):: Warray
+integer(i_kind), intent(in):: km_in
+real(r_kind), dimension(km_in,1:this%imL,1:this%jmL),intent(in):: Harray
+real(r_kind), dimension(km_in,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(out):: Warray
 integer(i_kind),intent(in):: mygen_dn,mygen_up
 
 !-----------------------------------------------------------------------
@@ -3230,10 +3238,10 @@ real(r_kind), allocatable, dimension(:,:,:)::                            &
                                          sBuf_SW,sBuf_SE,sBuf_NW,sBuf_NE &
                                         ,rBuf_SW,rBuf_SE,rBuf_NW,rBuf_NE              
 
-real(r_kind),dimension(1:lm_all,1:imL,1:jmL):: dBuf_SW
-real(r_kind),dimension(1:lm_all,1:imL,1:jmL):: dBuf_SE
-real(r_kind),dimension(1:lm_all,1:imL,1:jmL):: dBuf_NW
-real(r_kind),dimension(1:lm_all,1:imL,1:jmL):: dBuf_NE
+real(r_kind),dimension(1:km_in,1:this%imL,1:this%jmL):: dBuf_SW
+real(r_kind),dimension(1:km_in,1:this%imL,1:this%jmL):: dBuf_SE
+real(r_kind),dimension(1:km_in,1:this%imL,1:this%jmL):: dBuf_NW
+real(r_kind),dimension(1:km_in,1:this%imL,1:this%jmL):: dBuf_NE
 
 integer(i_kind) sHandle(4),rHandle(4),ISTAT(MPI_STATUS_SIZE)
 integer(i_kind) iaerr,ierr,iderr,ndata,i,j,L
@@ -3242,6 +3250,10 @@ integer(i_kind) isend,irecv,nebpe
 logical:: lsendup_sw,lsendup_se,lsendup_nw,lsendup_ne,flag_up
 integer(i_kind):: itarg_up
 integer:: g_ind
+include  "type_parameter_locpointer.inc"
+include "type_intstat_locpointer.inc"
+include  "type_parameter_point2this.inc"
+include "type_intstat_point2this.inc"
 
 !-----------------------------------------------------------------------
 !
@@ -3264,7 +3276,7 @@ integer:: g_ind
       Warray(:,:,:)=0.0d0
    endif
 
-     ndata =lm_all*imL*jmL
+     ndata =km_in*imL*jmL
 !TEST
 !    if(mype==0) then 
 !       write(0,*) 'From upsend_all_gh.f90: ndata=',ndata
@@ -3277,7 +3289,7 @@ integer:: g_ind
         nebpe = itarg_up
     
 
-        allocate( sBuf_SW(1:lm_all,1:imL,1:jmL), stat = iaerr )
+        allocate( sBuf_SW(1:km_in,1:imL,1:jmL), stat = iaerr )
 
              do j=1,jmL
              do i=1,imL
@@ -3305,7 +3317,7 @@ integer:: g_ind
 
         nebpe = itargdn_sw
 
-        allocate( rBuf_SW(1:lm_all,1:imL,1:jmL), stat = iaerr )
+        allocate( rBuf_SW(1:km_in,1:imL,1:jmL), stat = iaerr )
 
         call MPI_IRECV( rBuf_SW, ndata, dtype, nebpe, nebpe, &
                        mpi_comm_work, rHandle(1), irecv)
@@ -3331,7 +3343,7 @@ integer:: g_ind
         nebpe = itarg_up
 
 
-        allocate( sBuf_SE(1:lm_all,1:imL,1:jmL), stat = iaerr )
+        allocate( sBuf_SE(1:km_in,1:imL,1:jmL), stat = iaerr )
 
              do j=1,jmL
              do i=1,imL
@@ -3356,7 +3368,7 @@ integer:: g_ind
         nebpe = itargdn_se
 
 
-        allocate( rBuf_SE(1:lm_all,1:imL,1:jmL), stat = iaerr )
+        allocate( rBuf_SE(1:km_in,1:imL,1:jmL), stat = iaerr )
 
         call MPI_IRECV( rBuf_SE, ndata, dtype, nebpe, nebpe,  &
                        mpi_comm_work, rHandle(2), irecv)
@@ -3378,7 +3390,7 @@ integer:: g_ind
       if( lsendup_nw ) then
         nebpe = itarg_up
 
-        allocate( sBuf_NW(1:lm_all,1:imL,1:jmL), stat = iaerr )
+        allocate( sBuf_NW(1:km_in,1:imL,1:jmL), stat = iaerr )
 
              do j=1,jmL
              do i=1,imL
@@ -3404,7 +3416,7 @@ integer:: g_ind
         nebpe = itargdn_nw
  
 
-        allocate( rBuf_NW(1:lm_all,1:imL,1:jmL), stat = iaerr )
+        allocate( rBuf_NW(1:km_in,1:imL,1:jmL), stat = iaerr )
 
         call MPI_IRECV( rBuf_NW, ndata, dtype, nebpe, nebpe,  &
                        mpi_comm_work, rHandle(3), irecv)
@@ -3428,7 +3440,7 @@ integer:: g_ind
       if( lsendup_ne ) then
         nebpe = itarg_up
 
-        allocate( sBuf_NE(1:lm_all,1:imL,1:jmL), stat = iaerr )
+        allocate( sBuf_NE(1:km_in,1:imL,1:jmL), stat = iaerr )
 
              do j=1,jmL
              do i=1,imL
@@ -3455,7 +3467,7 @@ integer:: g_ind
       if( my_hgen==mygen_up .and. itargdn_ne >= 0 ) then
         nebpe = itargdn_ne
 
-        allocate( rBuf_NE(1:lm_all,1:imL,1:jmL), stat = iaerr )
+        allocate( rBuf_NE(1:km_in,1:imL,1:jmL), stat = iaerr )
 
         call MPI_IRECV( rBuf_NE, ndata, dtype, nebpe, nebpe,  &
                        mpi_comm_work, rHandle(4), irecv)
@@ -3480,7 +3492,7 @@ integer:: g_ind
                         endsubroutine upsend_all_gh
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-                        subroutine downsend_all_gh                      &
+            module            subroutine downsend_all_gh                      &
 !***********************************************************************
 !                                                                      *
 !         Downsending data from low resolution pes    (mygen_up)       *
@@ -3490,20 +3502,17 @@ integer:: g_ind
 !                       - offset version -                             !
 !                                                                      *
 !***********************************************************************
-(Warray,Harray,lm_all,mygen_up,mygen_dn)
+(this,Warray,Harray,km_in,mygen_up,mygen_dn)
 !-----------------------------------------------------------------------
-use mg_parameter, only: im,jm,imL,jmL,hx,hy
-use mg_domain, only: Flsendup_sw,Flsendup_se,Flsendup_nw,Flsendup_ne     &
-                    ,Fitarg_up                                           &
-                    ,itargdn_sw,itargdn_se,itargdn_ne,itargdn_nw       
-!clt use mpi
+use mpi !clt
 
 implicit none
+class(mg_intstate_type),target::this
 !-----------------------------------------------------------------------
 
-integer(i_kind), intent(in):: lm_all
-real(r_kind), dimension(lm_all,1:im,1:jm),intent(in):: Warray
-real(r_kind), dimension(lm_all,1:imL,1:jmL),intent(out):: Harray
+integer(i_kind), intent(in):: km_in
+real(r_kind), dimension(km_in,1:this%im,1:this%jm),intent(in):: Warray
+real(r_kind), dimension(km_in,1:this%imL,1:this%jmL),intent(out):: Harray
 integer, intent(in):: mygen_up,mygen_dn
 !-----------------------------------------------------------------------
 
@@ -3511,10 +3520,10 @@ real(r_kind), allocatable, dimension(:,:,:)::                            &
                             sBuf_SW,sBuf_SE,sBuf_NW,sBuf_NE              &
                            ,rBuf_SW,rBuf_SE,rBuf_NW,rBuf_NE              
 
-real(r_kind),dimension(1:lm_all,1:imL,1:jmL):: dBuf_SW
-real(r_kind),dimension(1:lm_all,1:imL,1:jmL):: dBuf_SE
-real(r_kind),dimension(1:lm_all,1:imL,1:jmL):: dBuf_NW
-real(r_kind),dimension(1:lm_all,1:imL,1:jmL):: dBuf_NE
+real(r_kind),dimension(1:km_in,1:this%imL,1:this%jmL):: dBuf_SW
+real(r_kind),dimension(1:km_in,1:this%imL,1:this%jmL):: dBuf_SE
+real(r_kind),dimension(1:km_in,1:this%imL,1:this%jmL):: dBuf_NW
+real(r_kind),dimension(1:km_in,1:this%imL,1:this%jmL):: dBuf_NE
 
 integer(i_kind) sHandle(4),rHandle(4),ISTAT(MPI_STATUS_SIZE)
 integer(i_kind) iaerr,ierr,iderr,ndata,i,j,L
@@ -3523,6 +3532,10 @@ integer(i_kind) isend,irecv,nebpe
 logical:: lsendup_sw,lsendup_se,lsendup_nw,lsendup_ne  
 integer(i_kind):: itarg_up                                           
 integer(i_kind):: g_ind
+include  "type_parameter_locpointer.inc"
+include "type_intstat_locpointer.inc"
+include  "type_parameter_point2this.inc"
+include "type_intstat_point2this.inc"
 !-----------------------------------------------------------------------
 
      Harray(:,:,:) = 0.0d0
@@ -3538,7 +3551,7 @@ integer(i_kind):: g_ind
 
        itarg_up=Fitarg_up(g_ind)
 
-       ndata =lm_all*imL*jmL
+       ndata =km_in*imL*jmL
 
 !
 ! --- Send data from SW portion of processors at the higher generation
@@ -3549,7 +3562,7 @@ integer(i_kind):: g_ind
         nebpe = itargdn_sw
 
 
-        allocate( sBuf_SW(1:lm_all,1:imL,1:jmL), stat = iaerr )
+        allocate( sBuf_SW(1:km_in,1:imL,1:jmL), stat = iaerr )
 
              do j=1,jmL
              do i=1,imL
@@ -3573,7 +3586,7 @@ integer(i_kind):: g_ind
         nebpe = itarg_up
 
 
-        allocate( rBuf_SW(1:lm_all,1:imL,1:jmL), stat = iaerr )
+        allocate( rBuf_SW(1:km_in,1:imL,1:jmL), stat = iaerr )
 
         call MPI_IRECV( rBuf_SW, ndata, dtype, nebpe, nebpe, &
                         mpi_comm_work, rHandle(1), irecv)
@@ -3596,7 +3609,7 @@ integer(i_kind):: g_ind
   if(my_hgen==mygen_up .and.  itargdn_se >= 0 ) then
         nebpe = itargdn_se
 
-        allocate( sBuf_SE(1:lm_all,1:imL,1:jmL), stat = iaerr )
+        allocate( sBuf_SE(1:km_in,1:imL,1:jmL), stat = iaerr )
 
              do j=1,jmL
              do i=1,imL
@@ -3619,7 +3632,7 @@ integer(i_kind):: g_ind
         nebpe = itarg_up
 
 
-        allocate( rBuf_SE(1:lm_all,1:imL,1:jmL), stat = iaerr )
+        allocate( rBuf_SE(1:km_in,1:imL,1:jmL), stat = iaerr )
 
         call MPI_IRECV( rBuf_SE, ndata, dtype, nebpe, nebpe, &
                         mpi_comm_work, rHandle(2), irecv)
@@ -3643,7 +3656,7 @@ integer(i_kind):: g_ind
         nebpe = itargdn_nw
 
 
-        allocate( sBuf_NW(1:lm_all,1:imL,1:jmL), stat = iaerr )
+        allocate( sBuf_NW(1:km_in,1:imL,1:jmL), stat = iaerr )
 
              do j=1,jmL
              do i=1,imL
@@ -3666,7 +3679,7 @@ integer(i_kind):: g_ind
 
         nebpe = itarg_up
 
-        allocate( rBuf_NW(1:lm_all,1:imL,1:jmL), stat = iaerr )
+        allocate( rBuf_NW(1:km_in,1:imL,1:jmL), stat = iaerr )
 
         call MPI_IRECV( rBuf_NW, ndata, dtype, nebpe, nebpe, &
                        mpi_comm_work, rHandle(3), irecv)
@@ -3691,7 +3704,7 @@ integer(i_kind):: g_ind
         nebpe = itargdn_ne
 
 
-        allocate( sBuf_NE(1:lm_all,1:imL,1:jmL), stat = iaerr )
+        allocate( sBuf_NE(1:km_in,1:imL,1:jmL), stat = iaerr )
 
              do j=1,jmL
              do i=1,imL
@@ -3713,7 +3726,7 @@ integer(i_kind):: g_ind
       if( lsendup_ne ) then
         nebpe = itarg_up
 
-        allocate( rBuf_NE(1:lm_all,1:imL,1:jmL), stat = iaerr )
+        allocate( rBuf_NE(1:km_in,1:imL,1:jmL), stat = iaerr )
 
         call MPI_IRECV( rBuf_NE, ndata, dtype, nebpe, nebpe, &
                         mpi_comm_work, rHandle(4), irecv)
@@ -3733,7 +3746,7 @@ integer(i_kind):: g_ind
                         endsubroutine downsend_all_gh
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-                        subroutine downsend_all_g2                      &
+                 module       subroutine downsend_all_g2                      &
 !***********************************************************************
 !                                                                      *
 !         Downsending data from low resolution pes    (mygen_up)       *
@@ -3743,29 +3756,26 @@ integer(i_kind):: g_ind
 !                       - offset version -                             *
 !                                                                      *
 !***********************************************************************
-(Warray,Harray,lm_all)
+(this,Warray,Harray,km_in)
 !-----------------------------------------------------------------------
-use mg_parameter, only: im,jm,imL,jmL,hx,hy
-use mg_domain, only: Flsendup_sw,Flsendup_se,Flsendup_nw,Flsendup_ne     &
-                    ,Fitarg_up                                           &
-                    ,itargdn_sw,itargdn_se,itargdn_ne,itargdn_nw       
-!clt use mpi
+use mpi !clt
 
 implicit none
+class(mg_intstate_type),target::this
 !-----------------------------------------------------------------------
 
-integer(i_kind), intent(in):: lm_all
-real(r_kind), dimension(lm_all,1:im,1:jm),intent(in):: Warray
-real(r_kind), dimension(lm_all,1:imL,1:jmL),intent(out):: Harray
+integer(i_kind), intent(in):: km_in
+real(r_kind), dimension(km_in,1:this%im,1:this%jm),intent(in):: Warray
+real(r_kind), dimension(km_in,1:this%imL,1:this%jmL),intent(out):: Harray
 !-----------------------------------------------------------------------
 
 real(r_kind), allocatable, dimension(:,:,:)::                            &
                             sBuf_SW,sBuf_SE,sBuf_NW,sBuf_NE             
 
-real(r_kind),dimension(1:lm_all,1:imL,1:jmL):: dBuf_SW
-real(r_kind),dimension(1:lm_all,1:imL,1:jmL):: dBuf_SE
-real(r_kind),dimension(1:lm_all,1:imL,1:jmL):: dBuf_NW
-real(r_kind),dimension(1:lm_all,1:imL,1:jmL):: dBuf_NE
+real(r_kind),dimension(1:km_in,1:this%imL,1:this%jmL):: dBuf_SW
+real(r_kind),dimension(1:km_in,1:this%imL,1:this%jmL):: dBuf_SE
+real(r_kind),dimension(1:km_in,1:this%imL,1:this%jmL):: dBuf_NW
+real(r_kind),dimension(1:km_in,1:this%imL,1:this%jmL):: dBuf_NE
 
 integer(i_kind) sHandle(4),rHandle(4),ISTAT(MPI_STATUS_SIZE)
 integer(i_kind) iaerr,ierr,iderr,ndata,i,j,L
@@ -3776,6 +3786,10 @@ integer:: mygen_up,mygen_dn
 integer(i_kind):: itarg_up                                           
 integer(i_kind):: g_ind
 !-----------------------------------------------------------------------
+include  "type_parameter_locpointer.inc"
+include "type_intstat_locpointer.inc"
+include  "type_parameter_point2this.inc"
+include "type_intstat_point2this.inc"
 !
 ! Define generational flags
 !
@@ -3791,7 +3805,7 @@ integer(i_kind):: g_ind
        itarg_up=Fitarg_up(g_ind)
 
 
-      ndata =lm_all*imL*jmL
+      ndata =km_in*imL*jmL
 
 
 !
@@ -3814,7 +3828,7 @@ LSEND:  if(my_hgen==mygen_up) then
 
         else
 
-        allocate( sBuf_SW(1:lm_all,1:imL,1:jmL), stat = iaerr )
+        allocate( sBuf_SW(1:km_in,1:imL,1:jmL), stat = iaerr )
 
              do j=1,jmL
              do i=1,imL
@@ -3844,7 +3858,7 @@ LSEND:  if(my_hgen==mygen_up) then
 
         else
 
-        allocate( sBuf_SE(1:lm_all,1:imL,1:jmL), stat = iaerr )
+        allocate( sBuf_SE(1:km_in,1:imL,1:jmL), stat = iaerr )
 
              do j=1,jmL
              do i=1,imL
@@ -3874,7 +3888,7 @@ LSEND:  if(my_hgen==mygen_up) then
 
         else
 
-        allocate( sBuf_NW(1:lm_all,1:imL,1:jmL), stat = iaerr )
+        allocate( sBuf_NW(1:km_in,1:imL,1:jmL), stat = iaerr )
 
              do j=1,jmL
              do i=1,imL
@@ -3904,7 +3918,7 @@ LSEND:  if(my_hgen==mygen_up) then
 
         else
 
-        allocate( sBuf_NE(1:lm_all,1:imL,1:jmL), stat = iaerr )
+        allocate( sBuf_NE(1:km_in,1:imL,1:jmL), stat = iaerr )
 
              do j=1,jmL
              do i=1,imL
@@ -4029,7 +4043,7 @@ LSEND:  if(my_hgen==mygen_up) then
                         endsubroutine downsend_all_g2
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-                        subroutine bocox_2d_g1                          &
+                 module       subroutine bocox_2d_g1                          &
 !**********************************************************************!
 !                                                                      !
 ! Side sending subroutine:                                             !
@@ -4039,17 +4053,17 @@ LSEND:  if(my_hgen==mygen_up) then
 !                       - offset version -                             !
 !                                                                      !
 !**********************************************************************!
-(W,km,im,jm,nbx,nby)
+(this,W,km_in,im_in,jm_in,nbx,nby)
 !-----------------------------------------------------------------------
-use mg_domain, only: Fitarg_w,Fitarg_e,Flwest,Fleast
 
-!clt use mpi
+use mpi !#clt
 
 implicit none
+class(mg_intstate_type),target::this
 
 !-----------------------------------------------------------------------
-integer(i_kind), intent(in):: km,im,jm,nbx,nby
-real(r_kind),dimension(km,1-nbx:im+nbx,1-nby:jm+nby),intent(inout):: W
+integer(i_kind), intent(in):: km_in,im_in,jm_in,nbx,nby
+real(r_kind),dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
 !-----------------------------------------------------------------------
 
 real(r_kind), allocatable, dimension(:,:,:):: sBuf_E,sBuf_W             &
@@ -4063,6 +4077,10 @@ integer(i_kind) iaerr,ierr,iderr,l,i,j
 integer(i_kind) isend,irecv,nebpe
 integer(i_kind) ndatax
 integer(i_kind) g_ind,g
+include  "type_parameter_locpointer.inc"
+include "type_intstat_locpointer.inc"
+include  "type_parameter_point2this.inc"
+include "type_intstat_point2this.inc"
 !-----------------------------------------------------------------------
 !
 ! Limit communications to selected number of generations
@@ -4080,12 +4098,12 @@ integer(i_kind) g_ind,g
           lwest   = Flwest(g_ind)
           least   = Fleast(g_ind)
 
-          imax = im       
-          jmax = jm
+          imax = im_in       
+          jmax = jm_in
 
 
 !-----------------------------------------------------------------------
-      ndatax = km*jmax*nbx
+      ndatax = km_in*jmax*nbx
 
 !----------------------------------------------------------------------
 !
@@ -4097,7 +4115,7 @@ integer(i_kind) g_ind,g
       if( itarg_w >= 0) then
         nebpe = itarg_w
 
-              allocate( sBuf_W(1:km,nbx,1:jmax), stat = iaerr )
+              allocate( sBuf_W(1:km_in,nbx,1:jmax), stat = iaerr )
 
                 do j=1,jmax
                   do i=1,nbx
@@ -4115,7 +4133,7 @@ integer(i_kind) g_ind,g
       if( itarg_e >= 0 ) then
         nebpe = itarg_e
 
-              allocate( sBuf_E(1:km,nbx,1:jmax), stat = iaerr )
+              allocate( sBuf_E(1:km_in,nbx,1:jmax), stat = iaerr )
 
                 do j=1,jmax
                   do i=1,nbx
@@ -4137,7 +4155,7 @@ integer(i_kind) g_ind,g
       if( itarg_e >= 0 ) then
         nebpe = itarg_e
 
-          allocate( rBuf_E(1:km,nbx,1:jmax), stat = iaerr )
+          allocate( rBuf_E(1:km_in,nbx,1:jmax), stat = iaerr )
           call MPI_IRECV( rBuf_E, ndatax, dtype, nebpe, nebpe,  &
                        mpi_comm_comp, rHandle(2), irecv)
           call MPI_WAIT( rHandle(2), istat, ierr )
@@ -4149,7 +4167,7 @@ integer(i_kind) g_ind,g
       if( itarg_w >= 0 ) then
         nebpe = itarg_w
 
-          allocate( rBuf_W(1:km,nbx,1:jmax), stat = iaerr )
+          allocate( rBuf_W(1:km_in,nbx,1:jmax), stat = iaerr )
           call MPI_IRECV( rBuf_W, ndatax, dtype, nebpe, nebpe,  &
                        mpi_comm_comp, rHandle(4), irecv)
           call MPI_WAIT( rHandle(4), istat, ierr )
@@ -4235,7 +4253,7 @@ integer(i_kind) g_ind,g
                         endsubroutine bocox_2d_g1
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-                        subroutine bocox_2d_gh                          &
+                module        subroutine bocox_2d_gh                          &
 !**********************************************************************!
 !                                                                      !
 ! Side sending subroutine:                                             !
@@ -4245,18 +4263,18 @@ integer(i_kind) g_ind,g
 !                       - offset version -                             !
 !                                                                      !
 !**********************************************************************!
-(W,km,im,jm,nbx,nby,Fimax,Fjmax,mygen_min,mygen_max)
+(this,W,km_in,im_in,jm_in,nbx,nby,Fimax_in,Fjmax_in,mygen_min,mygen_max)
 !-----------------------------------------------------------------------
-use mg_domain, only: Fitarg_w,Fitarg_e,Flwest,Fleast,Flsouth,Flnorth
 
-!clt use mpi
+use mpi !clt
 
 implicit none
+class(mg_intstate_type),target::this
 
 !-----------------------------------------------------------------------
-integer(i_kind), intent(in):: km,im,jm,nbx,nby,mygen_min,mygen_max
-real(r_kind),dimension(km,1-nbx:im+nbx,1-nby:jm+nby),intent(inout):: W
-integer(i_kind), dimension(gm), intent(in):: Fimax,Fjmax
+integer(i_kind), intent(in):: km_in,im_in,jm_in,nbx,nby,mygen_min,mygen_max
+real(r_kind),dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
+integer(i_kind), dimension(this%gm), intent(in):: Fimax_in,Fjmax_in
 !-----------------------------------------------------------------------
 
 real(r_kind), allocatable, dimension(:,:,:):: sBuf_E,sBuf_W             &
@@ -4271,6 +4289,10 @@ integer(i_kind) isend,irecv,nebpe
 integer(i_kind) ndatax
 integer(i_kind) g_ind,g
 logical l_sidesend
+include  "type_parameter_locpointer.inc"
+include "type_intstat_locpointer.inc"
+include  "type_parameter_point2this.inc"
+include "type_intstat_point2this.inc"
 !-----------------------------------------------------------------------
 !
 ! Limit communications to selected number of generations
@@ -4302,19 +4324,19 @@ FILT_GRID:    if(l_sidesend) then
 
 
           if(least) then
-            imax = Fimax(g)
+            imax = Fimax_in(g)
           else 
             imax = im       !   << Note that is not necesseraly im from
           endif             !      mg_parameter.  Could be also imL >>>
           if(lnorth) then
-            jmax = Fjmax(g)
+            jmax = Fjmax_in(g)
           else  
             jmax = jm
           endif
 
 
 !-----------------------------------------------------------------------
-      ndatax = km*jmax*nbx
+      ndatax = km_in*jmax*nbx
 
 !
 !  SEND halos to WEST and EASTH
@@ -4325,7 +4347,7 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_w >= 0) then
         nebpe = itarg_w
 
-              allocate( sBuf_W(1:km,nbx,1:jmax), stat = iaerr )
+              allocate( sBuf_W(1:km_in,nbx,1:jmax), stat = iaerr )
 
                 do j=1,jmax
                   do i=1,nbx
@@ -4343,7 +4365,7 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_e >= 0 ) then
         nebpe = itarg_e
 
-              allocate( sBuf_E(1:km,nbx,1:jmax), stat = iaerr )
+              allocate( sBuf_E(1:km_in,nbx,1:jmax), stat = iaerr )
 
                 do j=1,jmax
                   do i=1,nbx
@@ -4365,7 +4387,7 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_e >= 0 ) then
         nebpe = itarg_e
 
-          allocate( rBuf_E(1:km,nbx,1:jmax), stat = iaerr )
+          allocate( rBuf_E(1:km_in,nbx,1:jmax), stat = iaerr )
           call MPI_IRECV( rBuf_E, ndatax, dtype, nebpe, nebpe,  &
                        mpi_comm_work, rHandle(2), irecv)
           call MPI_WAIT( rHandle(2), istat, ierr )
@@ -4377,7 +4399,7 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_w >= 0 ) then
         nebpe = itarg_w
 
-          allocate( rBuf_W(1:km,nbx,1:jmax), stat = iaerr )
+          allocate( rBuf_W(1:km_in,nbx,1:jmax), stat = iaerr )
           call MPI_IRECV( rBuf_W, ndatax, dtype, nebpe, nebpe,  &
                        mpi_comm_work, rHandle(4), irecv)
           call MPI_WAIT( rHandle(4), istat, ierr )
@@ -4464,7 +4486,7 @@ FILT_GRID:    if(l_sidesend) then
                         endsubroutine bocox_2d_gh
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-                        subroutine bocoy_2d_g1                          &
+        module                subroutine bocoy_2d_g1                          &
 !**********************************************************************!
 !                                                                      !
 ! Side sending subroutine:                                             !
@@ -4474,17 +4496,17 @@ FILT_GRID:    if(l_sidesend) then
 !                       - offset version -                             !
 !                                                                      !
 !**********************************************************************!
-(W,km,im,jm,nbx,nby)
+(this,W,km_in,im_in,jm_in,nbx,nby)
 !-----------------------------------------------------------------------
-use mg_domain, only: Fitarg_n,Fitarg_s,Flsouth,Flnorth                     
 
-!clt use mpi
+use mpi !clt
 
 implicit none
+class(mg_intstate_type),target::this
 
 !-----------------------------------------------------------------------
-integer(i_kind), intent(in):: km,im,jm,nbx,nby
-real(r_kind),dimension(km,1-nbx:im+nbx,1-nby:jm+nby),intent(inout):: W
+integer(i_kind), intent(in):: km_in,im_in,jm_in,nbx,nby
+real(r_kind),dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
 !-----------------------------------------------------------------------
 real(r_kind), allocatable, dimension(:,:,:):: sBuf_N,sBuf_S             &
                                              ,rBuf_N,rBuf_S
@@ -4497,6 +4519,10 @@ integer(i_kind) iaerr,ierr,iderr,l,i,j
 integer(i_kind) isend,irecv,nebpe
 integer(i_kind) ndatay
 integer(i_kind) g_ind,g
+include  "type_parameter_locpointer.inc"
+include "type_intstat_locpointer.inc"
+include  "type_parameter_point2this.inc"
+include "type_intstat_point2this.inc"
 !-----------------------------------------------------------------------
 !
 ! Limit communications to selected number of generations
@@ -4514,12 +4540,12 @@ integer(i_kind) g_ind,g
           lsouth  = Flsouth(g_ind)
           lnorth  = Flnorth(g_ind)                 
 
-          imax = im       
-          jmax = jm
+          imax = im_in       
+          jmax = jm_in
 
 
 !-----------------------------------------------------------------------
-      ndatay = km*imax*nby
+      ndatay = km_in*imax*nby
 
 
 !
@@ -4531,7 +4557,7 @@ integer(i_kind) g_ind,g
       if( itarg_s >= 0 ) then
         nebpe = itarg_s
 
-            allocate( sBuf_S(1:km,1:imax,nby), stat = iaerr )
+            allocate( sBuf_S(1:km_in,1:imax,nby), stat = iaerr )
 
                 do j=1,nby
                   do i=1,imax
@@ -4548,7 +4574,7 @@ integer(i_kind) g_ind,g
       if( itarg_n >= 0 ) then
         nebpe = itarg_n
 
-            allocate( sBuf_N(1:km,1:imax,nby), stat = iaerr )
+            allocate( sBuf_N(1:km_in,1:imax,nby), stat = iaerr )
 
                 do j=1,nby
                   do i=1,imax
@@ -4570,7 +4596,7 @@ integer(i_kind) g_ind,g
       if( itarg_n >= 0 ) then
         nebpe = itarg_n
 
-          allocate( rBuf_N(1:km,1:imax,nby), stat = iaerr )
+          allocate( rBuf_N(1:km_in,1:imax,nby), stat = iaerr )
           call MPI_IRECV( rBuf_N, ndatay, dtype, nebpe, nebpe, &
                       mpi_comm_comp, rHandle(1), irecv)
           call MPI_WAIT( rHandle(1), istat, ierr )
@@ -4582,7 +4608,7 @@ integer(i_kind) g_ind,g
       if( itarg_s >= 0 ) then
         nebpe = itarg_s
 
-          allocate( rBuf_S(1:km,1:imax,nby), stat = iaerr )
+          allocate( rBuf_S(1:km_in,1:imax,nby), stat = iaerr )
           call MPI_IRECV( rBuf_S, ndatay, dtype, nebpe, nebpe,  &
                        mpi_comm_comp, rHandle(3), irecv)
           call MPI_WAIT( rHandle(3), istat, ierr )
@@ -4665,7 +4691,7 @@ integer(i_kind) g_ind,g
                         endsubroutine bocoy_2d_g1
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-                        subroutine bocoy_2d_gh                          &
+                  module      subroutine bocoy_2d_gh                          &
 !**********************************************************************!
 !                                                                      !
 ! Side sending subroutine:                                             !
@@ -4675,18 +4701,18 @@ integer(i_kind) g_ind,g
 !                       - offset version -                             !
 !                                                                      !
 !**********************************************************************!
-(W,km,im,jm,nbx,nby,Fimax,Fjmax,mygen_min,mygen_max)
+(this,W,km_in,im_in,jm_in,nbx,nby,Fimax_in,Fjmax_in,mygen_min,mygen_max)
 !-----------------------------------------------------------------------
-use mg_domain, only: Fitarg_n,Fitarg_s,Flwest,Fleast,Flsouth,Flnorth                      
 
-!clt use mpi
-
+use mpi !clt
+ 
 implicit none
+class(mg_intstate_type),target::this
 
 !-----------------------------------------------------------------------
-integer(i_kind), intent(in):: km,im,jm,nbx,nby,mygen_min,mygen_max
-real(r_kind),dimension(km,1-nbx:im+nbx,1-nby:jm+nby),intent(inout):: W
-integer(i_kind), dimension(gm), intent(in):: Fimax,Fjmax
+integer(i_kind), intent(in):: km_in,im_in,jm_in,nbx,nby,mygen_min,mygen_max
+real(r_kind),dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
+integer(i_kind), dimension(this%gm), intent(in):: Fimax_in,Fjmax_in
 !-----------------------------------------------------------------------
 
 real(r_kind), allocatable, dimension(:,:,:):: sBuf_N,sBuf_S             &
@@ -4701,6 +4727,10 @@ integer(i_kind) isend,irecv,nebpe
 integer(i_kind) ndatay
 integer(i_kind) g_ind,g
 logical l_sidesend
+include  "type_parameter_locpointer.inc"
+include "type_intstat_locpointer.inc"
+include  "type_parameter_point2this.inc"
+include "type_intstat_point2this.inc"
 !-----------------------------------------------------------------------
 !
 ! Limit communications to selected number of generations
@@ -4732,19 +4762,19 @@ FILT_GRID:    if(l_sidesend) then
 
 
           if(least) then
-            imax = Fimax(g)
+            imax = Fimax_in(g)
           else 
-            imax = im       !   << Note that is not necesseraly im from
+            imax = im_in       !   << Note that is not necesseraly im from
           endif             !      mg_parameter.  Could be also imL >>>
           if(lnorth) then
-            jmax = Fjmax(g)
+            jmax = Fjmax_in(g)
           else  
-            jmax = jm
+            jmax = jm_in
           endif
 
 
 !-----------------------------------------------------------------------
-      ndatay = km*imax*nby
+      ndatay = km_in*imax*nby
 
 !
 !  SEND boundaries to SOUTH and NORTH
@@ -4755,7 +4785,7 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_s >= 0 ) then
         nebpe = itarg_s
 
-            allocate( sBuf_S(1:km,1:imax,nby), stat = iaerr )
+            allocate( sBuf_S(1:km_in,1:imax,nby), stat = iaerr )
 
                 do j=1,nby
                   do i=1,imax
@@ -4772,7 +4802,7 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_n >= 0 ) then
         nebpe = itarg_n
 
-            allocate( sBuf_N(1:km,1:imax,nby), stat = iaerr )
+            allocate( sBuf_N(1:km_in,1:imax,nby), stat = iaerr )
 
                 do j=1,nby
                   do i=1,imax
@@ -4793,7 +4823,7 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_n >= 0 ) then
         nebpe = itarg_n
 
-          allocate( rBuf_N(1:km,1:imax,nby), stat = iaerr )
+          allocate( rBuf_N(1:km_in,1:imax,nby), stat = iaerr )
           call MPI_IRECV( rBuf_N, ndatay, dtype, nebpe, nebpe, &
                       mpi_comm_work, rHandle(1), irecv)
           call MPI_WAIT( rHandle(1), istat, ierr )
@@ -4805,7 +4835,7 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_s >= 0 ) then
         nebpe = itarg_s
 
-          allocate( rBuf_S(1:km,1:imax,nby), stat = iaerr )
+          allocate( rBuf_S(1:km_in,1:imax,nby), stat = iaerr )
           call MPI_IRECV( rBuf_S, ndatay, dtype, nebpe, nebpe,  &
                        mpi_comm_work, rHandle(3), irecv)
           call MPI_WAIT( rHandle(3), istat, ierr )
@@ -4891,7 +4921,7 @@ FILT_GRID:    if(l_sidesend) then
                         endsubroutine bocoy_2d_gh
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-                        subroutine bocoTx_2d_g1                         &
+                 module       subroutine bocoTx_2d_g1                         &
 !***********************************************************************
 !                                                                      !
 ! Side sending subroutine:                                             !
@@ -4902,16 +4932,17 @@ FILT_GRID:    if(l_sidesend) then
 !                       - offset version -                             !
 !                                                                      !
 !***********************************************************************
-(W,km,im,jm,nbx,nby)
+(this,W,km_in,im_in,jm_in,nbx,nby)
 !-----------------------------------------------------------------------
-use mg_domain, only: Flwest,Fleast,Fitarg_w,Fitarg_e                
-!clt use mpi
+use mpi !clt
 
 implicit none
 
+class(mg_intstate_type),target::this
+
 !-----------------------------------------------------------------------
-integer(i_kind), intent(in):: km,im,jm,nbx,nby
-real(r_kind), dimension(km,1-nbx:im+nbx,1-nby:jm+nby),intent(inout):: W
+integer(i_kind), intent(in):: km_in,im_in,jm_in,nbx,nby
+real(r_kind), dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
 !-----------------------------------------------------------------------
 
 real(r_kind), allocatable, dimension(:,:,:):: sBuf_E,sBuf_W             &
@@ -4927,6 +4958,10 @@ integer(i_kind) ndatax
 logical l_sidesend
 integer(i_kind) g_ind,g,k
 !-----------------------------------------------------------------------
+include  "type_parameter_locpointer.inc"
+include "type_intstat_locpointer.inc"
+include  "type_parameter_point2this.inc"
+include "type_intstat_point2this.inc"
 !
 ! Limit comminications to selected number of generations
 !
@@ -4942,12 +4977,12 @@ integer(i_kind) g_ind,g,k
           lwest   = Flwest(g_ind)
           least   = Fleast(g_ind)
 
-          imax = im    
-          jmax = jm
+          imax = im_in    
+          jmax = jm_in
 
 
 !----------------------------------------------------------------------
-      ndatax =km*jmax*nbx
+      ndatax =km_in*jmax*nbx
 
 !
 ! SEND halos toward WEST and EAST
@@ -4958,7 +4993,7 @@ integer(i_kind) g_ind,g,k
       if( itarg_w >= 0) then
         nebpe = itarg_w
 
-              allocate( sBuf_W(1:km,1:nbx,1:jmax), stat = iaerr )
+              allocate( sBuf_W(1:km_in,1:nbx,1:jmax), stat = iaerr )
 
               do j=1,jmax
               do i=1-nbx,0
@@ -4967,7 +5002,7 @@ integer(i_kind) g_ind,g,k
               enddo
 
               call MPI_ISEND( sBuf_W, ndatax, dtype, nebpe, mype,       &
-                              mpi_comm_world, sHandle(1), isend)
+                              mpi_comm_comp, sHandle(1), isend)
 
       end if
 
@@ -4976,7 +5011,7 @@ integer(i_kind) g_ind,g,k
       if( itarg_e >= 0 ) then
         nebpe = itarg_e
 
-              allocate( sBuf_E(1:km,1:nbx,1:jmax), stat = iaerr )
+              allocate( sBuf_E(1:km_in,1:nbx,1:jmax), stat = iaerr )
 
               do j=1,jmax
               do i=1,nbx
@@ -4985,7 +5020,7 @@ integer(i_kind) g_ind,g,k
               enddo
 
               call MPI_ISEND( sBuf_E, ndatax, dtype, nebpe, mype,       &
-                              mpi_comm_world, sHandle(2), isend)
+                              mpi_comm_comp, sHandle(2), isend)
 
       end if
 
@@ -4999,9 +5034,9 @@ integer(i_kind) g_ind,g,k
         nebpe = itarg_e
 
 
-          allocate( rBuf_E(1:km,1:nbx,1:jmax), stat = iaerr )
+          allocate( rBuf_E(1:km_in,1:nbx,1:jmax), stat = iaerr )
           call MPI_IRECV( rBuf_E, ndatax, dtype, nebpe, nebpe,          &
-                       mpi_comm_world, rHandle(2), irecv)
+                       mpi_comm_comp, rHandle(2), irecv)
           call MPI_WAIT( rHandle(2), istat, ierr )
 
       end if
@@ -5012,9 +5047,9 @@ integer(i_kind) g_ind,g,k
         nebpe = itarg_w
 
 
-         allocate( rBuf_W(1:km,1:nbx,1:jmax), stat = iaerr )
+         allocate( rBuf_W(1:km_in,1:nbx,1:jmax), stat = iaerr )
           call MPI_IRECV( rBuf_W, ndatax, dtype, nebpe, nebpe,          &
-                       mpi_comm_world, rHandle(1), irecv)
+                       mpi_comm_comp, rHandle(1), irecv)
           call MPI_WAIT( rHandle(1), istat, ierr )
 
 
@@ -5083,7 +5118,7 @@ integer(i_kind) g_ind,g,k
                         endsubroutine bocoTx_2d_g1
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-                        subroutine bocoTx_2d_gh                         &
+                 module       subroutine bocoTx_2d_gh                         &
 !***********************************************************************
 !                                                                      !
 ! Side sending subroutine:                                             !
@@ -5094,17 +5129,17 @@ integer(i_kind) g_ind,g,k
 !                       - offset version -                             !
 !                                                                      !
 !***********************************************************************
-(W,km,im,jm,nbx,nby,Fimax,Fjmax,mygen_min,mygen_max)
+(this,W,km_in,im_in,jm_in,nbx,nby,Fimax_in,Fjmax_in,mygen_min,mygen_max)
 !-----------------------------------------------------------------------
-use mg_domain, only: Flwest,Fleast,Flnorth,Fitarg_w,Fitarg_e                
-!clt use mpi
+use mpi !clt
 
 implicit none
+class(mg_intstate_type),target::this
 
 !-----------------------------------------------------------------------
-integer(i_kind), intent(in):: km,im,jm,nbx,nby,mygen_min,mygen_max
-real(r_kind), dimension(km,1-nbx:im+nbx,1-nby:jm+nby),intent(inout):: W
-integer(i_kind), dimension(gm), intent(in):: Fimax,Fjmax
+integer(i_kind), intent(in):: km_in,im_in,jm_in,nbx,nby,mygen_min,mygen_max
+real(r_kind), dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
+integer(i_kind), dimension(this%gm), intent(in):: Fimax_in,Fjmax_in
 !-----------------------------------------------------------------------
 
 real(r_kind), allocatable, dimension(:,:,:):: sBuf_E,sBuf_W             &
@@ -5119,6 +5154,10 @@ integer(i_kind) ndatax,ndatay
 logical l_sidesend
 integer(i_kind) g_ind,g,k
 !-----------------------------------------------------------------------
+include  "type_parameter_locpointer.inc"
+include "type_intstat_locpointer.inc"
+include  "type_parameter_point2this.inc"
+include "type_intstat_point2this.inc"
 !
 ! Limit comminications to selected number of generations
 !
@@ -5151,19 +5190,19 @@ FILT_GRID:    if(l_sidesend) then
 
 
           if(least) then
-            imax = Fimax(g)
+            imax = Fimax_in(g)
           else 
-            imax = im       !   << Note that is not necesseraly im from
+            imax = im_in       !   << Note that is not necesseraly im from
           endif             !      mg_parameter.  Could be also imL >>>
           if(lnorth) then
-            jmax = Fjmax(g)
+            jmax = Fjmax_in(g)
           else  
-            jmax = jm
+            jmax = jm_in
           endif
 
 
 !----------------------------------------------------------------------
-      ndatax =km*jmax*nbx
+      ndatax =km_in*jmax*nbx
 !
 ! SEND halos toward WEST and EAST
 !
@@ -5173,7 +5212,7 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_w >= 0) then
         nebpe = itarg_w
 
-              allocate( sBuf_W(1:km,1:nbx,1:jmax), stat = iaerr )
+              allocate( sBuf_W(1:km_in,1:nbx,1:jmax), stat = iaerr )
 
               do j=1,jmax
               do i=1-nbx,0
@@ -5191,7 +5230,7 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_e >= 0 ) then
         nebpe = itarg_e
 
-              allocate( sBuf_E(1:km,0:nbx,0:jmax), stat = iaerr )
+              allocate( sBuf_E(1:km_in,0:nbx,0:jmax), stat = iaerr )
 
               do j=1,jmax
               do i=1,nbx
@@ -5213,7 +5252,7 @@ FILT_GRID:    if(l_sidesend) then
       if(  itarg_e >= 0 ) then
         nebpe = itarg_e
 
-          allocate( rBuf_E(1:km,1:nbx,1:jmax), stat = iaerr )
+          allocate( rBuf_E(1:km_in,1:nbx,1:jmax), stat = iaerr )
           call MPI_IRECV( rBuf_E, ndatax, dtype, nebpe, nebpe,          &
                        mpi_comm_work, rHandle(2), irecv)
           call MPI_WAIT( rHandle(2), istat, ierr )
@@ -5225,7 +5264,7 @@ FILT_GRID:    if(l_sidesend) then
       if(  itarg_w >= 0 ) then
         nebpe = itarg_w
 
-          allocate( rBuf_W(1:km,1:nbx,1:jmax), stat = iaerr )
+          allocate( rBuf_W(1:km_in,1:nbx,1:jmax), stat = iaerr )
           call MPI_IRECV( rBuf_W, ndatax, dtype, nebpe, nebpe,          &
                        mpi_comm_work, rHandle(4), irecv)
           call MPI_WAIT( rHandle(4), istat, ierr )
@@ -5298,7 +5337,7 @@ FILT_GRID:    if(l_sidesend) then
                         endsubroutine bocoTx_2d_gh
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-                        subroutine bocoTy_2d_g1                         &
+                     module   subroutine bocoTy_2d_g1                         &
 !***********************************************************************
 !                                                                      !
 ! Side sending subroutine:                                             !
@@ -5309,16 +5348,16 @@ FILT_GRID:    if(l_sidesend) then
 !                       - offset version -                             !
 !                                                                      !
 !***********************************************************************
-(W,km,im,jm,nbx,nby)
+(this,W,km_in,im_in,jm_in,nbx,nby)
 !-----------------------------------------------------------------------
-use mg_domain, only: Flsouth,Flnorth,Fitarg_n,Fitarg_s
-!clt use mpi
+use mpi  !clt
 
 implicit none
 
+class(mg_intstate_type),target::this
 !-----------------------------------------------------------------------
-integer(i_kind), intent(in):: km,im,jm,nbx,nby
-real(r_kind), dimension(km,1-nbx:im+nbx,1-nby:jm+nby),intent(inout):: W
+integer(i_kind), intent(in):: km_in,im_in,jm_in,nbx,nby
+real(r_kind), dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
 !-----------------------------------------------------------------------
 
 real(r_kind), allocatable, dimension(:,:,:):: sBuf_N,sBuf_S             &
@@ -5334,6 +5373,10 @@ integer(i_kind) ndatay
 logical l_sidesend
 integer(i_kind) g_ind,g,k
 !-----------------------------------------------------------------------
+include  "type_parameter_locpointer.inc"
+include "type_intstat_locpointer.inc"
+include  "type_parameter_point2this.inc"
+include "type_intstat_point2this.inc"
 !
 ! Limit comminications to selected number of generations
 !
@@ -5348,12 +5391,12 @@ integer(i_kind) g_ind,g,k
           lsouth  = Flsouth(g_ind)
           lnorth  = Flnorth(g_ind)
 
-          imax = im    
-          jmax = jm
+          imax = im_in    
+          jmax = jm_in
 
 
 !----------------------------------------------------------------------
-      ndatay =km*imax*nby
+      ndatay =km_in*imax*nby
 
 !
 ! SEND SOUTH and NORTH halos
@@ -5363,7 +5406,7 @@ integer(i_kind) g_ind,g,k
       if( itarg_s >= 0 ) then
         nebpe = itarg_s
 
-              allocate( sBuf_S(1:km,1:imax,1:nby), stat = iaerr )
+              allocate( sBuf_S(1:km_in,1:imax,1:nby), stat = iaerr )
 
               do j=1-nby,0
               do i=1,imax
@@ -5372,7 +5415,7 @@ integer(i_kind) g_ind,g,k
               enddo
 
               call MPI_ISEND( sBuf_S, ndatay, dtype, nebpe, mype,  &
-                              mpi_comm_world, sHandle(1), isend)
+                              mpi_comm_comp, sHandle(1), isend)
       end if
 
 ! --- toward NORTH ---
@@ -5380,7 +5423,7 @@ integer(i_kind) g_ind,g,k
       if( itarg_n >= 0 ) then
         nebpe = itarg_n
 
-             allocate( sBuf_N(1:km,1:imax,1:nby), stat = iaerr )
+             allocate( sBuf_N(1:km_in,1:imax,1:nby), stat = iaerr )
 
               do j=1,nby
               do i=1,imax
@@ -5389,7 +5432,7 @@ integer(i_kind) g_ind,g,k
               enddo
 
              call MPI_ISEND( sBuf_N, ndatay, dtype, nebpe, mype,        &
-                             mpi_comm_world, sHandle(2), isend)
+                             mpi_comm_comp, sHandle(2), isend)
 
       end if
 
@@ -5402,9 +5445,9 @@ integer(i_kind) g_ind,g,k
         nebpe = itarg_n
 
 
-          allocate( rBuf_N(1:km,1:imax,1:nby), stat = iaerr )
+          allocate( rBuf_N(1:km_in,1:imax,1:nby), stat = iaerr )
           call MPI_IRECV( rBuf_N, ndatay, dtype, nebpe, nebpe,          &
-                      mpi_comm_world, rHandle(1), irecv)
+                      mpi_comm_comp, rHandle(1), irecv)
           call MPI_WAIT( rHandle(1), istat, ierr )
 
       end if
@@ -5415,9 +5458,9 @@ integer(i_kind) g_ind,g,k
         nebpe = itarg_s
 
 
-          allocate( rBuf_S(1:km,1:imax,1:nby), stat = iaerr )
+          allocate( rBuf_S(1:km_in,1:imax,1:nby), stat = iaerr )
           call MPI_IRECV( rBuf_S, ndatay, dtype, nebpe, nebpe,          &
-                       mpi_comm_world, rHandle(2), irecv)
+                       mpi_comm_comp, rHandle(2), irecv)
           call MPI_WAIT( rHandle(2), istat, ierr )
 
 
@@ -5487,7 +5530,7 @@ integer(i_kind) g_ind,g,k
                         endsubroutine bocoTy_2d_g1
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-                        subroutine bocoTy_2d_gh                         &
+                     module   subroutine bocoTy_2d_gh                         &
 !***********************************************************************
 !                                                                      !
 ! Side sending subroutine:                                             !
@@ -5498,18 +5541,17 @@ integer(i_kind) g_ind,g,k
 !                       - offset version -                             !
 !                                                                      !
 !***********************************************************************
-(W,km,im,jm,nbx,nby,Fimax,Fjmax,mygen_min,mygen_max)
+(this,W,km_in,im_in,jm_in,nbx,nby,Fimax_in,Fjmax_in,mygen_min,mygen_max)
 !-----------------------------------------------------------------------
-use mg_domain, only: Fleast,Flsouth,Flnorth                             &
-                    ,Fitarg_n,Fitarg_s
-!clt use mpi
+use mpi !clt
 
 implicit none
+class(mg_intstate_type),target::this
 
 !-----------------------------------------------------------------------
-integer(i_kind), intent(in):: km,im,jm,nbx,nby,mygen_min,mygen_max
-real(r_kind), dimension(km,1-nbx:im+nbx,1-nby:jm+nby),intent(inout):: W
-integer(i_kind), dimension(gm), intent(in):: Fimax,Fjmax
+integer(i_kind), intent(in):: km_in,im_in,jm_in,nbx,nby,mygen_min,mygen_max
+real(r_kind), dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
+integer(i_kind), dimension(this%gm), intent(in):: Fimax_in,Fjmax_in
 !-----------------------------------------------------------------------
 
 real(r_kind), allocatable, dimension(:,:,:)::  sBuf_N,sBuf_S            &
@@ -5523,6 +5565,10 @@ integer(i_kind) isend,irecv,nebpe
 integer(i_kind) ndatay
 logical l_sidesend
 integer(i_kind) g_ind,g,k
+include  "type_parameter_locpointer.inc"
+include "type_intstat_locpointer.inc"
+include  "type_parameter_point2this.inc"
+include "type_intstat_point2this.inc"
 !-----------------------------------------------------------------------
 !
 ! Limit comminications to selected number of generations
@@ -5556,20 +5602,20 @@ FILT_GRID:    if(l_sidesend) then
 
 
           if(least) then
-            imax = Fimax(g)
+            imax = Fimax_in(g)
           else 
-            imax = im       !   << Note that is not necesseraly im from
+            imax = im_in       !   << Note that is not necesseraly im from
           endif             !      mg_parameter.  Could be also imL >>>
           if(lnorth) then
-            jmax = Fjmax(g)
+            jmax = Fjmax_in(g)
           else  
-            jmax = jm
+            jmax = jm_in
           endif
 
 
 !----------------------------------------------------------------------
 
-      ndatay =km*imax*nby
+      ndatay =km_in*imax*nby
 !
 ! SEND halos toward SOUTH and NORTH
 !
@@ -5578,7 +5624,7 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_s >= 0 ) then
         nebpe = itarg_s
 
-              allocate( sBuf_S(1:km,1:imax,1:nby), stat = iaerr )
+              allocate( sBuf_S(1:km_in,1:imax,1:nby), stat = iaerr )
 
               do j=1-nby,0
               do i=1,imax
@@ -5595,7 +5641,7 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_n >= 0 ) then
         nebpe = itarg_n
 
-             allocate( sBuf_N(1:km,1:imax,1:nby), stat = iaerr )
+             allocate( sBuf_N(1:km_in,1:imax,1:nby), stat = iaerr )
 
               do j=1,nby
               do i=1,imax
@@ -5618,7 +5664,7 @@ FILT_GRID:    if(l_sidesend) then
         nebpe = itarg_n
 
 
-          allocate( rBuf_N(1:km,1:imax,1:nby), stat = iaerr )
+          allocate( rBuf_N(1:km_in,1:imax,1:nby), stat = iaerr )
           call MPI_IRECV( rBuf_N, ndatay, dtype, nebpe, nebpe,          &
                       mpi_comm_work, rHandle(2), irecv)
           call MPI_WAIT( rHandle(2), istat, ierr )
@@ -5631,7 +5677,7 @@ FILT_GRID:    if(l_sidesend) then
         nebpe = itarg_s
 
 
-          allocate( rBuf_S(1:km,1:imax,1:nby), stat = iaerr )
+          allocate( rBuf_S(1:km_in,1:imax,1:nby), stat = iaerr )
           call MPI_IRECV( rBuf_S, ndatay, dtype, nebpe, nebpe,          &
                        mpi_comm_work, rHandle(1), irecv)
           call MPI_WAIT( rHandle(1), istat, ierr )
@@ -5706,4 +5752,4 @@ FILT_GRID:    if(l_sidesend) then
                         endsubroutine bocoTy_2d_gh
 
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-                        endmodule mg_bocos
+                        end submodule mg_bocos

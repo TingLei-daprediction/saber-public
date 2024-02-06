@@ -34,44 +34,19 @@
 !            mg_parameter
 !
 !=============================================================================
-module jp_pbfil
+submodule(mg_parameter)  jp_pbfil
 !=============================================================================
 use mpi
 use kinds, only: dp=>r_kind
 !!!use jp_pkind, only: dp
 use jp_pietc, only: u1
-use mg_parameter, only: p, rmom2_1,rmom2_2,rmom2_3,rmom2_4
 implicit none
-
-private 
-
-public cholaspect
-interface cholaspect
-   module procedure cholaspect1,cholaspect2,cholaspect3,cholaspect4
-end interface
-
-public getlinesum
-interface getlinesum
-   module procedure getlinesum1,getlinesum2,getlinesum3
-end interface
-
-public rbeta
-interface rbeta
-   module procedure rbeta1, rbeta2, rbeta3, rbeta4,    &
-                   vrbeta1,vrbeta2,vrbeta3,vrbeta4                 
-end interface
-
-public rbetaT
-interface rbetaT
-   module procedure rbeta1t, rbeta2t, rbeta3t, rbeta4t, &
-                   vrbeta1t,vrbeta2t,vrbeta3t,vrbeta4t
-end interface
 
 
 contains
 
 !=============================================================================
-subroutine cholaspect1(lx,mx, el)                              !  [cholaspect]
+module subroutine cholaspect1(lx,mx, el)                              !  [cholaspect]
 !=============================================================================
 ! Convert the given field, el, of aspect tensors into the equivalent
 ! field
@@ -87,7 +62,7 @@ integer :: ix
 do ix=lx,mx; el(1,1,ix)=u1/sqrt(el(1,1,ix)); enddo
 end subroutine cholaspect1
 !=============================================================================
-subroutine cholaspect2(lx,mx, ly,my, el)                        !  [cholaspect]
+module subroutine cholaspect2(lx,mx, ly,my, el)                        !  [cholaspect]
 !=============================================================================
 ! Convert the given field, el, of aspect tensors into the equivalent
 ! field
@@ -106,7 +81,7 @@ do iy=ly,my; do ix=lx,mx
 enddo;       enddo
 end subroutine cholaspect2
 !=============================================================================
-subroutine cholaspect3(lx,mx, ly,my, lz,mz, el)                 !  [cholaspect]
+module subroutine cholaspect3(lx,mx, ly,my, lz,mz, el)                 !  [cholaspect]
 !=============================================================================
 ! Convert the given field, el, of aspect tensors into the equivalent
 ! field
@@ -125,7 +100,7 @@ do iz=lz,mz; do iy=ly,my; do ix=lx,mx
 enddo;       enddo;       enddo
 end subroutine cholaspect3
 !=============================================================================
-subroutine cholaspect4(lx,mx, ly,my, lz,mz, lw,mw,el)           !  [cholaspect]
+module subroutine cholaspect4(lx,mx, ly,my, lz,mz, lw,mw,el)           !  [cholaspect]
 !=============================================================================
 ! Convert the given field, el, of aspect tensors into the equivalent
 ! field
@@ -146,7 +121,7 @@ enddo;       enddo;       enddo;       enddo
 end subroutine cholaspect4
 
 !=============================================================================
-subroutine getlinesum1(hx,lx,mx, el, ss)                       !  [getlinesum]
+module subroutine getlinesum1(this,hx,lx,mx, el, ss)                       !  [getlinesum]
 !=============================================================================
 ! Get inverse of the line-sum of the matrix representing the
 ! unnormalized
@@ -155,6 +130,7 @@ subroutine getlinesum1(hx,lx,mx, el, ss)                       !  [getlinesum]
 ! so it can be used subsequently in the normalized version of this
 ! filter.
 !=============================================================================
+        class(mg_parameter_type)::this
 integer,                  intent(in   ):: hx,Lx,mx
 real(dp),dimension(1,1,Lx:Mx),intent(in   ):: el
 real(dp),dimension(lx:mx),intent(  out):: ss
@@ -165,7 +141,7 @@ integer           :: ix,gxl,gxm,gx
 !=============================================================================
 do ix=Lx,Mx
    s=0
-   exx=el(1,1,ix)*rmom2_1
+   exx=el(1,1,ix)*this%rmom2_1
    x=u1/exx
    gxl=ceiling(-x+eps); gxm=floor( x-eps)
    if(gxl<-hx.or.gxm>hx)&
@@ -173,14 +149,15 @@ do ix=Lx,Mx
    do gx=gxl,gxm
       x=gx
       rr=(x*exx)**2; rrc=u1-rr
-      s=s+rrc**p
+      s=s+rrc**this%p
    enddo
    ss(ix)=u1/s
 enddo
 end subroutine getlinesum1
 !=============================================================================
-subroutine getlinesum2(hx,lx,mx, hy,ly,my, el, ss)             !  [getlinesum]
+module subroutine getlinesum2(this,hx,lx,mx, hy,ly,my, el, ss)             !  [getlinesum]
 !=============================================================================
+        class(mg_parameter_type)::this
 integer,                            intent(in   ):: hx,Lx,mx, &
                                                     hy,ly,my
 real(dp),dimension(2,2,Lx:Mx,Ly:My),intent(in   ):: el
@@ -194,7 +171,7 @@ integer                :: iy,gy,gyl,gym
 !=============================================================================
 do iy=Ly,My; do ix=Lx,Mx
    s=0
-   tel=el(:,:,ix,iy)*rmom2_2 ! This el, rescaled
+   tel=el(:,:,ix,iy)*this%rmom2_2 ! This el, rescaled
    exx=tel(1,1); eyy=tel(2,2)
    eyx=tel(2,1)
    y=u1/eyy
@@ -210,15 +187,16 @@ do iy=Ly,My; do ix=Lx,Mx
       do gx=gxl,gxm
          x=gx
          rr=rrx+(x*exx-xc)**2; rrc=u1-rr
-         s=s+rrc**p
+         s=s+rrc**this%p
       enddo! gx
    enddo! gy
    ss(ix,iy)=u1/s
 enddo;  enddo! ix, iy
 end subroutine getlinesum2
 !=============================================================================
-subroutine getlinesum3(hx,lx,mx, hy,ly,my, hz,lz,mz, el, ss)!     [getlinesum]
+module subroutine getlinesum3(this,hx,lx,mx, hy,ly,my, hz,lz,mz, el, ss)!     [getlinesum]
 !=============================================================================
+        class(mg_parameter_type)::this
 integer,                                  intent(in   ):: hx,Lx,mx, &
                                                           hy,ly,my, &
                                                           hz,lz,mz
@@ -236,7 +214,7 @@ integer                :: iz,gz,gzl,gzm
 ss=0
 do iz=Lz,Mz; do iy=Ly,My; do ix=Lx,Mx
    s=0
-   tel=el(:,:,ix,iy,iz)*rmom2_3
+   tel=el(:,:,ix,iy,iz)*this%rmom2_3
    exx=tel(1,1); eyy=tel(2,2); ezz=tel(3,3)
    eyx=tel(2,1); ezx=tel(3,1)
    ezy=tel(3,2)
@@ -259,7 +237,7 @@ do iz=Lz,Mz; do iy=Ly,My; do ix=Lx,Mx
          do gx=gxl,gxm
             x=gx
             rr=rrx+(x*exx-xc)**2; rrc=u1-rr
-            s=s+rrc**p
+            s=s+rrc**this%p
          enddo! gx
       enddo! gy
    enddo! gz
@@ -267,9 +245,10 @@ do iz=Lz,Mz; do iy=Ly,My; do ix=Lx,Mx
 enddo; enddo; enddo! ix, iy, iz
 end subroutine getlinesum3
 !=============================================================================
-subroutine getlinesum4(hx,lx,mx, hy,ly,my, hz,lz,mz, hw,lw,mw, &
+module subroutine getlinesum4(this,hx,lx,mx, hy,ly,my, hz,lz,mz, hw,lw,mw, &
      el, ss)                                                   !  [getlinesum]
 !=============================================================================
+        class(mg_parameter_type)::this
 integer,                                  intent(in   ):: hx,Lx,mx, &
                                                           hy,ly,my, &
                                                           hz,lz,mz, &
@@ -290,7 +269,7 @@ integer                :: iw,gw,gwl,gwm
 ss=0
 do iw=Lw,Mw; do iz=Lz,Mz; do iy=Ly,My; do ix=Lx,Mx
    s=0
-   tel=el(:,:,ix,iy,iz,iw)*rmom2_4
+   tel=el(:,:,ix,iy,iz,iw)*this%rmom2_4
    exx=tel(1,1); eyy=tel(2,2); ezz=tel(3,3); eww=tel(4,4)
    eyx=tel(2,1); ezx=tel(3,1); ewx=tel(4,1)
    ezy=tel(3,2); ewy=tel(4,2)
@@ -320,7 +299,7 @@ do iw=Lw,Mw; do iz=Lz,Mz; do iy=Ly,My; do ix=Lx,Mx
             do gx=gxl,gxm
                x=gx
                rr=rrx+(x*exx-xc)**2; rrc=u1-rr
-               s=s+rrc**p
+               s=s+rrc**this%p
             enddo! gx
          enddo! gy
       enddo! gz
@@ -330,7 +309,7 @@ enddo;  enddo;  enddo;  enddo! ix, iy, iz, iw
 end subroutine getlinesum4
 
 !=============================================================================
-subroutine rbeta1(hx,lx,mx, el,ss, a)                               !  [rbeta]
+module subroutine rbeta1(this,hx,lx,mx, el,ss, a)                               !  [rbeta]
 !=============================================================================
 ! Perform a radial beta-function filter in 1D.
 ! It averages the surrounding density values, and so preserves the value
@@ -341,6 +320,7 @@ subroutine rbeta1(hx,lx,mx, el,ss, a)                               !  [rbeta]
 ! The output data occupy the central region
 ! Lx <= ix <= Mx.
 !=============================================================================
+        class(mg_parameter_type)::this
 integer,                        intent(in   ):: hx,Lx,mx
 real(dp),dimension(   Lx:Mx),   intent(in   ):: el
 real(dp),dimension(   Lx:Mx),   intent(in   ):: ss
@@ -354,12 +334,12 @@ integer                        :: ix,jx,gx
 b=0
 do ix=Lx,Mx
    tb=0; s=ss(ix)
-   exx=el(ix)*rmom2_1
+   exx=el(ix)*this%rmom2_1
    x=u1/exx
    do gx=ceiling(-x+eps),floor( x-eps)
       jx=ix+gx;      x=gx
       rr=(x*exx)**2; rrc=u1-rr
-      frow=s*rrc**p
+      frow=s*rrc**this%p
       tb=tb+frow*a(jx)
    enddo
    b(ix)=tb
@@ -367,7 +347,7 @@ enddo
 a=b
 end subroutine rbeta1
 !=============================================================================
-subroutine rbeta2(hx,lx,mx, hy,ly,my, el,ss, a)                     !  [rbeta]
+module subroutine rbeta2(this,hx,lx,mx, hy,ly,my, el,ss, a)                     !  [rbeta]
 !=============================================================================
 ! Perform a radial beta-function filter in 2D.
 ! It averages the surrounding density values, and so preserves the value
@@ -378,6 +358,7 @@ subroutine rbeta2(hx,lx,mx, hy,ly,my, el,ss, a)                     !  [rbeta]
 ! The output data occupy the central region
 ! Lx <= ix <= Mx, Ly <= iy <= My.
 !=============================================================================
+        class(mg_parameter_type)::this
 integer,                                    intent(in   ):: hx,Lx,mx, &
                                                             hy,ly,my
 real(dp),dimension(2,2,Lx:Mx,Ly:My),        intent(in   ):: el
@@ -395,7 +376,7 @@ integer                                    :: iy,jy,gy
 b=0
 do iy=Ly,My; do ix=Lx,Mx
    tb=0; s=ss(ix,iy)
-   tel=el(:,:,ix,iy)*rmom2_2 ! This el, rescaled
+   tel=el(:,:,ix,iy)*this%rmom2_2 ! This el, rescaled
    exx=tel(1,1); eyy=tel(2,2)
    eyx=tel(2,1)
    y=u1/eyy
@@ -405,7 +386,7 @@ do iy=Ly,My; do ix=Lx,Mx
       do gx=ceiling((xc-x)/exx+eps),floor((xc+x)/exx-eps)
          jx=ix+gx; x=gx
          rr=rrx+(x*exx-xc)**2; rrc=u1-rr
-         frow=s*rrc**p
+         frow=s*rrc**this%p
          tb=tb+frow*a(jx,jy)
       enddo! gx
    enddo! gy
@@ -414,7 +395,7 @@ enddo; enddo! ix, iy
 a=b
 end subroutine rbeta2
 !=============================================================================
-subroutine rbeta3(hx,lx,mx, hy,ly,my, hz,lz,mz, el,ss,a)            !  [rbeta]
+module subroutine rbeta3(this,hx,lx,mx, hy,ly,my, hz,lz,mz, el,ss,a)            !  [rbeta]
 !=============================================================================
 ! Perform a radial beta-function filter in 3D.
 ! It averages the surrounding density values, and so preserves the value
@@ -425,6 +406,7 @@ subroutine rbeta3(hx,lx,mx, hy,ly,my, hz,lz,mz, el,ss,a)            !  [rbeta]
 ! The output data occupy the central region
 ! Lx <= ix <= Mx, Ly <= iy <= My, Lz <= iz <= Mz.
 !=============================================================================
+        class(mg_parameter_type)::this
 integer,                                   intent(in   ):: hx,Lx,mx,&
                                                            hy,ly,my,&
                                                            hz,lz,mz
@@ -445,7 +427,7 @@ integer :: iz,jz,gz
 b=0
 do iz=Lz,Mz; do iy=Ly,My; do ix=Lx,Mx
    tb=0; s=ss(ix,iy,iz)
-   tel=el(:,:,ix,iy,iz)*rmom2_3
+   tel=el(:,:,ix,iy,iz)*this%rmom2_3
    exx=tel(1,1); eyy=tel(2,2); ezz=tel(3,3)
    eyx=tel(2,1); ezx=tel(3,1); ezy=tel(3,2)
    z=u1/ezz
@@ -458,7 +440,7 @@ do iz=Lz,Mz; do iy=Ly,My; do ix=Lx,Mx
          do gx=ceiling((xc-x)/exx+eps),floor((xc+x)/exx-eps)
             jx=ix+gx; x=gx
             rr=rrx+(x*exx-xc)**2; rrc=u1-rr
-            frow=s*rrc**p
+            frow=s*rrc**this%p
             tb=tb+frow*a(jx,jy,jz)
          enddo! gx
       enddo! gy
@@ -468,7 +450,7 @@ enddo;   enddo;    enddo! ix, iy, iz
 a=b
 end subroutine rbeta3
 !=============================================================================
-subroutine rbeta4(hx,lx,mx, hy,ly,my, hz,lz,mz, hw,lw,mw, el,ss,a)!    [rbeta]
+module subroutine rbeta4(this,hx,lx,mx, hy,ly,my, hz,lz,mz, hw,lw,mw, el,ss,a)!    [rbeta]
 !=============================================================================
 ! Perform a radial beta-function filter in 4D.
 ! It averages the surrounding density values, and so preserves the value
@@ -480,6 +462,7 @@ subroutine rbeta4(hx,lx,mx, hy,ly,my, hz,lz,mz, hw,lw,mw, el,ss,a)!    [rbeta]
 ! The output data occupy the central region
 ! Lx <= ix <= Mx, Ly <= iy <= My, Lz <= iz <= Mz, Lw <= iw <= Mw.
 !=============================================================================
+        class(mg_parameter_type)::this
 integer,                                        intent(in   ):: hx,Lx,mx,&
                                                                 hy,ly,my,&
                                                                 hz,lz,mz,&
@@ -503,7 +486,7 @@ integer :: iw,jw,gw
 b=0
 do iw=lw,mw; do iz=Lz,Mz; do iy=Ly,My; do ix=Lx,Mx
    tb=0; s=ss(ix,iy,iz,iw)
-   tel=el(:,:,ix,iy,iz,iw)*rmom2_4
+   tel=el(:,:,ix,iy,iz,iw)*this%rmom2_4
    exx=tel(1,1); eyy=tel(2,2); ezz=tel(3,3); eww=tel(4,4)
    eyx=tel(2,1); ezx=tel(3,1); ewx=tel(4,1)
    ezy=tel(3,2); ewy=tel(4,2)
@@ -521,7 +504,7 @@ do iw=lw,mw; do iz=Lz,Mz; do iy=Ly,My; do ix=Lx,Mx
             do gx=ceiling((xc-x)/exx+eps),floor((xc+x)/exx-eps)
                jx=ix+gx; x=gx
                rr=rrx+(x*exx-xc)**2; rrc=u1-rr
-               frow=s*rrc**p
+               frow=s*rrc**this%p
                tb=tb+frow*a(jx,jy,jz,jw)
             enddo! gx
          enddo! gy
@@ -535,11 +518,12 @@ end subroutine rbeta4
 !=============================================================================
 ! Vector versions of the above routines:
 !=============================================================================
-subroutine vrbeta4(nv,hx,lx,mx, hy,ly,my, hz,lz,mz, hw,lw,mw, &
+module subroutine vrbeta4(this,nv,hx,lx,mx, hy,ly,my, hz,lz,mz, hw,lw,mw, &
      el,ss,a)                                                       !  [rbeta]
 !=============================================================================
 ! Vector version of rbeta4 filtering nv fields at once.
 !=============================================================================
+        class(mg_parameter_type)::this
 integer,                                       intent(in   ):: nv, &
                                                                hx,Lx,mx,&
                                                                hy,ly,my,&
@@ -566,7 +550,7 @@ integer :: iw,jw,gw
 b=0
 do iw=lw,mw; do iz=Lz,Mz; do iy=Ly,My; do ix=Lx,Mx
    tb=0; s=ss(ix,iy,iz,iw)
-   tel=el(:,:,ix,iy,iz,iw)*rmom2_4
+   tel=el(:,:,ix,iy,iz,iw)*this%rmom2_4
    exx=tel(1,1); eyy=tel(2,2); ezz=tel(3,3); eww=tel(4,4)
    eyx=tel(2,1); ezx=tel(3,1); ewx=tel(4,1)
    ezy=tel(3,2); ewy=tel(4,2)
@@ -584,7 +568,7 @@ do iw=lw,mw; do iz=Lz,Mz; do iy=Ly,My; do ix=Lx,Mx
             do gx=ceiling((xc-x)/exx+eps),floor((xc+x)/exx-eps)
                jx=ix+gx; x=gx
                rr=rrx+(x*exx-xc)**2; rrc=u1-rr
-               frow=s*rrc**p
+               frow=s*rrc**this%p
                tb=tb+frow*a(:,jx,jy,jz,jw)
             enddo! gx
          enddo! gy
@@ -596,7 +580,7 @@ a=b
 end subroutine vrbeta4
 
 !=============================================================================
-subroutine rbeta1T(hx,lx,mx, el,ss, a)                             !  [rbetat]
+module subroutine rbeta1T(this,hx,lx,mx, el,ss, a)                             !  [rbetat]
 !=============================================================================
 ! Perform an ADJOINT radial beta-function filter in 1D.
 ! It conserves "masses" initially distributed only at the closure of 
@@ -606,6 +590,7 @@ subroutine rbeta1T(hx,lx,mx, el,ss, a)                             !  [rbetat]
 ! the extended domain, 
 ! Lx-hx <= jx <= mx+hx.
 !=============================================================================
+        class(mg_parameter_type)::this
 integer,                        intent(in   ):: hx,Lx,mx
 real(dp),dimension(1,1,Lx:Mx),  intent(in   ):: el
 real(dp),dimension(  Lx:Mx),    intent(in   ):: ss
@@ -619,19 +604,19 @@ integer                        :: ix,jx,gx
 b=0
 do ix=Lx,Mx
    ta=a(ix); s=ss(ix)
-   exx=el(1,1,ix)*rmom2_1
+   exx=el(1,1,ix)*this%rmom2_1
    x=u1/exx
    do gx=ceiling(-x+eps),floor( x-eps)
       jx=ix+gx;      x=gx
       rr=(x*exx)**2; rrc=u1-rr
-      frow=s*rrc**p
+      frow=s*rrc**this%p
       b(jx)=b(jx)+frow*ta
    enddo
 enddo
 a=b
 end subroutine rbeta1t
 !=============================================================================
-subroutine rbeta2T(hx,lx,mx, hy,ly,my, el,ss, a)                   !  [rbetat]
+module subroutine rbeta2T(this,hx,lx,mx, hy,ly,my, el,ss, a)                   !  [rbetat]
 !=============================================================================
 ! Perform an ADJOINT radial beta-function filter in 2D.
 ! It conserved "masses" initially distributed only at the closure of 
@@ -641,6 +626,7 @@ subroutine rbeta2T(hx,lx,mx, hy,ly,my, el,ss, a)                   !  [rbetat]
 ! the extended domain, 
 ! Lx-hx <= jx <= mx+hx, Ly-hy <= Jy <= my+hy
 !=============================================================================
+        class(mg_parameter_type)::this
 integer,                                    intent(in   ):: hx,Lx,mx, &
                                                             hy,ly,my
 real(dp),dimension(2,2,Lx:Mx,Ly:My),        intent(in   ):: el
@@ -658,7 +644,7 @@ integer                                    :: iy,jy,gy
 b=0
 do iy=Ly,My; do ix=Lx,Mx
    ta=a(ix,iy); s=ss(ix,iy)
-   tel=el(:,:,ix,iy)*rmom2_2 ! This el, rescaled
+   tel=el(:,:,ix,iy)*this%rmom2_2 ! sThis el, rescaled
    exx=tel(1,1); eyy=tel(2,2)
    eyx=tel(2,1)
    y=u1/eyy
@@ -668,7 +654,7 @@ do iy=Ly,My; do ix=Lx,Mx
       do gx=ceiling((xc-x)/exx+eps),floor((xc+x)/exx-eps)
          jx=ix+gx; x=gx
          rr=rrx+(x*exx-xc)**2; rrc=u1-rr
-         frow=s*rrc**p
+         frow=s*rrc**this%p
          b(jx,jy)=b(jx,jy)+frow*ta
       enddo! gx 
    enddo! gy
@@ -676,7 +662,7 @@ enddo;  enddo! ix, iy
 a=b
 end subroutine rbeta2t
 !=============================================================================
-subroutine rbeta3T(hx,lx,mx, hy,ly,my, hz,lz,mz, el,ss, a)         !  [rbetat]
+module subroutine rbeta3T(this,hx,lx,mx, hy,ly,my, hz,lz,mz, el,ss, a)         !  [rbetat]
 !=============================================================================
 ! Perform an ADJOINT radial beta-function filter in 3D.
 ! It conserves "masses" initially distributed only at the closure of 
@@ -686,6 +672,7 @@ subroutine rbeta3T(hx,lx,mx, hy,ly,my, hz,lz,mz, el,ss, a)         !  [rbetat]
 ! the extended domain, 
 ! Lx-hx <= jx <= Mx+hx, Ly-hy <= Jy <= My+hy, Lz-hz <= Jz <= Mz+hz.
 !=============================================================================
+        class(mg_parameter_type)::this
 integer,                                    intent(in   ):: hx,Lx,mx,&
                                                             hy,ly,my,&
                                                             hz,lz,mz
@@ -706,7 +693,7 @@ integer :: iz,jz,gz
 b=0
 do iz=Lz,Mz; do iy=Ly,My; do ix=Lx,Mx
    ta=a(ix,iy,iz); s=ss(ix,iy,iz)
-   tel=el(:,:,ix,iy,iz)*rmom2_3
+   tel=el(:,:,ix,iy,iz)*this%rmom2_3
    exx=tel(1,1); eyy=tel(2,2); ezz=tel(3,3)
    eyx=tel(2,1); ezx=tel(3,1); ezy=tel(3,2)
    z=u1/ezz
@@ -719,7 +706,7 @@ do iz=Lz,Mz; do iy=Ly,My; do ix=Lx,Mx
          do gx=ceiling((xc-x)/exx+eps),floor((xc+x)/exx-eps)
             jx=ix+gx; x=gx
             rr=rrx+(x*exx-xc)**2; rrc=u1-rr
-            frow=s*rrc**p
+            frow=s*rrc**this%p
             b(jx,jy,jz)=b(jx,jy,jz)+frow*ta
          enddo! gx
       enddo! gy
@@ -728,7 +715,7 @@ enddo;  enddo;  enddo ! ix, iy, iz
 a=b
 end subroutine rbeta3t
 !=============================================================================
-subroutine rbeta4T(hx,lx,mx, hy,ly,my, hz,lz,mz, hw,lw,mw, &
+module subroutine rbeta4T(this,hx,lx,mx, hy,ly,my, hz,lz,mz, hw,lw,mw, &
      el,ss, a)                                                   !  [rbetat]
 !=============================================================================
 ! Perform an ADJOINT radial beta-function filter in 4D.
@@ -740,6 +727,7 @@ subroutine rbeta4T(hx,lx,mx, hy,ly,my, hz,lz,mz, hw,lw,mw, &
 ! Lx-hx <= jx <= Mx+hx, Ly-hy <= Jy <= My+hy, Lz-hz <= Jz <= Mz+hz, 
 !     Lw-hw <= Jw <= Mw+hw.
 !=============================================================================
+        class(mg_parameter_type)::this
 integer,                                        intent(in   ):: hx,Lx,mx,&
                                                                 hy,ly,my,&
                                                                 hz,lz,mz,&
@@ -763,7 +751,7 @@ integer :: iw,jw,gw
 b=0
 do iw=Lw,Mw; do iz=Lz,Mz; do iy=Ly,My; do ix=Lx,Mx
    ta=a(ix,iy,iz,iw); s=ss(ix,iy,iz,iw)
-   tel=el(:,:,ix,iy,iz,iw)*rmom2_4
+   tel=el(:,:,ix,iy,iz,iw)*this%rmom2_4
    exx=tel(1,1); eyy=tel(2,2); ezz=tel(3,3); eww=tel(4,4)
    eyx=tel(2,1); ezx=tel(3,1); ewx=tel(4,1)
    ezy=tel(3,2); ewy=tel(4,2)
@@ -781,7 +769,7 @@ do iw=Lw,Mw; do iz=Lz,Mz; do iy=Ly,My; do ix=Lx,Mx
             do gx=ceiling((xc-x)/exx+eps),floor((xc+x)/exx-eps)
                jx=ix+gx; x=gx
                rr=rrx+(x*exx-xc)**2; rrc=u1-rr
-               frow=s*rrc**p
+               frow=s*rrc**this%p
                b(jx,jy,jz,jw)=b(jx,jy,jz,jw)+frow*ta
             enddo! gx
          enddo! gy
@@ -793,11 +781,12 @@ end subroutine rbeta4t
 
 
 !=============================================================================
-subroutine vrbeta4t(nv,hx,lx,mx, hy,ly,my, hz,lz,mz, &
+module subroutine vrbeta4t(this,nv,hx,lx,mx, hy,ly,my, hz,lz,mz, &
                                               hw,lw,mw, el,ss, a)!    [rbetat]
 !=============================================================================
 ! Vector version of rbeta4t filtering nv fields at once.
 !=============================================================================
+        class(mg_parameter_type)::this
 integer,                                        intent(in   ):: nv, &
                                                                 hx,Lx,mx,&
                                                                 hy,ly,my,&
@@ -823,7 +812,7 @@ integer :: iw,jw,gw
 b=0
 do iw=Lw,Mw; do iz=Lz,Mz; do iy=Ly,My; do ix=Lx,Mx
    ta=a(:,ix,iy,iz,iw); s=ss(ix,iy,iz,iw)
-   tel=el(:,:,ix,iy,iz,iw)*rmom2_4
+   tel=el(:,:,ix,iy,iz,iw)*this%rmom2_4
    exx=tel(1,1); eyy=tel(2,2); ezz=tel(3,3); eww=tel(4,4)
    eyx=tel(2,1); ezx=tel(3,1); ewx=tel(4,1)
    ezy=tel(3,2); ewy=tel(4,2)
@@ -841,7 +830,7 @@ do iw=Lw,Mw; do iz=Lz,Mz; do iy=Ly,My; do ix=Lx,Mx
             do gx=ceiling((xc-x)/exx+eps),floor((xc+x)/exx-eps)
                jx=ix+gx; x=gx
                rr=rrx+(x*exx-xc)**2; rrc=u1-rr
-               frow=s*rrc**p
+               frow=s*rrc**this%p
                b(:,jx,jy,jz,jw)=b(:,jx,jy,jz,jw)+frow*ta
             enddo! gx
          enddo! gy
@@ -853,10 +842,11 @@ end subroutine vrbeta4t
 
 ! Vector versions of the above routines:
 !=============================================================================
-subroutine vrbeta1(nv,hx,lx,mx, el,ss, a)                           !  [rbeta]
+module subroutine vrbeta1(this,nv,hx,lx,mx, el,ss, a)                           !  [rbeta]
 !=============================================================================
 ! Vector version of rbeta1 filtering nv fields at once.
 !=============================================================================
+        class(mg_parameter_type)::this
 integer,                           intent(in   ):: nv,hx,Lx,mx
 real(dp),dimension(1,1, Lx:Mx),    intent(in   ):: el
 real(dp),dimension(   Lx:Mx),      intent(in   ):: ss
@@ -871,12 +861,12 @@ integer                           :: ix,jx,gx
 b=0
 do ix=Lx,Mx
    tb=0; s=ss(ix)
-   exx=el(1,1,ix)*rmom2_1
+   exx=el(1,1,ix)*this%rmom2_1
    x=u1/exx
    do gx=ceiling(-x+eps),floor( x-eps)
       jx=ix+gx;      x=gx
       rr=(x*exx)**2; rrc=u1-rr
-      frow=s*rrc**p
+      frow=s*rrc**this%p
       tb=tb+frow*a(:,jx)
    enddo
    b(:,ix)=tb
@@ -885,10 +875,11 @@ a=b
 end subroutine vrbeta1
 
 !=============================================================================
-subroutine vrbeta2(nv,hx,lx,mx, hy,ly,my, el,ss, a)                 !  [rbeta]
+module subroutine vrbeta2(this,nv,hx,lx,mx, hy,ly,my, el,ss, a)                 !  [rbeta]
 !=============================================================================
 ! Vector version of rbeta2 filtering nv fields at once.
 !=============================================================================
+        class(mg_parameter_type)::this
 integer,                                       intent(in   ):: nv, &
                                                                hx,Lx,mx, &
                                                                hy,ly,my
@@ -908,7 +899,7 @@ integer                                    :: iy,jy,gy
 b=0
 do iy=Ly,My; do ix=Lx,Mx
    tb=0; s=ss(ix,iy)
-   tel=el(:,:,ix,iy)*rmom2_2 ! This el, rescaled
+   tel=el(:,:,ix,iy)*this%rmom2_2 ! This el, rescaled
    exx=tel(1,1); eyy=tel(2,2)
    eyx=tel(2,1)
    y=u1/eyy
@@ -918,7 +909,7 @@ do iy=Ly,My; do ix=Lx,Mx
       do gx=ceiling((xc-x)/exx+eps),floor((xc+x)/exx-eps)
          jx=ix+gx; x=gx
          rr=rrx+(x*exx-xc)**2; rrc=u1-rr
-         frow=s*rrc**p
+         frow=s*rrc**this%p
          tb=tb+frow*a(:,jx,jy)
       enddo! gx
    enddo! gy
@@ -927,10 +918,11 @@ enddo;   enddo! ix, iy
 a=b
 end subroutine vrbeta2
 
-subroutine vrbeta3(nv, hx,lx,mx, hy,ly,my, hz,lz,mz, el,ss,a)       !  [rbeta]
+module subroutine vrbeta3(this,nv, hx,lx,mx, hy,ly,my, hz,lz,mz, el,ss,a)       !  [rbeta]
 !=============================================================================
 ! Vector version of rbeta3 filtering nv fields at once.
 !=============================================================================
+        class(mg_parameter_type)::this
 integer,                                       intent(in   ):: nv, &
                                                                hx,Lx,mx,&
                                                                hy,ly,my,&
@@ -953,7 +945,7 @@ integer :: iz,jz,gz
 b=0
 do iz=Lz,Mz; do iy=Ly,My; do ix=Lx,Mx
    tb=0; s=ss(ix,iy,iz)
-   tel=el(:,:,ix,iy,iz)*rmom2_3
+   tel=el(:,:,ix,iy,iz)*this%rmom2_3
    exx=tel(1,1); eyy=tel(2,2); ezz=tel(3,3)
    eyx=tel(2,1); ezx=tel(3,1); ezy=tel(3,2)
    z=u1/ezz
@@ -966,7 +958,7 @@ do iz=Lz,Mz; do iy=Ly,My; do ix=Lx,Mx
          do gx=ceiling((xc-x)/exx+eps),floor((xc+x)/exx-eps)
             jx=ix+gx; x=gx
             rr=rrx+(x*exx-xc)**2; rrc=u1-rr
-            frow=s*rrc**p
+            frow=s*rrc**this%p
             tb=tb+frow*a(:,jx,jy,jz)
          enddo! gx
       enddo! gy
@@ -978,10 +970,11 @@ end subroutine vrbeta3
 
 ! Vector versions of the above routines:
 !=============================================================================
-subroutine vrbeta1T(nv, hx,lx,mx, el,ss, a)                        !  [rbetat]
+module subroutine vrbeta1T(this,nv, hx,lx,mx, el,ss, a)                        !  [rbetat]
 !=============================================================================
 ! Vector version of rbeta1t filtering nv fields at once.
 !=============================================================================
+        class(mg_parameter_type)::this
 integer,                           intent(in   ):: nv,hx,Lx,mx
 real(dp),dimension(1,1,Lx:Mx),     intent(in   ):: el
 real(dp),dimension(   Lx:Mx),      intent(in   ):: ss
@@ -996,22 +989,23 @@ integer                           :: ix,jx,gx
 b=0
 do ix=Lx,Mx
    ta=a(:,ix); s=ss(ix)
-   exx=el(1,1,ix)*rmom2_1
+   exx=el(1,1,ix)*this%rmom2_1
    x=u1/exx
    do gx=ceiling(-x+eps),floor( x-eps)
       jx=ix+gx;      x=gx
       rr=(x*exx)**2; rrc=u1-rr
-      frow=s*rrc**p
+      frow=s*rrc**this%p
       b(:,jx)=b(:,jx)+frow*ta
    enddo
 enddo
 a=b
 end subroutine vrbeta1t
 !=============================================================================
-subroutine vrbeta2T(nv,hx,lx,mx, hy,ly,my, el,ss, a)               !  [rbetat]
+module subroutine vrbeta2T(this,nv,hx,lx,mx, hy,ly,my, el,ss, a)               !  [rbetat]
 !=============================================================================
 ! Vector version of rbeta2t filtering nv fields at once.
 !=============================================================================
+        class(mg_parameter_type)::this
 integer,                                       intent(in   ):: nv, &
                                                                hx,Lx,mx, &
                                                                hy,ly,my
@@ -1031,7 +1025,7 @@ integer                                       :: iy,jy,gy
 b=0
 do iy=Ly,My; do ix=Lx,Mx
    ta=a(:,ix,iy); s=ss(ix,iy)
-   tel=el(:,:,ix,iy)*rmom2_2 ! This el, rescaled
+   tel=el(:,:,ix,iy)*this%rmom2_2 ! This el, rescaled
    exx=tel(1,1); eyy=tel(2,2)
    eyx=tel(2,1)
    y=u1/eyy
@@ -1041,7 +1035,7 @@ do iy=Ly,My; do ix=Lx,Mx
       do gx=ceiling((xc-x)/exx+eps),floor((xc+x)/exx-eps)
          jx=ix+gx; x=gx
          rr=rrx+(x*exx-xc)**2; rrc=u1-rr
-         frow=s*rrc**p
+         frow=s*rrc**this%p
          b(:,jx,jy)=b(:,jx,jy)+frow*ta
       enddo! gx
    enddo! gy
@@ -1050,10 +1044,11 @@ a=b
 end subroutine vrbeta2t
 
 !=============================================================================
-subroutine vrbeta3T(nv,hx,lx,mx, hy,ly,my, hz,lz,mz, el,ss, a)     !  [rbetat]
+module subroutine vrbeta3T(this,nv,hx,lx,mx, hy,ly,my, hz,lz,mz, el,ss, a)     !  [rbetat]
 !=============================================================================
 ! Vector version of rbeta3t filtering nv fields at once.
 !=============================================================================
+        class(mg_parameter_type)::this
 integer,                                    intent(in   ):: nv,      &
                                                             hx,Lx,mx,&
                                                             hy,ly,my,&
@@ -1077,7 +1072,7 @@ integer :: iz,jz,gz
 b=0
 do iz=Lz,Mz; do iy=Ly,My; do ix=Lx,Mx
    ta=a(:,ix,iy,iz); s=ss(ix,iy,iz)
-   tel=el(:,:,ix,iy,iz)*rmom2_3
+   tel=el(:,:,ix,iy,iz)*this%rmom2_3
    exx=tel(1,1); eyy=tel(2,2); ezz=tel(3,3)
    eyx=tel(2,1); ezx=tel(3,1); ezy=tel(3,2)
    z=u1/ezz
@@ -1090,7 +1085,7 @@ do iz=Lz,Mz; do iy=Ly,My; do ix=Lx,Mx
          do gx=ceiling((xc-x)/exx+eps),floor((xc+x)/exx-eps)
             jx=ix+gx; x=gx
             rr=rrx+(x*exx-xc)**2; rrc=u1-rr
-            frow=s*rrc**p
+            frow=s*rrc**this%p
             b(:,jx,jy,jz)=b(:,jx,jy,jz)+frow*ta
          enddo! gx
       enddo! gy
@@ -1099,5 +1094,5 @@ enddo; enddo; enddo! ix, iy, iz
 a=b
 end subroutine vrbeta3t
 
-end module jp_pbfil
+end submodule jp_pbfil
 

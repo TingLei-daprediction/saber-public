@@ -1,5 +1,5 @@
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-                        module mg_domain
+                        submodule(mg_parameter)  mg_domain
 !**********************************************************************!
 !                                                                      !
 !    Definition of a squared integration domain                        !
@@ -10,69 +10,50 @@
 use mpi
 use kinds, only: i_kind
 !use mpimod, only: mype
-use mg_mppstuff
 
 implicit none
 
-logical,dimension(2):: Flwest,Fleast,Flnorth,Flsouth
-integer(i_kind),dimension(2):: Fitarg_n,Fitarg_e,Fitarg_s,Fitarg_w                         
-integer(i_kind),dimension(2):: Fitarg_sw,Fitarg_se,Fitarg_ne,Fitarg_nw
-
-logical,dimension(2):: Flsendup_sw,Flsendup_se,Flsendup_nw,Flsendup_ne
-integer(i_kind),dimension(2):: Fitarg_up 
-
-integer(i_kind):: itargdn_sw,itargdn_se,itargdn_ne,itargdn_nw
-
-
-integer(i_kind):: itarg_wA,itarg_eA,itarg_sA,itarg_nA
-logical:: lwestA,leastA,lsouthA,lnorthA
-
-
-integer(i_kind) ix,jy
-
-integer(i_kind),dimension(2):: mype_filt
-type mg_domain_type
-contains
-procedure,nopass :: init_mg_domain
-end type mg_domain_type
 
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
                         contains
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-                        subroutine init_mg_domain
+        module         subroutine init_mg_domain(this)
 !***********************************************************************
 !                                                                      *
 !             Initialize square domain                                 *
 !                                                                      *
 !***********************************************************************
 implicit none
+        class(mg_parameter_type)::this
 
 
-         call init_domain
-         call init_topology_2d
+         call init_domain(this)
+         call init_topology_2d(this)
 
  
 !-----------------------------------------------------------------------
                         endsubroutine init_mg_domain
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-                        subroutine init_domain
+             module           subroutine init_domain(this)
 !***********************************************************************
 !                                                                      *
 !   Definition of constants that control filtering domain              *
 !                                                                      *
 !***********************************************************************
 
-use mg_parameter
 implicit none
+        class(mg_parameter_type),target::this
 
 
 integer(i_kind) n,nstrd,i,j
 logical:: F=.false., T=.true.
 
 integer(i_kind):: loc_pe,g
+include  "type_parameter_locpointer.inc"
+include  "type_parameter_point2this.inc"
 !-----------------------------------------------------------------------
 !TEST
 !      if(mype==0) then
@@ -177,16 +158,16 @@ integer(i_kind):: loc_pe,g
                         endsubroutine init_domain
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-                        subroutine init_topology_2d
+                    module    subroutine init_topology_2d(this)
 !***********************************************************************
 !                                                                      *
 !                  Define topology of filter grid                      *
 !                       - Four generations -                           *
 !                                                                      *
 !***********************************************************************
-use mg_parameter, only: ixm,jym,nxy,maxpe_fgen,gm,imL,jmL
 
 implicit none
+        class(mg_parameter_type),target::this
 
 !-----------------------------------------------------------------------
 logical:: F=.false., T=.true.
@@ -194,6 +175,8 @@ logical:: F=.false., T=.true.
 
 integer(i_kind) mx2,my2,ix_up,jy_up,ix_dn,jy_dn
 integer(i_kind) g,naux,nx_up,my_up
+include  "type_parameter_locpointer.inc"
+include  "type_parameter_point2this.inc"
 !-----------------------------------------------------------------------
 !
 !     Topology of generations of the squared domain
@@ -582,23 +565,23 @@ integer(i_kind) g,naux,nx_up,my_up
 !
 ! Convert targets in higher generations into real targets
 !
-   call real_itarg(Fitarg_w(2))
-   call real_itarg(Fitarg_e(2))
-   call real_itarg(Fitarg_s(2))
-   call real_itarg(Fitarg_n(2))
+   call real_itarg(this,Fitarg_w(2))
+   call real_itarg(this,Fitarg_e(2))
+   call real_itarg(this,Fitarg_s(2))
+   call real_itarg(this,Fitarg_n(2))
 
-   call real_itarg(Fitarg_sw(2))
-   call real_itarg(Fitarg_se(2))
-   call real_itarg(Fitarg_nw(2))
-   call real_itarg(Fitarg_ne(2))
+   call real_itarg(this,Fitarg_sw(2))
+   call real_itarg(this,Fitarg_se(2))
+   call real_itarg(this,Fitarg_nw(2))
+   call real_itarg(this,Fitarg_ne(2))
 
-   if(itargdn_sw .ge. maxpe_fgen(1)) call real_itarg(itargdn_sw)
-   if(itargdn_se .ge. maxpe_fgen(1)) call real_itarg(itargdn_se)
-   if(itargdn_nw .ge. maxpe_fgen(1)) call real_itarg(itargdn_nw)
-   if(itargdn_ne .ge. maxpe_fgen(1)) call real_itarg(itargdn_ne)
+   if(itargdn_sw .ge. maxpe_fgen(1)) call real_itarg(this,itargdn_sw)
+   if(itargdn_se .ge. maxpe_fgen(1)) call real_itarg(this,itargdn_se)
+   if(itargdn_nw .ge. maxpe_fgen(1)) call real_itarg(this,itargdn_nw)
+   if(itargdn_ne .ge. maxpe_fgen(1)) call real_itarg(this,itargdn_ne)
 
-   call real_itarg(Fitarg_up(1))
-   call real_itarg(Fitarg_up(2))
+   call real_itarg(this,Fitarg_up(1))
+   call real_itarg(this,Fitarg_up(2))
 
 !TEST
 ! if(mype_hgen> 1) then
@@ -715,16 +698,19 @@ integer(i_kind) g,naux,nx_up,my_up
                         endsubroutine init_topology_2d
 !----------------------------------------------------------------------
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-                        subroutine real_itarg                           &
+                   module     subroutine real_itarg                          &
 !***********************************************************************
 !                                                                      *
 !             Definite real targets for high generations               *
 !                                                                      *
 !***********************************************************************
-(itarg)
+(this,itarg)
 !-----------------------------------------------------------------------
 implicit none
+        class(mg_parameter_type),target::this
 integer(i_kind), intent(inout):: itarg
+include  "type_parameter_locpointer.inc"
+include  "type_parameter_point2this.inc"
 !-----------------------------------------------------------------------
       if(itarg>-1) then
         itarg = itarg-nxy(1)
@@ -734,4 +720,4 @@ integer(i_kind), intent(inout):: itarg
                         endsubroutine real_itarg
 
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-                        endmodule mg_domain
+                        end submodule mg_domain

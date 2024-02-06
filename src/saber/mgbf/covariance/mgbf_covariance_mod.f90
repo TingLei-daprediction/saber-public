@@ -20,7 +20,7 @@ use random_mod
 
 ! saber
 !clt use mgbf_grid_mod,                   only: mgbf_grid
-use type_mgbf_mod,                   only: mgbf_type
+use mg_intstate , only:            mgbf_instate_type
 
 implicit none
 private
@@ -29,7 +29,7 @@ public mgbf_covariance
 
 ! Fortran class header
 type :: mgbf_covariance
-  type(mgbf_type) :: mgbf_driver 
+  type(mgbf_instate_type) :: mgbf_instate 
   logical :: noMGBF
   logical :: bypassMGBFbe
   logical :: cv   ! cv=.true.; sv=.false.
@@ -92,15 +92,14 @@ if (.not. self%noMGBF) then
 ! ----------------------------------------------
   call config%get_or_die("mgbf berror namelist file",  nml)
   call config%get_or_die("mgbf error covariance file", bef)
+  call self%mg_initialize("mgbeta.nml")
 
 ! Initialize MGBF-Berror components
 ! --------------------------------
-  layout=self%grid%layout
 ! layout=-1
-  call mgbfbclim_init(self%cv)
 endif
 #endif 
-call  self%mgbf_driver%mgbf_init()
+call  self%mgbf_intstate%mg_initialize()
 ! Get background (temporary test of the functionality)
 !cltafield = background%field('air_temperature')
 !clt call afield%data(t)
@@ -185,12 +184,40 @@ type(atlas_functionspace) :: afunctionspace
 
 ! Locals
 type(atlas_field) :: afield
-real(kind=r_kind), pointer :: t(:,:)
+real(kind=r_kind), pointer :: ttodo(:,:)
 
 !clt now noly consider t
 !  afield = fields%field('air_temperature')
 !  call afield%data(t)
-  call self%mgbf_driver%mgbf_apply(fields)
+!*** From the analysis to first generation of filter grid
+!***
+                                                   call btim(    an2filt_tim)
+
+          call self%anal_to_filt_all(ttodo)
+                                                   call etim(    an2filt_tim)
+
+
+!\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+!***
+!*** Adjoint test if needed
+!***
+
+!\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+!***
+!*** Filtering
+!***
+!======================================================================
+
+       call self%mg_filtering_procedure(self%mgbf_proc)  !clt to be changed
+!*** From first generation of filter grid to analysis grid (x-directoin)
+!***
+
+                                                   call btim(   filt2an_tim)
+          call obj_mgbf%filt_to_anal_all(ttodo)
+
+
+  
 ! Halo exchange
 !afunctionspace = afield%functionspace()
 !call afunctionspace%halo_exchange(afield)
