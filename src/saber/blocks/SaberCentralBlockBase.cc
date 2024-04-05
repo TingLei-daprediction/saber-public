@@ -111,8 +111,8 @@ void SaberCentralBlockBase::adjointTest(const oops::GeometryData & geometryData,
   // Compute adjoint test
   const double dp1 = fset1.dot_product_with(fset2Save, vars);
   const double dp2 = fset2.dot_product_with(fset1Save, vars);
-  oops::Log::info() << std::setprecision(16) << "Info     : Adjoint test: y^t (Ax) = " << dp1
-                    << ": x^t (A^t y) = " << dp2 << " : adjoint tolerance = "
+  oops::Log::info() << std::setprecision(16) << "Info     : Adjoint test: (Ax)^t y = " << dp1
+                    << ": x^t (Ay) = " << dp2 << " : adjoint tolerance = "
                     << adjointTolerance << std::endl;
   oops::Log::test() << "Adjoint test for block " << this->blockName();
   if (std::abs(dp1-dp2)/std::abs(0.5*(dp1+dp2)) < adjointTolerance) {
@@ -173,7 +173,7 @@ void SaberCentralBlockBase::sqrtTest(const oops::GeometryData & geometryData,
   const double dp1 = fset.dot_product_with(fsetSave, vars);
   double dp2 = 0.0;
   for (size_t jnode = 0; jnode < ctlVecSize(); ++jnode) {
-      dp2 += view(jnode)*viewSave(jnode);
+    dp2 += view(jnode)*viewSave(jnode);
   }
   geometryData.comm().allReduceInPlace(dp2, eckit::mpi::sum());
   oops::Log::info() << std::setprecision(16) << "Info     : Square-root test: y^t (Ux) = " << dp1
@@ -188,7 +188,8 @@ void SaberCentralBlockBase::sqrtTest(const oops::GeometryData & geometryData,
   this->multiply(fsetSave);
 
   // Check that the fieldsets are similar within tolerance
-  const bool sqrtComparison = fset.compare_with(fsetSave, sqrtTolerance, false);
+  const bool sqrtComparison = fset.compare_with(fsetSave, sqrtTolerance,
+                                                util::ToleranceType::relative);
   if (sqrtComparison) {
     oops::Log::info() << "Info     : Square-root test passed: U U^t x == B x" << std::endl;
   } else {

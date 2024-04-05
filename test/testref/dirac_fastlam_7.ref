@@ -1,0 +1,75 @@
+Input Dirac increment:
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: structured
+- size: 3763
+Regional grid detected
+Partitioner:
+- type: checkerboard
+Function space:
+- type: StructuredColumns
+- halo: 0
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 10
+  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+  Mask size: 100%
+Fields:
+  stream_function: 2.8284271247461903e+00
+  velocity_potential: 1.0000000000000000e+00
+    FastLAM interpolation accuracy test passed
+    FastLAM interpolation adjoint test passed
+    FastLAM redToRows test passed
+    FastLAM rowsToCols test passed
+    FastLAM interpolation accuracy test passed
+    FastLAM interpolation adjoint test passed
+    FastLAM redToRows test passed
+    FastLAM rowsToCols test passed
+    FastLAM interpolation accuracy test passed
+    FastLAM interpolation adjoint test passed
+    FastLAM redToRows test passed
+    FastLAM rowsToCols test passed
+    FastLAM interpolation accuracy test passed
+    FastLAM interpolation adjoint test passed
+    FastLAM redToRows test passed
+    FastLAM rowsToCols test passed
+    FastLAM interpolation accuracy test passed
+    FastLAM interpolation adjoint test passed
+    FastLAM redToRows test passed
+    FastLAM rowsToCols test passed
+    FastLAM interpolation accuracy test passed
+    FastLAM interpolation adjoint test passed
+    FastLAM redToRows test passed
+    FastLAM rowsToCols test passed
+Norm of output parameter : 1.1364249205292886e+04
+Norm of output parameter : 8.5132473240238942e+03
+Norm of output parameter : 3.4440397359364169e+03
+Norm of output parameter : 1.1660633257222273e+02
+Norm of output parameter : 1.3769036427394991e+02
+Norm of output parameter : 1.1658735441856757e+02
+Norm of output parameter : 3.2922227652017420e+02
+Norm of output parameter : 3.2922227652017420e+02
+Norm of output parameter : 3.2922227652017955e+02
+Adjoint test for block FastLAM passed
+Square-root test for block FastLAM passed
+Covariance(SABER) * Increment:
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: structured
+- size: 3763
+Regional grid detected
+Partitioner:
+- type: checkerboard
+Function space:
+- type: StructuredColumns
+- halo: 0
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 10
+  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+  Mask size: 100%
+Fields:
+  stream_function: 6.9086231569106387e+00
+  velocity_potential: 8.8282852527008959e+00

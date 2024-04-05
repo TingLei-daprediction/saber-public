@@ -1,5 +1,5 @@
 /*
- * (C) Crown Copyright 2022 Met Office
+ * (C) Crown Copyright 2022-2024 Met Office
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -54,7 +54,11 @@ MoistureControl::MoistureControl(const oops::GeometryData & outerGeometryData,
                                  const oops::FieldSet3D & xb,
                                  const oops::FieldSet3D & fg)
   : SaberOuterBlockBase(params, xb.validTime()),
-    innerGeometryData_(outerGeometryData), innerVars_(outerVars), augmentedStateFieldSet_()
+    innerGeometryData_(outerGeometryData),
+    innerVars_(getUnionOfInnerActiveAndOuterVars(params, outerVars)),
+    activeOuterVars_(params.activeOuterVars(outerVars)),
+    innerOnlyVars_(getInnerOnlyVars(params, outerVars)),
+    augmentedStateFieldSet_()
 {
   oops::Log::trace() << classname() << "::MoistureControl starting" << std::endl;
 
@@ -69,7 +73,8 @@ MoistureControl::MoistureControl(const oops::GeometryData & outerGeometryData,
     "exner",  // from file on theta levels ("exner_levels_minus_one" is on rho levels)
     "m_v", "m_ci", "m_cl", "m_r",  // mixing ratios from file
     "m_t",  //  to be populated in evalTotalMassMoistAir
-    "svp", "dlsvpdT",  //  to be populated in eval_sat_vapour_pressure_nl
+    "svp",  //  to be populated in eval_sat_vapour_pressure_nl
+    "dlsvpdT",  //  to be populated in eval_derivative_ln_svp_wrt_temperature_nl
     "qsat",  // to be populated in evalSatSpecificHumidity
     "specific_humidity",
       //  to be populated in eval_water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water_nl
@@ -103,7 +108,8 @@ MoistureControl::MoistureControl(const oops::GeometryData & outerGeometryData,
 
   mo::eval_air_temperature_nl(augmentedStateFieldSet_);
   mo::evalTotalMassMoistAir(augmentedStateFieldSet_);
-  mo::eval_sat_vapour_pressure_nl(params.svp_file, augmentedStateFieldSet_);
+  mo::eval_sat_vapour_pressure_nl(augmentedStateFieldSet_);
+  mo::eval_derivative_ln_svp_wrt_temperature_nl(augmentedStateFieldSet_);
   mo::evalSatSpecificHumidity(augmentedStateFieldSet_);
   mo::eval_water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water_nl(
               augmentedStateFieldSet_);
@@ -122,8 +128,6 @@ MoistureControl::MoistureControl(const oops::GeometryData & outerGeometryData,
   // populate "specific moisture control dependencies"
   mo::eval_moisture_control_traj(augmentedStateFieldSet_);
 
-  augmentedStateFieldSet_.haloExchange();
-
   oops::Log::trace() << classname() << "::MoistureControl done" << std::endl;
 }
 
@@ -140,15 +144,14 @@ MoistureControl::~MoistureControl() {
 void MoistureControl::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   // Allocate output fields if they are not already present, e.g when randomizing.
-  const oops::Variables outputVars({"potential_temperature",
-                                    "qt"});
-  allocateFields(fset,
-                 outputVars,
-                 innerVars_,
-                 innerGeometryData_.functionSpace());
+  allocateMissingFields(fset, activeOuterVars_, activeOuterVars_,
+                        innerGeometryData_.functionSpace());
 
   // Populate output fields.
   mo::eval_moisture_control_inv_tl(fset.fieldSet(), augmentedStateFieldSet_);
+
+  // Remove inner-only variables
+  fset.removeFields(innerOnlyVars_);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
@@ -156,6 +159,11 @@ void MoistureControl::multiply(oops::FieldSet3D & fset) const {
 
 void MoistureControl::multiplyAD(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
+  // Allocate inner-only variables
+  checkFieldsAreNotAllocated(fset, innerOnlyVars_);
+  allocateMissingFields(fset, innerOnlyVars_, innerOnlyVars_,
+                        innerGeometryData_.functionSpace());
+
   mo::eval_moisture_control_inv_ad(fset.fieldSet(), augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
@@ -164,6 +172,11 @@ void MoistureControl::multiplyAD(oops::FieldSet3D & fset) const {
 
 void MoistureControl::leftInverseMultiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::leftInverseMultiply starting" << std::endl;
+  // Allocate inner-only variables
+  checkFieldsAreNotAllocated(fset, innerOnlyVars_);
+  allocateMissingFields(fset, innerOnlyVars_, innerOnlyVars_,
+                        innerGeometryData_.functionSpace());
+
   mo::eval_moisture_control_tl(fset.fieldSet(), augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
 }
@@ -184,9 +197,9 @@ atlas::FieldSet createMuStats(const atlas::FieldSet & fields,
   // number of model levels
   std::size_t modelLevels;
   if (fields.has("height")) {
-    modelLevels = fields["height"].levels();
+    modelLevels = fields["height"].shape(1);
   } else {
-    modelLevels = fields["vert_coord"].levels();
+    modelLevels = fields["vert_coord"].shape(1);
   }
 
   // geostrophic pressure vertical regression statistics are grouped

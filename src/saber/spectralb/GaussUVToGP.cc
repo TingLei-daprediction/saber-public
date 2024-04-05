@@ -1,9 +1,10 @@
 /*
- * (C) Crown Copyright 2022-2023 Met Office
+ * (C) Crown Copyright 2022-2024 Met Office
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
+
 
 #include "saber/spectralb/GaussUVToGP.h"
 
@@ -27,18 +28,22 @@
 #include "eckit/exception/Exceptions.h"
 
 #include "mo/common_varchange.h"
+#include "mo/eval_cloud_ice_mixing_ratio.h"
+#include "mo/eval_cloud_liquid_mixing_ratio.h"
 #include "mo/eval_dry_air_density.h"
-#include "mo/eval_virtual_potential_temperature.h"
 #include "mo/eval_water_vapor_mixing_ratio.h"
 #include "mo/model2geovals_varchange.h"
 
 #include "oops/base/FieldSet3D.h"
 #include "oops/base/Variables.h"
+#include "oops/util/FunctionSpaceHelpers.h"
 #include "oops/util/Logger.h"
 #include "oops/util/Timer.h"
 
 #include "saber/blocks/SaberOuterBlockBase.h"
 #include "saber/interpolation/AtlasInterpWrapper.h"
+#include "saber/oops/Utilities.h"
+
 
 #define ERR(e) {throw eckit::Exception(nc_strerror(e), Here());}
 
@@ -46,6 +51,26 @@ namespace saber {
 namespace spectralb {
 
 namespace {
+
+
+double normfield(const eckit::mpi::Comm & comm, const atlas::Field& fld) {
+  auto view = atlas::array::make_view<double, 2>(fld);
+
+  std::size_t i(0);
+  double zz(0.0);
+  const atlas::idx_t sizeOwned = util::getSizeOwned(fld.functionspace());
+
+  for (atlas::idx_t jn = 0; jn < sizeOwned; ++jn) {
+    for (atlas::idx_t jl = 0; jl < fld.shape(1); ++jl, ++i) {
+      zz += view(jn, jl) * view(jn, jl);
+    }
+  }
+  comm.allReduceInPlace(i, eckit::mpi::sum());
+  comm.allReduceInPlace(zz, eckit::mpi::sum());
+
+  return std::sqrt(zz)/static_cast<double>(i);
+}
+
 
 // -----------------------------------------------------------------------------
 
@@ -71,7 +96,8 @@ void populateRHSVec(const atlas::Field & rhoState,
   auto coriolisView = atlas::array::make_view<const double, 2>(coriolis);
   auto rhsvecView = atlas::array::make_view<double, 3>(rhsvec);
 
-  for (atlas::idx_t jn = 0; jn < rhsvecView.shape()[0]; ++jn) {
+  const atlas::idx_t sizeOwned = util::getSizeOwned(rhoState.functionspace());
+  for (atlas::idx_t jn = 0; jn < sizeOwned; ++jn) {
     for (atlas::idx_t jl = 0; jl < rhsvecView.shape()[1]; ++jl) {
       rhsvecView(jn, jl, atlas::LON) =
         - coriolisView(jn, 0) * rhoStateView(jn, jl) * vView(jn, jl);
@@ -79,6 +105,7 @@ void populateRHSVec(const atlas::Field & rhoState,
         coriolisView(jn, 0) * rhoStateView(jn, jl) * uView(jn, jl);
     }
   }
+  rhsvec.set_dirty();
 }
 
 // -----------------------------------------------------------------------------
@@ -93,34 +120,20 @@ void populateRHSVecAdj(const atlas::Field & rhoState,
   auto coriolisView = atlas::array::make_view<const double, 2>(coriolis);
   auto rhsvecView = atlas::array::make_view<double, 3>(rhsvec);
 
-  for (atlas::idx_t jn = 0; jn < rhsvecView.shape()[0]; ++jn) {
+  const atlas::idx_t sizeOwned = util::getSizeOwned(rhoState.functionspace());
+  for (atlas::idx_t jn = 0; jn < sizeOwned; ++jn) {
     for (atlas::idx_t jl = 0; jl < rhsvecView.shape()[1]; ++jl) {
       vView(jn, jl) += - coriolisView(jn, 0) * rhoStateView(jn, jl)
                        * rhsvecView(jn, jl, atlas::LON);
       uView(jn, jl) += coriolisView(jn, 0) * rhoStateView(jn, jl)
                        * rhsvecView(jn, jl, atlas::LAT);
+      rhsvecView(jn, jl, atlas::LON) = 0.0;
+      rhsvecView(jn, jl, atlas::LAT) = 0.0;
     }
   }
-  rhsvecView.assign(0.0);
-}
-
-// -----------------------------------------------------------------------------
-
-double normfield(const eckit::mpi::Comm & comm, const atlas::Field& fld) {
-  // to do - maybe not include halos?
-  auto view = atlas::array::make_view<double, 2>(fld);
-
-  std::size_t i(0);
-  double zz(0.0);
-  for (atlas::idx_t jn = 0; jn < fld.shape(0); ++jn) {
-    for (atlas::idx_t jl = 0; jl < fld.shape(1); ++jl, ++i) {
-      zz += view(jn, jl) * view(jn, jl);
-    }
-  }
-  comm.allReduceInPlace(i, eckit::mpi::sum());
-  comm.allReduceInPlace(zz, eckit::mpi::sum());
-
-  return std::sqrt(zz)/static_cast<double>(i);
+  rhsvec.set_dirty();
+  fset["eastward_wind"].set_dirty();
+  fset["northward_wind"].set_dirty();
 }
 
 // -----------------------------------------------------------------------------
@@ -140,7 +153,8 @@ atlas::FieldSet populateFields(const atlas::FieldSet & geomfields,
     "m_t",
     "potential_temperature",
     "specific_humidity",
-    "virtual_potential_temperature"};
+    "mass_content_of_cloud_liquid_water_in_atmosphere_layer",
+    "mass_content_of_cloud_ice_in_atmosphere_layer"};
 
   const std::vector<std::string> requiredGeometryVariables{"height_levels",
                                                            "height"};
@@ -167,7 +181,10 @@ atlas::FieldSet populateFields(const atlas::FieldSet & geomfields,
 
   mo::evalTotalMassMoistAir(tempfields);
   mo::eval_water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water_nl(tempfields);
-  mo::eval_virtual_potential_temperature_nl(tempfields);
+  mo::eval_cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water_nl(
+              tempfields);
+  mo::eval_cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water_nl(
+              tempfields);
   mo::eval_dry_air_density_from_pressure_levels_minus_one_nl(tempfields);
 
   return atlas::FieldSet(tempfields[outputVariable]);
@@ -224,7 +241,7 @@ void interpolateCSToGauss(const oops::GeometryData & outerGeometryData,
 
   // Interpolate to intermediate PointCloud 1
   const auto field_options = atlas::option::name(s) |
-                             atlas::option::levels(csfields[s].levels());
+                             atlas::option::levels(csfields[s].shape(1));
   auto step1Field = step1Functionspace.createField<double>(
               field_options | atlas::option::halo(0));
 
@@ -241,9 +258,7 @@ void interpolateCSToGauss(const oops::GeometryData & outerGeometryData,
               field_options | atlas::option::halo(targetFunctionspace.halo()));
 
   atlas::array::make_view<double, 2>(gaussField).assign(
-              atlas::array::make_view<double, 2>(step2Field));
-
-  gaussField.haloExchange();
+             atlas::array::make_view<double, 2>(step2Field));
 
   gfields.add(gaussField);
 }
@@ -273,20 +288,18 @@ void interpolateCSToGaussSinglePE(const oops::GeometryData & outerGeometryData,
   // Perform interpolation
   atlas::Field hybridField = hybridFunctionSpace.createField<double>(
                   atlas::option::name(s) |
-                  atlas::option::levels(csfields[s].levels()));
+                  atlas::option::levels(csfields[s].shape(1)));
 
   interp.execute(csfields[s], hybridField);
 
   // Copy to target StructuredColumns
   atlas::Field gaussField = targetFunctionspace.createField<double>(
                   atlas::option::name(s) |
-                  atlas::option::levels(csfields[s].levels()) |
+                  atlas::option::levels(csfields[s].shape(1)) |
                   atlas::option::halo(targetFunctionspace.halo()));
 
   atlas::array::make_view<double, 2>(gaussField).assign(
               atlas::array::make_view<double, 2>(hybridField));
-
-  gaussField.haloExchange();
 
   gfields.add(gaussField);
 }
@@ -310,7 +323,6 @@ atlas::Field createCoriolis(const atlas::Field & scstate) {
                                            sc.grid().lonlat(i, j).lat());
     }
   }
-  coriolis.haloExchange();
 
   return coriolis;
 }
@@ -399,11 +411,9 @@ atlas::FieldSet allocateSpectralVortDiv(
 
 // -----------------------------------------------------------------------------
 
-oops::Variables createInnerVars(const oops::Variables & outerVars) {
-  oops::Variables innerVars(outerVars);
-  if (innerVars.has("geostrophic_pressure_levels_minus_one")) {
-    innerVars -= "geostrophic_pressure_levels_minus_one";
-  }
+oops::Variables removeOuterOnlyVar(const oops::Variables & vars) {
+  oops::Variables innerVars(vars);
+  innerVars -= "geostrophic_pressure_levels_minus_one";
   return innerVars;
 }
 
@@ -437,7 +447,7 @@ void applyRecipNtimesNplus1SpectralScaling(const oops::Variables & innerNames,
       const int m1 = zonal_wavenumbers(jm);
       for (std::size_t n1 = m1; n1 <= static_cast<std::size_t>(totalWavenumber); ++n1) {
         for (std::size_t img = 0; img < 2; ++img, ++i) {
-          for (atlas::idx_t jl = 0; jl < fSet[innerNames[var]].levels(); ++jl) {
+          for (atlas::idx_t jl = 0; jl < fSet[innerNames[var]].shape(1); ++jl) {
             if (n1 != 0) {
               fldView(i, jl) *= squaredEarthRadius / (n1 * (n1 + 1));
             } else {
@@ -475,7 +485,9 @@ GaussUVToGP::GaussUVToGP(const oops::GeometryData & outerGeometryData,
   : SaberOuterBlockBase(params, xb.validTime()),
     params_(params),
     outerVars_(outerVars),
-    innerVars_(createInnerVars(outerVars)),
+    innerVars_(removeOuterOnlyVar(getUnionOfInnerActiveAndOuterVars(params, outerVars))),
+    activeOuterVars_(params.activeOuterVars(outerVars)),
+    innerOnlyVars_(getInnerOnlyVars(params, outerVars)),
     gaussFunctionSpace_(outerGeometryData.functionSpace()),
     specFunctionSpace_(2 * atlas::GaussianGrid(gaussFunctionSpace_.grid()).N() - 1),
     trans_(gaussFunctionSpace_, specFunctionSpace_),
@@ -493,17 +505,18 @@ GaussUVToGP::GaussUVToGP(const oops::GeometryData & outerGeometryData,
 
 void GaussUVToGP::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting " << std::endl;
+  // Allocate output fields if they are not already present, e.g when randomizing.
+  allocateMissingFields(fset, activeOuterVars_, activeOuterVars_,
+                        innerGeometryData_.functionSpace());
 
-  atlas::Field gp = gaussFunctionSpace_.createField<double>(
-    atlas::option::name("geostrophic_pressure_levels_minus_one") |
-    atlas::option::levels(fset["eastward_wind"].levels()));
+  atlas::Field gp = fset["geostrophic_pressure_levels_minus_one"];
 
-  atlas::Field rhsvec = allocateRHSVec(gaussFunctionSpace_, gp.levels());
+  atlas::Field rhsvec = allocateRHSVec(gaussFunctionSpace_, gp.shape(1));
 
   populateRHSVec(augmentedState_["dry_air_density_levels_minus_one"],
                  augmentedState_["coriolis"], fset.fieldSet(), rhsvec);
 
-  atlas::FieldSet specfset = allocateSpectralVortDiv(specFunctionSpace_, rhsvec.levels());
+  atlas::FieldSet specfset = allocateSpectralVortDiv(specFunctionSpace_, rhsvec.shape(1));
   // calculate dir vorticity and divergence spectrally
   trans_.dirtrans_wind2vordiv(rhsvec, specfset["vorticity"], specfset["divergence"]);
 
@@ -517,19 +530,10 @@ void GaussUVToGP::multiply(oops::FieldSet3D & fset) const {
   // apply inverse spectral transform to
   trans_.invtrans(specfset["divergence"], gp);
 
-  gp.haloExchange();
+  gp.set_dirty();
 
-  if (fset.has("geostrophic_pressure_levels_minus_one")) {
-    auto gpView =
-      atlas::array::make_view<double, 2>(
-        fset["geostrophic_pressure_levels_minus_one"]);
-    auto gpViewKeep =
-      atlas::array::make_view<const double, 2>(gp);
-    gpView.assign(gpViewKeep);
-  } else {
-    fset.add(gp);
-  }
-
+  // Remove inner-only variables
+  fset.removeFields(innerOnlyVars_);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
@@ -537,28 +541,14 @@ void GaussUVToGP::multiply(oops::FieldSet3D & fset) const {
 
 void GaussUVToGP::multiplyAD(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
+  // Allocate inner-only variables
+  checkFieldsAreNotAllocated(fset, innerOnlyVars_);
+  allocateMissingFields(fset, innerOnlyVars_, innerOnlyVars_,
+                        innerGeometryData_.functionSpace());
 
   atlas::FieldSet specfset =
       allocateSpectralVortDiv(specFunctionSpace_,
-                              fset["geostrophic_pressure_levels_minus_one"].levels());
-
-  // Create empty Model fieldset
-  atlas::FieldSet newFields = atlas::FieldSet();
-
-  // copy "passive variables"
-  std::vector<std::string> fsetNames = fset.field_names();
-
-  oops::Variables
-    activeVars(std::vector<std::string>({"eastward_wind", "northward_wind",
-                                         "geostrophic_pressure_levels_minus_one"}));
-
-  for (auto & s : fset.field_names()) {
-    if (!activeVars.has(s)) {
-      newFields.add(fset[s]);
-    }
-  }
-
-  fset["geostrophic_pressure_levels_minus_one"].adjointHaloExchange();
+                              fset["geostrophic_pressure_levels_minus_one"].shape(1));
 
   // apply inverse spectral transform to
   trans_.invtrans_adj(fset["geostrophic_pressure_levels_minus_one"], specfset["divergence"]);
@@ -574,18 +564,13 @@ void GaussUVToGP::multiplyAD(oops::FieldSet3D & fset) const {
   vortView.assign(0.0);
 
   atlas::Field rhsvec = allocateRHSVec(gaussFunctionSpace_,
-                                       fset["geostrophic_pressure_levels_minus_one"].levels());
+                                       fset["geostrophic_pressure_levels_minus_one"].shape(1));
 
   trans_->dirtrans_wind2vordiv_adj(specfset["vorticity"], specfset["divergence"], rhsvec);
 
   populateRHSVecAdj(augmentedState_["dry_air_density_levels_minus_one"],
                     augmentedState_["coriolis"],
                     fset.fieldSet(), rhsvec);
-
-  newFields.add(fset["eastward_wind"]);
-  newFields.add(fset["northward_wind"]);
-
-  fset.fieldSet() = newFields;
 
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }

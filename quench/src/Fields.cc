@@ -13,6 +13,7 @@
 #include <fstream>
 #include <iostream>
 #include <iterator>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -167,18 +168,13 @@ Fields::Fields(const Fields & other):
 void Fields::zero() {
   oops::Log::trace() << "Fields::zero starting" << std::endl;
   for (const auto & var : vars_.variables()) {
-    const auto gmaskView = atlas::array::make_view<int, 2>(
-      geom_->fields(geom_->groupIndex(var)).field("gmask"));
     atlas::Field field = fset_[var];
     if (field.rank() == 2) {
       auto view = atlas::array::make_view<double, 2>(field);
-      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
-        for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-          if (gmaskView(jnode, jlevel) == 1) view(jnode, jlevel) = 0.0;
-        }
-      }
+      view.assign(0.0);
     }
   }
+  fset_.set_dirty(false);
   oops::Log::trace() << "Fields::zero end" << std::endl;
 }
 // -----------------------------------------------------------------------------
@@ -198,6 +194,7 @@ void Fields::constantValue(const double & value) {
       }
     }
   }
+  fset_.set_dirty(false);
   oops::Log::trace() << "Fields::constantValue end" << std::endl;
 }
 // -----------------------------------------------------------------------------
@@ -223,6 +220,7 @@ void Fields::constantValue(const eckit::Configuration & config) {
       }
     }
   }
+  fset_.set_dirty(false);
   oops::Log::trace() << "Fields::constantValue end" << std::endl;
 }
 // -----------------------------------------------------------------------------
@@ -239,6 +237,7 @@ Fields & Fields::operator=(const Fields & rhs) {
           view(jnode, jlevel) = viewRhs(jnode, jlevel);
         }
       }
+      field.set_dirty(fieldRhs.dirty());
     }
   }
   time_ = rhs.time_;
@@ -263,6 +262,7 @@ Fields & Fields::operator+=(const Fields & rhs) {
           }
         }
       }
+      field.set_dirty(field.dirty() || fieldRhs.dirty());
     }
   }
   oops::Log::trace() << "Fields::operator+=(const Fields & rhs) done" << std::endl;
@@ -286,6 +286,7 @@ Fields & Fields::operator-=(const Fields & rhs) {
           }
         }
       }
+      field.set_dirty(field.dirty() || fieldRhs.dirty());
     }
   }
   oops::Log::trace() << "Fields::operator-=(const Fields & rhs) done" << std::endl;
@@ -330,6 +331,7 @@ void Fields::axpy(const double & zz, const Fields & rhs) {
           }
         }
       }
+      field.set_dirty(field.dirty() || fieldRhs.dirty());
     }
   }
   oops::Log::trace() << "Fields::axpy done" << std::endl;
@@ -378,6 +380,7 @@ void Fields::schur_product_with(const Fields & dx) {
           }
         }
       }
+      field.set_dirty(field.dirty() || fieldDx.dirty());
     }
   }
   oops::Log::trace() << "Fields::schur_product_with done" << std::endl;
@@ -513,6 +516,9 @@ void Fields::random() {
       }
     }
   }
+
+  fset_.set_dirty();  // code is too complicated, mark dirty to be safe
+
   oops::Log::trace() << "Fields::random done" << std::endl;
 }
 // -----------------------------------------------------------------------------
@@ -558,9 +564,13 @@ void Fields::dirac(const eckit::Configuration & config) {
     pointLonLat.normalise();
 
     // Search nearest neighbor
-    atlas::util::IndexKDTree::ValueList neighbor = search.closestPoints(pointLonLat, 1);
-    size_t index(neighbor[0].payload());
-    double distance(neighbor[0].distance());
+    size_t index = std::numeric_limits<size_t>::max();
+    double distance = std::numeric_limits<double>::max();
+    if (geom_->functionSpace().size() > 0) {
+      atlas::util::IndexKDTree::ValueList neighbor = search.closestPoints(pointLonLat, 1);
+      index = neighbor[0].payload();
+      distance = neighbor[0].distance();
+    }
     std::vector<double> distances(geom_->getComm().size());
     geom_->getComm().gather(distance, distances, 0);
 
@@ -598,10 +608,11 @@ void Fields::diff(const Fields & x1, const Fields & x2) {
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
         for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
           if (gmaskView(jnode, jlevel) == 1) {
-            view(jnode, jlevel) = viewx1(jnode, jlevel)-viewx2(jnode, jlevel);
+            view(jnode, jlevel) = viewx1(jnode, jlevel) - viewx2(jnode, jlevel);
           }
         }
       }
+      field.set_dirty(fieldx1.dirty() || fieldx2.dirty());
     }
   }
   oops::Log::trace() << "Fields::diff done" << std::endl;
@@ -609,8 +620,9 @@ void Fields::diff(const Fields & x1, const Fields & x2) {
 // -----------------------------------------------------------------------------
 void Fields::toFieldSet(atlas::FieldSet & fset) const {
   oops::Log::trace() << "Fields::toFieldSet starting" << std::endl;
-  // Copy internal fieldset (possibly at another resolution)
-  fset = util::copyFieldSet(fset_);
+  // Share internal fieldset
+  fset.clear();
+  fset = util::shareFields(fset_);
   for (auto field_external : fset) {
     field_external.metadata().set("interp_type", "default");
   }
@@ -620,11 +632,12 @@ void Fields::toFieldSet(atlas::FieldSet & fset) const {
 void Fields::fromFieldSet(const atlas::FieldSet & fset) {
   oops::Log::trace() << "Fields::fromFieldSet starting" << std::endl;
 
-  // Copy internal fieldset (possibly at another resolution)
-  fset_ = util::copyFieldSet(fset);
+  // Reset internal fieldset
+  fset_.clear();
+  fset_ = util::shareFields(fset);
 
   if (geom_->gridType() == "regular_lonlat") {
-    // Copy poles points
+    // Reset poles points
     for (auto field_internal : fset_) {
       atlas::functionspace::StructuredColumns fs(field_internal.functionspace());
       atlas::StructuredGrid grid = fs.grid();
@@ -687,16 +700,15 @@ void Fields::read(const eckit::Configuration & config) {
                      vars_.variables(),
                      conf,
                      fset_);
+
+  fset_.set_dirty();
 }
 // -----------------------------------------------------------------------------
 void Fields::write(const eckit::Configuration & config) const {
-  // Copy configuration
-  eckit::LocalConfiguration conf(config);
-
   // Write fieldset
-  util::writeFieldSet(geom_->getComm(), conf, fset_);
+  util::writeFieldSet(geom_->getComm(), config, fset_);
 
-  if (geom_->mesh().generated()) {
+  if (geom_->mesh().generated() && config.getBool("write gmsh", false)) {
     // GMSH file path
     std::string gmshfilepath = config.getString("filepath");;
     gmshfilepath.append(".msh");

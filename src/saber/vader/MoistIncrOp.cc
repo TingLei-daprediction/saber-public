@@ -1,5 +1,5 @@
 /*
- * (C) Crown Copyright 2022-2023 Met Office
+ * (C) Crown Copyright 2022-2024 Met Office
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -17,7 +17,6 @@
 #include "eckit/exception/Exceptions.h"
 
 #include "mo/common_varchange.h"
-#include "mo/control2analysis_linearvarchange.h"
 #include "mo/eval_air_temperature.h"
 #include "mo/eval_cloud_ice_mixing_ratio.h"
 #include "mo/eval_cloud_liquid_mixing_ratio.h"
@@ -53,7 +52,11 @@ MoistIncrOp::MoistIncrOp(const oops::GeometryData & outerGeometryData,
                          const oops::FieldSet3D & xb,
                          const oops::FieldSet3D & fg)
   : SaberOuterBlockBase(params, xb.validTime()),
-    innerGeometryData_(outerGeometryData), innerVars_(outerVars), augmentedStateFieldSet_()
+    innerGeometryData_(outerGeometryData),
+    innerVars_(getUnionOfInnerActiveAndOuterVars(params, outerVars)),
+    activeOuterVars_(params.activeOuterVars(outerVars)),
+    innerOnlyVars_(getInnerOnlyVars(params, outerVars)),
+    augmentedStateFieldSet_()
 {
   oops::Log::trace() << classname() << "::MoistIncrOp starting" << std::endl;
 
@@ -65,7 +68,8 @@ MoistIncrOp::MoistIncrOp(const oops::GeometryData & outerGeometryData,
     "air_temperature",  // to be populated in eval_air_temperature_nl
     "m_v", "m_ci", "m_cl", "m_r",  // mixing ratios from file
     "m_t",  // to be populated in evalTotalMassMoistAir
-    "svp", "dlsvpdT",  // to be populated in eval_sat_vapour_pressure_nl
+    "svp",  //  to be populated in eval_sat_vapour_pressure_nl
+    "dlsvpdT",  //  to be populated in eval_derivative_ln_svp_wrt_temperature_nl
     "qsat",  // to be populated in evalSatSpecificHumidity
     "specific_humidity",
       // to be populated in eval_water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water_nl
@@ -78,7 +82,7 @@ MoistIncrOp::MoistIncrOp(const oops::GeometryData & outerGeometryData,
     "rht",  // to be populated in eval_total_relative_humidity_nl
     "liquid_cloud_volume_fraction_in_atmosphere_layer",  // from file
     "ice_cloud_volume_fraction_in_atmosphere_layer",  // from file
-    "cleff", "cfeff"  // to be populated in getMIOFields
+    "cleff", "cfeff"  // to be populated in eval_mio_fields_nl
   };
 
   // Check that they are allocated (i.e. exist in the state fieldset)
@@ -97,7 +101,8 @@ MoistIncrOp::MoistIncrOp(const oops::GeometryData & outerGeometryData,
 
   mo::eval_air_temperature_nl(augmentedStateFieldSet_);
   mo::evalTotalMassMoistAir(augmentedStateFieldSet_);
-  mo::eval_sat_vapour_pressure_nl(params.svp_file, augmentedStateFieldSet_);
+  mo::eval_sat_vapour_pressure_nl(augmentedStateFieldSet_);
+  mo::eval_derivative_ln_svp_wrt_temperature_nl(augmentedStateFieldSet_);
   mo::evalSatSpecificHumidity(augmentedStateFieldSet_);
   mo::eval_water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water_nl(
               augmentedStateFieldSet_);
@@ -108,8 +113,6 @@ MoistIncrOp::MoistIncrOp(const oops::GeometryData & outerGeometryData,
   mo::eval_rain_mixing_ratio_wrt_moist_air_and_condensed_water_nl(augmentedStateFieldSet_);
   mo::eval_total_relative_humidity_nl(augmentedStateFieldSet_);
   mo::eval_mio_fields_nl(params.mio_file, augmentedStateFieldSet_);
-
-  augmentedStateFieldSet_.haloExchange();
 
   oops::Log::trace() << classname() << "::MoistIncrOp done" << std::endl;
 }
@@ -127,16 +130,14 @@ MoistIncrOp::~MoistIncrOp() {
 void MoistIncrOp::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   // Allocate output fields if they are not already present, e.g when randomizing.
-  const oops::Variables outputVars({"specific_humidity",
-                                    "mass_content_of_cloud_liquid_water_in_atmosphere_layer",
-                                    "mass_content_of_cloud_ice_in_atmosphere_layer"});
-  allocateFields(fset,
-                 outputVars,
-                 innerVars_,
-                 innerGeometryData_.functionSpace());
+  allocateMissingFields(fset, activeOuterVars_, activeOuterVars_,
+                        innerGeometryData_.functionSpace());
 
   // Populate output fields.
   mo::eval_moisture_incrementing_operator_tl(fset.fieldSet(), augmentedStateFieldSet_);
+
+  // Remove inner-only variables
+  fset.removeFields(innerOnlyVars_);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
@@ -144,6 +145,11 @@ void MoistIncrOp::multiply(oops::FieldSet3D & fset) const {
 
 void MoistIncrOp::multiplyAD(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
+  // Allocate inner-only variables
+  checkFieldsAreNotAllocated(fset, innerOnlyVars_);
+  allocateMissingFields(fset, innerOnlyVars_, innerOnlyVars_,
+                        innerGeometryData_.functionSpace());
+
   mo::eval_moisture_incrementing_operator_ad(fset.fieldSet(), augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
@@ -152,6 +158,20 @@ void MoistIncrOp::multiplyAD(oops::FieldSet3D & fset) const {
 
 void MoistIncrOp::leftInverseMultiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::leftInverseMultiply starting" << std::endl;
+  if (!fset.has("air_temperature")) {
+    oops::Log::error() << "The inverse of the moisture incrementing operator "
+          << "is not correctly defined if air_temperature is not provided "
+          << "as an input." << std::endl;
+    throw eckit::UserError("Please only use leftInverseMultiply of the mo_moistincrop block "
+                           "within the mo_super_mio block.", Here());
+  }
+  //   Allocate inner-only variables except air temperature
+  oops::Variables innerOnlyVarsForInversion(innerOnlyVars_);
+  innerOnlyVarsForInversion -= "air_temperature";
+  checkFieldsAreNotAllocated(fset, innerOnlyVarsForInversion);
+  allocateMissingFields(fset, innerOnlyVarsForInversion, innerOnlyVarsForInversion,
+                        innerGeometryData_.functionSpace());
+
   mo::eval_total_water_tl(fset.fieldSet(), augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
 }

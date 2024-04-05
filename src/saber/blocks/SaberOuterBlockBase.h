@@ -132,7 +132,7 @@ class SaberOuterBlockBase : public util::Printable, private boost::noncopyable {
   virtual bool compareFieldSets(const oops::FieldSet3D & fset3D1,
                                 const oops::FieldSet3D & fset3D2,
                                 const double & tol) const
-    {return fset3D1.compare_with(fset3D2, tol);}
+    {return fset3D1.compare_with(fset3D2, tol, util::ToleranceType::normalized_absolute);}
 
   // Non-virtual methods
 
@@ -298,8 +298,7 @@ void SaberOuterBlockBase::write(const oops::Geometry<MODEL> & geom,
 
   // Loop and write
   for (const auto & output : outputs) {
-    dx.fieldSet().deepCopy(output.second);
-    dx.synchronizeFields();
+    dx.fromFieldSet(output.second.fieldSet());
     oops::Log::test() << "Norm of output parameter " << output.second.name()
                       << ": " << dx.norm() << std::endl;
     dx.write(output.first);

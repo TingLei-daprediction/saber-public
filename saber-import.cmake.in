@@ -31,11 +31,17 @@ if(NOT atlas_FOUND)
     find_package(atlas REQUIRED COMPONENTS OMP_Fortran)
 endif()
 
-if((@LAPACK_FOUND@ AND NOT LAPACK_FOUND) OR (@MKL_FOUND@ AND NOT MKL_FOUND))
-    if( @MKL_FOUND@ )
+if(@ENABLE_MKL@) # ENABLE_MKL
+    if (@MKL_FOUND@ AND NOT MKL_FOUND) # MKL_FOUND checks
         find_dependency( MKL REQUIRED )
         set( LAPACK_LIBRARIES ${MKL_LIBRARIES} )
     else()
+        if (NOT LAPACK_FOUND)
+            find_dependency( LAPACK REQUIRED )
+        endif()
+    endif()
+else()
+    if (NOT LAPACK_FOUND)
         find_dependency( LAPACK REQUIRED )
     endif()
 endif()
@@ -57,6 +63,11 @@ endif()
 if(@vader_FOUND@) # vader_FOUND
     find_dependency(vader)
     set(saber_vader_FOUND True) #COMPONENT 'vader'
+endif()
+
+if(@FFTW_FOUND@) # FFTW_FOUND
+   find_dependency(FFTW)
+   set(saber_FFTW_FOUND True) #COMPONENT 'FFTW'
 endif()
 
 #Export Fortran compiler version for checking module compatibility

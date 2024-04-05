@@ -1,5 +1,5 @@
 /*
- * (C) Crown Copyright 2022 Met Office
+ * (C) Crown Copyright 2022-2024 Met Office
  * 
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0. 
@@ -189,7 +189,6 @@ atlas::Field createGpRegressionWeights(const atlas::FunctionSpace & functionSpac
       interWgtFldView(h, b) = tempWgt[b] * invWeightTot;
     }
   }
-  interWgtFld.haloExchange();
 
   return interWgtFld;
 }
@@ -217,7 +216,8 @@ void interpMuStats(atlas::FieldSet & augmentedStateFieldSet,
 
   auto index = [](const double normalisedField, const int muBins) {
     int i = static_cast<int>(normalisedField);
-    return (i >= muBins - 1 ? muBins - 2 : i);
+    // Restrict i to lie within [0, muBins-2] inclusive
+    return std::max(std::min(i, muBins - 2), 0);
   };
 
   auto weight = [](const double normalisedField, const int index) {
@@ -234,7 +234,7 @@ void interpMuStats(atlas::FieldSet & augmentedStateFieldSet,
   auto covFldView = atlas::array::make_view<double, 2>(covFld);
 
   for (atlas::idx_t jn = 0; jn < augmentedStateFieldSet["rht"].shape(0); ++jn) {
-    for (int jl = 0; jl < augmentedStateFieldSet["rht"].levels(); ++jl) {
+    for (int jl = 0; jl < augmentedStateFieldSet["rht"].shape(1); ++jl) {
       double normField = normalisedField(static_cast<double>(RHtView(jn, jl)));
       int indx = index(normField, muBins);
       double w = weight(normField, indx);
@@ -244,7 +244,7 @@ void interpMuStats(atlas::FieldSet & augmentedStateFieldSet,
   }
   if (varName.compare("muA") == 0) {
     for (atlas::idx_t jn = 0; jn < augmentedStateFieldSet[varName].shape(0); ++jn) {
-      for (int jl = 0; jl < augmentedStateFieldSet[varName].levels(); ++jl) {
+      for (int jl = 0; jl < augmentedStateFieldSet[varName].shape(1); ++jl) {
         // note -  the actual mu inverse field in VAR involves an additional step
         //         that involves interpolation of a "mu_table".
         //         What is here is a simplification.

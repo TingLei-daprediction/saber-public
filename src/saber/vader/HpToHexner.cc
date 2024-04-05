@@ -1,5 +1,5 @@
 /*
- * (C) Crown Copyright 2022 Met Office
+ * (C) Crown Copyright 2022-2024 Met Office
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -67,7 +67,8 @@ HpToHexner::HpToHexner(const oops::GeometryData & outerGeometryData,
     "air_pressure",
     "m_v", "m_ci", "m_cl", "m_r",  // mixing ratios from file
     "m_t",  //  to be populated in evalTotalMassMoistAir
-    "svp", "dlsvpdT",  //  to be populated in eval_sat_vapour_pressure_nl
+    "svp",  //  to be populated in eval_sat_vapour_pressure_nl
+    "dlsvpdT",  //  to be populated in eval_derivative_ln_svp_wrt_temperature_nl
     "qsat",  // to be populated in evalSatSpecificHumidity
     "specific_humidity",
       //  to be populated in eval_water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water_nl
@@ -103,26 +104,14 @@ HpToHexner::HpToHexner(const oops::GeometryData & outerGeometryData,
   mo::eval_air_pressure_levels_nl(augmentedStateFieldSet_);
   mo::eval_air_temperature_nl(augmentedStateFieldSet_);
   mo::evalTotalMassMoistAir(augmentedStateFieldSet_);
-  mo::eval_sat_vapour_pressure_nl(params.svp_file, augmentedStateFieldSet_);
+  mo::eval_sat_vapour_pressure_nl(augmentedStateFieldSet_);
+  mo::eval_derivative_ln_svp_wrt_temperature_nl(augmentedStateFieldSet_);
   mo::evalSatSpecificHumidity(augmentedStateFieldSet_);
   mo::eval_water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water_nl(
               augmentedStateFieldSet_);
   mo::evalVirtualPotentialTemperature(augmentedStateFieldSet_);
   mo::evalHydrostaticExnerLevels(augmentedStateFieldSet_);
   mo::evalHydrostaticPressureLevels(augmentedStateFieldSet_);
-
-  augmentedStateFieldSet_.haloExchange();
-
-  // Need to setup derived state fields that we need.
-  std::vector<std::string> requiredCovarianceVariables;
-  if (covFieldSet_.has("interpolation_weights")) {
-    requiredCovarianceVariables.push_back("vertical_regression_matrices");
-    requiredCovarianceVariables.push_back("interpolation_weights");
-  }
-
-  for (const auto & s : requiredCovarianceVariables) {
-    augmentedStateFieldSet_.add(covFieldSet_[s]);
-  }
 
   oops::Log::trace() << classname() << "::HpToHexner done" << std::endl;
 }
@@ -141,10 +130,10 @@ void HpToHexner::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   // Allocate output fields if they are not already present, e.g when randomizing.
   const oops::Variables outputVars({"hydrostatic_exner_levels"});
-  allocateFields(fset,
-                 outputVars,
-                 activeVars_,
-                 innerGeometryData_.functionSpace());
+  allocateMissingFields(fset,
+                        outputVars,
+                        activeVars_,
+                        innerGeometryData_.functionSpace());
 
   // Populate output fields.
   mo::eval_hydrostatic_exner_levels_tl(fset.fieldSet(), augmentedStateFieldSet_);

@@ -20,7 +20,7 @@
 #include "oops/util/parameters/Parameters.h"
 #include "oops/util/parameters/RequiredParameter.h"
 
-#include "saber/bump/lib/type_bump_parameters.h"
+#include "saber/bump/type_bump_parameters.h"
 
 namespace saber {
 namespace bump {
@@ -117,7 +117,7 @@ class GroupsTypeParameters : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(GroupsTypeParameters, oops::Parameters)
 
  public:
-  // Resolution
+  // Groups
   oops::RequiredParameter<std::vector<std::string>> groups{"groups", this};
   // Type
   oops::RequiredParameter<std::string> type{"type", this};
@@ -175,15 +175,15 @@ class GeneralSection : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(GeneralSection, oops::Parameters)
 
  private:
-  bump_lib::GeneralDef def;
+  GeneralDef def;
 
  public:
   // Add colors to the log (for display on terminal)
   oops::Parameter<bool> color_log = param(def.color_log, this);
   // Stream test messages into a dedicated channel
   oops::Parameter<bool> testing = param(def.testing, this);
-  // Default seed for random numbers
-  oops::Parameter<bool> default_seed = param(def.default_seed, this);
+  // Default seed for random numbers (0 for time-dependent seed)
+  oops::Parameter<int> default_seed = param(def.default_seed, this);
   // Inter-compilers reproducibility
   oops::Parameter<bool> repro_ops = param(def.repro_ops, this);
   // Reproducibility threshold
@@ -201,7 +201,7 @@ class IOSection : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(IOSection, oops::Parameters)
 
  private:
-  bump_lib::IODef def;
+  IODef def;
 
  public:
   // Data directory
@@ -246,7 +246,7 @@ class DriversSection : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(DriversSection, oops::Parameters)
 
  private:
-  bump_lib::DriversDef def;
+  DriversDef def;
 
  public:
   // Compute covariance, ensemble 1
@@ -352,7 +352,7 @@ class ModelSection : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(ModelSection, oops::Parameters)
 
  private:
-  bump_lib::ModelDef def;
+  ModelDef def;
 
  public:
   // Level for 2D variables ('first' or 'last')
@@ -374,7 +374,7 @@ class EnsembleSizesSection : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(EnsembleSizesSection, oops::Parameters)
 
  private:
-  bump_lib::EnsembleSizesDef def;
+  EnsembleSizesDef def;
 
  public:
   // Ensemble 1 size
@@ -394,7 +394,7 @@ class MaskParameters : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(MaskParameters, oops::Parameters)
 
  private:
-  bump_lib::MaskDef def;
+  MaskDef def;
 
  public:
   // Mask restriction type
@@ -412,7 +412,7 @@ class SamplingSection : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(SamplingSection, oops::Parameters)
 
  private:
-  bump_lib::SamplingDef def;
+  SamplingDef def;
 
  public:
   // Computation grid size
@@ -453,7 +453,7 @@ class DiagnosticsSection : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(DiagnosticsSection, oops::Parameters)
 
  private:
-  bump_lib::DiagnosticsDef def;
+  DiagnosticsDef def;
 
  public:
   // Ensemble size
@@ -477,7 +477,7 @@ class VerticalBalanceBlockParameters : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(VerticalBalanceBlockParameters, oops::Parameters)
 
  private:
-  bump_lib::VerticalBalanceBlockDef def;
+  VerticalBalanceBlockDef def;
 
  public:
   // Balanced variable
@@ -497,7 +497,7 @@ class VerticalBalanceSection : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(VerticalBalanceSection, oops::Parameters)
 
  private:
-  bump_lib::VerticalBalanceDef def;
+  VerticalBalanceDef def;
 
  public:
   // Vertical balance parameters
@@ -519,7 +519,7 @@ class VarianceSection : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(VarianceSection, oops::Parameters)
 
  private:
-  bump_lib::VarianceDef def;
+  VarianceDef def;
 
  public:
   // Force specific variance
@@ -535,6 +535,12 @@ class VarianceSection : public oops::Parameters {
   // Variance initial filtering support radius [in meters]
   oops::Parameter<std::vector<VarsValueOrProfileParameters>> var_rhflt{"initial length-scale", {},
     this};
+  // Resolution for the NICAS smoother
+  oops::Parameter<double> smoother_resol = param(def.smoother_resol, this);
+  // Maximum size of the Sc1 subset for the NICAS smoother
+  oops::Parameter<int> smoother_nc1max = param(def.smoother_nc1max, this);
+  // Minimum effective resolution for the NICAS smoother
+  oops::Parameter<double> smoother_resol_eff_min = param(def.smoother_resol_eff_min, this);
 };
 
 // -----------------------------------------------------------------------------
@@ -544,7 +550,7 @@ class OptimalityTestSection : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(OptimalityTestSection, oops::Parameters)
 
  private:
-  bump_lib::OptimalityTestDef def;
+  OptimalityTestDef def;
 
  public:
   // Number of length-scale factors for optimization
@@ -562,9 +568,11 @@ class FitSection : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(FitSection, oops::Parameters)
 
  private:
-  bump_lib::FitDef def;
+  FitDef def;
 
  public:
+  // Threshold to filter out lower raw values
+  oops::Parameter<double> diag_raw_th = param(def.diag_raw_th, this);
   // Horizontal filtering suport radius [in meters]
   oops::Parameter<double> diag_rhflt = param(def.diag_rhflt, this);
   // Vertical filtering support radius
@@ -582,13 +590,15 @@ class NICASSection : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(NICASSection, oops::Parameters)
 
  private:
-  bump_lib::NICASDef def;
+  NICASDef def;
 
  public:
   // Resolution
   oops::Parameter<double> resol = param(def.resol, this);
   // Maximum size of the Sc1 subset
   oops::Parameter<int> nc1max = param(def.nc1max, this);
+  // Minimum effective resolution
+  oops::Parameter<double> resol_eff_min = param(def.resol_eff_min, this);
   // NICAS draw type ('random' or 'octahedral')
   oops::Parameter<std::string> nicas_draw_type = param(def.nicas_draw_type, this);
   // Force specific support radii
@@ -623,7 +633,7 @@ class PsichitouvSection : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(PsichitouvSection, oops::Parameters)
 
  private:
-  bump_lib::PsichitouvDef def;
+  PsichitouvDef def;
 
  public:
   // Number of longitudes for the regular grid

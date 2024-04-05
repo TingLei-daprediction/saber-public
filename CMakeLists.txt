@@ -9,7 +9,7 @@
 
 cmake_minimum_required( VERSION 3.12 )
 
-project( saber VERSION 1.8.0 LANGUAGES CXX Fortran )
+project( saber VERSION 1.10.0 LANGUAGES CXX Fortran )
 
 option(OPENMP "Build saber with OpenMP support" ON)
 
@@ -43,18 +43,19 @@ find_package( atlas 0.35.0 REQUIRED COMPONENTS OMP_Fortran )
 if( ENABLE_MKL )
     find_package( MKL )
 endif()
-if( MKL_FOUND )
+if( ENABLE_MKL AND MKL_FOUND )
     set( LAPACK_LIBRARIES ${MKL_LIBRARIES} )
 else()
     find_package( LAPACK REQUIRED )
 endif()
 
 # OOPS
-find_package( oops 1.7.0 REQUIRED )
+find_package( oops 1.10.0 REQUIRED )
 
 # Optionals
-find_package( gsibec 1.1.2 QUIET )
-find_package( vader 1.4.0 QUIET )
+find_package( FFTW 3.3.8 QUIET )
+find_package( gsibec 1.2.1 QUIET )
+find_package( vader 1.7.0 QUIET )
 
 # Optional SABER blocks
 if( gsibec_FOUND )
@@ -63,15 +64,20 @@ if( gsibec_FOUND )
 else()
     message( STATUS "SABER block GSI is NOT enabled" )
 endif()
+if( FFTW_FOUND )
+    message( STATUS "SABER block FastLAM spectral layer is enabled" )
+else()
+    message( STATUS "SABER block FastLAM spectral layer is NOT enabled" )
+endif()
 if( atlas_TRANS_FOUND OR atlas_ECTRANS_FOUND )
     message( STATUS "SABER block SPECTRALB is enabled" )
 else()
     message( STATUS "SABER block SPECTRALB is NOT enabled" )
 endif()
 if( vader_FOUND )
-    message( STATUS "SABER blocks VADER are enabled" )
+    message( STATUS "SABER blocks based on VADER are enabled" )
 else()
-    message( STATUS "SABER blocks VADER are NOT enabled" )
+    message( STATUS "SABER blocks based on VADER are NOT enabled" )
 endif()
 
 ## SABER instrumentation

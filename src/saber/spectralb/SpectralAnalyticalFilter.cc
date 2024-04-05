@@ -1,5 +1,5 @@
 /*
- * (C) Crown Copyright 2023 Met Office
+ * (C) Crown Copyright 2023-2024 Met Office
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -50,6 +50,41 @@ void gaussianShape(std::vector<double> & wavenumbers,
                  [& factor](auto & n){return std::exp(- factor * std::pow(n, 2));});
 }
 
+void triangularShape(std::vector<double> & wavenumbers,
+                     const double & bandmin, const double & bandpeak,
+                     const double & bandmax) {
+  for (int w = 0; w < static_cast<int>(wavenumbers.size()); ++w) {
+    double left = -(bandmin - w) / (bandpeak - bandmin);
+    double right = -(bandmax - w) / (bandpeak - bandmax);
+    wavenumbers[w] = std::max(0.0, std::min(left, right));
+  }
+}
+
+void rectangleRightAngleTriangleShape(std::vector<double> & wavenumbers,
+    const double & bandmin, const double & bandpeak, const double & bandmax) {
+  for (int w = 0; w < static_cast<int>(wavenumbers.size()); ++w) {
+    double left = 1.0;
+    double right = -(bandmax - w) / (bandpeak - bandmax);
+    wavenumbers[w] = std::max(0.0, std::min(left, right));
+  }
+}
+
+void rightAngleTriangleRectangleShape(std::vector<double> & wavenumbers,
+    const double & bandmin, const double & bandpeak, const double & bandmax) {
+  for (int w = 0; w < static_cast<int>(wavenumbers.size()); ++w) {
+    double left = -(bandmin - w) / (bandpeak - bandmin);
+    double right = 1.0;
+    wavenumbers[w] = std::max(0.0, std::min(left, right));
+  }
+}
+
+void rectangleShape(std::vector<double> & wavenumbers,
+    const double & bandmin, const double & amplitude, const double & bandmax) {
+  for (int w = 0; w < static_cast<int>(wavenumbers.size()); ++w) {
+    wavenumbers[w] = (w >= bandmin && w <= bandmax ? amplitude : 0.0);
+  }
+}
+
 // -----------------------------------------------------------------------------
 
 auto createSpectralFilter(const oops::GeometryData & geometryData,
@@ -69,19 +104,61 @@ auto createSpectralFilter(const oops::GeometryData & geometryData,
   const auto & function = params.function.value();
   const std::string functionShape(function.getString("shape", "gaussian"));
   if (functionShape.compare("gaussian") == 0) {
-    if (!function.has("horizontal daley length")) throw eckit::BadParameter(
-                    "horizontal daley length must be specified for Gaussian function shapes");
-
+    if (!function.has("horizontal daley length")) {
+      throw eckit::BadParameter(
+      "horizontal daley length must be specified for Gaussian function shapes");
+    }
     const double loc_rh = function.getDouble("horizontal daley length");
     gaussianShape(spectralFilter, loc_rh);
+  } else if (functionShape.compare("waveband filter") == 0) {
+    if (!function.has("waveband min")) throw eckit::BadParameter(
+      "minimum wavenumber must be specified for waveband function shapes");
+    if (!function.has("waveband max")) throw eckit::BadParameter(
+      "waveband max wavenumber must be specified for waveband function shapes");
+    if (!function.has("waveband peak")) throw eckit::BadParameter(
+      "waveband peak wavenumber must be specified for waveband function shapes");
+    const int bandmin = function.getInt("waveband min");
+    const int bandmax = function.getInt("waveband max");
+    const int bandpeak = function.getInt("waveband peak");
+
+    (bandmin == 0 ?
+     rectangleRightAngleTriangleShape(spectralFilter, 0.0,
+                                      static_cast<double>(bandpeak),
+                                      static_cast<double>(bandmax)) :
+       (bandmax == truncation ?
+        rightAngleTriangleRectangleShape(spectralFilter,
+                                         static_cast<double>(bandmin),
+                                         static_cast<double>(bandpeak),
+                                         static_cast<double>(truncation)) :
+        triangularShape(spectralFilter,
+                        static_cast<double>(bandmin),
+                        static_cast<double>(bandpeak),
+                        static_cast<double>(bandmax))));
+  } else if (functionShape.compare("boxcar") == 0) {
+    if (!function.has("waveband min")) throw eckit::BadParameter(
+      "minimum wavenumber must be specified for boxcar functions");
+    if (!function.has("waveband max")) throw eckit::BadParameter(
+      "maximum wavenumber must be specified for boxcar functions");
+    if (!function.has("waveband amplitude")) throw eckit::BadParameter(
+      "waveband amplitude must be specified for boxcar functions");
+    const int bandmin = function.getInt("waveband min");
+    const int bandmax = function.getInt("waveband max");
+    const int amplitude = function.getInt("waveband amplitude");
+    rectangleShape(spectralFilter, bandmin, amplitude, bandmax);
   } else {
     throw eckit::BadParameter("function shape " + functionShape + " not implemented yet.",
                               Here());
   }
 
-  // 3) Normalize as a localization function if required
+  // 3) Normalize as a localization function if required or
+  //    preserve variance of increments.
   // ---------------------------------------------------
-  if (params.normalize.value()) {
+  if ( params.normalizeFilterVariance && params.preservingVariance ) {
+    throw eckit::BadParameter(
+    "normalize filter variance option incompatibile with preserving variance option");
+  }
+
+  if ( params.normalizeFilterVariance ) {
     // Compute total variance in spectral space before normalization.
     double totalVarianceSpectral = 0;
     const auto zonal_wavenumbers = specFunctionSpace.zonal_wavenumbers();
@@ -105,13 +182,21 @@ auto createSpectralFilter(const oops::GeometryData & geometryData,
                    [& normalization](auto & elem){return elem * normalization;});
   }
 
-  // 4) Take square root
-  // -------------------
+  if ( params.preservingVariance ) {
+    std::transform(spectralFilter.begin(), spectralFilter.end(),
+                   spectralFilter.begin(), [](auto & e){return std::sqrt(e);});
+  }
+
+  if ( params.complementFilter ) {
+    std::transform(spectralFilter.begin(), spectralFilter.end(),
+                   spectralFilter.begin(), [](auto & e){return 1.0 - e;});
+  }
+
+  // 4) Take square root (as this is an outer block)
+  // -----------------------------------------------
   std::transform(spectralFilter.begin(), spectralFilter.end(),
                  spectralFilter.begin(), [](auto & e){return std::sqrt(e);});
 
-  oops::Log::trace() << "saber::spectralb::createSpectralFilter done"
-                     << std::endl;
   return spectralFilter;
 }
 
@@ -119,11 +204,11 @@ auto createSpectralFilter(const oops::GeometryData & geometryData,
 
 // -----------------------------------------------------------------------------
 SpectralAnalyticalFilter::SpectralAnalyticalFilter(const oops::GeometryData & geometryData,
-                                               const oops::Variables & outerVars,
-                                               const eckit::Configuration & covarConf,
-                                               const Parameters_ & params,
-                                               const oops::FieldSet3D & xb,
-                                               const oops::FieldSet3D & fg)
+                                                   const oops::Variables & outerVars,
+                                                   const eckit::Configuration & covarConf,
+                                                   const Parameters_ & params,
+                                                   const oops::FieldSet3D & xb,
+                                                   const oops::FieldSet3D & fg)
   : SaberOuterBlockBase(params, xb.validTime()), params_(params),
     activeVars_(getActiveVars(params, outerVars)),
     innerGeometryData_(geometryData),
@@ -146,7 +231,7 @@ void SpectralAnalyticalFilter::multiply(oops::FieldSet3D & fieldSet) const {
 
   for (const auto & var : activeVars_.variables()) {
     auto view = atlas::array::make_view<double, 2>(fieldSet[var]);
-    const atlas::idx_t levels = fieldSet[var].levels();
+    const atlas::idx_t levels = fieldSet[var].shape(1);
 
     // Element-wise multiplication
     atlas::idx_t jnode = 0;
@@ -196,7 +281,7 @@ void SpectralAnalyticalFilter::leftInverseMultiply(oops::FieldSet3D & fieldSet) 
 
   for (const auto & var : activeVars_.variables()) {
     auto view = atlas::array::make_view<double, 2>(fieldSet[var]);
-    const atlas::idx_t levels = fieldSet[var].levels();
+    const atlas::idx_t levels = fieldSet[var].shape(1);
 
     // Element-wise multiplication
     atlas::idx_t jnode = 0;

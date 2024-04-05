@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2023 Meteorlogisk Institutt
+ * (C) Copyright 2024 Meteorlogisk Institutt
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -89,6 +89,9 @@ class FastLAMParametersBase : public oops::Parameters {
   // Target resolution
   oops::OptionalParameter<size_t> resol{"resolution", this};
 
+  // Parallelization (rows-columns or halo)
+  oops::Parameter<std::string> parallelization{"parallelization", "rows-columns", this};
+
   // Skip tests
   oops::Parameter<bool> skipTests{"skip tests", false, this};
 
@@ -108,7 +111,7 @@ class FastLAMParametersBase : public oops::Parameters {
   // Normalization accuracy stride (to reduce cost)
   oops::Parameter<size_t> normAccStride{"normalization accuracy stride", 10, this};
 
-  // Multivariate strategy ('univariate', 'duplicated'), TODO(Benjamin): 'crossed'
+  // Multivariate strategy ('univariate', 'duplicated' or 'crossed')
   oops::RequiredParameter<std::string> strategy{"multivariate strategy", this};
 
   // Groups of variables

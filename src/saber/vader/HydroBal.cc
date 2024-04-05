@@ -1,5 +1,5 @@
 /*
- * (C) Crown Copyright 2022 Met Office
+ * (C) Crown Copyright 2022-2024 Met Office
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -50,7 +50,11 @@ HydroBal::HydroBal(const oops::GeometryData & outerGeometryData,
                    const oops::FieldSet3D & xb,
                    const oops::FieldSet3D & fg)
   : SaberOuterBlockBase(params, xb.validTime()),
-    innerGeometryData_(outerGeometryData), innerVars_(outerVars), augmentedStateFieldSet_()
+    innerGeometryData_(outerGeometryData),
+    innerVars_(getUnionOfInnerActiveAndOuterVars(params, outerVars)),
+    activeOuterVars_(params.activeOuterVars(outerVars)),
+    innerOnlyVars_(getInnerOnlyVars(params, outerVars)),
+    augmentedStateFieldSet_()
 {
   oops::Log::trace() << classname() << "::HydroBal starting" << std::endl;
 
@@ -64,7 +68,8 @@ HydroBal::HydroBal(const oops::GeometryData & outerGeometryData,
     "exner_levels_minus_one",
     "m_v", "m_ci", "m_cl", "m_r",  // mixing ratios from file
     "m_t",  //  to be populated in evalTotalMassMoistAir
-    "svp", "dlsvpdT",  //  to be populated in eval_sat_vapour_pressure_nl
+    "svp",  //  to be populated in eval_sat_vapour_pressure_nl
+    "dlsvpdT",  //  to be populated in eval_derivative_ln_svp_wrt_temperature_nl
     "qsat",  // to be populated in evalSatSpecificHumidity
     "specific_humidity",
       //  to be populated in eval_water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water_nl
@@ -101,15 +106,14 @@ HydroBal::HydroBal(const oops::GeometryData & outerGeometryData,
   mo::eval_air_pressure_levels_nl(augmentedStateFieldSet_);
   mo::eval_air_temperature_nl(augmentedStateFieldSet_);
   mo::evalTotalMassMoistAir(augmentedStateFieldSet_);
-  mo::eval_sat_vapour_pressure_nl(params.svp_file, augmentedStateFieldSet_);
+  mo::eval_sat_vapour_pressure_nl(augmentedStateFieldSet_);
+  mo::eval_derivative_ln_svp_wrt_temperature_nl(augmentedStateFieldSet_);
   mo::evalSatSpecificHumidity(augmentedStateFieldSet_);
   mo::eval_water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water_nl(
               augmentedStateFieldSet_);
   mo::eval_virtual_potential_temperature_nl(augmentedStateFieldSet_);
   mo::evalHydrostaticExnerLevels(augmentedStateFieldSet_);
   mo::evalHydrostaticPressureLevels(augmentedStateFieldSet_);
-
-  augmentedStateFieldSet_.haloExchange();
 
   oops::Log::trace() << classname() << "::HydroBal done" << std::endl;
 }
@@ -127,14 +131,14 @@ HydroBal::~HydroBal() {
 void HydroBal::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   // Allocate output fields if they are not already present, e.g when randomizing.
-  const oops::Variables outputVars({"virtual_potential_temperature"});
-  allocateFields(fset,
-                 outputVars,
-                 innerVars_,
-                 innerGeometryData_.functionSpace());
+  allocateMissingFields(fset, activeOuterVars_, activeOuterVars_,
+                        innerGeometryData_.functionSpace());
 
   // Populate output fields.
   mo::eval_hydrobal_virtual_potential_temperature_tl(fset.fieldSet(), augmentedStateFieldSet_);
+
+  // Remove inner-only variables
+  fset.removeFields(innerOnlyVars_);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
@@ -142,6 +146,11 @@ void HydroBal::multiply(oops::FieldSet3D & fset) const {
 
 void HydroBal::multiplyAD(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
+  // Allocate inner-only variables
+  checkFieldsAreNotAllocated(fset, innerOnlyVars_);
+  allocateMissingFields(fset, innerOnlyVars_, innerOnlyVars_,
+                        innerGeometryData_.functionSpace());
+
   mo::eval_hydrobal_virtual_potential_temperature_ad(fset.fieldSet(), augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
@@ -150,6 +159,11 @@ void HydroBal::multiplyAD(oops::FieldSet3D & fset) const {
 
 void HydroBal::leftInverseMultiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::leftInverseMultiply starting" << std::endl;
+  // Allocate inner-only variables
+  checkFieldsAreNotAllocated(fset, innerOnlyVars_);
+  allocateMissingFields(fset, innerOnlyVars_, innerOnlyVars_,
+                        innerGeometryData_.functionSpace());
+
   mo::eval_hydrobal_hydrostatic_exner_levels_tl(fset.fieldSet(), augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
 }

@@ -34,6 +34,29 @@
 namespace quench {
 
 // -----------------------------------------------------------------------------
+/// Orography parameters
+
+class OrographyParameters : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(OrographyParameters, Parameters)
+
+ public:
+  /// Top longitude [degrees]
+  oops::RequiredParameter<double> topLon{"top longitude", this};
+
+  /// Top latitude [degrees]
+  oops::RequiredParameter<double> topLat{"top latitude", this};
+
+  /// Zonal length [m]
+  oops::RequiredParameter<double> zonalLength{"zonal length", this};
+
+  /// Meridional length [m]
+  oops::RequiredParameter<double> meridionalLength{"meridional length", this};
+
+  /// Height (% of the bottom layer thickness, or absolute value if one level only)
+  oops::RequiredParameter<double> height{"height", this};
+};
+
+// -----------------------------------------------------------------------------
 /// Group parameters
 
 class GroupParameters : public oops::Parameters {
@@ -48,6 +71,9 @@ class GroupParameters : public oops::Parameters {
 
   /// Corresponding level for 2D variables (first or last)
   oops::Parameter<std::string> lev2d{"lev2d", "first", this};
+
+  /// Orography
+  oops::OptionalParameter<OrographyParameters> orography{"orography", this};
 
   /// Vertical coordinate
   oops::OptionalParameter<std::vector<double>> vert_coord{"vert_coord", this};
@@ -104,7 +130,6 @@ class Geometry : public util::Printable,
   const atlas::grid::Partitioner partitioner() const {return partitioner_;}
   const atlas::Mesh mesh() const {return mesh_;}
   const atlas::FunctionSpace & functionSpace() const {return functionSpace_;}
-  atlas::FunctionSpace & functionSpace() {return functionSpace_;}
   const atlas::FieldSet & fields() const {return groups_[0].fields_;}
   const atlas::FieldSet & fields(const size_t & groupIndex) const
     {return groups_[groupIndex].fields_;}
