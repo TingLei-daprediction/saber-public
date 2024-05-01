@@ -1,27 +1,40 @@
-!&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-                        submodule(mg_parameter)  mg_mppstuff
-!***********************************************************************
-!                                                                      !
-!    Everything related to mpi communication                           !
-!                                                                      !
-! Library: mpi                                                         !
-! Modules: kinds, mg_parameter                                         !
-!                                                     M. Rancic (2020) !
-!***********************************************************************
+submodule(mg_parameter) mg_mppstuff
+!$$$  submodule documentation block
+!                .      .    .                                       .
+! module:   mg_mppstuff
+!   prgmmr: rancic           org: NCEP/EMC            date: 2020
+!
+! abstract:  Everything related to mpi communication
+!
+! module history log:
+!   2023-04-19  lei     - object-oriented coding
+!   2024-01-11  rancic  - optimization for ensemble localization
+!   2024-02-20  yokota  - refactoring to apply for GSI
+!
+! Subroutines Included:
+!   init_mg_MPI -
+!   barrierMPI -
+!   finishMPI -
+!
+! Functions Included:
+!
+! remarks:
+!
+! attributes:
+!   language: f90
+!   machine:
+!
+!$$$ end documentation block
+
 use kinds, only: i_kind
 implicit none
 
-
-!keep_for_now integer(i_kind):: ns,ms,ninc,minc,ninc2,minc2
-
-
-
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-                        contains
+contains
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-                        module subroutine init_mg_MPI(this)
+module subroutine init_mg_MPI(this)
 !***********************************************************************
 !                                                                      !
 !     Initialize mpi                                                   !
@@ -30,7 +43,6 @@ implicit none
 !***********************************************************************
 use mpi
 
-
 implicit none
 class (mg_parameter_type),target:: this
 integer(i_kind):: g,m
@@ -38,33 +50,25 @@ integer(i_kind), dimension(this%npes_filt):: out_ranks
 integer(i_kind):: nf
 integer(i_kind)::ierr
 integer(i_kind):: color
-include  "type_parameter_locpointer.inc"
-include  "type_parameter_point2this.inc"
+include "type_parameter_locpointer.inc"
+include "type_parameter_point2this.inc"
 !-----------------------------------------------------------------------
 
-!cltorg           mpi_comm_comp=MPI_COMM_WORLD
 !***
 !***  Initial MPI calls
 !***
-!cltorg      call MPI_INIT(ierr)
       call MPI_COMM_RANK(MPI_COMM_WORLD,mype,ierr)
       call MPI_COMM_SIZE(MPI_COMM_WORLD,npes,ierr)
 !      call MPI_Barrier(MPI_COMM_WORLD, ierr)
 
       ! Create a new communicator with MPI_Comm_split
       color=1  ! just create an communicator now for the whole processes
-      write(6,*)'thinkdebmype is ',mype
       call MPI_Comm_split(MPI_COMM_WORLD, color, mype, mpi_comm_comp, ierr)
       call MPI_COMM_SIZE(mpi_comm_comp,npes,ierr)
-
-
-
-
 
       rTYPE = MPI_REAL
       dTYPE = MPI_DOUBLE
       iTYPE = MPI_INTEGER
-
 
 !***
 !*** Analysis grid
@@ -73,31 +77,9 @@ include  "type_parameter_point2this.inc"
     nx = mod(mype,nxm)+1
     my = (mype/nxm)+1
 
-!    if(nx==1) then
-!       ns=0
-!       ninc=1
-!       ninc2=2
-!    else 
-!       ns=1
-!       ninc=0
-!       ninc2=1
-!    endif
-!
-!    if(my==1) then
-!       ms=0
-!       minc=1
-!       minc2=2
-!    else 
-!       ms=1
-!       minc=0
-!       minc2=1
-!    endif
-
-
 !***
 !***  Define PEs that handle high generations
 !***
-
    
       mype_hgen=-1
       my_hgen=-1
@@ -112,16 +94,11 @@ include  "type_parameter_point2this.inc"
       enddo
       l_hgen = mype_hgen >-1
 
-!TEST
-!      write(300+mype,*)'mype,my_hgen,l_gen,mype_hgen=',mype,my_hgen,l_hgen,mype_hgen
-!TEST
-
 !***
 !***  Chars
 !***
       write(c_mype,1000) mype
  1000 format(i5.5)
-
 
 !-----------------------------------------------------------------------
 !
@@ -150,7 +127,6 @@ include  "type_parameter_point2this.inc"
 
     if( mype < npes_filt) then
 
-
       call MPI_COMM_RANK(mpi_comm_work,mype_gr,ierr)
       call MPI_COMM_SIZE(mpi_comm_work,npes_gr,ierr)
 
@@ -161,24 +137,15 @@ include  "type_parameter_point2this.inc"
  
    endif 
 
-!TEST
-!     write(mype+100,*) 'mype, mype_gr=',mype, mype_gr
-!     print *, 'mype, mype_gr=',mype, mype_gr
-!     call MPI_FINALIZE(this@mpi_comm_comp)
-!     stop
-!TEST
-    
-     
-
 !-----------------------------------------------------------------------
 !
       call MPI_BARRIER(mpi_comm_comp,ierr)
 !
 !-----------------------------------------------------------------------
-                        endsubroutine init_mg_MPI
+endsubroutine init_mg_MPI
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-                  module      subroutine barrierMPI(this)
+module subroutine barrierMPI(this)
 !***********************************************************************
 !                                                                      !
 !     Call barrier for all                                             !
@@ -187,19 +154,19 @@ include  "type_parameter_point2this.inc"
 use mpi
 
 implicit none
-        class(mg_parameter_type),target::this
+class(mg_parameter_type),target::this
 integer(i_kind):: ierr
-include  "type_parameter_locpointer.inc"
-include  "type_parameter_point2this.inc"
+include "type_parameter_locpointer.inc"
+include "type_parameter_point2this.inc"
 !-----------------------------------------------------------------------
 
       call MPI_BARRIER(mpi_comm_comp,ierr)
 
 !-----------------------------------------------------------------------
-                        endsubroutine barrierMPI
+endsubroutine barrierMPI
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-                       module  subroutine finishMPI(this)
+module subroutine finishMPI(this)
 !***********************************************************************
 !                                                                      !
 !     Finalize MPI                                                     !
@@ -208,15 +175,16 @@ include  "type_parameter_point2this.inc"
 use mpi
 
 implicit none
-        class(mg_parameter_type),target::this
-!cltthinkdeb don't need mpi_finalize if mgbf is a lib to be called from outside
+class(mg_parameter_type),target::this
+!
+! don't need mpi_finalize if mgbf is a lib to be called from outside
 !
       call MPI_FINALIZE(this%ierr)
       stop
 !
 !-----------------------------------------------------------------------
-                        endsubroutine finishMPI
+endsubroutine finishMPI
 
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-                        end submodule mg_mppstuff
+end submodule mg_mppstuff
 

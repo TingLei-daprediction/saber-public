@@ -1,46 +1,42 @@
-!clt from type_instate_locpoint.inc
 V=>this%V
 VALL=>this%VALL
 HALL=>this%HALL
 
- a_diff_f=>this%a_diff_f
-  a_diff_h=>this%a_diff_h
-  b_diff_f=>this%b_diff_f
-  b_diff_h=>this%b_diff_h
+a_diff_f=>this%a_diff_f
+a_diff_h=>this%a_diff_h
+b_diff_f=>this%b_diff_f
+b_diff_h=>this%b_diff_h
 
-  p_eps=>this%p_eps
-  p_del=>this%p_del
-  p_sig=>this%p_sig
-  p_rho=>this%p_rho
-  paspx=>this%paspx
-  paspy=>this%paspy
-  pasp1=>this%pasp1
-  pasp2=>this%pasp2
-  pasp3=>this%pasp3
+p_eps=>this%p_eps
+p_del=>this%p_del
+p_sig=>this%p_sig
+p_rho=>this%p_rho
+paspx=>this%paspx
+paspy=>this%paspy
+pasp1=>this%pasp1
+pasp2=>this%pasp2
+pasp3=>this%pasp3
 
-  vpasp2=>this%vpasp2
-  hss2=>this%hss2
-   vpasp3=>this%vpasp3
- hss3=>this%hss3
+vpasp2=>this%vpasp2
+hss2=>this%hss2
+vpasp3=>this%vpasp3
+hss3=>this%hss3
 
 ssx=>this%ssx
 ssy=>this%ssy
- ss1=>this%ss1
+ss1=>this%ss1
 ss2=>this%ss2
 ss3=>this%ss3
 
- dixs=>this%dixs
- diys=>this%diys
- dizs=>this%dizs
+dixs=>this%dixs
+diys=>this%diys
+dizs=>this%dizs
 
- dixs3=>this%dixs3
- diys3=>this%diys3
+dixs3=>this%dixs3
+diys3=>this%diys3
 dizs3=>this%dizs3
 
 qcols=>this%qcols
-
-!clt WORKA=>this%WORKA
-
 
 iref=>this%iref
 jref=>this%jref

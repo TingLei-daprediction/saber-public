@@ -36,6 +36,7 @@ Grid::Grid(const eckit::mpi::Comm & comm, const eckit::Configuration & conf)
   gsi_grid_get_levels_f90(keySelf_, gsiLevels_);
 
   // Create a functionspace for the GSI grid
+  // tothink
   atlas::FieldSet gsiGridFieldSet = atlas::FieldSet();
   gsi_grid_set_atlas_lonlat_f90(keySelf_, gsiGridFieldSet.get());
   atlas::Field lonlat = gsiGridFieldSet["lonlat"];

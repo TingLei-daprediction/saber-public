@@ -1,33 +1,46 @@
-!
-!                                **********************************************
-!                                *             MODULE jp_pmat                 *
-!                                *  R. J. Purser, NOAA/NCEP/EMC       1993    *
-!                                *  and Tsukasa Fujita, visiting scientist    *
-!                                *  from JMA.                                 *
-!                                *  Major modifications: 2002, 2009, 2012     *
-!                                *  jim.purser@noaa.gov                       *
-!                                *                                            *
-!                                **********************************************
-!
-! Utility routines for various linear inversions and Cholesky.
-! Dependency: modules jp_pkind, jp_pietc
-! Originally, these routines were copies of the purely "inversion" members
-! of pmat1.f90 (a most extensive collection of matrix routines -- not just
-! inversions). As well as having both single and double precision versions
-! of each routine, these versions also make provision for a more graceful
-! termination in cases where the system matrix is detected to be 
-! essentially singular (and therefore noninvertible). This provision takes
-! the form of an optional "failure flag", FF, which is normally returned
-! as .FALSE., but is returned as .TRUE. when inversion fails.
-! In Sep 2012, these routines were collected together into jp_pmat.f90 so
-! that all the main matrix routines could be in the same library, jp_pmat.a.
-! 
-! DIRECT DEPENDENCIES:
-! Modules: jp_pkind, jp_pietc
-!
-!=============================================================================
 module jp_pmat
-!=============================================================================
+!$$$  module documentation block
+!                .      .    .                                       .
+! module:   jp_pmat
+!   prgmmr: fujita           org: NOAA/EMC            date: 1993
+!
+! abstract:  Utility routines for various linear inversions and Cholesky
+!
+! module history log:
+!   2002        purser
+!   2009        purser
+!   2012        purser
+!
+! Subroutines Included:
+!    swpvv -
+!    inv -
+!    ldum -
+!    udlmm -
+!    l1lm -
+!    ldlm -
+!    invu -
+!    invl -
+!
+! Functions Included:
+!
+! remarks:
+!   Originally, these routines were copies of the purely "inversion" members
+!   of pmat1.f90 (a most extensive collection of matrix routines -- not just
+!   inversions). As well as having both single and double precision versions
+!   of each routine, these versions also make provision for a more graceful
+!   termination in cases where the system matrix is detected to be 
+!   essentially singular (and therefore noninvertible). This provision takes
+!   the form of an optional "failure flag", FF, which is normally returned
+!   as .FALSE., but is returned as .TRUE. when inversion fails.
+!   In Sep 2012, these routines were collected together into jp_pmat.f90 so
+!   that all the main matrix routines could be in the same library, jp_pmat.a.
+!
+! attributes:
+!   language: f90
+!   machine:
+!
+!$$$ end documentation block
+
 use mpi
 use jp_pkind, only: sp,dp,spc,dpc
 use jp_pietc, only: t,f

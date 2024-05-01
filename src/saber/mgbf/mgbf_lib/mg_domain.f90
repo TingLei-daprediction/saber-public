@@ -1,70 +1,79 @@
-!&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-                        submodule(mg_parameter)  mg_domain
-!**********************************************************************!
-!                                                                      !
-!    Definition of a squared integration domain                        !
-!                                                                      !
-!  Modules: kinds, mg_mppstuff, mg_parameter                           !
-!                                                     M. Rancic (2020) !
-!**********************************************************************!
+submodule(mg_parameter) mg_domain
+!$$$  submodule documentation block
+!                .      .    .                                       .
+! module:   mg_domain
+!   prgmmr: rancic           org: NCEP/EMC            date: 2020
+!
+! abstract:  Definition of a squared integration domain
+!
+! module history log:
+!   2023-04-19  lei     - object-oriented coding
+!   2024-01-11  rancic  - optimization for ensemble localization
+!   2024-02-20  yokota  - refactoring to apply for GSI
+!
+! Subroutines Included:
+!   init_mg_domain -
+!   init_domain -
+!   init_topology_2d -
+!   real_itarg -
+!
+! Functions Included:
+!
+! remarks:
+!
+! attributes:
+!   language: f90
+!   machine:
+!
+!$$$ end documentation block
+
 use mpi
 use kinds, only: i_kind
-!use mpimod, only: mype
 
 implicit none
 
-
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-                        contains
+contains
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-        module         subroutine init_mg_domain(this)
+module subroutine init_mg_domain(this)
 !***********************************************************************
 !                                                                      *
 !             Initialize square domain                                 *
 !                                                                      *
 !***********************************************************************
 implicit none
-        class(mg_parameter_type)::this
+class(mg_parameter_type)::this
 
-
-         call init_domain(this)
-         call init_topology_2d(this)
-
+call init_domain(this)
+call init_topology_2d(this)
  
 !-----------------------------------------------------------------------
-                        endsubroutine init_mg_domain
+endsubroutine init_mg_domain
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-             module           subroutine init_domain(this)
+module subroutine init_domain(this)
 !***********************************************************************
 !                                                                      *
 !   Definition of constants that control filtering domain              *
 !                                                                      *
 !***********************************************************************
-
 implicit none
-        class(mg_parameter_type),target::this
-
+class(mg_parameter_type),target::this
 
 integer(i_kind) n,nstrd,i,j
 logical:: F=.false., T=.true.
 
 integer(i_kind):: loc_pe,g
-include  "type_parameter_locpointer.inc"
-include  "type_parameter_point2this.inc"
+include "type_parameter_locpointer.inc"
+include "type_parameter_point2this.inc"
 !-----------------------------------------------------------------------
-!TEST
-!      if(mype==0) then
-!        print *,'FROM INIT_DOMAIN: nxm,mym=',nxm,mym
-!      endif
-!TEST
 
       Flwest(1)=nx.eq.1
       Fleast(1)=nx.eq.nxm
       Flsouth(1)=my.eq.1
-      Flnorth(1)=my.eq.mym
+      Flnorth(1)=my.eq.nym
 
  if(l_hgen) then 
 
@@ -113,7 +122,7 @@ include  "type_parameter_point2this.inc"
       itarg_sA=mype-nxm
     endif
 
-    if(my==mym) then
+    if(my==nym) then
       itarg_nA=-1
     else
       itarg_nA=mype+nxm
@@ -122,7 +131,7 @@ include  "type_parameter_point2this.inc"
       lwestA=nx.eq.1
       leastA=nx.eq.nxm
       lsouthA=my.eq.1
-      lnorthA=my.eq.mym
+      lnorthA=my.eq.nym
 
    
 !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -155,28 +164,25 @@ include  "type_parameter_point2this.inc"
 !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 !-----------------------------------------------------------------------
-                        endsubroutine init_domain
+endsubroutine init_domain
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-                    module    subroutine init_topology_2d(this)
+module subroutine init_topology_2d(this)
 !***********************************************************************
 !                                                                      *
 !                  Define topology of filter grid                      *
 !                       - Four generations -                           *
 !                                                                      *
 !***********************************************************************
-
 implicit none
-        class(mg_parameter_type),target::this
-
+class(mg_parameter_type),target::this
 !-----------------------------------------------------------------------
 logical:: F=.false., T=.true.
 
-
 integer(i_kind) mx2,my2,ix_up,jy_up,ix_dn,jy_dn
 integer(i_kind) g,naux,nx_up,my_up
-include  "type_parameter_locpointer.inc"
-include  "type_parameter_point2this.inc"
+include "type_parameter_locpointer.inc"
+include "type_parameter_point2this.inc"
 !-----------------------------------------------------------------------
 !
 !     Topology of generations of the squared domain
@@ -207,8 +213,8 @@ include  "type_parameter_point2this.inc"
 !   |     |     |     |     |     |     |     |     |
 !   |  0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |
 !   |_____|_____|_____|_____|_____|_____|_____|_____|
-
-
+!
+!
 !                           G2 
 !    ___________ ___________ ___________ ___________ 
 !   |           |           |           |           |
@@ -235,8 +241,8 @@ include  "type_parameter_point2this.inc"
 !   |           |           |           |           |
 !   |           |           |           |           |
 !   |___________|___________|___________|___________|
-
-
+!
+!
 !                           G3 
 !    _______________________ _______________________ 
 !   |                       |                       |
@@ -263,8 +269,8 @@ include  "type_parameter_point2this.inc"
 !   |                       |                       |
 !   |                       |                       |
 !   |_______________________|_______________________|
-
-
+!
+!
 !                           G4 
 !    _______________________________________________ 
 !   |                                               |
@@ -291,7 +297,7 @@ include  "type_parameter_point2this.inc"
 !   |                                               |
 !   |                                               |
 !   |_______________________________________________|
-
+!
 !----------------------------------------------------------------------
 
        do g = 1,2
@@ -502,18 +508,6 @@ include  "type_parameter_point2this.inc"
 
     endif
 
-!TEST
-! if(mype_hgen>-1.and.my_hgen<gm) then
-!    write(100+mype_hgen,'(a,i5)') 'mype_hgen=',mype_hgen
-!    write(100+mype_hgen,'(a,i5)') 'Fitarg_up=',Fitarg_up(2)
-!    write(100+mype_hgen,'(a,l5)') 'Flsendup_sw=',Flsendup_sw(2)
-!    write(100+mype_hgen,'(a,l5)') 'Flsendup_se=',Flsendup_se(2)
-!    write(100+mype_hgen,'(a,l5)') 'Flsendup_nw=',Flsendup_nw(2)
-!    write(100+mype_hgen,'(a,l5)') 'Flsendup_ne=',Flsendup_ne(2)
-! endif 
-! call finishMPI
-!TEST
-
 !
 ! Downsending flags 
 !
@@ -536,12 +530,6 @@ include  "type_parameter_point2this.inc"
           itargdn_nw=-1
           itargdn_ne=-1
        end if
-!TEST
-!    if(my_hgen == 2) then
-!       write(100+mype,'(a,2i5)')'mype,itargdn_se=',mype,itargdn_se
-!    endif
-!    call finishMPI
-!TEST
 
      else 
 
@@ -551,17 +539,6 @@ include  "type_parameter_point2this.inc"
         itargdn_ne=-1
 
      end if
-!TEST
-! if(mype_hgen> 1) then
-!    write(100+mype_hgen,'(a,i5)') 'mype_hgen=',mype_hgen
-!    write(100+mype_hgen,'(a,2i5)') 'itargdn_sw=',itargdn_sw
-!    write(100+mype_hgen,'(a,2i5)') 'itargdn_se=',itargdn_se
-!    write(100+mype_hgen,'(a,2i5)') 'itargdn_nw=',itargdn_nw
-!    write(100+mype_hgen,'(a,2i5)') 'itargdn_ne=',itargdn_ne
-!    write(100+mype_hgen,'(a)') ' '
-! endif
-! call finishMPI
-!TEST
 !
 ! Convert targets in higher generations into real targets
 !
@@ -583,55 +560,6 @@ include  "type_parameter_point2this.inc"
    call real_itarg(this,Fitarg_up(1))
    call real_itarg(this,Fitarg_up(2))
 
-!TEST
-! if(mype_hgen> 1) then
-! if(mype_hgen> 2) then
-!    write(200+mype_hgen,'(a,3i5)') 'mype_hgen,mype,my_hgen=',mype_hgen,mype,my_hgen
-!    write(200+mype_hgen,'(a,i5)') 'itargdn_sw=',itargdn_sw
-!    write(200+mype_hgen,'(a,i5)') 'itargdn_se=',itargdn_se
-!    write(200+mype_hgen,'(a,i5)') 'itargdn_nw=',itargdn_nw
-!    write(200+mype_hgen,'(a,i5)') 'itargdn_ne=',itargdn_ne
-!    write(200+mype_hgen,'(a)') ' '
-! endif
-! call finishMPI
-!TEST
-    
-!TEST
-!    write(100+mype,'(a,2i5)') 'mype=',mype
-!    write(100+mype,'(a,i5)') 'Fitarg_up=',Fitarg_up(1)
-!  if(Flsendup_sw(1)) then
-!    write(100+mype,'(a,l5)') 'Flsendup_sw=',Flsendup_sw(1)
-!  endif
-!  if(Flsendup_se(1)) then
-!    write(100+mype,'(a,l5)') 'Flsendup_se=',Flsendup_se(1)
-!  endif
-!  if(Flsendup_nw(1)) then
-!    write(100+mype,'(a,l5)') 'Flsendup_nw=',Flsendup_nw(1)
-!  endif
-!  if(Flsendup_ne(1)) then
-!    write(100+mype,'(a,l5)') 'Flsendup_ne=',Flsendup_ne(1)
-!  endif
-!    write(100+mype,'(a)') '     '
-!
-! if(mype_hgen>-1.and.my_hgen<gm) then
-!    write(200+mype_hgen,'(a,2i5)') 'mype,mype_hgen=',mype,mype_hgen
-!    write(200+mype_hgen,'(a,i5)') 'Fitarg_up=',Fitarg_up(2)
-!  if(Flsendup_sw(2)) then
-!    write(200+mype_hgen,'(a,l5)') 'Flsendup_sw=',Flsendup_sw(2)
-!  endif
-!  if(Flsendup_se(2)) then
-!    write(200+mype_hgen,'(a,l5)') 'Flsendup_se=',Flsendup_se(2)
-!  endif
-!  if(Flsendup_nw(2)) then
-!    write(200+mype_hgen,'(a,l5)') 'Flsendup_nw=',Flsendup_nw(2)
-!  endif
-!  if(Flsendup_ne(2)) then
-!    write(200+mype_hgen,'(a,l5)') 'Flsendup_ne=',Flsendup_ne(2)
-!  endif
-!    write(200+mype_hgen,'(a)') '     '
-! endif 
-! call finishMPI
-!TEST
 !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 !       write(200+mype_filt,'(a)')'---------------------------------'
 !       write(200+mype_filt,'(a)')'From init_topology_2d'
@@ -670,12 +598,6 @@ include  "type_parameter_point2this.inc"
 !       write(100+mype_hgen,'(a,2i5)')'mype_hgen,itargdn_nw=',mype_hgen,itargdn_nw
 !       write(100+mype_hgen,'(a,2i5)')'mype_hgen,itargdn_ne=',mype_hgen,itargdn_ne
 !       write(100+mype_hgen,'(a,2i5)')' '
-!TEST
-!    if(my_hgen == 2) then
-!       write(100+mype,'(a,2i5)')'mype,itargdn_se=',mype,itargdn_se
-!    endif
-!    call finishMPI
-!TEST
 !    if(Flsendup_sw(2)) then
 !       write(mype+600,'(a,i4,l2,i4)')'mype_hgen,Flsendup_sw(2),Fitarg_up(2)= ' &
 !                                     ,mype_hgen,Flsendup_sw(2),Fitarg_up(2)
@@ -695,10 +617,10 @@ include  "type_parameter_point2this.inc"
 !    call finishMPI
 !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 !-----------------------------------------------------------------------
-                        endsubroutine init_topology_2d
+endsubroutine init_topology_2d
 !----------------------------------------------------------------------
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-                   module     subroutine real_itarg                          &
+module subroutine real_itarg &
 !***********************************************************************
 !                                                                      *
 !             Definite real targets for high generations               *
@@ -707,17 +629,16 @@ include  "type_parameter_point2this.inc"
 (this,itarg)
 !-----------------------------------------------------------------------
 implicit none
-        class(mg_parameter_type),target::this
+class(mg_parameter_type),target::this
 integer(i_kind), intent(inout):: itarg
-include  "type_parameter_locpointer.inc"
-include  "type_parameter_point2this.inc"
+include "type_parameter_locpointer.inc"
+include "type_parameter_point2this.inc"
 !-----------------------------------------------------------------------
-      if(itarg>-1) then
-        itarg = itarg-nxy(1)
-      endif
-
+if(itarg>-1) then
+   itarg = itarg-nxy(1)
+endif
 !-----------------------------------------------------------------------
-                        endsubroutine real_itarg
+endsubroutine real_itarg
 
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-                        end submodule mg_domain
+end submodule mg_domain

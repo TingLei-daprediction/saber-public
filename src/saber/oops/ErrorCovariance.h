@@ -103,7 +103,8 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
                                         const State4D_ & fg)
   : oops::ModelSpaceCovarianceBase<MODEL>(geom, config, xb, fg)
 {
-  oops::Log::trace() << "ErrorCovariance::ErrorCovariance starting" << std::endl;
+  oops::Log::trace() << "saber::ErrorCovariance::ErrorCovariance starting" << std::endl;
+  oops::Log::info() << "saber::ErrorCovariance::ErrorCovariance starting 2" << std::endl;
   ErrorCovarianceParameters<MODEL> params;
   params.deserialize(config);
 

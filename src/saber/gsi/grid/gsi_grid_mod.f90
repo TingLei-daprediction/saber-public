@@ -399,6 +399,7 @@ lonlat_field = atlas_field(name="lonlat", kind=atlas_real(kind_real), shape=(/2,
 call lonlat_field%data(real_ptr)
 
 ! Fill lon/lat
+!clttothink
 real_ptr(1,:) = reshape(self%grid_lons(self%isc:self%iec, &
                                        self%jsc:self%jec), (/self%ngrid/))
 real_ptr(2,:) = reshape(self%grid_lats(self%isc:self%iec, &

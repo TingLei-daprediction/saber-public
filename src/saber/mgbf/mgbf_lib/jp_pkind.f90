@@ -1,4 +1,24 @@
 module jp_pkind
+!$$$  module documentation block
+!                .      .    .                                       .
+! module:   jp_pkind
+!
+! abstract:  Kinds for single- and double-precision
+!
+! module history log:
+!
+! Subroutines Included:
+!
+! Functions Included:
+!
+! remarks:
+!
+! attributes:
+!   language: f90
+!   machine:
+!
+!$$$ end documentation block
+
 use mpi
 integer,parameter:: spi=selected_int_kind(6),&
                     dpi=selected_int_kind(12),&

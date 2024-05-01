@@ -1,64 +1,96 @@
-!#
-!                                            *********************************
-!                                            *      module jp_pbfil3         *
-!                                            *      R. J. Purser             *
-!                                            *      NOAA/NCEP/EMC            *
-!                                            *       August 2021             *
-!                                            *    jim.purser@noaa.gov        *
-!                                            *********************************
-!
-! Codes for the beta line filters.
-!
-! 
-! Direct dependencies:
-! Libraries: jp_pmat
-! Modules:   jp_pkind, jp_pkind2, jp_pietc, jp_pmat4, jp_pbfil2
-!
-!
-!=============================================================================
 module jp_pbfil3
-!=============================================================================
-! The routines of this module mostly involve the beta line filters.
-! Versions of these routines are provided in 2D, 3D and 4D, based respectively
-! on the Triad (3-lines), Hexad (6-lines), and Decad (10-lines) algorithms.
-! Some technical explanations are provided in the series of office notes,
-! ON498, ON499, ON500.
+!$$$  module documentation block
+!                .      .    .                                       .
+! module:   jp_pbfil3
+!   prgmmr: purser           org: NOAA/EMC            date: 2021-08
 !
-! The style of line filtering is the "Dibeta" combination of two 
-! nonnegatively-weighted consecutive-imteger-half-span beta filters, whose
-! normalization coefficients are stored in the table, "bnorm" and whose
-! second moments (spread**2) are stored in the table "bsprds"; these 
-! moment tables must be initialized in subr. inimomtab before any filtering
-! can be done. The max-halp-span size of the table is set by the user, so 
-! the tables use allocatable space (in module jp_pbfil2); to deallocate this
-! storage, the user must invoke fintabmom once all filtering operations
-! have been completed.
+! abstract:  Codes for the beta line filters
 !
-! Aspect tensors in N dimensions are positive-definite and symmetric, and 
-! therefore require M=(N*(N+1))/2 independent components, which we can arrange
-! into a vector of this size. The utility routines tNN_to_M do this; tM_to_NN
-! do the opposite. tN_to_M put the outer-product of an N-vector into the
-! corresponding M-vector.
-! 
-! The filtering is preceded by a decomposition of the M components of the
-! aspect tensor, at each grid point, into M distinct line-second-moments
-! and the line-generators they each act along, at every grid point. And
-! since, in the general case, the aspect tensor is no longer needed once
-! the line filter specifications have been determined, it ic convenient to
-! over-write the old aspect tensor components with the new line-second-
-! moments ("spread**2"). In other word, we can express the needed action
-! as a formal "transform" (and invert it if ever needed, to recover the 
-! original aspect tensor). The basic decomposition of the aspect tensor
-! into its spread**2 components and line generators is done, at a single
-! grid point using subroutine triad (2D), hexad (3D), decad (4D). Working
-! this into "transform" for a single point, is done in tritform, hextform,
-! dectform, and their respective inverse transforms in tritformi, hextfotmi,
-! dectformi. In the case of the 3D hexad method, although there are 6 active
-! line filters at any given point, each of those lines is associated with
-! one of the 7 different "colors" (our term for the nonnull Galois field 
-! elements) no two of these colors in a given hexad are the same. The
-!#
-!=============================================================================
+! module history log:
+!
+! Subroutines Included:
+!   t22_to_3 -
+!   t2_to_3 -
+!   t3_to_22 -
+!   t33_to_6 -
+!   t3_to_6 -
+!   t6_to_33 -
+!   t44_to_10 -
+!   t4_to_10 -
+!   t10_to_44 -
+!   finmomtab -
+!   inimomtab -
+!   tritform -
+!   tritformi -
+!   triad -
+!   gettrilu -
+!   querytcol -
+!   hextform -
+!   hextformi -
+!   hexad -
+!   gethexlu -
+!   queryhcol -
+!   dectform -
+!   dectformi -
+!   decad -
+!   getdeclu -
+!   querydcol -
+!   standardizeb -
+!   hstform -
+!   hstformi -
+!   blinfil -
+!   dibeta -
+!   dibetat -
+!
+! Functions Included:
+!
+! remarks:
+!   The routines of this module mostly involve the beta line filters.
+!   Versions of these routines are provided in 2D, 3D and 4D, based respectively
+!   on the Triad (3-lines), Hexad (6-lines), and Decad (10-lines) algorithms.
+!   Some technical explanations are provided in the series of office notes,
+!   ON498, ON499, ON500.
+!
+!   The style of line filtering is the "Dibeta" combination of two 
+!   nonnegatively-weighted consecutive-imteger-half-span beta filters, whose
+!   normalization coefficients are stored in the table, "bnorm" and whose
+!   second moments (spread**2) are stored in the table "bsprds"; these 
+!   moment tables must be initialized in subr. inimomtab before any filtering
+!   can be done. The max-halp-span size of the table is set by the user, so 
+!   the tables use allocatable space (in module jp_pbfil2); to deallocate this
+!   storage, the user must invoke fintabmom once all filtering operations
+!   have been completed.
+!
+!   Aspect tensors in N dimensions are positive-definite and symmetric, and 
+!   therefore require M=(N*(N+1))/2 independent components, which we can arrange
+!   into a vector of this size. The utility routines tNN_to_M do this; tM_to_NN
+!   do the opposite. tN_to_M put the outer-product of an N-vector into the
+!   corresponding M-vector.
+!
+!   The filtering is preceded by a decomposition of the M components of the
+!   aspect tensor, at each grid point, into M distinct line-second-moments
+!   and the line-generators they each act along, at every grid point. And
+!   since, in the general case, the aspect tensor is no longer needed once
+!   the line filter specifications have been determined, it ic convenient to
+!   over-write the old aspect tensor components with the new line-second-
+!   moments ("spread**2"). In other word, we can express the needed action
+!   as a formal "transform" (and invert it if ever needed, to recover the 
+!   original aspect tensor). The basic decomposition of the aspect tensor
+!   into its spread**2 components and line generators is done, at a single
+!   grid point using subroutine triad (2D), hexad (3D), decad (4D). Working
+!   this into "transform" for a single point, is done in tritform, hextform,
+!   dectform, and their respective inverse transforms in tritformi, hextfotmi,
+!   dectformi. In the case of the 3D hexad method, although there are 6 active
+!   line filters at any given point, each of those lines is associated with
+!   one of the 7 different "colors" (our term for the nonnull Galois field 
+!   elements) no two of these colors in a given hexad are the same. The
+!
+! attributes:
+!   language: f90
+!   machine:
+!
+!$$$ end documentation block
+
 use mpi
 use jp_pkind, only: spi,sp,dp; use jp_pkind2, only: fpi
 use jp_pietc, only: T,F,u0,u1,u3,u4,u5,pi2

@@ -1,15 +1,30 @@
-!
-!=============================================================================
 module jp_pietc
-!=============================================================================
-!                           R. J. Purser (jim.purser@noaa.gov) 2014
-! Some of the commonly used constants (pi etc) mainly for double-precision
-! subroutines.
-! ms10 etc are needed to satisfy the some (eg., gnu fortran) compilers'
-! more rigorous standards regarding the way "data" statements are initialized.
-! Zero and the first few units are u0,u1,u2, etc., their reciprocals being,
-! o2,o3 etc and their square roots, r2,r3. Reciprocal roots are or2,or3 etc.
-!=============================================================================
+!$$$  module documentation block
+!                .      .    .                                       .
+! module:   jp_pietc
+!   prgmmr: purser           org: NOAA/EMC            date: 2014
+!
+! abstract:  Some of the commonly used constants (pi etc)
+!            mainly for double-precision subroutines.
+!
+! module history log:
+!
+! Subroutines Included:
+!
+! Functions Included:
+!
+! remarks:
+!   ms10 etc are needed to satisfy the some (eg., gnu fortran) compilers'
+!   more rigorous standards regarding the way "data" statements are initialized.
+!   Zero and the first few units are u0,u1,u2, etc., their reciprocals being,
+!   o2,o3 etc and their square roots, r2,r3. Reciprocal roots are or2,or3 etc.
+!
+! attributes:
+!   language: f90
+!   machine:
+!
+!$$$ end documentation block
+
 use mpi
 use jp_pkind, only: dp,dpc
 implicit none

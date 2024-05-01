@@ -4,7 +4,7 @@
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
 # Build list of subdirs with files to add
-set( _subdirs blocks bump fastlam generic interpolation oops spectralb util vader mgbf)
+set( _subdirs blocks bump fastlam generic gsi interpolation oops spectralb util vader  mgbf)
 #clt set( _subdirs blocks bump fastlam generic interpolation oops spectralb util vader mgbf)
 foreach( _subdir IN LISTS _subdirs )
     add_subdirectory( ${_subdir} )
@@ -37,6 +37,10 @@ if( gsibec_FOUND )
     if ( sp_FOUND )
         target_link_libraries( ${PROJECT_NAME} PUBLIC sp::sp_d )
     endif()
+endif()
+if( MGBFLIB_FOUND )
+    target_link_libraries( ${PROJECT_NAME} PUBLIC mgbflib )
+    target_compile_definitions( ${PROJECT_NAME} PUBLIC MGBF_FOUND)
 endif()
 if( FFTW_FOUND )
     target_link_libraries( ${PROJECT_NAME} PUBLIC FFTW::fftw3)
