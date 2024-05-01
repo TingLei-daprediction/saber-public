@@ -1,20 +1,28 @@
-!#
-!                                           **********************************
-!                                           *         module pbfil2          *
-!                                           *         R. J.  Purser          *
-!                                           *         NOAA/NCEP/EMC          *
-!                                           *          August 2019           *
-!                                           **********************************
-! Direct dependencies:
-! Module: jp_pkind
-!
-!=============================================================================
 module jp_pbfil2
-!=============================================================================
-! Module of data defining the exact transition rules of the decad algorithm
-! based on the PG(3,2) reference geometry. An overview of this topic is given
-! NOAA/NCEP Office Note 500.
-!=============================================================================
+!$$$  module documentation block
+!                .      .    .                                       .
+! module:   jp_pbfil2
+!   prgmmr: purser           org: NOAA/EMC            date: 2019-08
+!
+! abstract:  Module of data defining the exact transition rules
+!            of the decad algorithm based on the PG(3,2) reference
+!            geometry
+!
+! module history log:
+!
+! Subroutines Included:
+!
+! Functions Included:
+!
+! remarks:
+!   An overview of this topic is given NOAA/NCEP Office Note 500.
+!
+! attributes:
+!   language: f90
+!   machine:
+!
+!$$$ end documentation block
+
 use mpi
 use jp_pkind, only: spi,dp
 implicit none

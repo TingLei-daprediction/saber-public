@@ -10,20 +10,22 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "atlas/field.h"
+
 #include "oops/base/FieldSet3D.h"
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 
+#include "saber/blocks/SaberBlockParametersBase.h"
+#include "saber/blocks/SaberCentralBlockBase.h"
 
 
 #include "saber/mgbf/covariance/MGBF_Covariance.interface.h"
-//clt #include "saber/mgbf/grid/MGBF_Grid.h"
-#include "saber/blocks/SaberCentralBlockBase.h"
-#include "saber/blocks/SaberBlockParametersBase.h"
 #include <iostream>
+#include "saber/oops/Utilities.h"
 
 
 using atlas::option::levels;
@@ -35,11 +37,12 @@ namespace oops {
 
 namespace saber {
 namespace mgbf {
-
+ typedef int MGBF_CovarianceKey;
 // -------------------------------------------------------------------------------------------------
-class CovarianceParameters: public SaberBlockParametersBase  {
-  OOPS_CONCRETE_PARAMETERS(CovarianceParameters,SaberBlockParametersBase)
+class MGBF_CovarianceParameters: public SaberBlockParametersBase  {
+  OOPS_CONCRETE_PARAMETERS(MGBF_CovarianceParameters,SaberBlockParametersBase)
   public:
+  oops::RequiredParameter<std::string> MGBFNML{"mgbf namelist file", this};
     // Mandatory active variables
   oops::Variables mandatoryActiveVars() const override {return oops::Variables();}
 };
@@ -47,16 +50,16 @@ class CovarianceParameters: public SaberBlockParametersBase  {
 // -------------------------------------------------------------------------------------------------
 
 //clt template <typename MODEL>
-class Covariance : public SaberCentralBlockBase {
+class MGBF_Covariance : public SaberCentralBlockBase {
 //clt  typedef oops::Increment<MODEL>                          Increment_;
 
  public:
   static const std::string classname() {return "saber::mgbf::Covariance";}
-   typedef CovarianceParameters Parameters_;
+  typedef MGBF_CovarianceParameters Parameters_;
 
 
 //cltorg  Covariance(const Geometry_ &, const Parameters_ &, const State_ &, const State_ &);
-Covariance(const oops::GeometryData & geometryData,
+MGBF_Covariance(const oops::GeometryData & geometryData,
         const oops::Variables & centralVars,
         const eckit::Configuration & covarConf, 
         const Parameters_ & params,
@@ -64,11 +67,11 @@ Covariance(const oops::GeometryData & geometryData,
         const oops::FieldSet3D & fg
         );
 
-  virtual ~Covariance();
-
+  virtual ~MGBF_Covariance();
   void randomize(oops::FieldSet3D &) const override;
   void multiply(oops::FieldSet3D &) const override;
- std::vector<std::pair<std::string, eckit::LocalConfiguration>> getReadConfs() const override;
+
+  std::vector<std::pair<std::string, eckit::LocalConfiguration>> getReadConfs() const override;
   void setReadFields(const std::vector<oops::FieldSet3D> &) override;
 
   void read() override;
@@ -85,7 +88,7 @@ Covariance(const oops::GeometryData & geometryData,
   std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> fieldsToWrite() const
     override;
 
- size_t ctlVecSize() const override {return static_cast<size_t>(99999) ;}
+  size_t ctlVecSize() const override {return bump_->getCvSize();}
   void multiplySqrt(const atlas::Field &, oops::FieldSet3D &, const size_t &) const override;
   void multiplySqrtAD(const oops::FieldSet3D &, atlas::Field &, const size_t &) const override;
 
@@ -93,19 +96,18 @@ Covariance(const oops::GeometryData & geometryData,
  private:
   void print(std::ostream &) const override;
   // Fortran LinkedList key
-  CovarianceKey keySelf_;
+  MGBF_CovarianceKey keySelf_;
   // Variables
   std::vector<std::string> variables_;
   // Function space
   atlas::FunctionSpace mgbfGridFuncSpace_;
-  // Grid
-//clt  Grid grid_;
+  oops::Variables activeVars_;
 };
 
 // -------------------------------------------------------------------------------------------------
 
 
-Covariance::Covariance(const oops::GeometryData & geometryData,
+MGBF_Covariance::MGBF_Covariance(const oops::GeometryData & geometryData,
         const oops::Variables & centralVars,
         const eckit::Configuration & covarConf, 
         const Parameters_ & params,
@@ -114,10 +116,16 @@ Covariance::Covariance(const oops::GeometryData & geometryData,
   :  SaberCentralBlockBase(params, xb.validTime()) 
 {
   oops::Log::trace() << classname() << "MGBF::Covariance starting" << std::endl;
+  // Get active variables
+  activeVars_ = getActiveVars(params, centralVars);
+
 //clt  util::Timer timer(classname(), "Covariance");
   std::cout<<"thinkdebconfig0 ifhas -1 "<<std::endl;
   eckit::LocalConfiguration mgbf_config = params.toConfiguration();
   std::cout<<"thinkdebconfig0 ifhas "<<mgbf_config<<std::endl;
+  if (params.doCalibration()) {
+throw eckit::UserError("doCalibration=.true. is not implemented ", Here());
+  }
 //  std::cout<<"thinkdebconfig0 ifhas "<<mgbf_config.has("background error")<<std::endl;
 //  std::cout<<"thinkdebconfig0 ifhas "<<mgbf_config.has("test")<<std::endl;
 //  std::cout<<"thinkdebconfig "<<mgbf_config.getString("test")<<std::endl;
@@ -142,7 +150,7 @@ Covariance::Covariance(const oops::GeometryData & geometryData,
 
 // -------------------------------------------------------------------------------------------------
 
-Covariance::~Covariance() {
+MGBF_Covariance::~MGBF_Covariance() {
   oops::Log::trace() << classname() << "::~Covariance starting" << std::endl;
   util::Timer timer(classname(), "~Covariance");
   mgbf_covariance_delete_f90(keySelf_);
@@ -151,7 +159,7 @@ Covariance::~Covariance() {
 
 // -------------------------------------------------------------------------------------------------
 
-void Covariance::randomize(atlas::FieldSet & fset) const {
+void MGBF_Covariance::randomize(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::randomize starting" << std::endl;
   util::Timer timer(classname(), "randomize");
 

@@ -1,52 +1,72 @@
-!                                            *********************************
-!                                            *      module pbfil
-!                                            *
-!                                            *      R. J. Purser
-!                                            *
-!                                            *      NOAA/NCEP/EMC
-!                                            *
-!                                            *      March 2019
-!                                            *
-!                                            *
-!                                            *
-!                                            *********************************
+submodule(mg_parameter) jp_pbfil
+!$$$  submodule documentation block
+!                .      .    .                                       .
+! module:   jp_pbfil
+!   prgmmr: purser           org: NOAA/EMC            date: 2019-03
 !
-! Codes for the beta filters.
-! The filters invoke the aspect tensor information encoded by the 
-! Cholesky lower-triangular factors, el, of the INVERSE aspect tensors.
-! The routines, "cholaspect", convert (in place) the field of given
-! aspect tensors A to the equivalent cholesky factors of A^(-1).
-! The routines, "getlinesum" precompute the normalization coefficients
-! for
-! each line (row) of the implied matrix form of the beta filter so that
-! the
-! normalized line sum associated with each point of application becomes
-! unity. This makes the application of each filter significantly faster
-! than having to work out the normalization on the fly.
+! abstract:  Codes for the beta filters
 !
-! Be sure to have run cholaspect, and then getlinesum, prior to applying
-! the
-! beta filters themselves.
+! module history log:
+!   2023-04-19  lei     - object-oriented coding
+!   2024-02-20  yokota  - refactoring to apply for GSI
 !
-! Direct dependencies:
-! Libraries: jp_pmat
-! Modules:   jp_pkind, jp_pietc, jp_pmat
-!            mg_parameter
+! Subroutines Included:
+!   cholaspect1 -
+!   cholaspect2 -
+!   cholaspect3 -
+!   cholaspect4 -
+!   getlinesum1 -
+!   getlinesum2 -
+!   getlinesum3 -
+!   getlinesum4 -
+!   rbeta1 -
+!   rbeta2 -
+!   rbeta3 -
+!   rbeta4 -
+!   vrbeta4 -
+!   rbeta1T -
+!   rbeta2T -
+!   rbeta3T -
+!   rbeta4T -
+!   vrbeta4t -
+!   vrbeta1 -
+!   vrbeta2 -
+!   vrbeta3 -
+!   vrbeta1T -
+!   vrbeta2T -
+!   vrbeta3T -
 !
-!=============================================================================
-submodule(mg_parameter)  jp_pbfil
-!=============================================================================
+! Functions Included:
+!
+! remarks:
+!   The filters invoke the aspect tensor information encoded by the 
+!   Cholesky lower-triangular factors, el, of the INVERSE aspect tensors.
+!   The routines, "cholaspect", convert (in place) the field of given
+!   aspect tensors A to the equivalent cholesky factors of A^(-1).
+!   The routines, "getlinesum" precompute the normalization coefficients
+!   for each line (row) of the implied matrix form of the beta filter
+!   so that the normalized line sum associated with each point of
+!   application becomes unity.
+!   This makes the application of each filter significantly faster
+!   than having to work out the normalization on the fly.
+!   Be sure to have run cholaspect, and then getlinesum, prior to applying
+!   the beta filters themselves.
+!
+! attributes:
+!   language: f90
+!   machine:
+!
+!$$$ end documentation block
+
 use mpi
 use kinds, only: dp=>r_kind
-!!!use jp_pkind, only: dp
 use jp_pietc, only: u1
 implicit none
-
 
 contains
 
 !=============================================================================
-module subroutine cholaspect1(lx,mx, el)                              !  [cholaspect]
+module subroutine cholaspect1(lx,mx, el)                        ! [cholaspect]
 !=============================================================================
 ! Convert the given field, el, of aspect tensors into the equivalent
 ! field
@@ -62,7 +82,7 @@ integer :: ix
 do ix=lx,mx; el(1,1,ix)=u1/sqrt(el(1,1,ix)); enddo
 end subroutine cholaspect1
 !=============================================================================
-module subroutine cholaspect2(lx,mx, ly,my, el)                        !  [cholaspect]
+module subroutine cholaspect2(lx,mx, ly,my, el)                 ! [cholaspect]
 !=============================================================================
 ! Convert the given field, el, of aspect tensors into the equivalent
 ! field
@@ -81,7 +101,7 @@ do iy=ly,my; do ix=lx,mx
 enddo;       enddo
 end subroutine cholaspect2
 !=============================================================================
-module subroutine cholaspect3(lx,mx, ly,my, lz,mz, el)                 !  [cholaspect]
+module subroutine cholaspect3(lx,mx, ly,my, lz,mz, el)          ! [cholaspect]
 !=============================================================================
 ! Convert the given field, el, of aspect tensors into the equivalent
 ! field
@@ -100,7 +120,7 @@ do iz=lz,mz; do iy=ly,my; do ix=lx,mx
 enddo;       enddo;       enddo
 end subroutine cholaspect3
 !=============================================================================
-module subroutine cholaspect4(lx,mx, ly,my, lz,mz, lw,mw,el)           !  [cholaspect]
+module subroutine cholaspect4(lx,mx, ly,my, lz,mz, lw,mw,el)    ! [cholaspect]
 !=============================================================================
 ! Convert the given field, el, of aspect tensors into the equivalent
 ! field
@@ -121,7 +141,7 @@ enddo;       enddo;       enddo;       enddo
 end subroutine cholaspect4
 
 !=============================================================================
-module subroutine getlinesum1(this,hx,lx,mx, el, ss)                       !  [getlinesum]
+module subroutine getlinesum1(this,hx,lx,mx, el, ss)            ! [getlinesum]
 !=============================================================================
 ! Get inverse of the line-sum of the matrix representing the
 ! unnormalized
@@ -130,7 +150,7 @@ module subroutine getlinesum1(this,hx,lx,mx, el, ss)                       !  [g
 ! so it can be used subsequently in the normalized version of this
 ! filter.
 !=============================================================================
-        class(mg_parameter_type)::this
+class(mg_parameter_type)::this
 integer,                  intent(in   ):: hx,Lx,mx
 real(dp),dimension(1,1,Lx:Mx),intent(in   ):: el
 real(dp),dimension(lx:mx),intent(  out):: ss
@@ -155,9 +175,9 @@ do ix=Lx,Mx
 enddo
 end subroutine getlinesum1
 !=============================================================================
-module subroutine getlinesum2(this,hx,lx,mx, hy,ly,my, el, ss)             !  [getlinesum]
+module subroutine getlinesum2(this,hx,lx,mx, hy,ly,my, el, ss)  ! [getlinesum]
 !=============================================================================
-        class(mg_parameter_type)::this
+class(mg_parameter_type)::this
 integer,                            intent(in   ):: hx,Lx,mx, &
                                                     hy,ly,my
 real(dp),dimension(2,2,Lx:Mx,Ly:My),intent(in   ):: el
@@ -194,9 +214,9 @@ do iy=Ly,My; do ix=Lx,Mx
 enddo;  enddo! ix, iy
 end subroutine getlinesum2
 !=============================================================================
-module subroutine getlinesum3(this,hx,lx,mx, hy,ly,my, hz,lz,mz, el, ss)!     [getlinesum]
+module subroutine getlinesum3(this,hx,lx,mx, hy,ly,my, hz,lz,mz, el, ss) ! [getlinesum]
 !=============================================================================
-        class(mg_parameter_type)::this
+class(mg_parameter_type)::this
 integer,                                  intent(in   ):: hx,Lx,mx, &
                                                           hy,ly,my, &
                                                           hz,lz,mz
@@ -246,9 +266,9 @@ enddo; enddo; enddo! ix, iy, iz
 end subroutine getlinesum3
 !=============================================================================
 module subroutine getlinesum4(this,hx,lx,mx, hy,ly,my, hz,lz,mz, hw,lw,mw, &
-     el, ss)                                                   !  [getlinesum]
+     el, ss)                                                    ! [getlinesum]
 !=============================================================================
-        class(mg_parameter_type)::this
+class(mg_parameter_type)::this
 integer,                                  intent(in   ):: hx,Lx,mx, &
                                                           hy,ly,my, &
                                                           hz,lz,mz, &
@@ -309,7 +329,7 @@ enddo;  enddo;  enddo;  enddo! ix, iy, iz, iw
 end subroutine getlinesum4
 
 !=============================================================================
-module subroutine rbeta1(this,hx,lx,mx, el,ss, a)                               !  [rbeta]
+module subroutine rbeta1(this,hx,lx,mx, el,ss, a)                    ! [rbeta]
 !=============================================================================
 ! Perform a radial beta-function filter in 1D.
 ! It averages the surrounding density values, and so preserves the value
@@ -320,7 +340,7 @@ module subroutine rbeta1(this,hx,lx,mx, el,ss, a)                               
 ! The output data occupy the central region
 ! Lx <= ix <= Mx.
 !=============================================================================
-        class(mg_parameter_type)::this
+class(mg_parameter_type)::this
 integer,                        intent(in   ):: hx,Lx,mx
 real(dp),dimension(   Lx:Mx),   intent(in   ):: el
 real(dp),dimension(   Lx:Mx),   intent(in   ):: ss
@@ -347,7 +367,7 @@ enddo
 a=b
 end subroutine rbeta1
 !=============================================================================
-module subroutine rbeta2(this,hx,lx,mx, hy,ly,my, el,ss, a)                     !  [rbeta]
+module subroutine rbeta2(this,hx,lx,mx, hy,ly,my, el,ss, a)          ! [rbeta]
 !=============================================================================
 ! Perform a radial beta-function filter in 2D.
 ! It averages the surrounding density values, and so preserves the value
@@ -358,7 +378,7 @@ module subroutine rbeta2(this,hx,lx,mx, hy,ly,my, el,ss, a)                     
 ! The output data occupy the central region
 ! Lx <= ix <= Mx, Ly <= iy <= My.
 !=============================================================================
-        class(mg_parameter_type)::this
+class(mg_parameter_type)::this
 integer,                                    intent(in   ):: hx,Lx,mx, &
                                                             hy,ly,my
 real(dp),dimension(2,2,Lx:Mx,Ly:My),        intent(in   ):: el
@@ -395,7 +415,7 @@ enddo; enddo! ix, iy
 a=b
 end subroutine rbeta2
 !=============================================================================
-module subroutine rbeta3(this,hx,lx,mx, hy,ly,my, hz,lz,mz, el,ss,a)            !  [rbeta]
+module subroutine rbeta3(this,hx,lx,mx, hy,ly,my, hz,lz,mz, el,ss,a) ! [rbeta]
 !=============================================================================
 ! Perform a radial beta-function filter in 3D.
 ! It averages the surrounding density values, and so preserves the value
@@ -406,7 +426,7 @@ module subroutine rbeta3(this,hx,lx,mx, hy,ly,my, hz,lz,mz, el,ss,a)            
 ! The output data occupy the central region
 ! Lx <= ix <= Mx, Ly <= iy <= My, Lz <= iz <= Mz.
 !=============================================================================
-        class(mg_parameter_type)::this
+class(mg_parameter_type)::this
 integer,                                   intent(in   ):: hx,Lx,mx,&
                                                            hy,ly,my,&
                                                            hz,lz,mz
@@ -450,7 +470,7 @@ enddo;   enddo;    enddo! ix, iy, iz
 a=b
 end subroutine rbeta3
 !=============================================================================
-module subroutine rbeta4(this,hx,lx,mx, hy,ly,my, hz,lz,mz, hw,lw,mw, el,ss,a)!    [rbeta]
+module subroutine rbeta4(this,hx,lx,mx, hy,ly,my, hz,lz,mz, hw,lw,mw, el,ss,a) ! [rbeta]
 !=============================================================================
 ! Perform a radial beta-function filter in 4D.
 ! It averages the surrounding density values, and so preserves the value
@@ -462,7 +482,7 @@ module subroutine rbeta4(this,hx,lx,mx, hy,ly,my, hz,lz,mz, hw,lw,mw, el,ss,a)! 
 ! The output data occupy the central region
 ! Lx <= ix <= Mx, Ly <= iy <= My, Lz <= iz <= Mz, Lw <= iw <= Mw.
 !=============================================================================
-        class(mg_parameter_type)::this
+class(mg_parameter_type)::this
 integer,                                        intent(in   ):: hx,Lx,mx,&
                                                                 hy,ly,my,&
                                                                 hz,lz,mz,&
@@ -519,11 +539,11 @@ end subroutine rbeta4
 ! Vector versions of the above routines:
 !=============================================================================
 module subroutine vrbeta4(this,nv,hx,lx,mx, hy,ly,my, hz,lz,mz, hw,lw,mw, &
-     el,ss,a)                                                       !  [rbeta]
+     el,ss,a)                                                        ! [rbeta]
 !=============================================================================
 ! Vector version of rbeta4 filtering nv fields at once.
 !=============================================================================
-        class(mg_parameter_type)::this
+class(mg_parameter_type)::this
 integer,                                       intent(in   ):: nv, &
                                                                hx,Lx,mx,&
                                                                hy,ly,my,&
@@ -580,7 +600,7 @@ a=b
 end subroutine vrbeta4
 
 !=============================================================================
-module subroutine rbeta1T(this,hx,lx,mx, el,ss, a)                             !  [rbetat]
+module subroutine rbeta1T(this,hx,lx,mx, el,ss, a)                  ! [rbetat]
 !=============================================================================
 ! Perform an ADJOINT radial beta-function filter in 1D.
 ! It conserves "masses" initially distributed only at the closure of 
@@ -590,7 +610,7 @@ module subroutine rbeta1T(this,hx,lx,mx, el,ss, a)                             !
 ! the extended domain, 
 ! Lx-hx <= jx <= mx+hx.
 !=============================================================================
-        class(mg_parameter_type)::this
+class(mg_parameter_type)::this
 integer,                        intent(in   ):: hx,Lx,mx
 real(dp),dimension(1,1,Lx:Mx),  intent(in   ):: el
 real(dp),dimension(  Lx:Mx),    intent(in   ):: ss
@@ -616,7 +636,7 @@ enddo
 a=b
 end subroutine rbeta1t
 !=============================================================================
-module subroutine rbeta2T(this,hx,lx,mx, hy,ly,my, el,ss, a)                   !  [rbetat]
+module subroutine rbeta2T(this,hx,lx,mx, hy,ly,my, el,ss, a)        ! [rbetat]
 !=============================================================================
 ! Perform an ADJOINT radial beta-function filter in 2D.
 ! It conserved "masses" initially distributed only at the closure of 
@@ -626,7 +646,7 @@ module subroutine rbeta2T(this,hx,lx,mx, hy,ly,my, el,ss, a)                   !
 ! the extended domain, 
 ! Lx-hx <= jx <= mx+hx, Ly-hy <= Jy <= my+hy
 !=============================================================================
-        class(mg_parameter_type)::this
+class(mg_parameter_type)::this
 integer,                                    intent(in   ):: hx,Lx,mx, &
                                                             hy,ly,my
 real(dp),dimension(2,2,Lx:Mx,Ly:My),        intent(in   ):: el
@@ -662,7 +682,7 @@ enddo;  enddo! ix, iy
 a=b
 end subroutine rbeta2t
 !=============================================================================
-module subroutine rbeta3T(this,hx,lx,mx, hy,ly,my, hz,lz,mz, el,ss, a)         !  [rbetat]
+module subroutine rbeta3T(this,hx,lx,mx, hy,ly,my, hz,lz,mz, el,ss, a) ! [rbetat]
 !=============================================================================
 ! Perform an ADJOINT radial beta-function filter in 3D.
 ! It conserves "masses" initially distributed only at the closure of 
@@ -672,7 +692,7 @@ module subroutine rbeta3T(this,hx,lx,mx, hy,ly,my, hz,lz,mz, el,ss, a)         !
 ! the extended domain, 
 ! Lx-hx <= jx <= Mx+hx, Ly-hy <= Jy <= My+hy, Lz-hz <= Jz <= Mz+hz.
 !=============================================================================
-        class(mg_parameter_type)::this
+class(mg_parameter_type)::this
 integer,                                    intent(in   ):: hx,Lx,mx,&
                                                             hy,ly,my,&
                                                             hz,lz,mz
@@ -716,7 +736,7 @@ a=b
 end subroutine rbeta3t
 !=============================================================================
 module subroutine rbeta4T(this,hx,lx,mx, hy,ly,my, hz,lz,mz, hw,lw,mw, &
-     el,ss, a)                                                   !  [rbetat]
+     el,ss, a)                                                      ! [rbetat]
 !=============================================================================
 ! Perform an ADJOINT radial beta-function filter in 4D.
 ! It conserves "masses" initially distributed only at the closure of 
@@ -727,7 +747,7 @@ module subroutine rbeta4T(this,hx,lx,mx, hy,ly,my, hz,lz,mz, hw,lw,mw, &
 ! Lx-hx <= jx <= Mx+hx, Ly-hy <= Jy <= My+hy, Lz-hz <= Jz <= Mz+hz, 
 !     Lw-hw <= Jw <= Mw+hw.
 !=============================================================================
-        class(mg_parameter_type)::this
+class(mg_parameter_type)::this
 integer,                                        intent(in   ):: hx,Lx,mx,&
                                                                 hy,ly,my,&
                                                                 hz,lz,mz,&
@@ -782,11 +802,11 @@ end subroutine rbeta4t
 
 !=============================================================================
 module subroutine vrbeta4t(this,nv,hx,lx,mx, hy,ly,my, hz,lz,mz, &
-                                              hw,lw,mw, el,ss, a)!    [rbetat]
+                                              hw,lw,mw, el,ss, a)   ! [rbetat]
 !=============================================================================
 ! Vector version of rbeta4t filtering nv fields at once.
 !=============================================================================
-        class(mg_parameter_type)::this
+class(mg_parameter_type)::this
 integer,                                        intent(in   ):: nv, &
                                                                 hx,Lx,mx,&
                                                                 hy,ly,my,&
@@ -842,11 +862,11 @@ end subroutine vrbeta4t
 
 ! Vector versions of the above routines:
 !=============================================================================
-module subroutine vrbeta1(this,nv,hx,lx,mx, el,ss, a)                           !  [rbeta]
+module subroutine vrbeta1(this,nv,hx,lx,mx, el,ss, a)                ! [rbeta]
 !=============================================================================
 ! Vector version of rbeta1 filtering nv fields at once.
 !=============================================================================
-        class(mg_parameter_type)::this
+class(mg_parameter_type)::this
 integer,                           intent(in   ):: nv,hx,Lx,mx
 real(dp),dimension(1,1, Lx:Mx),    intent(in   ):: el
 real(dp),dimension(   Lx:Mx),      intent(in   ):: ss
@@ -875,11 +895,11 @@ a=b
 end subroutine vrbeta1
 
 !=============================================================================
-module subroutine vrbeta2(this,nv,hx,lx,mx, hy,ly,my, el,ss, a)                 !  [rbeta]
+module subroutine vrbeta2(this,nv,hx,lx,mx, hy,ly,my, el,ss, a)      ! [rbeta]
 !=============================================================================
 ! Vector version of rbeta2 filtering nv fields at once.
 !=============================================================================
-        class(mg_parameter_type)::this
+class(mg_parameter_type)::this
 integer,                                       intent(in   ):: nv, &
                                                                hx,Lx,mx, &
                                                                hy,ly,my
@@ -918,11 +938,12 @@ enddo;   enddo! ix, iy
 a=b
 end subroutine vrbeta2
 
-module subroutine vrbeta3(this,nv, hx,lx,mx, hy,ly,my, hz,lz,mz, el,ss,a)       !  [rbeta]
+!=============================================================================
+module subroutine vrbeta3(this,nv, hx,lx,mx, hy,ly,my, hz,lz,mz, el,ss,a) ! [rbeta]
 !=============================================================================
 ! Vector version of rbeta3 filtering nv fields at once.
 !=============================================================================
-        class(mg_parameter_type)::this
+class(mg_parameter_type)::this
 integer,                                       intent(in   ):: nv, &
                                                                hx,Lx,mx,&
                                                                hy,ly,my,&
@@ -970,11 +991,11 @@ end subroutine vrbeta3
 
 ! Vector versions of the above routines:
 !=============================================================================
-module subroutine vrbeta1T(this,nv, hx,lx,mx, el,ss, a)                        !  [rbetat]
+module subroutine vrbeta1T(this,nv, hx,lx,mx, el,ss, a)             ! [rbetat]
 !=============================================================================
 ! Vector version of rbeta1t filtering nv fields at once.
 !=============================================================================
-        class(mg_parameter_type)::this
+class(mg_parameter_type)::this
 integer,                           intent(in   ):: nv,hx,Lx,mx
 real(dp),dimension(1,1,Lx:Mx),     intent(in   ):: el
 real(dp),dimension(   Lx:Mx),      intent(in   ):: ss
@@ -1001,11 +1022,11 @@ enddo
 a=b
 end subroutine vrbeta1t
 !=============================================================================
-module subroutine vrbeta2T(this,nv,hx,lx,mx, hy,ly,my, el,ss, a)               !  [rbetat]
+module subroutine vrbeta2T(this,nv,hx,lx,mx, hy,ly,my, el,ss, a)    ! [rbetat]
 !=============================================================================
 ! Vector version of rbeta2t filtering nv fields at once.
 !=============================================================================
-        class(mg_parameter_type)::this
+class(mg_parameter_type)::this
 integer,                                       intent(in   ):: nv, &
                                                                hx,Lx,mx, &
                                                                hy,ly,my
@@ -1044,11 +1065,11 @@ a=b
 end subroutine vrbeta2t
 
 !=============================================================================
-module subroutine vrbeta3T(this,nv,hx,lx,mx, hy,ly,my, hz,lz,mz, el,ss, a)     !  [rbetat]
+module subroutine vrbeta3T(this,nv,hx,lx,mx, hy,ly,my, hz,lz,mz, el,ss, a) ! [rbetat]
 !=============================================================================
 ! Vector version of rbeta3t filtering nv fields at once.
 !=============================================================================
-        class(mg_parameter_type)::this
+class(mg_parameter_type)::this
 integer,                                    intent(in   ):: nv,      &
                                                             hx,Lx,mx,&
                                                             hy,ly,my,&

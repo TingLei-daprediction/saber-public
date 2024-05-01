@@ -29,7 +29,7 @@ public mgbf_covariance
 
 ! Fortran class header
 type :: mgbf_covariance
-  type(mgbf_instate_type) :: mgbf_instate 
+  type(mg_instate_type) :: mgbf_instate 
   logical :: noMGBF
   logical :: bypassMGBFbe
   logical :: cv   ! cv=.true.; sv=.false.
@@ -63,12 +63,11 @@ type(atlas_fieldset),      intent(in)    :: firstguess
 
 ! Locals
 character(len=*), parameter :: myname_=myname//'*create'
-character(len=:), allocatable :: nml,bef
+character(len=:), allocatable :: mgbf_nml
 logical :: central
 integer :: layout(2)
 
 type(atlas_field) :: afield
-real(kind=r_kind), pointer :: t(:,:)
 
 ! Hold communicator
 ! -----------------
@@ -80,6 +79,7 @@ real(kind=r_kind), pointer :: t(:,:)
 self%rank = comm%rank()
 
 call config%get_or_die("debuggingxx bypass mgbf", self%noMGBF)
+call config%get_or_die("mgbf namelist ",  mgbf_nml
 #if 0
 if (.not. self%noMGBF) then
   call config%get_or_die("saber central block", central)
@@ -92,14 +92,13 @@ if (.not. self%noMGBF) then
 ! ----------------------------------------------
   call config%get_or_die("mgbf berror namelist file",  nml)
   call config%get_or_die("mgbf error covariance file", bef)
-  call self%mg_initialize("mgbeta.nml")
 
 ! Initialize MGBF-Berror components
 ! --------------------------------
 ! layout=-1
 endif
 #endif 
-call  self%mgbf_intstate%mg_initialize()
+call  self%mgbf_intstate%mg_initialize(mgbf_nml)  !mgbf_nml like mgbeta.nml
 ! Get background (temporary test of the functionality)
 !cltafield = background%field('air_temperature')
 !clt call afield%data(t)
@@ -115,11 +114,9 @@ class(mgbf_covariance) :: self
 
 ! Locals
 
-#if 0
-if (.not. self%noMGBF) then
-   call mgbfbclim_final(.false.)
-endif
-#endif 
+!clt //if (.not. self%noMGBF) then
+   call self%mg_instate%mg_finalize
+!clt endif
 
 ! Delete the grid
 ! ---------------
@@ -184,44 +181,70 @@ type(atlas_functionspace) :: afunctionspace
 
 ! Locals
 type(atlas_field) :: afield
-real(kind=r_kind), pointer :: ttodo(:,:)
+real(kind=r_kind), pointer :: ptr_2d(:,:)
+real(kind=r_kind), pointer :: ptr_3d(:,:)
+integer(kind=i_kind):: nz,ilev
 
 !clt now noly consider t
 !  afield = fields%field('air_temperature')
 !  call afield%data(t)
 !*** From the analysis to first generation of filter grid
 !***
-                                                   call btim(    an2filt_tim)
-
-          call self%anal_to_filt_all(ttodo)
-                                                   call etim(    an2filt_tim)
-
-
-!\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-!***
-!*** Adjoint test if needed
-!***
-
-!\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-
-!***
-!*** Filtering
-!***
-!======================================================================
-
-       call self%mg_filtering_procedure(self%mgbf_proc)  !clt to be changed
-!*** From first generation of filter grid to analysis grid (x-directoin)
-!***
-
-                                                   call btim(   filt2an_tim)
-          call obj_mgbf%filt_to_anal_all(ttodo)
-
-
+          allocate(work_mgbf(slef%instate%km_a_all,slef%instate%nm,slef%instate%mm))
+!clt first as in ckgcov_a_en_new_factorization_ad
+             ilev=1
+          do isize=1,fields%size()
   
-! Halo exchange
-!afunctionspace = afield%functionspace()
-!call afunctionspace%halo_exchange(afield)
+             call fields%data(isize,afield)  !clttodo
+             if(afield%rank() == 2) 
+               call afield%data(ptr_2d)
+               work_mgbf(ilev,:,:)=ptr_2d 
+               ilev=ilev+1
+             else(afield%rank() == 3) then  
+               call afield%data(ptr_3d)
+               nz=afield%levels()
+               work_mgbf(ilev:ilev+nz-1,:,:)=ptr_3d 
+               ilev=ilev+nz
+             else
+               write(6,*)'wrong in mgbf_covariance_mod.f90 ' !todo  
+               call stop()
+             endif 
+           enddo
+          call self%instate%anal_to_filt_allmap(work_mgbf,-1)
+!clt second as in ckgcov_a_en_new_factorization          
+          call slef%instate%filtering_procedure(slef%instate%mgbf_proc,1)
+
+          work_mgbf=zero  !,why? 
+         
+          call self%instate%anal_to_filt_allmap(work_mgbf)
+          
+
+          fields%data()=work_mgbf  !clttodo 
+!the following should match fields ===> work_mbgf
+             ilev=1
+          do isize=1,fields%size()
   
+             call fields%data(isize,afield)  !clttodo
+             if(afield%rank() == 2) 
+               call afield%data(ptr_2d)
+               ptr_2d=work_mgbf(ilev,:,:) 
+               ilev=ilev+1
+             else(afield%rank() == 3) then  
+               call afield%data(ptr_3d)
+               nz=afield%levels()
+               ptr_3d=work_mgbf(ilev:ilev+nz-1,:,:) 
+               ilev=ilev+nz
+             else
+               write(6,*)'wrong in mgbf_covariance_mod.f90 ' !todo  
+               call stop()
+             endif 
+           enddo
+
+
+
+
+
+          deallocate(work_mgbf)
 
 end subroutine multiply
 

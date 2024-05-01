@@ -30,7 +30,7 @@ namespace mgbf {
 
 // -------------------------------------------------------------------------------------------------
 
-static SaberCentralBlockMaker<Covariance> makerCovariance_("MGBF_covariance");
+static SaberCentralBlockMaker<MGBF_Covariance> makerCovariance_("MGBF_covariance");
 
 }  // namespace MGBF 
 }  // namespace saber
