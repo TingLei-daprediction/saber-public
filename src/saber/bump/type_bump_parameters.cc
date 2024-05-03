@@ -233,6 +233,8 @@ void bump_config_init_f90(eckit::LocalConfiguration * config) {
   param(diagnosticsDef.ne_lr, diagnosticsConf);
   // Gaussian approximation for asymptotic quantities
   param(diagnosticsDef.gau_approx, diagnosticsConf);
+  // Compute localization from correlation
+  param(diagnosticsDef.loc_from_cor, diagnosticsConf);
   // Threshold on generalized kurtosis (3.0 = Gaussian distribution)
   param(diagnosticsDef.gen_kurt_th, diagnosticsConf);
   // Number of bins for averaged statistics histograms
@@ -315,6 +317,8 @@ void bump_config_init_f90(eckit::LocalConfiguration * config) {
   param(nicasDef.interp_test, nicasConf);
   // Overriding component in file
   param(nicasDef.file_component, nicasConf);
+  // Same horizontal convolution for all levels, no vertical convolution
+  param(nicasDef.same_horizontal, nicasConf);
 
   // Psichitouv section
   PsichitouvDef psichitouvDef;
@@ -333,6 +337,10 @@ void bump_config_init_f90(eckit::LocalConfiguration * config) {
   eckit::LocalConfiguration externalConf;
   // Iterative algorithm (ensemble members loaded sequentially)
   param(externalDef.iterative_algo, externalConf);
+  // Vertical coordinate field name in geometry fields
+  param(externalDef.vert_coord_name, externalConf);
+  // Geographical mask name in geometry fields
+  param(externalDef.gmask_name, externalConf);
 
   // General parameters
   config->set("general", generalConf);

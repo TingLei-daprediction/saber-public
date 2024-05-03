@@ -18,6 +18,7 @@
 #include "eckit/log/Channel.h"
 
 #include "oops/base/FieldSets.h"
+#include "oops/base/GeometryData.h"
 
 #include "saber/bump/BUMPParameters.h"
 #include "saber/bump/type_bump.h"
@@ -36,6 +37,7 @@ class BUMP {
        const oops::Variables &,
        const eckit::Configuration &,
        const BUMPParameters &,
+       const eckit::LocalConfiguration &,
        const oops::FieldSet3D &);
 
   // Destructor

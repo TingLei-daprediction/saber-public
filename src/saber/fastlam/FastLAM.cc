@@ -47,7 +47,8 @@ FastLAM::FastLAM(const oops::GeometryData & gdata,
     comm_(gdata_.comm()),
     activeVars_(activeVars),
     params_(params.calibration.value() != boost::none ? *params.calibration.value()
-      : *params.read.value())
+      : *params.read.value()),
+    fieldsMetaData_(params.fieldsMetaData.value())
 {
   oops::Log::trace() << classname() << "::FastLAM starting" << std::endl;
 
@@ -665,8 +666,8 @@ void FastLAM::setReadFields(const std::vector<oops::FieldSet3D> & fsetVec) {
     for (size_t jg = 0; jg < groups_.size(); ++jg) {
       // Create layers
       for (size_t jBin = 0; jBin < nLayers; ++jBin) {
-        data_[jg].emplace_back(LayerFactory::create(params_, gdata_, groups_[jg].name_,
-          groups_[jg].variables_, nx0_, ny0_, groups_[jg].nz0_));
+        data_[jg].emplace_back(LayerFactory::create(params_, fieldsMetaData_, gdata_,
+          groups_[jg].name_, groups_[jg].variables_, nx0_, ny0_, groups_[jg].nz0_));
       }
     }
 
@@ -782,8 +783,8 @@ void FastLAM::directCalibration(const oops::FieldSets &) {
     // Create layers
     std::vector<std::unique_ptr<LayerBase>> layers;
     for (size_t jBin = 0; jBin < nLayers; ++jBin) {
-      data_[jg].emplace_back(LayerFactory::create(params_, gdata_, groups_[jg].name_,
-        groups_[jg].variables_, nx0_, ny0_, groups_[jg].nz0_));
+      data_[jg].emplace_back(LayerFactory::create(params_, fieldsMetaData_, gdata_,
+        groups_[jg].name_, groups_[jg].variables_, nx0_, ny0_, groups_[jg].nz0_));
     }
   }
   for (size_t jBin = 0; jBin < nLayers; ++jBin) {
@@ -1023,12 +1024,13 @@ std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> FastLAM::fie
       atlas::Field fieldIndexI0 = gdata_.fieldSet()["index_i"];
       auto indexI0View = atlas::array::make_view<int, 1>(fieldIndexI0);
       for (const auto & var : activeVars_.variables()) {
+        const size_t nz0 = activeVars_.getLevels(var);
         atlas::Field field = gdata_.functionSpace().createField<double>(
-          atlas::option::name(var) | atlas::option::levels(activeVars_.getLevels(var)));
+          atlas::option::name(var) | atlas::option::levels(nz0));
         auto view = atlas::array::make_view<double, 2>(field);
         for (size_t jnode0 = 0; jnode0 < nodes0_; ++jnode0) {
           if (ghostView(jnode0) == 0) {
-            for (int k0 = 0; k0 < activeVars_.getLevels(var); ++k0) {
+            for (size_t k0 = 0; k0 < nz0; ++k0) {
               view(jnode0, k0) = static_cast<double>(indexI0View(jnode0));
             }
           }
@@ -1037,6 +1039,7 @@ std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> FastLAM::fie
       }
 
       // Add pair
+      fset.name() = param;
       pairs.push_back(std::make_pair(file, fset));
     }
     if (param == "index j") {
@@ -1047,12 +1050,13 @@ std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> FastLAM::fie
       atlas::Field fieldIndexJ0 = gdata_.fieldSet()["index_j"];
       auto indexJ0View = atlas::array::make_view<int, 1>(fieldIndexJ0);
       for (const auto & var : activeVars_.variables()) {
+        const size_t nz0 = activeVars_.getLevels(var);
         atlas::Field field = gdata_.functionSpace().createField<double>(
-          atlas::option::name(var) | atlas::option::levels(activeVars_.getLevels(var)));
+          atlas::option::name(var) | atlas::option::levels(nz0));
         auto view = atlas::array::make_view<double, 2>(field);
         for (size_t jnode0 = 0; jnode0 < nodes0_; ++jnode0) {
           if (ghostView(jnode0) == 0) {
-            for (int k0 = 0; k0 < activeVars_.getLevels(var); ++k0) {
+            for (size_t k0 = 0; k0 < nz0; ++k0) {
               view(jnode0, k0) = static_cast<double>(indexJ0View(jnode0));
             }
           }
@@ -1061,6 +1065,7 @@ std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> FastLAM::fie
       }
 
       // Add pair
+      fset.name() = param;
       pairs.push_back(std::make_pair(file, fset));
     }
     if (param == "normalized horizontal length-scale") {
@@ -1070,8 +1075,9 @@ std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> FastLAM::fie
       // Copy fields
       for (const auto & var : activeVars_.variables()) {
         // Default: missing value
+        const size_t nz0 = activeVars_.getLevels(var);
         atlas::Field field = gdata_.functionSpace().createField<double>(
-          atlas::option::name(var) | atlas::option::levels(activeVars_.getLevels(var)));
+          atlas::option::name(var) | atlas::option::levels(nz0));
         auto view = atlas::array::make_view<double, 2>(field);
         view.assign(util::missingValue<double>());
         fset.add(field);
@@ -1087,6 +1093,7 @@ std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> FastLAM::fie
       }
 
       // Add pair
+      fset.name() = param;
       pairs.push_back(std::make_pair(file, fset));
     }
     if (param == "weight") {
@@ -1097,8 +1104,9 @@ std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> FastLAM::fie
         // Copy fields
         for (const auto & var : activeVars_.variables()) {
           // Default: missing value
+          const size_t nz0 = activeVars_.getLevels(var);
           atlas::Field field = gdata_.functionSpace().createField<double>(
-            atlas::option::name(var) | atlas::option::levels(activeVars_.getLevels(var)));
+            atlas::option::name(var) | atlas::option::levels(nz0));
           auto view = atlas::array::make_view<double, 2>(field);
           view.assign(util::missingValue<double>());
           fset.add(field);
@@ -1110,7 +1118,7 @@ std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> FastLAM::fie
               const auto wgtSqrtView = atlas::array::make_view<double, 2>(wgtSqrtField);
               for (size_t jnode0 = 0; jnode0 < nodes0_; ++jnode0) {
                 if (ghostView(jnode0) == 0) {
-                  for (int k0 = 0; k0 < activeVars_.getLevels(var); ++k0) {
+                  for (size_t k0 = 0; k0 < nz0; ++k0) {
                     view(jnode0, k0) = wgtSqrtView(jnode0, k0)*wgtSqrtView(jnode0, k0);
                   }
                 }
@@ -1124,6 +1132,7 @@ std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> FastLAM::fie
         util::seekAndReplace(fileCmp, "%component%", jBin, 2);
 
         // Add pair
+        fset.name() = param + " - " + std::to_string(jBin);
         pairs.push_back(std::make_pair(fileCmp, fset));
       }
     }
@@ -1135,8 +1144,9 @@ std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> FastLAM::fie
         // Copy fields
         for (const auto & var : activeVars_.variables()) {
           // Default: missing value
+          const size_t nz0 = activeVars_.getLevels(var);
           atlas::Field field = gdata_.functionSpace().createField<double>(
-            atlas::option::name(var) | atlas::option::levels(activeVars_.getLevels(var)));
+            atlas::option::name(var) | atlas::option::levels(nz0));
           auto view = atlas::array::make_view<double, 2>(field);
           view.assign(util::missingValue<double>());
           fset.add(field);
@@ -1156,6 +1166,7 @@ std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> FastLAM::fie
         util::seekAndReplace(fileCmp, "%component%", jBin, 2);
 
         // Add pair
+        fset.name() = param + " - " + std::to_string(jBin);
         pairs.push_back(std::make_pair(fileCmp, fset));
       }
     }
@@ -1167,8 +1178,9 @@ std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> FastLAM::fie
         // Copy fields
         for (const auto & var : activeVars_.variables()) {
           // Default: missing value
+          const size_t nz0 = activeVars_.getLevels(var);
           atlas::Field field = gdata_.functionSpace().createField<double>(
-            atlas::option::name(var) | atlas::option::levels(activeVars_.getLevels(var)));
+            atlas::option::name(var) | atlas::option::levels(nz0));
           auto view = atlas::array::make_view<double, 2>(field);
           view.assign(util::missingValue<double>());
           fset.add(field);
@@ -1188,6 +1200,7 @@ std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> FastLAM::fie
         util::seekAndReplace(fileCmp, "%component%", jBin, 2);
 
         // Add pair
+        fset.name() = param + " - " + std::to_string(jBin);
         pairs.push_back(std::make_pair(fileCmp, fset));
       }
     }

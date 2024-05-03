@@ -4,7 +4,7 @@
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
 # Build list of subdirs with files to add
-set( _subdirs blocks bump fastlam generic gsi interpolation oops spectralb util vader  mgbf)
+set( _subdirs blocks bump fastlam generic gsi interpolation oops spectralb util vader )
 #clt set( _subdirs blocks bump fastlam generic interpolation oops spectralb util vader mgbf)
 foreach( _subdir IN LISTS _subdirs )
     add_subdirectory( ${_subdir} )
@@ -22,6 +22,9 @@ ecbuild_add_library( TARGET ${PROJECT_NAME}
 if( OpenMP_FOUND )
     target_link_libraries( ${PROJECT_NAME} PUBLIC OpenMP::OpenMP_Fortran OpenMP::OpenMP_CXX )
 endif()
+
+add_subdirectory(mgbf)
+target_link_libraries(${PROJECT_NAME}  PUBLIC mgbf_interface)
 
 target_link_libraries( ${PROJECT_NAME} PUBLIC NetCDF::NetCDF_Fortran NetCDF::NetCDF_C )
 target_link_libraries( ${PROJECT_NAME} PUBLIC MPI::MPI_Fortran )

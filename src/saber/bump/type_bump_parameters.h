@@ -408,6 +408,10 @@ struct DiagnosticsDef {
   std::pair<const char *, bool> gau_approx =
     std::make_pair("gaussian approximation", false);
 
+  // Compute localization from correlation
+  std::pair<const char *, bool> loc_from_cor =
+    std::make_pair("localization from correlation", false);
+
   // Threshold on generalized kurtosis (3.0 = Gaussian distribution)
   std::pair<const char *, double> gen_kurt_th =
     std::make_pair("generalized kurtosis threshold", std::numeric_limits<double>().max());
@@ -561,6 +565,10 @@ struct NICASDef {
   // Overriding component in file
   std::pair<const char *, int> file_component =
     std::make_pair("overriding component in file", 0);
+
+  // Same horizontal convolution for all levels, no vertical convolution
+  std::pair<const char *, bool> same_horizontal =
+    std::make_pair("same horizontal convolution", 0);
 };
 
 // Psichitouv section
@@ -587,6 +595,14 @@ struct ExternalDef {
   // Iterative algorithm (ensemble members loaded sequentially)
   std::pair<const char *, bool> iterative_algo =
     std::make_pair("iterative algorithm", false);
+
+  // Vertical coordinate field name in geometry fields
+  std::pair<const char *, std::string> vert_coord_name =
+    std::make_pair("vertical coordinate name", "");
+
+  // Geographical mask name in geometry fields
+  std::pair<const char *, std::string> gmask_name =
+    std::make_pair("geographical mask name", "");
 };
 
 // -----------------------------------------------------------------------------

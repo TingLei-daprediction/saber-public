@@ -1,0 +1,48 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_gaussian
+    N: 12
+  groups:
+  - variables:
+    - eastward_wind
+    - mu
+    - northward_wind
+    - streamfunction
+    - unbalanced_pressure_levels_minus_one
+    - velocity_potential
+    levels: 70
+  partitioner: ectrans
+background:
+  date: '2010-01-01T12:00:00Z'
+  state variables:
+  - eastward_wind
+  - mu
+  - northward_wind
+  - unbalanced_pressure_levels_minus_one
+background error:
+  covariance model: SABER
+  randomization size: 10
+  saber central block:
+    saber block name: ID
+  saber outer blocks:
+  - saber block name: square root of spectral covariance
+    skip inverse test: true
+    read:
+      covariance_file: testdata/error_covariance_training_spectralb_1/spectralsabercov1.nc
+  - saber block name: spectral to gauss
+    active variables:
+    - eastward_wind
+    - mu
+    - northward_wind
+    - streamfunction
+    - unbalanced_pressure_levels_minus_one
+    - velocity_potential
+output variance:  # This section is optional
+  mpi pattern: '%MPI%'
+  filepath: testdata/randomization_sqrtspectralb_3/variance_%MPI%pes
+output perturbations:
+  member pattern: '%MEM%'
+  filepath: testdata/randomization_sqrtspectralb_3/randomized_gauss_mb%MEM%
+test:
+  reference filename: testref/randomization_sqrtspectralb_3.ref
