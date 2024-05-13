@@ -6,7 +6,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#include "saber/mgbf/interpolation/Interpolation.h"
+#include "saber/mgbf/covariance/mgbf_Interpolation.h"
 
 #include <memory>
 #include <string>
@@ -19,7 +19,7 @@
 #include "oops/base/Variables.h"
 
 #include "saber/blocks/SaberOuterBlockBase.h"
-//cltorg #include "saber/gsi/grid/Grid.h"
+#include "saber/mgbf/covaraince/Grid.h"
 
 #include "saber/oops/Utilities.h"
 
@@ -33,26 +33,21 @@ static SaberOuterBlockMaker<Interpolation> makerInterpolation_("mgbf interpolati
 // -------------------------------------------------------------------------------------------------
 
 //clt mgbfInterpolation::mgbfInterpolation(const oops::GeometryData & outerGeometryData,
-mgbfInterpolation::mgbfInterpolation(const oops::GeometryData & sourceGeometryData,
-                             const oops::Geometry & targetGeometry;
+mgbf_Interpolation::Interpolation(const oops::GeometryData & outerGeometryData,
                              const oops::Variables & outerVars,
                              const eckit::Configuration & covarConf,
                              const Parameters_ & params,
                              const oops::FieldSet3D & xb,
                              const oops::FieldSet3D & fg)
   : SaberOuterBlockBase(params, xb.validTime()), innerVars_(outerVars)
+
 {
-  oops::Log::trace() << classname() << "::Interpolation starting" << std::endl;
+  oops::Log::trace() << classname() << "::mgbf_Interpolation constructor starting" << std::endl;
   util::Timer timer(classname(), "MGBF Interpolation");
 
   // Grid
    // Grid
   Grid grid(outerGeometryData.comm(), params.toConfiguration());
-  auto targetfunctionspace = targetGeometry.generic()
-  interpolator_.reset(new oops::GlobalInterpolator(conf,
-                targetfunctionspace,
-                targetGeometry.getComm()));
-  
 
   // Inner geometry and variables
   innerGeometryData_.reset(new oops::GeometryData(grid.functionSpace(),
@@ -66,13 +61,18 @@ mgbfInterpolation::mgbfInterpolation(const oops::GeometryData & sourceGeometryDa
   for (const std::string & var : activeVars.variables()) {
     activeVariableSizes.push_back(activeVars.getLevels(var));
   }
-
-  oops::Log::trace() << classname() << "::Interpolation done" << std::endl;
+  interpolator_.reset(new UnstructuredInterpolation(outerGeometryData.comm(),
+                                                    params.toConfiguration(),
+                                                    innerGeometryData_->functionSpace(),
+                                                    outerGeometryData.functionSpace(),
+                                                    activeVariableSizes,
+                                                    activeVars));
+  oops::Log::trace() << classname() << "mgbf::Interpolator constructor  done" << std::endl;
 }
 
 // -------------------------------------------------------------------------------------------------
 
-Interpolation::~Interpolation() {
+mgbf_Interpolation::~mgbf_Interpolation() {
   oops::Log::trace() << classname() << "::~Interpolation starting" << std::endl;
   util::Timer timer(classname(), "~Interpolation");
   oops::Log::trace() << classname() << "::~Interpolation done" << std::endl;
@@ -113,5 +113,5 @@ void Interpolation::print(std::ostream & os) const {
 
 // -------------------------------------------------------------------------------------------------
 
-}  // namespace gsi
+}  // namespace mgbf
 }  // namespace saber

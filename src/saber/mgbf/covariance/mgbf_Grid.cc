@@ -50,7 +50,7 @@ Grid::Grid(const eckit::mpi::Comm & comm, const eckit::Configuration & conf)
   eckit::LocalConfiguration serialPartConf{};
   serialPartConf.set("partition", 0);
   const atlas::grid::Partitioner part("serial", serialPartConf);
-  targetFunctionSpace_.reset(new atlas::functionspace::StructuredColumns(grid, part));
+  targetFunctionSpace_.reset(new atlas::functionspace::PointCloud(grid, part));
 
  //clt mgbfGridFuncSpace_ = atlas::functionspace::PointCloud(lonlat);
 
