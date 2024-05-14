@@ -52,7 +52,7 @@ submodule(mg_intstate) mg_bocos
 !
 !$$$ end documentation block
 
-use kinds, only: r_kind,i_kind
+use mgbf_kinds, only: r_kind,i_kind
 
 implicit none
 

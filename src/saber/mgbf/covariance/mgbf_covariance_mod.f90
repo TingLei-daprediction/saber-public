@@ -15,7 +15,7 @@ use fckit_mpi_module,               only: fckit_mpi_comm
 use fckit_configuration_module,     only: fckit_configuration
 
 ! oops
-use kinds,                          only: r_kind,i_kind
+use mgbf_kinds,                          only: r_kind,i_kind
 use random_mod
 
 ! saber

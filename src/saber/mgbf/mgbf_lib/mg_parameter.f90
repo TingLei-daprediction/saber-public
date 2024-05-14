@@ -31,7 +31,7 @@ module mg_parameter
 !
 !$$$ end documentation block
 
-use kinds, only: i_kind,r_kind
+use mgbf_kinds, only: i_kind,r_kind
 use jp_pietc, only: u1
 
 implicit none
@@ -279,58 +279,58 @@ interface
    end subroutine
 !from jp_pbfil.f90
    module subroutine cholaspect1(lx,mx, el)
-     use kinds, only: dp=>r_kind
+     use mgbf_kinds, only: dp=>r_kind
      integer,                      intent(in   ):: lx,mx
      real(dp),dimension(1,1,lx:mx),intent(inout):: el
    end subroutine
    module subroutine cholaspect2(lx,mx, ly,my, el)
-     use kinds, only: dp=>r_kind
+     use mgbf_kinds, only: dp=>r_kind
      integer,                            intent(in   ):: lx,mx, ly,my
      real(dp),dimension(2,2,lx:mx,ly:my),intent(inout):: el
      real(dp),dimension(2,2):: tel
    end subroutine
    module subroutine cholaspect3(lx,mx, ly,my, lz,mz, el)
-     use kinds, only: dp=>r_kind
+     use mgbf_kinds, only: dp=>r_kind
      integer,                                  intent(in   ):: lx,mx, ly,my, lz,mz
      real(dp),dimension(3,3,lx:mx,ly:my,lz:mz),intent(inout):: el
      real(dp),dimension(3,3):: tel
    end subroutine
    module subroutine cholaspect4(lx,mx, ly,my, lz,mz, lw,mw,el)
-     use kinds, only: dp=>r_kind
+     use mgbf_kinds, only: dp=>r_kind
      integer,                                        intent(in   ):: lx,mx, ly,my, lz,mz, lw,mw
      real(dp),dimension(4,4,lx:mx,ly:my,lz:mz,lw:mw),intent(inout):: el
      real(dp),dimension(4,4):: tel
    end subroutine
    module subroutine getlinesum1(this,hx,lx,mx, el, ss)
-     use kinds, only: dp=>r_kind
+     use mgbf_kinds, only: dp=>r_kind
      class(mg_parameter_type)::this
      integer,                      intent(in   ):: hx,Lx,mx
      real(dp),dimension(1,1,Lx:Mx),intent(in   ):: el
      real(dp),dimension(    lx:mx),intent(  out):: ss
    end subroutine
    module subroutine getlinesum2(this,hx,lx,mx, hy,ly,my, el, ss)
-     use kinds, only: dp=>r_kind
+     use mgbf_kinds, only: dp=>r_kind
      class(mg_parameter_type)::this
      integer,                            intent(in   ):: hx,Lx,mx, hy,ly,my
      real(dp),dimension(2,2,Lx:Mx,Ly:My),intent(in   ):: el
      real(dp),dimension(    lx:mx,ly:my),intent(  out):: ss
    end subroutine
    module subroutine getlinesum3(this,hx,lx,mx, hy,ly,my, hz,lz,mz, el, ss)
-     use kinds, only: dp=>r_kind
+     use mgbf_kinds, only: dp=>r_kind
      class(mg_parameter_type)::this
      integer,                                  intent(in   ):: hx,Lx,mx, hy,ly,my, hz,lz,mz
      real(dp),dimension(3,3,Lx:Mx,Ly:My,Lz:Mz),intent(in   ):: el
      real(dp),dimension(    lx:mx,ly:my,lz:mz),intent(  out):: ss
    end subroutine
    module subroutine getlinesum4(this,hx,lx,mx, hy,ly,my, hz,lz,mz, hw,lw,mw, el, ss)
-     use kinds, only: dp=>r_kind
+     use mgbf_kinds, only: dp=>r_kind
      class(mg_parameter_type)::this
      integer,                                        intent(in   ):: hx,Lx,mx, hy,ly,my, hz,lz,mz, hw,lw,mw
      real(dp),dimension(4,4,Lx:Mx,Ly:My,Lz:Mz,Lw:Mw),intent(in   ):: el
      real(dp),dimension(    lx:mx,ly:my,lz:mz,Lw:Mw),intent(  out):: ss
    end subroutine
    module subroutine rbeta1(this,hx,lx,mx, el,ss, a)
-     use kinds, only: dp=>r_kind
+     use mgbf_kinds, only: dp=>r_kind
      class(mg_parameter_type)::this
      integer,                  intent(in   ):: hx,Lx,mx
      real(dp),dimension(Lx:Mx),intent(in   ):: el
@@ -338,7 +338,7 @@ interface
      real(dp),dimension(lx-hx:mx+hx),intent(inout):: a
    end subroutine
    module subroutine rbeta2(this,hx,lx,mx, hy,ly,my, el,ss, a)
-     use kinds, only: dp=>r_kind
+     use mgbf_kinds, only: dp=>r_kind
      class(mg_parameter_type)::this
      integer,                            intent(in   ):: hx,Lx,mx, hy,ly,my
      real(dp),dimension(2,2,Lx:Mx,Ly:My),intent(in   ):: el
@@ -346,7 +346,7 @@ interface
      real(dp),dimension(lx-hx:mx+hx,ly-hy:my+hy),intent(inout):: a
    end subroutine
    module subroutine rbeta3(this,hx,lx,mx, hy,ly,my, hz,lz,mz, el,ss,a)
-     use kinds, only: dp=>r_kind
+     use mgbf_kinds, only: dp=>r_kind
      class(mg_parameter_type)::this
      integer,                                  intent(in   ):: hx,Lx,mx, hy,ly,my, hz,lz,mz
      real(dp),dimension(3,3,Lx:Mx,Ly:My,Lz:Mz),intent(in   ):: el
@@ -354,7 +354,7 @@ interface
      real(dp),dimension(lx-hx:mx+hx,ly-hy:my+hy,lz-hz:mz+hz),intent(inout):: a
    end subroutine
    module subroutine rbeta4(this,hx,lx,mx, hy,ly,my, hz,lz,mz, hw,lw,mw, el,ss,a)
-     use kinds, only: dp=>r_kind
+     use mgbf_kinds, only: dp=>r_kind
      class(mg_parameter_type)::this
      integer,                                        intent(in   ):: hx,Lx,mx, hy,ly,my, hz,lz,mz, hw,lw,mw
      real(dp),dimension(4,4,Lx:Mx,Ly:My,Lz:Mz,Lw:Mw),intent(in   ):: el
@@ -362,7 +362,7 @@ interface
      real(dp),dimension(lx-hx:mx+hx,ly-hy:my+hy,lz-hz:mz+hz,lw-hw:mw+hw),intent(inout):: a
    end subroutine
    module subroutine rbeta1T(this,hx,lx,mx, el,ss, a)
-     use kinds, only: dp=>r_kind
+     use mgbf_kinds, only: dp=>r_kind
      class(mg_parameter_type)::this
      integer,                      intent(in   ):: hx,Lx,mx
      real(dp),dimension(1,1,Lx:Mx),intent(in   ):: el
@@ -370,7 +370,7 @@ interface
      real(dp),dimension(lx-hx:mx+hx),intent(inout):: a
    end subroutine
    module subroutine rbeta2T(this,hx,lx,mx, hy,ly,my, el,ss, a)
-     use kinds, only: dp=>r_kind
+     use mgbf_kinds, only: dp=>r_kind
      class(mg_parameter_type)::this
      integer,                            intent(in   ):: hx,Lx,mx, hy,ly,my
      real(dp),dimension(2,2,Lx:Mx,Ly:My),intent(in   ):: el
@@ -378,7 +378,7 @@ interface
      real(dp),dimension(lx-hx:mx+hx,ly-hy:my+hy),intent(inout):: a
    end subroutine
    module subroutine rbeta3T(this,hx,lx,mx, hy,ly,my, hz,lz,mz, el,ss, a)
-     use kinds, only: dp=>r_kind
+     use mgbf_kinds, only: dp=>r_kind
      class(mg_parameter_type)::this
      integer,                                  intent(in   ):: hx,Lx,mx, hy,ly,my, hz,lz,mz
      real(dp),dimension(3,3,Lx:Mx,Ly:My,Lz:Mz),intent(in   ):: el
@@ -386,7 +386,7 @@ interface
      real(dp),dimension(lx-hx:mx+hx,ly-hy:my+hy,lz-hz:mz+hz),intent(inout):: a
    end subroutine
    module subroutine rbeta4T(this,hx,lx,mx, hy,ly,my, hz,lz,mz, hw,lw,mw, el,ss, a)
-     use kinds, only: dp=>r_kind
+     use mgbf_kinds, only: dp=>r_kind
      class(mg_parameter_type)::this
      integer,                                        intent(in   ):: hx,Lx,mx, hy,ly,my, hz,lz,mz, hw,lw,mw
      real(dp),dimension(4,4,Lx:Mx,Ly:My,Lz:Mz,Lw:Mw),intent(in   ):: el
@@ -394,7 +394,7 @@ interface
      real(dp),dimension(lx-hx:mx+hx,ly-hy:my+hy,lz-hz:mz+hz,lw-hw:mw+hw),intent(inout):: a
    end subroutine
    module subroutine vrbeta1(this,nv,hx,lx,mx, el,ss, a)
-     use kinds, only: dp=>r_kind
+     use mgbf_kinds, only: dp=>r_kind
      class(mg_parameter_type)::this
      integer,                      intent(in   ):: nv,hx,Lx,mx
      real(dp),dimension(1,1,Lx:Mx),intent(in   ):: el
@@ -402,7 +402,7 @@ interface
      real(dp),dimension(nv,lx-hx:mx+hx),intent(inout):: a
    end subroutine
    module subroutine vrbeta2(this,nv,hx,lx,mx, hy,ly,my, el,ss, a)
-     use kinds, only: dp=>r_kind
+     use mgbf_kinds, only: dp=>r_kind
      class(mg_parameter_type)::this
      integer,                            intent(in   ):: nv, hx,Lx,mx, hy,ly,my
      real(dp),dimension(2,2,Lx:Mx,Ly:My),intent(in   ):: el
@@ -410,7 +410,7 @@ interface
      real(dp),dimension(nv,lx-hx:mx+hx,ly-hy:my+hy),intent(inout):: a
    end subroutine
    module subroutine vrbeta3(this,nv, hx,lx,mx, hy,ly,my, hz,lz,mz, el,ss,a)
-     use kinds, only: dp=>r_kind
+     use mgbf_kinds, only: dp=>r_kind
      class(mg_parameter_type)::this
      integer,                                  intent(in   ):: nv, hx,Lx,mx, hy,ly,my, hz,lz,mz
      real(dp),dimension(3,3,Lx:Mx,Ly:My,Lz:Mz),intent(in   ):: el
@@ -418,7 +418,7 @@ interface
      real(dp),dimension(nv,lx-hx:mx+hx,ly-hy:my+hy,lz-hz:mz+hz),intent(inout):: a
    end subroutine
    module subroutine vrbeta4(this,nv,hx,lx,mx, hy,ly,my, hz,lz,mz, hw,lw,mw, el,ss,a)
-     use kinds, only: dp=>r_kind
+     use mgbf_kinds, only: dp=>r_kind
      class(mg_parameter_type)::this
      integer,                                        intent(in   ):: nv, hx,Lx,mx, hy,ly,my, hz,lz,mz, hw,lw,mw
      real(dp),dimension(4,4,Lx:Mx,Ly:My,Lz:Mz,Lw:Mw),intent(in   ):: el
@@ -426,7 +426,7 @@ interface
      real(dp),dimension(nv,lx-hx:mx+hx,ly-hy:my+hy,lz-hz:mz+hz,lw-hw:mw+hw),intent(inout):: a
    end subroutine
    module subroutine vrbeta1T(this,nv, hx,lx,mx, el,ss, a)
-     use kinds, only: dp=>r_kind
+     use mgbf_kinds, only: dp=>r_kind
      class(mg_parameter_type)::this
      integer,                      intent(in   ):: nv,hx,Lx,mx
      real(dp),dimension(1,1,Lx:Mx),intent(in   ):: el
@@ -434,7 +434,7 @@ interface
      real(dp),dimension(nv,lx-hx:mx+hx),intent(inout):: a
    end subroutine
    module subroutine vrbeta2T(this,nv,hx,lx,mx, hy,ly,my, el,ss, a)
-     use kinds, only: dp=>r_kind
+     use mgbf_kinds, only: dp=>r_kind
      class(mg_parameter_type)::this
      integer,                            intent(in   ):: nv, hx,Lx,mx, hy,ly,my
      real(dp),dimension(2,2,Lx:Mx,Ly:My),intent(in   ):: el
@@ -442,7 +442,7 @@ interface
      real(dp),dimension(nv,lx-hx:mx+hx,ly-hy:my+hy),intent(inout):: a
    end subroutine
    module subroutine vrbeta3T(this,nv,hx,lx,mx, hy,ly,my, hz,lz,mz, el,ss, a)
-     use kinds, only: dp=>r_kind
+     use mgbf_kinds, only: dp=>r_kind
      class(mg_parameter_type)::this
      integer,                                  intent(in   ):: nv, hx,Lx,mx, hy,ly,my, hz,lz,mz
      real(dp),dimension(3,3,Lx:Mx,Ly:My,Lz:Mz),intent(in   ):: el
@@ -450,7 +450,7 @@ interface
      real(dp),dimension(nv,lx-hx:mx+hx,ly-hy:my+hy,lz-hz:mz+hz),intent(inout):: a
    end subroutine
    module subroutine vrbeta4T(this,nv,hx,lx,mx, hy,ly,my, hz,lz,mz, hw,lw,mw, el,ss, a)
-     use kinds, only: dp=>r_kind
+     use mgbf_kinds, only: dp=>r_kind
      class(mg_parameter_type)::this
      integer,                                        intent(in   ):: nv, hx,Lx,mx, hy,ly,my, hz,lz,mz, hw,lw,mw
      real(dp),dimension(4,4,Lx:Mx,Ly:My,Lz:Mz,Lw:Mw),intent(in   ):: el

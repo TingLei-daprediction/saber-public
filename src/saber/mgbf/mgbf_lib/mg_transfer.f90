@@ -37,7 +37,7 @@ submodule(mg_intstate) mg_transfer
 
 use mpi
 use mg_timers
-use kinds, only: r_kind,i_kind
+use mgbf_kinds, only: r_kind,i_kind
 
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 contains

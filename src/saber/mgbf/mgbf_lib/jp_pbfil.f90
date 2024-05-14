@@ -59,7 +59,7 @@ submodule(mg_parameter) jp_pbfil
 !$$$ end documentation block
 
 use mpi
-use kinds, only: dp=>r_kind
+use mgbf_kinds, only: dp=>r_kind
 use jp_pietc, only: u1
 implicit none
 

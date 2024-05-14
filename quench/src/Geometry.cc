@@ -44,7 +44,6 @@ Geometry::Geometry(const eckit::Configuration & config, const eckit::mpi::Comm &
 
   halo_ = params.halo.value();
   gridType_ = params.grid.value().getString("type", "no_type");
-  regionalGrid_ = (gridType_ == "regional");  // grid.type() does not report if grid is regional
 
   // Setup geometry fields
   fields_ = atlas::FieldSet();
@@ -52,17 +51,13 @@ Geometry::Geometry(const eckit::Configuration & config, const eckit::mpi::Comm &
   // Add owned points mask -- this mask does not depend on the group so was precomputed
   fields_->add(fieldsetOwnedMask.field("owned"));
 
-  if (regionalGrid_) {
-    // 2D indices
-    const atlas::functionspace::StructuredColumns fs(functionSpace_);
-    fields_->add(fs.index_i());
-    fields_->add(fs.index_j());
-
+  if (!grid_.domain().global()) {
     // Area
     atlas::Field area = functionSpace_.createField<double>(
       atlas::option::name("area") | atlas::option::levels(1));
     auto areaView = atlas::array::make_view<double, 2>(area);
-    const atlas::StructuredGrid grid = fs.grid();
+    const atlas::StructuredGrid grid(grid_);
+    const atlas::functionspace::StructuredColumns fs(functionSpace_);
     const auto view_i = atlas::array::make_view<int, 1>(fs.index_i());
     const auto view_j = atlas::array::make_view<int, 1>(fs.index_j());
     for (atlas::idx_t jnode = 0; jnode < area.shape(0); ++jnode) {
@@ -215,8 +210,8 @@ Geometry::Geometry(const eckit::Configuration & config, const eckit::mpi::Comm &
 }
 // -----------------------------------------------------------------------------
 Geometry::Geometry(const Geometry & other) : comm_(other.comm_), halo_(other.halo_),
-  grid_(other.grid_), gridType_(other.gridType_), regionalGrid_(other.regionalGrid_),
-  partitioner_(other.partitioner_), mesh_(other.mesh_), groupIndex_(other.groupIndex_)  {
+  grid_(other.grid_), gridType_(other.gridType_), partitioner_(other.partitioner_),
+  mesh_(other.mesh_), groupIndex_(other.groupIndex_)  {
   // Copy function space
   if (other.functionSpace_.type() == "StructuredColumns") {
     // StructuredColumns
@@ -283,52 +278,6 @@ std::vector<size_t> Geometry::variableSizes(const oops::Variables & vars) const 
   return sizes;
 }
 // -----------------------------------------------------------------------------
-void Geometry::latlon(std::vector<double> & lats, std::vector<double> & lons,
-                      const bool includeHaloForRealLife) const {
-  const auto lonlat = atlas::array::make_view<double, 2>(functionSpace_.lonlat());
-  const auto ghost = atlas::array::make_view<int, 1>(functionSpace_.ghost());
-
-  // TODO(Algo): Remove/fix the hack below when GeometryData local KD tree needs
-  // to be set up correctly (e.g. when UnstructuredInterpolator is used).
-  // For now never include halo in the latlon output because halo points from
-  // some atlas grids (e.g. gaussian) can have unrealistic latitudes (e.g. more
-  // than 90 degrees) and those latitudes can't be handled by KD trees.
-  // Global KD trees created in GeometryData are used for communication and
-  // don't need halo information.
-  // Local KD trees in GeometryData need halo information but aren't used unless
-  // UnstructuredInterpolator is used.
-  bool includeHalo = false;
-  const size_t npts = functionSpace_.size();
-  const size_t nptsReturned = [&]() {
-    if (includeHalo && comm_.size() > 1) {
-      return npts;
-    } else {
-      size_t result = 0;
-      for (atlas::idx_t i = 0; i < ghost.shape(0); ++i) {
-        if (ghost(i) == 0) {
-          result++;
-        }
-      }
-      return result;
-    }
-  }();
-
-  lats.resize(nptsReturned);
-  lons.resize(nptsReturned);
-
-  size_t count = 0;
-  for (size_t jj = 0; jj < npts; ++jj) {
-    // copy owned points, i.e. points with ghost==?
-    if (ghost(jj) == 0 || (includeHalo && comm_.size() > 1)) {
-      lats[count] = lonlat(jj, 1);
-      lons[count] = lonlat(jj, 0);
-      if (lons[count] < 0.0) lons[count] += 360.0;
-      count++;
-    }
-  }
-  ASSERT(count == nptsReturned);
-}
-// -----------------------------------------------------------------------------
 void Geometry::print(std::ostream & os) const {
   std::string prefix;
   if (os.rdbuf() == oops::Log::info().rdbuf()) {
@@ -337,7 +286,7 @@ void Geometry::print(std::ostream & os) const {
   os << prefix <<  "Quench geometry grid:" << std::endl;
   os << prefix << "- name: " << grid_.name() << std::endl;
   os << prefix << "- size: " << grid_.size() << std::endl;
-  if (regionalGrid_) {
+  if (!grid_.domain().global()) {
     os << prefix << "Regional grid detected" << std::endl;
   }
   if (partitioner_) {

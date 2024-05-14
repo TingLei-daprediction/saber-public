@@ -29,7 +29,7 @@ module mg_intstate
 !$$$ end documentation block
 
 use mpi
-use kinds, only: r_kind,i_kind
+use mgbf_kinds, only: r_kind,i_kind
 use jp_pkind2, only: fpi
 use jp_pbfil3, only: inimomtab,t22_to_3,tritform,t33_to_6,hextform
 use mg_parameter,only: mg_parameter_type

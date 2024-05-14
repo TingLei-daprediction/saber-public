@@ -97,11 +97,14 @@ MGBF_Covariance(const oops::GeometryData & geometryData,
   void print(std::ostream &) const override ;
   // Fortran LinkedList key
   MGBF_CovarianceKey keySelf_;
+ // Parameter
+  Parameters_ params_;
   // Variables
   std::vector<std::string> variables_;
   // Function space
   atlas::FunctionSpace mgbfGridFuncSpace_;
   oops::Variables activeVars_;
+  const eckit::mpi::Comm * comm_;
 };
 
 // -------------------------------------------------------------------------------------------------
@@ -113,7 +116,9 @@ MGBF_Covariance::MGBF_Covariance(const oops::GeometryData & geometryData,
         const Parameters_ & params,
         const oops::FieldSet3D & xb,
         const oops::FieldSet3D & fg)
-  :  SaberCentralBlockBase(params, xb.validTime()) 
+  :  SaberCentralBlockBase(params, xb.validTime()),
+     params_(params), variables_(params.activeVars.value().get_value_or(centralVars).variables()),
+     mgbfGridFuncSpace_(geometryData.functionSpace()), comm_(&geometryData.comm())   
 {
   oops::Log::trace() << classname() << "MGBF::Covariance starting" << std::endl;
   // Get active variables
@@ -142,7 +147,8 @@ throw eckit::UserError("doCalibration=.true. is not implemented ", Here());
   // Need to convert background and first guess to Atlas and MGBF grid.
 
   // Create covariance module
-  mgbf_covariance_create_f90(keySelf_, geometryData.comm(), params.toConfiguration(),
+//cltwhy not working  mgbf_covariance_create_f90(keySelf_, *comm_, params_.MGBFNML.value()->toConfiguration(),
+  mgbf_covariance_create_f90(keySelf_, *comm_, mgbf_config,
                             xb.get(), fg.get());
 
   oops::Log::trace() << classname() << "::Covariance done" << std::endl;

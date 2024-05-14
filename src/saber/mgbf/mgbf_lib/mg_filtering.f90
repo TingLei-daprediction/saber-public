@@ -42,7 +42,7 @@ submodule(mg_intstate) mg_filtering
 !$$$ end documentation block
 
 use mg_timers
-use kinds, only: r_kind,i_kind
+use mgbf_kinds, only: r_kind,i_kind
 use jp_pbfil3, only: dibetat,dibeta
 use mpi
 

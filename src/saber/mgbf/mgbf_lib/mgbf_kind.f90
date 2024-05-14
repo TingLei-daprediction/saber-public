@@ -1,4 +1,4 @@
-module kinds
+module mgbf_kinds
 !$$$  module documentation block
 !                .      .    .                                       .
 ! module:   kinds
@@ -115,4 +115,4 @@ module kinds
   private:: one_dpi; integer(8),parameter:: one_dpi=1
   integer,parameter , public :: dpi=kind(one_dpi)
 
-end module kinds
+end module mgbf_kinds

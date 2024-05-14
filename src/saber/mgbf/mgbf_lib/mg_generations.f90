@@ -63,7 +63,7 @@ submodule(mg_intstate) mg_generations
 !                                                     M. Rancic (2022) !
 !***********************************************************************
 use mpi
-use kinds, only: r_kind,i_kind
+use mgbf_kinds, only: r_kind,i_kind
 use mg_timers
 !TEST
 use, intrinsic:: ieee_arithmetic

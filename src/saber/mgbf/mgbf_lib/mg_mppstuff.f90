@@ -26,7 +26,7 @@ submodule(mg_parameter) mg_mppstuff
 !
 !$$$ end documentation block
 
-use kinds, only: i_kind
+use mgbf_kinds, only: i_kind
 implicit none
 
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
