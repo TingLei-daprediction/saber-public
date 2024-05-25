@@ -7,6 +7,7 @@
  */
 
 #pragma once
+#include "saber/mgbf/covariance/mgbf_Interpolation.h"
 
 #include <memory>
 #include <string>
@@ -36,12 +37,13 @@ namespace mgbf {
 
 // -------------------------------------------------------------------------------------------------
 class mgbf_InterpolationParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(InterpolationParameters, SaberBlockParametersBase)
+  OOPS_CONCRETE_PARAMETERS(mgbf_InterpolationParameters, SaberBlockParametersBase)
 
  public:
   // File containing grid and coefficients
-  oops::RequiredParameter<std::string> mgbfFile{"mgbf error covariance file", this};
-  oops::RequiredParameter<std::string> mgbfNML{"mgbf berror namelist file", this};
+// lf  oops::RequiredParameter<std::string> mgbfFile{"mgbf error covariance file", this};
+//  oops::RequiredParameter<std::string> mgbfNML{"mgbf namelist file", this};
+  oops::RequiredParameter<eckit::LocalConfiguration> mgbfgrid{"mgbf grid", this};
 
   // Handle vertical top-2-bottom and vice-verse wrt to GSI
   oops::Parameter<bool> vflip{"flip vertical grid", true, this};
@@ -57,13 +59,13 @@ class mgbf_InterpolationParameters : public SaberBlockParametersBase {
 
 // -------------------------------------------------------------------------------------------------
 
-template <typename T_interpolator>
+//clt template <typename T>
 class mgbf_Interpolation : public SaberOuterBlockBase {
  public:
   static const std::string classname() {return "saber::mgbf::Interpolation";}
 
-  typedef mgbfInterpolationParameters Parameters_;
-  typedef T_Interpolator  Interpolator_;
+  typedef mgbf_InterpolationParameters Parameters_;
+//clt  typedef T  Interpolator_;
 
   mgbf_Interpolation(const oops::GeometryData &,
                 const oops::Variables &,
@@ -80,11 +82,14 @@ class mgbf_Interpolation : public SaberOuterBlockBase {
 // target stuff are corresponding to stuff with the outer block
   const oops::GeometryData & innerGeometryData() const override {return *innerGeometryData_;}
   const oops::Variables & innerVars() const override {return innerVars_;}
-  const atlas::functionspace outerFunctionspace ,
+  const atlas::FunctionSpace outerFunctionspace ;
 
   void multiply(oops::FieldSet3D &) const override;
   void multiplyAD(oops::FieldSet3D &) const override;
-  void leftInverseMultiply(oops::FieldSet3D &) const override;
+  void leftInverseMultiply(oops::FieldSet3D &) const override
+    {
+//clt to timplement 
+     }
 
  private:
   void print(std::ostream &) const override;
@@ -93,10 +98,10 @@ class mgbf_Interpolation : public SaberOuterBlockBase {
 
   // Interpolation object
   // clt follow examples in gsi::interpolation
-  std::unique_ptr<UnstructuredInterpolation> interpolator_;
+  std::unique_ptr<gsi::UnstructuredInterpolation> interpolator_;
 
   // Inverse interpolation object (need adjoint)
-  std::unique_ptr<UnstructuredInterpolation> inverseInterpolator_;
+  std::unique_ptr<gsi::UnstructuredInterpolation> inverseInterpolator_;
 };
 
 // -------------------------------------------------------------------------------------------------

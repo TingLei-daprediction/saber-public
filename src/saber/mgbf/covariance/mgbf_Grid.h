@@ -18,51 +18,53 @@
 #include "oops/util/parameters/Parameters.h"
 #include "oops/util/parameters/RequiredParameter.h"
 
-#include "saber/gsi/grid/Grid.interface.h"
 //cltorg modified from gsi/Grid.h
 
 namespace saber {
-namespace gsi {
+namespace mgbf {
 
 // -------------------------------------------------------------------------------------------------
 
-class GridParameters : public oops::Parameters {
-  OOPS_CONCRETE_PARAMETERS(GridParameters, Parameters)
+class mgbfGridParameters : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(mgbfGridParameters, Parameters)
 };
 
 // -------------------------------------------------------------------------------------------------
 
-class Grid {
+class mgbfGrid {
  public:
-  static const std::string classname() {return "saber::gsi::Grid";}
+  static const std::string classname() {return "saber::mgbf::mgbfGrid";}
 
   // Constructor & destructor
-  Grid(const eckit::mpi::Comm &, const eckit::Configuration &);
-  ~Grid();
+  mgbfGrid(const eckit::mpi::Comm &, const eckit::Configuration &);
+  ~mgbfGrid();
 
   // Accessor functions
-  int levels() {return gsiLevels_;}
-  const atlas::FunctionSpace & functionSpace() const {return mgbfGridFuncSpace_;}
-  atlas::FunctionSpace & functionSpace() {return mgbfGridFuncSpace_;}
+//clt  int levels() {return gsiLevels_;}
+  const atlas::FunctionSpace & functionSpace() const {return mgbfFuncSpace_;}
+  atlas::FunctionSpace & functionSpace() {return mgbfFuncSpace_;}
 
  private:
   void print(std::ostream &) const;
   // Fortran LinkedList key
-  GridKey keySelf_;
+//clt  GridKey keySelf_;
   // Function spaces
-  atlas::FunctionSpace mgbfGridFuncSpace_;
+  atlas::FunctionSpace mgbfFuncSpace_;
   // Number of levels
   int mgbfLevels_;
 };
 
-Grid::Grid(const eckit::mpi::Comm & comm, const eckit::Configuration & conf)
+mgbfGrid::mgbfGrid(const eckit::mpi::Comm & comm, const eckit::Configuration & conf)
 {
-  oops::Log::trace() << classname() << "::Grid starting" << std::endl;
-  util::Timer timer(classname(), "Grid");
+  oops::Log::tracexx() << classname() << "::Grid starting" << std::endl;
+  oops::Log::trace()<<"mgbf config is "<<conf<<std::endl;
+  util::Timer timer(classname(), "mgbfGrid");
 // set up grid and functionspace based on description in the yaml
    const atlas::StructuredGrid grid(conf);
 //clt  how about PointCloud functionspace 
-   const atlas::functionspace::StructuredColumns mgbfGridFuncSpace_(grid);
+//clt   const atlas::functionspace::StructuredColumns mgbfGridFuncSpace_(grid);
+   mgbfFuncSpace_=atlas::functionspace::StructuredColumns(grid); //todo 
+  oops::Log::trace() << "mgbfFunction space  is " <<mgbfFuncSpace_<< std::endl;
 
 
  //clt mgbfGridFuncSpace_ = atlas::functionspace::PointCloud(lonlat);
@@ -73,14 +75,14 @@ Grid::Grid(const eckit::mpi::Comm & comm, const eckit::Configuration & conf)
 
 // -------------------------------------------------------------------------------------------------
 
-Grid::~Grid() {
+mgbfGrid::~mgbfGrid() {
   oops::Log::trace() << classname() << "::~Grid starting" << std::endl;
   util::Timer timer(classname(), "~Grid");
 }
 
 // -------------------------------------------------------------------------------------------------
 
-void Grid::print(std::ostream & os) const {
+void mgbfGrid::print(std::ostream & os) const {
   oops::Log::trace() << classname() << "::print starting" << std::endl;
   util::Timer timer(classname(), "print");
   oops::Log::trace() << classname() << "::print done" << std::endl;

@@ -19,7 +19,7 @@
 #include "oops/base/Variables.h"
 
 #include "saber/blocks/SaberOuterBlockBase.h"
-#include "saber/mgbf/covaraince/Grid.h"
+#include "saber/mgbf/covariance/mgbf_Grid.h"
 
 #include "saber/oops/Utilities.h"
 
@@ -28,12 +28,13 @@ namespace mgbf {
 
 // -------------------------------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<Interpolation> makerInterpolation_("mgbf interpolation to model grid and it adjoint");
+//clt template <typename T>
+static SaberOuterBlockMaker<mgbf_Interpolation> makerInterpolation_("mgbf interpolation to model grid");
 
 // -------------------------------------------------------------------------------------------------
 
 //clt mgbfInterpolation::mgbfInterpolation(const oops::GeometryData & outerGeometryData,
-mgbf_Interpolation::Interpolation(const oops::GeometryData & outerGeometryData,
+mgbf_Interpolation::mgbf_Interpolation(const oops::GeometryData & outerGeometryData,
                              const oops::Variables & outerVars,
                              const eckit::Configuration & covarConf,
                              const Parameters_ & params,
@@ -46,10 +47,11 @@ mgbf_Interpolation::Interpolation(const oops::GeometryData & outerGeometryData,
   util::Timer timer(classname(), "MGBF Interpolation");
 
   // Grid
-   // Grid
-  Grid grid(outerGeometryData.comm(), params.toConfiguration());
+  oops::Log::trace()<<"in mgbf interp params "<<params<<std::endl;  
+  mgbfGrid grid(outerGeometryData.comm(), params.mgbfgrid.value());
 
   // Inner geometry and variables
+  oops::Log::trace()<<"in mgbf interp after grid "<<std::endl;  
   innerGeometryData_.reset(new oops::GeometryData(grid.functionSpace(),
                                                   outerGeometryData.fieldSet(),
                                                   outerGeometryData.levelsAreTopDown(),
@@ -61,7 +63,8 @@ mgbf_Interpolation::Interpolation(const oops::GeometryData & outerGeometryData,
   for (const std::string & var : activeVars.variables()) {
     activeVariableSizes.push_back(activeVars.getLevels(var));
   }
-  interpolator_.reset(new UnstructuredInterpolation(outerGeometryData.comm(),
+  oops::Log::trace()<<"in mgbf interp before interpolator "<<std::endl;  
+  interpolator_.reset(new gsi::UnstructuredInterpolation(outerGeometryData.comm(),
                                                     params.toConfiguration(),
                                                     innerGeometryData_->functionSpace(),
                                                     outerGeometryData.functionSpace(),
@@ -73,14 +76,14 @@ mgbf_Interpolation::Interpolation(const oops::GeometryData & outerGeometryData,
 // -------------------------------------------------------------------------------------------------
 
 mgbf_Interpolation::~mgbf_Interpolation() {
-  oops::Log::trace() << classname() << "::~Interpolation starting" << std::endl;
-  util::Timer timer(classname(), "~Interpolation");
-  oops::Log::trace() << classname() << "::~Interpolation done" << std::endl;
+  oops::Log::trace() << classname() << "::~mgbfInterpolation starting" << std::endl;
+  util::Timer timer(classname(), "~mgbfInterpolation");
+  oops::Log::trace() << classname() << "::~mgbfInterpolation done" << std::endl;
 }
 
 // -------------------------------------------------------------------------------------------------
 
-void Interpolation::multiply(oops::FieldSet3D & fset) const {
+void mgbf_Interpolation::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   util::Timer timer(classname(), "multiply");
   interpolator_->apply(fset.fieldSet());
@@ -89,7 +92,7 @@ void Interpolation::multiply(oops::FieldSet3D & fset) const {
 
 // -------------------------------------------------------------------------------------------------
 
-void Interpolation::multiplyAD(oops::FieldSet3D & fset) const {
+void mgbf_Interpolation::multiplyAD(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
   util::Timer timer(classname(), "multiplyAD");
   interpolator_->applyAD(fset.fieldSet());
@@ -107,7 +110,7 @@ void Interpolation::multiplyAD(oops::FieldSet3D & fset) const {
 
 // -------------------------------------------------------------------------------------------------
 
-void Interpolation::print(std::ostream & os) const {
+void mgbf_Interpolation::print(std::ostream & os) const {
   os << classname();
 }
 
