@@ -291,13 +291,17 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
              const State4D_ & xx,
              const Increment4D_ & dxi) const {
     // Define output increment
+    // tothinkdo
+    oops::Log::trace() <<  "dirac starting" << std::endl;
     Increment4D_ dxo(dxi, false);
 
     // Covariance
+    oops::Log::trace() <<  "dirac Bmat being created" << std::endl;
     std::unique_ptr<CovarianceBase_> Bmat(CovarianceFactory_::create(
                                           geom, vars, covarConf, xx, xx));
 
     // Multiply
+    oops::Log::trace() <<  "dirac Bmat 's multiply to be invoked" << std::endl;
     Bmat->multiply(dxi, dxo);
 
     // Update ID

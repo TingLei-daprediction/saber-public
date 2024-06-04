@@ -53,7 +53,7 @@ logical:: lquart,lhelm
 !*** Number of generations
 !***
 integer(i_kind):: gm            
-integer(i_kind):: gm_max
+integer(i_kind):: gm_max   !clt should be removed? 
 
 !*** 
 !*** Horizontal resolution 
@@ -145,11 +145,11 @@ integer(i_kind):: km_all        ! total number of k levels of ensemble for filte
 integer(i_kind):: km_a_all      ! total number of k levels of ensemble
 integer(i_kind):: km2_all       ! total number of k horizontal levels of ensemble for filtering
 integer(i_kind):: km3_all       ! total number of k vertical levels of ensemble
-logical :: l_loc                ! logical flag for localization
-logical :: l_filt_g1            ! logical flag for filtering of generation one
-logical :: l_lin_vertical       ! logical flag for linear interpolation in vertcial
-logical :: l_lin_horizontal     ! logical flag for linear interpolation in horizontal
-logical :: l_quad_horizontal    ! logical flag for quadratic interpolation in horizontal
+logical :: l_loc=.false.               ! logical flag for localization
+logical :: l_filt_g1=.true.            ! logical flag for filtering of generation one
+logical :: l_lin_vertical=.true.       ! logical flag for linear interpolation in vertcial
+logical :: l_lin_horizontal=.true.     ! logical flag for linear interpolation in horizontal
+logical :: l_quad_horizontal=.false.    ! logical flag for quadratic interpolation in horizontal
 logical :: l_new_map            ! logical flag for new mapping between analysis and filter grid
 logical :: l_vertical_filter    ! logical flag for vertical filtering
 integer(i_kind):: km            ! number of vertically stacked all variables (km=km2+lm*km3)
@@ -488,15 +488,15 @@ integer(i_kind):: lm_a          ! number of vertical layers in analysis fields
 integer(i_kind):: lm            ! number of vertical layers in filter grids
 integer(i_kind):: km2           ! number of 2d variables for filtering
 integer(i_kind):: km3           ! number of 3d variables for filtering
-integer(i_kind):: n_ens         ! number of ensemble members
+integer(i_kind):: n_ens=1         ! number of ensemble members
 logical :: l_loc                ! logical flag for localization
 logical :: l_filt_g1            ! logical flag for filtering of generation one
 logical :: l_lin_vertical       ! logical flag for linear interpolation in vertcial
 logical :: l_lin_horizontal     ! logical flag for linear interpolation in horizontal
 logical :: l_quad_horizontal    ! logical flag for quadratic interpolation in horizontal
-logical :: l_new_map            ! logical flag for new mapping between analysis and filter grid
-logical :: l_vertical_filter    ! logical flag for vertical filtering
-integer(i_kind):: gm_max
+logical :: l_new_map=.false.            ! logical flag for new mapping between analysis and filter grid
+logical :: l_vertical_filter=.false.    ! logical flag for vertical filtering
+integer(i_kind):: gm_max=4   !clt by defaul
 
 ! Global number of data on Analysis grid
 integer(i_kind):: nm0        
@@ -639,10 +639,13 @@ integer(i_kind):: p
 !
 
   this%km_a = this%km2+this%lm_a*this%km3
+  write(6,*)'thinkdeb mg_parameter.f90 km2,lm,km3 ',this%km2,' ',this%lm  ,' ',this%km3 
   this%km   = this%km2+this%lm  *this%km3
+  write(6,*)'thinkdeb mg_parameter.f90 km ',this%km,' ',this%km_a 
 
   this%km_a_all = this%km_a * this%n_ens
   this%km_all   = this%km   * this%n_ens
+  write(6,*)'thinkdeb mg_parameter.f90 km_all ',this%km_all,' ',this%n_ens 
 
   this%km2_all = this%km2 * this%n_ens
   this%km3_all = this%km3 * this%n_ens
@@ -680,7 +683,7 @@ integer(i_kind):: p
 !
 ! Number of grid points on the analysis grid after padding
 !
-
+  write(6,*)'thinkdeb mg_parameter nm0,nxm',this%nm0,this%nxm
   this%nm = this%nm0/this%nxm
   this%mm = this%mm0/this%nym
 

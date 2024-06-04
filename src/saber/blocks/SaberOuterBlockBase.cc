@@ -60,6 +60,9 @@ std::unique_ptr<SaberOuterBlockBase> SaberOuterBlockFactory::create(
     oops::Log::error() << id << " does not exist in saber::SaberOuterBlockFactory." << std::endl;
     throw eckit::UserError("Element does not exist in saber::SaberOuterBlockFactory.", Here());
   }
+  oops::Log::trace()<<"thinkin outer black create ,covarConfig "<<covarConfig<<std::endl;
+//  oops::Log::trace()<<"thinkin outer black create ,params "<<params.toConfiguration()<<std::endl;
+  oops::Log::trace()<<"thinkin outer black create ,params "<<params<<std::endl;
   std::unique_ptr<SaberOuterBlockBase> ptr =
     jsb->second->make(outerGeometryData, outerVars, covarConfig, params, xb, fg);
   oops::Log::trace() << "SaberOuterBlockBase::create done" << std::endl;

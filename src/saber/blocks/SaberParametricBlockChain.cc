@@ -65,6 +65,7 @@ SaberParametricBlockChain::SaberParametricBlockChain(
                                  saberCentralBlockParams,
                                  fset4dXb,
                                  fset4dFg);
+  oops::Log::trace() << "thinkdeb in SaberParametricBlockChain.cc Creating central block done "<<std::endl;
 
   // Check block doesn't expect model fields to be read as this is a generic ctor
   if (centralBlock_->getReadConfs().size() != 0) {

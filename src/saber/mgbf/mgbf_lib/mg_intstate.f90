@@ -1018,12 +1018,15 @@ subroutine allocate_mg_intstate(this)
 implicit none
 class(mg_intstate_type),target::this
 
+write(6,*)"thinkdeb in allocate_mg_intstate ",this%l_loc
 if(this%l_loc) then
    allocate(this%w1_loc(this%km_all   ,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this%w1_loc=0.
    allocate(this%w2_loc(this%km_all/4 ,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this%w2_loc=0.
    allocate(this%w3_loc(this%km_all/16,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this%w3_loc=0.
    allocate(this%w4_loc(this%km_all/64,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this%w4_loc=0.
 endif
+write(6,*)"thinkdeb in allocate_mg_intstate hx,km3  ",this%km_all,this%hx,this%im,this%hy,this%jm,this%lm
+call flush(6)
 
 allocate(this%V(1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,this%lm))        ; this%V=0.
 allocate(this%VALL(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this%VALL=0.

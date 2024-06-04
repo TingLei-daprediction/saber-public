@@ -18,6 +18,7 @@
 
 #include "saber/gsi/interpolation/unstructured_interp/UnstructuredInterpolation.h"
 #include "saber/gsi/interpolation/unstructured_interp/UnstructuredInterpolation.interface.h"
+#include <fstream>
 
 namespace saber {
 namespace gsi {
@@ -33,8 +34,19 @@ UnstructuredInterpolation::UnstructuredInterpolation(
   : innerFuncSpace_(innerFuncSpace), outerFuncSpace_(outerFuncSpace),
     activeVariableSizes_(activeVariableSizes), activeVars_(activeVars)
 {
+  oops::Log::trace()<<"thinkdeb in gsi::UnstracutredInterpolation CTOR begin"<<std::endl;
+  oops::Log::trace()<<"thinkdeb in gsi::UnstracutredInterpolation inner*.lonlat "<<innerFuncSpace_.lonlat()<<std::endl;
+  std::ofstream file("gsi_mgbf_latlon.txt");
+  innerFuncSpace_.lonlat().dump(file);
+  oops::Log::trace()<<"thinkdeb in gsi::UnstracutredInterpolation outer*.lonlat "<<outerFuncSpace_.lonlat()<<std::endl;
+  std::ofstream file2("gsi_model_latlon.txt");
+  outerFuncSpace_.lonlat().dump(file2);
+  oops::Log::trace()<<"xx         "<<std::endl;
+  
+  
   saber_unstrc_create_f90(keyUnstructuredInterpolator_, &comm,
                           innerFuncSpace_.lonlat().get(), outerFuncSpace_.lonlat().get(), config);
+  oops::Log::trace()<<"thinkdeb in gsi::UnstracutredInterpolation CTOR done"<<std::endl;
 }
 
 // -----------------------------------------------------------------------------

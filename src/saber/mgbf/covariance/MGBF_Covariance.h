@@ -71,10 +71,10 @@ MGBF_Covariance(const oops::GeometryData & geometryData,
   void randomize(oops::FieldSet3D &) const override;
   void multiply(oops::FieldSet3D &) const override;
 
-  std::vector<std::pair<std::string, eckit::LocalConfiguration>> getReadConfs() const override{};
-  void setReadFields(const std::vector<oops::FieldSet3D> &) override{};
+//clttodo  std::vector<std::pair<std::string, eckit::LocalConfiguration>> getReadConfs() const override{};
+//clttodo   void setReadFields(const std::vector<oops::FieldSet3D> &) override{};
 
-  void read() override {};
+//clttodo  void read() override {};
 
   void directCalibration(const oops::FieldSets &) override {};
 

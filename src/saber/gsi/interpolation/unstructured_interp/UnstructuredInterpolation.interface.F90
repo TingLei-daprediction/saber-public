@@ -178,7 +178,11 @@ else
   call outfield%data(fout_r2)
 
   do jlev = 1, jlev1
+     write(6,*)'jlev is ',jlev
+     write(6,*)'thinkdeb in staber_unstrc?,fin_r2 ',fin_r2(jlev,:)
      call unstrc_int%apply(fin_r2(jlev,:), fout_r2(jlev,:))
+     write(6,*)'thinkdeb in staber_unstrc?,fout_r2 ',fout_r2(jlev,:)
+     call flush(6)
   enddo
 
 endif
@@ -234,6 +238,10 @@ else
   call field_grid2%data(f2_r2)
 
   do jlev = 1, jlev1
+     write(6,*)'jlev is ',jlev
+     write(6,*)'thinkdeb in staber_unstrc?_ad,f1_r2 ',f1_r2(jlev,:)
+     write(6,*)'thinkdeb in staber_unstrc?_ad,f2_r2 ',f2_r2(jlev,:)
+     call flush(6)
      call unstrc_int%apply_ad(f1_r2(jlev,:), f2_r2(jlev,:))
   enddo
 

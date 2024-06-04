@@ -30,6 +30,7 @@
 #include "oops/util/Printable.h"
 
 #include "saber/blocks/SaberBlockParametersBase.h"
+  #include <typeinfo>
 
 // Forward declaration
 namespace oops {
@@ -224,8 +225,15 @@ void SaberCentralBlockBase::read(const oops::Geometry<MODEL> & geom,
 
   // Read fieldsets as increments
   std::vector<oops::FieldSet3D> fsetVec;
+  oops::Log::trace() << "SaberCentralBlockBase::read starting 2" << std::endl;
+//clt  oops::Log::trace() << "SaberCentralBlockBase::read typeid getReadConfs2 " <<typeid(this->getReadConfs()).name() <<std::endl;
+  oops::Log::trace() << "SaberCentralBlockBase::read typeid of this  " <<typeid(this).name() <<std::endl;
+  oops::Log::trace() << "SaberCentralBlockBase::read getReadConfs2 " <<this->getReadConfs() <<std::endl;
   for (const auto & input : this->getReadConfs()) {
     // Create increment
+  oops::Log::trace()<<"thinkdeb inputcofig "<<input<<std::endl;
+  oops::Log::trace()<<"thinkdeb inputcofig.second "<<typeid(input.second).name()<<std::endl;
+  oops::Log::trace()<<"thinkdeb vars "<<vars<<std::endl;
     oops::Increment<MODEL> dx(geom, vars, validTime_);
     dx.read(input.second);
     oops::Log::test() << "Norm of input parameter " << input.first

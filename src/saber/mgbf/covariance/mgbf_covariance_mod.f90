@@ -63,7 +63,7 @@ type(atlas_fieldset),      intent(in)    :: firstguess
 
 ! Locals
 character(len=*), parameter :: myname_=myname//'*create'
-character(len=:), allocatable :: mgbf_nml
+character(len=:), allocatable :: mgbf_nml,centralblockname
 logical :: central
 integer :: layout(2)
 
@@ -78,24 +78,24 @@ type(atlas_field) :: afield
 !clt call self%grid%create(config, comm)
 self%rank = comm%rank()
 
-call config%get_or_die("debuggingxx bypass mgbf", self%noMGBF)
-call config%get_or_die("mgbf namelist ",  mgbf_nml)
-if (.not. self%noMGBF) then
-  call config%get_or_die("saber central block", central)
-  if (.not. central) then
-     call abor1_ftn(myname_//": not ready to handle sqrt(B) case")
-  endif
-  call config%get_or_die("debugging deep bypass mgbf B error", self%bypassMGBFbe)
+!clt call config%get_or_die("debuggingxx bypass mgbf", self%noMGBF)
+call config%get_or_die("mgbf namelist file ",  mgbf_nml)
+!if (.not. self%noMGBF) then
+  call config%get_or_die("saber block name", centralblockname)
+!  if (.not. central) then
+!     call abor1_ftn(myname_//": not ready to handle sqrt(B) case")
+!  endif
+!  call config%get_or_die("debugging deep bypass mgbf B error", self%bypassMGBFbe)
 
 ! Get required name of resources for MGBF B error
 ! ----------------------------------------------
-  call config%get_or_die("mgbf berror namelist file",  mgbf_nml)
+!  call config%get_or_die("mgbf berror namelist file",  mgbf_nml)
 !//  call config%get_or_die("mgbf error covariance file", bef)
 
 ! Initialize MGBF-Berror components
 ! --------------------------------
 ! layout=-1
-endif
+!clt endif
 call  self%intstate%mg_initialize(mgbf_nml)  !mgbf_nml like mgbeta.nml
 ! Get background (temporary test of the functionality)
 !cltafield = background%field('air_temperature')
@@ -183,21 +183,27 @@ real(kind=r_kind), pointer :: ptr_2d(:,:)
 real(kind=r_kind), pointer :: ptr_3d(:,:,:)
 integer(kind=i_kind):: nz,ilev,isize
 real(kind=r_kind), allocatable :: work_mgbf(:,:,:)
+real(kind=r_kind), allocatable :: work2d_mgbf(:,:)
+integer(kind=i_kind) :: dim2d(2),dim3d(3)
 
 !clt now noly consider t
 !  afield = fields%field('air_temperature')
 !  call afield%data(t)
 !*** From the analysis to first generation of filter grid
 !***
+          write(6,*)"thinkdeb mgbf multiply mgbf_covariance_mod.f90 "
+          write(6,*)"thinkdeb mgbf work_mgbf dim ",self%intstate%km_a_all,self%intstate%nm,self%intstate%mm
           allocate(work_mgbf(self%intstate%km_a_all,self%intstate%nm,self%intstate%mm))
+          allocate(work2d_mgbf(self%intstate%km_a_all,self%intstate%nm*self%intstate%mm))
 !clt first as in ckgcov_a_en_new_factorization_ad
              ilev=1
           do isize=1,fields%size()
   
              afield= fields%field(isize)  !clttodo
              if(afield%rank() == 2)  then
+               nz=afield%levels()
                call afield%data(ptr_2d)
-               work_mgbf(ilev,:,:)=ptr_2d 
+               work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d 
                ilev=ilev+1
              elseif (afield%rank() == 3) then  
                call afield%data(ptr_3d)
@@ -209,27 +215,38 @@ real(kind=r_kind), allocatable :: work_mgbf(:,:,:)
                stop
              endif 
           enddo
+          dim3d=shape(work_mgbf)
+          work_mgbf=reshape(work2d_mgbf,[dim3d(1),dim3d(2),dim3d(3)])
           call self%intstate%anal_to_filt_allmap(work_mgbf)
 !clt second as in ckgcov_a_en_new_factorization          
           call self%intstate%filtering_procedure(self%intstate%mgbf_proc,1)
 
-          work_mgbf=0.0 ! to use zero-like constants  !,why? 
+!clttothink          work_mgbf=0.0 ! to use zero-like constants  !,why? 
          
           call self%intstate%anal_to_filt_allmap(work_mgbf)
           
 !the following should match fields ===> work_mgbf
+          dim2d=shape(work2d_mgbf)
+          work2d_mgbf=reshape(work_mgbf,[dim2d(1),dim2d(2)])
              ilev=1
+          write(6,*)'thinkdeb fields name and size ',fields%size(),'' ,fields%name() 
           do isize=1,fields%size()
   
              afield=fields%field(isize)  !clttodo
              if(afield%rank() == 2) then 
                call afield%data(ptr_2d)
-               ptr_2d=work_mgbf(ilev,:,:) 
-               ilev=ilev+1
+               nz=afield%levels()
+               write(6,*)'think nz of afield is ',nz
+               ptr_2d(1:nz,:)=work2d_mgbf(ilev:ilev+nz-1,:) 
+               ilev=ilev+nz
              elseif (afield%rank() == 3) then  
                call afield%data(ptr_3d)
                nz=afield%levels()
-               ptr_3d=work_mgbf(ilev:ilev+nz-1,:,:) 
+               write(6,*)'wrong in mgbf_covariance_mod.f90 todo ' !todo  
+               stop
+                 
+
+!clt               ptr_3d=work2d_mgbf(ilev:ilev+nz-1,:) 
                ilev=ilev+nz
              else
                write(6,*)'wrong in mgbf_covariance_mod.f90 ' !todo  
@@ -242,6 +259,7 @@ real(kind=r_kind), allocatable :: work_mgbf(:,:,:)
 
 
           deallocate(work_mgbf)
+          deallocate(work2d_mgbf)
 
 end subroutine multiply
 
