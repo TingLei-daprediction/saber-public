@@ -1,11 +1,13 @@
 /*
- * (C) Crown Copyright 2023 Met Office
+ * (C) Crown Copyright 2023-2024 Met Office
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
 #include "saber/generic/VertLoc.h"
+
+#include <netcdf.h>
 
 #include <iomanip>
 #include <memory>
@@ -38,8 +40,8 @@ auto setInnerVars(const oops::Variables & outerVars,
   // Return variables which are a copy of outerVars, except for activeVars
   // which should have levels changed to nmods
   oops::Variables innerVars(outerVars);
-  for (auto & var : activeVars.variables()) {
-    innerVars.addMetaData(var, "levels", nmods);
+  for (auto & var : activeVars) {
+    innerVars[var.name()].setLevels(nmods);
   }
   return innerVars;
 }
@@ -64,7 +66,7 @@ VertLoc::VertLoc(const oops::GeometryData & outerGeometryData,
   : SaberOuterBlockBase(params, xb.validTime()),
     innerGeometryData_(outerGeometryData),
     activeVars_(getActiveVars(params, outerVars)),
-    nlevs_(activeVars_.getLevels(activeVars_.variables()[0])),
+    nlevs_(activeVars_[0].getLevels()),
     nmods_(params.truncation.value()),
     innerVars_(setInnerVars(outerVars, activeVars_, nmods_)),
     ncfilepath_(params.VertLocParams.value().covStatFileName.value().get_value_or("")),
@@ -76,13 +78,13 @@ VertLoc::VertLoc(const oops::GeometryData & outerGeometryData,
   oops::Log::trace() << classname() << "::VertLoc starting" << std::endl;
 
   // Check all active variables have same number of levels
-  for (const auto & var : activeVars_.variables()) {
-    if (activeVars_.getLevels(var) != nlevs_) {
+  for (const auto & var : activeVars_) {
+    if (var.getLevels() != nlevs_) {
       oops::Log::error() << "Error    : Cannot deal with multiple vertical resolutions."
                          << std::endl;
       oops::Log::error() << "Error    : Vertical localization matrix has "
                          << nlevs_ << " levels, but variable " << var << " has "
-                         << activeVars_.getLevels(var) << " levels." << std::endl;
+                         << var.getLevels() << " levels." << std::endl;
       throw eckit::Exception("Inconsistent number of levels in VertLoc", Here());
     }
   }
@@ -179,7 +181,6 @@ VertLoc::VertLoc(const oops::GeometryData & outerGeometryData,
         }
       }
     }
-
 
     Eigen::MatrixXd m = Eigen::MatrixXd::Zero(nlevs_, nlevs_);
     for (int i = 0; i < nlevs_; ++i) {
@@ -303,23 +304,23 @@ void VertLoc::multiply(oops::FieldSet3D & fset) const {
   }
 
   // Active variables
-  for (const auto & var : activeVars_.variables()) {
+  for (const auto & var : activeVars_) {
     if (fset[var].shape(1) != nmods_) {
-      oops::Log::error() << "Error    : Field " << var << " has " << fset[var].shape(1)
+      oops::Log::error() << "Error    : Field " << var << " has " << fset[var.name()].shape(1)
                          << ", expected " << nmods_ << ". " << std::endl;
-      throw eckit::UserError("Wrong number of vertical levels in field " + var, Here());
+      throw eckit::UserError("Wrong number of vertical levels in field " + var.name(), Here());
     }
 
     // Create new field with nlevs_ levels
     atlas::Field outField =
       innerGeometryData_.functionSpace().createField<double>
-        (atlas::option::name(var) |
+        (atlas::option::name(var.name()) |
          atlas::option::levels(nlevs_));
     auto outView = atlas::array::make_view<double, 2>(outField);
     outView.assign(0.0);
 
     // Apply U matrix
-    auto inView = atlas::array::make_view<double, 2>(fset[var]);  // nmods_ levels
+    auto inView = atlas::array::make_view<double, 2>(fset[var.name()]);  // nmods_ levels
     atlas_omp_parallel_for(atlas::idx_t jn = 0; jn < outField.shape(0); ++jn) {
       for (atlas::idx_t jl = 0; jl < nlevs_; ++jl) {
         for (atlas::idx_t jm = 0; jm < nmods_; ++jm) {
@@ -351,24 +352,24 @@ void VertLoc::multiplyAD(oops::FieldSet3D & fset) const {
   }
 
   // Active variables
-  for (const auto & var : activeVars_.variables()) {
-    if (fset[var].shape(1) != nlevs_) {
-      oops::Log::error() << "Error    : Field " << var << " has " << fset[var].shape(1)
+  for (const auto & var : activeVars_) {
+    if (fset[var.name()].shape(1) != nlevs_) {
+      oops::Log::error() << "Error    : Field " << var << " has " << fset[var.name()].shape(1)
                          << ", expected " << nlevs_ << ". " << std::endl;
-      throw eckit::UserError("Wrong number of vertical levels in field " + var, Here());
+      throw eckit::UserError("Wrong number of vertical levels in field " + var.name(), Here());
     }
 
     // Create new field with nmods_ levels
     atlas::Field outField =
       innerGeometryData_.functionSpace().createField<double>
-        (atlas::option::name(var) |
+        (atlas::option::name(var.name()) |
          atlas::option::levels(nmods_));
     auto outView = atlas::array::make_view<double, 2>(outField);
 
     outView.assign(0.0);
 
     // Apply U^t
-    auto inView = atlas::array::make_view<double, 2>(fset[var]);  // nlevs_ levels
+    auto inView = atlas::array::make_view<double, 2>(fset[var.name()]);  // nlevs_ levels
 
     for (atlas::idx_t jn = 0; jn < outField.shape(0); ++jn) {
       for (atlas::idx_t jl = 0; jl < nmods_; ++jl) {
@@ -401,27 +402,27 @@ void VertLoc::readLocMat(const std::string & filepath,
   std::vector<std::string> dimNames;
   std::vector<atlas::idx_t> dimSizes;
   std::vector<std::vector<std::string>> dimNamesForEveryVar;
-  std::vector<std::string> variableNames;
+  oops::Variables vars;
   std::vector<int> netcdfGeneralIDs;
   std::vector<int> netcdfDimIDs;
   std::vector<int> netcdfVarIDs;
   std::vector<std::vector<int>> netcdfDimVarIDs;
+  eckit::LocalConfiguration netcdfMetaData;
 
   util::atlasArrayInquire(filepath,
                           dimNames,
                           dimSizes,
-                          variableNames,
+                          vars,
                           dimNamesForEveryVar,
+                          netcdfMetaData,
                           netcdfGeneralIDs,
                           netcdfDimIDs,
                           netcdfVarIDs,
                           netcdfDimVarIDs);
 
-  auto ind = std::find(variableNames.begin(), variableNames.end(), fieldname);
-  if (ind != variableNames.end()) {
-    auto pos = ind - variableNames.begin();
+  if (vars.has(fieldname)) {
+    const std::size_t pos = vars.find(fieldname);
     auto netcdfVarID = netcdfVarIDs[pos];
-
     int dimFld = netcdfDimVarIDs[pos].size();
     // remove dummy dimensions
     for (auto netcdfDimVarID : netcdfDimVarIDs[pos]) {
@@ -442,6 +443,7 @@ void VertLoc::readLocMat(const std::string & filepath,
                              dimFldSizes,
                              netcdfVarID,
                              fview);
+
     int retval;
     if ((retval = nc_close(netcdfGeneralIDs[0]))) ERR(retval);
   }
@@ -455,8 +457,9 @@ void VertLoc::readPressVec(const std::string & filepath,
   // Setup
   std::vector<std::string> dimNames;
   std::vector<atlas::idx_t> dimSizes;
+  oops::Variables vars;
   std::vector<std::vector<std::string>> dimNamesForEveryVar;
-  std::vector<std::string> variableNames;
+  eckit::LocalConfiguration netcdfMetaData;
   std::vector<int> netcdfGeneralIDs;
   std::vector<int> netcdfDimIDs;
   std::vector<int> netcdfVarIDs;
@@ -467,17 +470,17 @@ void VertLoc::readPressVec(const std::string & filepath,
     util::atlasArrayInquire(ncfilepath_,
                             dimNames,
                             dimSizes,
-                            variableNames,
+                            vars,
                             dimNamesForEveryVar,
+                            netcdfMetaData,
                             netcdfGeneralIDs,
                             netcdfDimIDs,
                             netcdfVarIDs,
                             netcdfDimVarIDs);
 
     if (meanPressFieldName_.compare(nullstr) > 0) {
-      auto ind = std::find(variableNames.begin(), variableNames.end(), meanPressFieldName_);
-      if (ind != variableNames.end()) {
-        auto pos = ind - variableNames.begin();
+      if (vars.has(meanPressFieldName_)) {
+        const std::size_t pos = vars.find(meanPressFieldName_);
         auto netcdfVarID = netcdfVarIDs[pos];
         int dimFld = netcdfDimVarIDs[pos].size();
         // remove dummy dimensions
@@ -491,19 +494,19 @@ void VertLoc::readPressVec(const std::string & filepath,
 
         // current code assumes field in netcdf file to be 1D
         if (dimFld > 1) throw eckit::Exception(meanPressFieldName_ + " is not a 1D field",
-          Here());
+                                               Here());
         // check dimFldSizes[0] is nlevs_+1
         if (vecNumLevs != nlevs_+1) throw eckit::Exception(meanPressFieldName_ + " should have " +
-          std::to_string(nlevs_+1) + " levels", Here());
+        std::to_string(nlevs_+1) + " levels", Here());
 
         util::atlasArrayReadData(netcdfGeneralIDs,
                                  dimFldSizes,
                                  netcdfVarID,
                                  fview);
-        int retval;
-        if ((retval = nc_close(netcdfGeneralIDs[0]))) ERR(retval);
       }
     }
+    int retval;
+    if ((retval = nc_close(netcdfGeneralIDs[0]))) ERR(retval);
   }
 }
 
@@ -567,10 +570,13 @@ void VertLoc::writeLocalization(
   // Define variables and dimensions
   const std::vector<std::string> dimNames{"nz", "nmods"};
   const std::vector<atlas::idx_t> dimSizes{nlevs_, nmods_};
-  const std::vector<std::string> variableNames{"air_mass_weights",
-                                               "target_localization",
-                                               "low_rank_localization",
-                                               "localization_square_root"};
+
+  // variables constructed from vector of strings to initialize
+  // empty metadata. This may be changed in future.
+  const oops::Variables vars(std::vector<std::string>{"air_mass_weights",
+                                                      "target_localization",
+                                                      "low_rank_localization",
+                                                      "localization_square_root"});
   const std::vector<std::vector<std::string>>
     dimNamesForEveryVar{{"nz"},
                         {"nz", "nz"},
@@ -582,17 +588,24 @@ void VertLoc::writeLocalization(
                         {nlevs_, nlevs_},
                         {nlevs_, nmods_}};
 
+  eckit::LocalConfiguration netcdfMetaData;
+  for (const oops::Variable & var : vars) {
+    util::setAttribute<std::string>(
+      netcdfMetaData, var.name(), "statistics type", "string", "vertical localization");
+  }
 
   // Write Header
   std::vector<int> netcdfGeneralIDs;
   std::vector<int> netcdfDimIDs;
   std::vector<int> netcdfVarIDs;
   std::vector<std::vector<int>> netcdfDimVarIDs;
+
   util::atlasArrayWriteHeader(filepath,
                               dimNames,
                               dimSizes,
-                              variableNames,
+                              vars,
                               dimNamesForEveryVar,
+                              netcdfMetaData,
                               netcdfGeneralIDs,
                               netcdfDimIDs,
                               netcdfVarIDs,
@@ -601,8 +614,8 @@ void VertLoc::writeLocalization(
   // Write Data
   // Needs new views with datatype `const double`
   int t = 0;
-  for (const auto & var : variableNames) {
-    const auto field = fset.field(var);
+  for (const auto & var : vars) {
+    const auto field = fset.field(var.name());
     const size_t rank = field.shape().size();
     if (rank == 1) {
       auto view = atlas::array::make_view<const double, 1>(field);

@@ -1,5 +1,5 @@
 /*
- * (C) Crown Copyright 2023 Met Office
+ * (C) Crown Copyright 2023-2024 Met Office
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -70,10 +70,17 @@ void SpectralCorrelation::randomize(oops::FieldSet3D & fieldSet) const {
 void SpectralCorrelation::multiply(oops::FieldSet3D & fieldSet) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
 
-  specutils::spectralVerticalConvolution(activeVars_,
-                                         specFunctionSpace_,
-                                         spectralVerticalCorrelations_,
-                                         fieldSet.fieldSet());
+  if (params_.skipVerticalConv.value()) {
+    specutils::spectralHorizontalFilter(activeVars_,
+                                        specFunctionSpace_,
+                                        spectralVerticalCorrelations_,
+                                        fieldSet.fieldSet());
+  } else {
+    specutils::spectralVerticalConvolution(activeVars_,
+                                           specFunctionSpace_,
+                                           spectralVerticalCorrelations_,
+                                           fieldSet.fieldSet());
+  }
 
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
@@ -104,23 +111,23 @@ void SpectralCorrelation::read() {
   const int nSpectralBins = specFunctionSpace_.truncation() + 1;  // 2N
   atlas::FieldSet spectralVerticalCovariances;
 
-  for (std::size_t i = 0; i < activeVars_.variables().size(); ++i) {
+  for (std::size_t i = 0; i < activeVars_.size(); ++i) {
     //  allocate vert cov field based on activeVars and spectralfunctionspace_
     auto spectralVertCov =
-      atlas::Field(activeVars_[i],
+      atlas::Field(activeVars_[i].name(),
                    atlas::array::make_datatype<double>(),
                    atlas::array::make_shape(nSpectralBins,
-                                            activeVars_.getLevels(activeVars_[i]),
-                                            activeVars_.getLevels(activeVars_[i])));
+                                            activeVars_[i].getLevels(),
+                                            activeVars_[i].getLevels()));
     if (umatrixNetCDFParams != boost::none) {
       const oops::Variables netCDFVars(umatrixNetCDFParams.value());
-      specutils::createSpectralCovarianceFromUMatrixFile(activeVars_[i],
-                                                         netCDFVars[i],
+      specutils::createSpectralCovarianceFromUMatrixFile(activeVars_[i].name(),
+                                                         netCDFVars[i].name(),
                                                          sparams,
                                                          spectralVertCov);
 
     } else {
-      specutils::readSpectralCovarianceFromFile(activeVars_[i],
+      specutils::readSpectralCovarianceFromFile(activeVars_[i].name(),
                                                 sparams,
                                                 spectralVertCov);
     }
@@ -191,11 +198,16 @@ void SpectralCorrelation::write() const {
   const std::vector<atlas::idx_t> dim_sizes{spectralVertCovToWrite[0].shape()[0],
                                             spectralVertCovToWrite[0].shape()[1],
                                             spectralVertCovToWrite[0].shape()[2]};
-  std::vector<std::string> field_names(activeVars_.variables());
+  oops::Variables fsetVars(activeVars_);
   std::vector<std::vector<std::string>> dim_names_for_every_var;
-  for (auto & field : field_names) {
-    field.append(" spectral vertical correlation");
+
+  eckit::LocalConfiguration netcdfMetaData;
+  util::setAttribute<std::string>(
+    netcdfMetaData, "global metadata", "covariance name", "string", writeParams.covName);
+  for (const oops::Variable & var : fsetVars) {
     dim_names_for_every_var.push_back(dim_names);
+    util::setAttribute<std::string>(
+      netcdfMetaData, var.name(), "statistics type", "string", "spectral vertical correlation");
   }
 
   std::vector<int> netcdf_general_ids;
@@ -207,8 +219,9 @@ void SpectralCorrelation::write() const {
     ::util::atlasArrayWriteHeader(ncfilepath,
                                   dim_names,
                                   dim_sizes,
-                                  field_names,
+                                  fsetVars,
                                   dim_names_for_every_var,
+                                  netcdfMetaData,
                                   netcdf_general_ids,
                                   netcdf_dim_ids,
                                   netcdf_var_ids,

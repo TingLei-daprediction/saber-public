@@ -55,8 +55,8 @@ Interpolation::Interpolation(const oops::GeometryData & outerGeometryData,
   // Active variables
   const oops::Variables activeVars = getActiveVars(params, outerVars);
   std::vector<size_t> activeVariableSizes;
-  for (const std::string & var : activeVars.variables()) {
-    activeVariableSizes.push_back(activeVars.getLevels(var));
+  for (const auto & var : activeVars) {
+    activeVariableSizes.push_back(var.getLevels());
   }
 
   // Create the interpolator
@@ -109,6 +109,7 @@ void Interpolation::multiplyAD(oops::FieldSet3D & fset) const {
 void Interpolation::leftInverseMultiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::leftInverseMultiply starting" << std::endl;
   util::Timer timer(classname(), "leftInverseMultiply");
+  fset.fieldSet().haloExchange();
   inverseInterpolator_->apply(fset.fieldSet());
   oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
 }

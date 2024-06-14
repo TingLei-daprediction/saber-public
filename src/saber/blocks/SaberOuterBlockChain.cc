@@ -29,8 +29,8 @@ namespace saber {
 SaberOuterBlockChain::SaberOuterBlockChain(
                      const oops::GeometryData & outerGeometryData,
                      const oops::Variables & outerVars,
-                     const oops::FieldSet4D & fset4dXb,
-                     const oops::FieldSet4D & fset4dFg,
+                     oops::FieldSet4D & fset4dXb,
+                     oops::FieldSet4D & fset4dFg,
                      const eckit::LocalConfiguration & covarConf,
                      const std::vector<SaberOuterBlockParametersWrapper> & params) {
   oops::Log::trace() << "SaberOuterBlockChain generic ctor starting" << std::endl;
@@ -146,9 +146,9 @@ std::tuple<const oops::GeometryData &, const oops::Variables &>
   const oops::GeometryData & innerGeometryData = outerBlocks_.back()->innerGeometryData();
 
   // Check that active variables are present in either inner or outer variables, or both
-  for (const auto & var : activeVars.variables()) {
+  for (const auto & var : activeVars) {
     if (!(innerVars.has(var) || outerVars.has(var))) {
-      throw eckit::UserError("Active variable " + var + " is not present in inner "
+      throw eckit::UserError("Active variable " + var.name() + " is not present in inner "
                              "or outer variables", Here());
     }
   }
@@ -163,24 +163,19 @@ void SaberOuterBlockChain::interpolateStates(
         const SaberBlockParametersBase & saberOuterBlockParams,
         const oops::GeometryData & outerGeometryData,
         const oops::GeometryData & innerGeometryData,
-        const oops::FieldSet4D & fset4dXb,
-        const oops::FieldSet4D & fset4dFg) const {
+        oops::FieldSet4D & fset4dXb,
+        oops::FieldSet4D & fset4dFg) const {
   // Left inverse multiplication on xb and fg if inner and outer Geometry are different
   if (util::getGridUid(innerGeometryData.functionSpace())
     != util::getGridUid(outerGeometryData.functionSpace())
     && saberOuterBlockParams.inverseVars.value().size() > 0) {
     oops::Log::info() << "Info     : Left inverse multiplication on xb and fg" << std::endl;
-    // Share fields pointers
-    oops::FieldSet3D fsetXbInv(fset4dXb[0].validTime(), outerGeometryData.comm());
-    oops::FieldSet3D fsetFgInv(fset4dXb[0].validTime(), outerGeometryData.comm());
-    for (const auto & var : saberOuterBlockParams.inverseVars.value().variables()) {
-      fsetXbInv.fieldSet().add(fset4dXb[0].fieldSet().field(var));
-      fsetFgInv.fieldSet().add(fset4dFg[0].fieldSet().field(var));
-    }
 
     // Apply left inverse
-    outerBlocks_.back()->leftInverseMultiply(fsetXbInv);
-    outerBlocks_.back()->leftInverseMultiply(fsetFgInv);
+    for (size_t itime = 0; itime < fset4dXb.size(); ++itime) {
+      outerBlocks_.back()->leftInverseMultiply(fset4dXb[itime]);
+      outerBlocks_.back()->leftInverseMultiply(fset4dFg[itime]);
+    }
   }
 }
 

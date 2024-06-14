@@ -38,6 +38,7 @@ submodule(mg_intstate) mg_transfer
 use mpi
 use mg_timers
 use mgbf_kinds, only: r_kind,i_kind
+use mgbf_utils,only : contains_nonzero
 
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 contains
@@ -133,6 +134,7 @@ allocate(F3D(km3_all,1:nm,1:mm,lm))
                                       cvf1,cvf2,cvf3,cvf4,lref,A3D,F3D)
     endif
   else
+!clttothink
 
     do L=1,lm
       F3D(:,:,:,L)=A3D(:,:,:,L)
@@ -141,8 +143,9 @@ allocate(F3D(km3_all,1:nm,1:mm,lm))
   endif
 
       call this%C2S_ens(F3D,WORK,1,nm,1,mm,lm,km,km_all)
-
+     write(6,*)'thinkdeb before anal_to_filt ,if WORK has non-zero ',contains_nonzero(WORK)
      call this%anal_to_filt(WORK)
+     write(6,*)'thinkdeb after anal_to_filt ,if WORK has non-zero ',contains_nonzero(WORK)
                                                  call etim(an2filt_tim)
 
 deallocate(A3D,F3D,WORK)
@@ -430,7 +433,8 @@ include "type_parameter_point2this.inc"
 include "type_intstat_point2this.inc"
 !----------------------------------------------------------------------
        VALL=0.
-
+        write(6,*)"thinkdeb in anal_to_filt work nonzeor ? ",contains_nonzero(work)
+        write(6,*)"thinkdeb in anal_to_filt l_?_horizonal  ",l_lin_horizontal,l_quad_horizontal
 !clttothink
        if(l_lin_horizontal) then
          ibm=1
@@ -451,6 +455,7 @@ include "type_intstat_point2this.inc"
 !***
 
          call this%bocoT_2d(VALL(1:km_all,1-ibm:im+ibm,1-jbm:jm+jbm),km_all,im,jm,ibm,jbm)
+        write(6,*)"thinkdeb in anal_to_filt VALL nonzeor ? ",contains_nonzero(VALL)
 
 !----------------------------------------------------------------------
 endsubroutine anal_to_filt

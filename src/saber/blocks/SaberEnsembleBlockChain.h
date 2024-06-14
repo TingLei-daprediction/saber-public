@@ -39,8 +39,8 @@ class SaberEnsembleBlockChain : public SaberBlockChainBase {
   SaberEnsembleBlockChain(const oops::Geometry<MODEL> & geom,
                           const oops::Geometry<MODEL> & dualResGeom,
                           const oops::Variables & outerVars,
-                          const oops::FieldSet4D & fset4dXb,
-                          const oops::FieldSet4D & fset4dFg,
+                          oops::FieldSet4D & fset4dXb,
+                          oops::FieldSet4D & fset4dFg,
                           oops::FieldSets & fsetEns,
                           oops::FieldSets & fsetDualResEns,
                           const eckit::LocalConfiguration & covarConf,
@@ -88,8 +88,8 @@ template<typename MODEL>
 SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & geom,
                        const oops::Geometry<MODEL> & dualResGeom,
                        const oops::Variables & outerVars,
-                       const oops::FieldSet4D & fset4dXb,
-                       const oops::FieldSet4D & fset4dFg,
+                       oops::FieldSet4D & fset4dXb,
+                       oops::FieldSet4D & fset4dFg,
                        // TODO(AS): remove as argument: this should be read inside the
                        // block.
                        oops::FieldSets & fsetEns,
@@ -138,9 +138,9 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
   const oops::Variables activeVars = getActiveVars(saberCentralBlockParams, currentOuterVars);
   vars_ += activeVars;
   // Check that active variables are present in variables
-  for (const auto & var : activeVars.variables()) {
+  for (const auto & var : activeVars) {
     if (!currentOuterVars.has(var)) {
-      throw eckit::UserError("Active variable " + var + " is not present in "
+      throw eckit::UserError("Active variable " + var.name() + " is not present in "
                              "outer variables", Here());
     }
   }
