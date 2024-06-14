@@ -58,14 +58,16 @@ include "type_intstat_locpointer.inc"
 include "type_parameter_point2this.inc"
 include "type_intstat_point2this.inc"
 !----------------------------------------------------------------------
-if(km_a_all==km_all.and.nm==im.and.mm==jm) then
-   VALL=0.
-   VALL(1:km_all,1:im,1:jm)=WORKA
-elseif(l_new_map) then
-   call this%anal_to_filt_all2(WORKA)
-else
+ write(6,*)'thinkdeb in mg_transfer ',km_a_all, km_all,nm,im,mm,jm
+ write(6,*)'thinkdeb in mg_transfer l_new_map ',l_new_map
+!clttothink if(km_a_all==km_all.and.nm==im.and.mm==jm) then
+!cltothink   VALL=0.
+!clttohink   VALL(1:km_all,1:im,1:jm)=WORKA
+!clttothinkelseif(l_new_map) then
+!clttothink   call this%anal_to_filt_all2(WORKA)
+!cltothinkelse
    call this%anal_to_filt_all(WORKA)
-endif
+!cltothinkendif
 !----------------------------------------------------------------------
 endsubroutine anal_to_filt_allmap
 
@@ -84,14 +86,15 @@ include "type_intstat_locpointer.inc"
 include "type_parameter_point2this.inc"
 include "type_intstat_point2this.inc"
 !----------------------------------------------------------------------
-if(km_a_all==km_all.and.nm==im.and.mm==jm) then
-   WORKA=VALL(1:km_all,1:im,1:jm)
-   VALL=0.
-elseif(l_new_map) then
-   call this%filt_to_anal_all2(WORKA)
-else
+write(6,*)'filt_toanal_allmap ',km_a_all,' ',km_all,' ',nm,' ',im,' ',mm,' ',jm
+!cltothink if(km_a_all==km_all.and.nm==im.and.mm==jm) then
+!clttothink    WORKA=VALL(1:km_all,1:im,1:jm)
+!clttothink   VALL=0.
+!cltothink elseif(l_new_map) then
+!cltothink   call this%filt_to_anal_all2(WORKA)
+!clttothink else
    call this%filt_to_anal_all(WORKA)
-endif
+!cltthink endif
 !----------------------------------------------------------------------
 endsubroutine filt_to_anal_allmap
 
@@ -117,10 +120,11 @@ include "type_intstat_point2this.inc"
 allocate(WORK(km_all,1:nm,1:mm))
 allocate(A3D(km3_all,1:nm,1:mm,lm_a))
 allocate(F3D(km3_all,1:nm,1:mm,lm))
+!tothink
 
                                                  call btim(an2filt_tim)
      call this%S2C_ens(WORKA,A3D,1,nm,1,mm,lm_a,km_a,km_a_all)
-
+   write(6,*)'thinkdeb in mg_transfer.f90 lm_a ,lm  ',lm_a,' ',lm 
   if(lm_a>lm) then
     if(l_lin_vertical) then
        call this%l_vertical_adjoint_spec(km3_all,lm_a,lm,1,nm,1,mm,A3D,F3D)
@@ -427,6 +431,7 @@ include "type_intstat_point2this.inc"
 !----------------------------------------------------------------------
        VALL=0.
 
+!clttothink
        if(l_lin_horizontal) then
          ibm=1
          jbm=1

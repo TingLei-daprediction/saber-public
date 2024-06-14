@@ -751,6 +751,7 @@ include "type_intstat_point2this.inc"
 !***
 !*** Apply beta filter in vertical direction
 !***
+  write(6,*)'thinkdeb l_vertical_filter is ',l_vertical_filter
   if(l_vertical_filter) then
                                                  call btim(vfilt_tim)
      call this%sup_vrbeta1_bkg(km,km3,hx,hy,hz,im,jm,lm,pasp1,ss1,VALL)

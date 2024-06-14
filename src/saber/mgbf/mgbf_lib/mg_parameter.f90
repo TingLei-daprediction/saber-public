@@ -489,13 +489,13 @@ integer(i_kind):: lm            ! number of vertical layers in filter grids
 integer(i_kind):: km2           ! number of 2d variables for filtering
 integer(i_kind):: km3           ! number of 3d variables for filtering
 integer(i_kind):: n_ens=1         ! number of ensemble members
-logical :: l_loc                ! logical flag for localization
+logical :: l_loc=.false.       
 logical :: l_filt_g1            ! logical flag for filtering of generation one
 logical :: l_lin_vertical       ! logical flag for linear interpolation in vertcial
 logical :: l_lin_horizontal     ! logical flag for linear interpolation in horizontal
 logical :: l_quad_horizontal    ! logical flag for quadratic interpolation in horizontal
 logical :: l_new_map=.false.            ! logical flag for new mapping between analysis and filter grid
-logical :: l_vertical_filter=.false.    ! logical flag for vertical filtering
+logical :: l_vertical_filter=.true.    ! logical flag for vertical filtering
 integer(i_kind):: gm_max=4   !clt by defaul
 
 ! Global number of data on Analysis grid

@@ -19,6 +19,8 @@
 #include "oops/util/parameters/Parameters.h"
 #include "oops/util/parameters/RequiredParameter.h"
 #include <fstream> //clt
+#include "mpi.h"
+#include <string>
 
 //cltorg modified from gsi/Grid.h
 
@@ -62,14 +64,17 @@ mgbfGrid::mgbfGrid(const eckit::mpi::Comm & comm, const eckit::Configuration & c
   oops::Log::trace()<<"mgbf config is "<<conf<<std::endl;
   util::Timer timer(classname(), "mgbfGrid");
 // set up grid and functionspace based on description in the yaml
-   const atlas::StructuredGrid grid(conf);
+//   const atlas::StructuredGrid grid(conf);
+   const atlas::UnstructuredGrid grid(conf);
 //clt  how about PointCloud functionspace 
 //clt   const atlas::functionspace::StructuredColumns mgbfGridFuncSpace_(grid);
   oops::Log::trace() << "mgbf grid before mgbfFunction space  " << std::endl;
 //clt   mgbfFuncSpace_=atlas::functionspace::StructuredColumns(grid); //todo 
    mgbfFuncSpace_=atlas::functionspace::PointCloud(grid); //todo 
   oops::Log::trace() << "mgbfFunction space.lonlat   " <<mgbfFuncSpace_.lonlat()<< std::endl;
-  std::ofstream file("latlon.txt");
+  int mpirank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &mpirank);
+  std::ofstream file("latlon_"+std::to_string(mpirank)+".txt");
   mgbfFuncSpace_.lonlat().dump(file) ;
   oops::Log::trace() << "mgbfFunction space  is " <<mgbfFuncSpace_<< std::endl;
 

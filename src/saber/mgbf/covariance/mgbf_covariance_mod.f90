@@ -185,6 +185,8 @@ integer(kind=i_kind):: nz,ilev,isize
 real(kind=r_kind), allocatable :: work_mgbf(:,:,:)
 real(kind=r_kind), allocatable :: work2d_mgbf(:,:)
 integer(kind=i_kind) :: dim2d(2),dim3d(3)
+integer(kind=i_kind):: myrank,nxloc,nyloc,nzloc
+integer(kind=i_kind):: i,j,k,ij
 
 !clt now noly consider t
 !  afield = fields%field('air_temperature')
@@ -195,7 +197,6 @@ integer(kind=i_kind) :: dim2d(2),dim3d(3)
           write(6,*)"thinkdeb mgbf work_mgbf dim ",self%intstate%km_a_all,self%intstate%nm,self%intstate%mm
           allocate(work_mgbf(self%intstate%km_a_all,self%intstate%nm,self%intstate%mm))
           allocate(work2d_mgbf(self%intstate%km_a_all,self%intstate%nm*self%intstate%mm))
-!clt first as in ckgcov_a_en_new_factorization_ad
              ilev=1
           do isize=1,fields%size()
   
@@ -215,19 +216,97 @@ integer(kind=i_kind) :: dim2d(2),dim3d(3)
                stop
              endif 
           enddo
-          dim3d=shape(work_mgbf)
-          work_mgbf=reshape(work2d_mgbf,[dim3d(1),dim3d(2),dim3d(3)])
-          call self%intstate%anal_to_filt_allmap(work_mgbf)
-!clt second as in ckgcov_a_en_new_factorization          
-          call self%intstate%filtering_procedure(self%intstate%mgbf_proc,1)
-
-!clttothink          work_mgbf=0.0 ! to use zero-like constants  !,why? 
-         
-          call self%intstate%anal_to_filt_allmap(work_mgbf)
-          
-!the following should match fields ===> work_mgbf
           dim2d=shape(work2d_mgbf)
+          dim3d=shape(work_mgbf)
+
+          work_mgbf=reshape(work2d_mgbf,[dim3d(1),dim3d(2),dim3d(3)])
+
+          nxloc=dim3d(2)
+          nyloc=dim3d(3)
+          nzloc=dim3d(1)
+          do k=1,nzloc
+            do ij=1,nxloc*nyloc
+              if(work2d_mgbf(k,ij).ne.0.0) then 
+                write(6,*)'thinkdeb begin non-zeror work2d_mgbf ',k,' ',ij,' ',work2d_mgbf(k,ij)
+              endif
+            enddo
+          enddo
+          do k=1,nzloc
+            do j=1,nyloc
+            do i=1,nxloc
+              if(work_mgbf(k,i,j).ne.0.0) then 
+                write(6,*)'thinkdeb begin non-zeror work_mgbf ',k,' ',i,' ',j,' ',work_mgbf(k,i,j)
+              endif
+            enddo
+          enddo
+         enddo
+
+          call self%intstate%anal_to_filt_allmap(work_mgbf)
+          call self%intstate%filtering_procedure(self%intstate%mgbf_proc,-1)
+         
+          call self%intstate%filt_to_anal_allmap(work_mgbf)
+          
+  if(1.gt.2) then 
+          if(myrank == 0) then 
+            write(6,*)'thindkeb250 nxloc,nyloc/nzloc ',nxloc,nyloc,nzloc
+            do k=1,nzloc 
+             do j=1,nyloc
+              do i=1,nxloc
+                work_mgbf(k,i,j)=j
+              enddo
+             enddo
+            enddo 
+
+          else if(myrank == 1) then
+            write(6,*)'thindkeb250 nxloc,nyloc/nzloc ',nxloc,nyloc,nzloc
+            do k=1,nzloc 
+             do j=1,nyloc
+              do i=1,nxloc
+                work_mgbf(k,i,j)=j
+              enddo
+             enddo
+            enddo 
+          else if(myrank == 2) then 
+            write(6,*)'thindkeb250 nxloc,nyloc/nzloc ',nxloc,nyloc,nzloc
+            do k=1,nzloc 
+             do j=1,nyloc
+              do i=1,nxloc
+                work_mgbf(k,i,j)=nyloc+j
+              enddo
+             enddo
+            enddo 
+          else if(myrank == 3) then 
+            write(6,*)'thindkeb250 nxloc,nyloc/nzloc ',nxloc,nyloc,nzloc
+            do k=1,nzloc 
+             do j=1,nyloc
+              do i=1,nxloc
+                work_mgbf(k,i,j)=j+nyloc
+              enddo
+             enddo
+            enddo 
+          else
+           write(6,*)'something is wrong here 255, stop'
+           stop
+          endif
+     endif  !1>2
+          do k=1,nzloc
+            do j=1,nyloc
+            do i=1,nxloc
+              if(work_mgbf(k,i,j).ne.0.0) then 
+                write(6,*)'thinkdeb end non-zeror work_mgbf ',k,' ',i,' ',j,' ',work_mgbf(k,i,j)
+              endif
+            enddo
+           enddo
+          enddo
+         
           work2d_mgbf=reshape(work_mgbf,[dim2d(1),dim2d(2)])
+          do k=1,nzloc
+            do ij=1,nxloc*nyloc
+              if(work2d_mgbf(k,ij).ne.0.0) then 
+                write(6,*)'thinkdeb end non-zeror work2d_mgbf ',k,' ',ij,' ',work2d_mgbf(k,ij)
+              endif
+            enddo
+          enddo
              ilev=1
           write(6,*)'thinkdeb fields name and size ',fields%size(),'' ,fields%name() 
           do isize=1,fields%size()

@@ -19,6 +19,8 @@
 #include "saber/gsi/interpolation/unstructured_interp/UnstructuredInterpolation.h"
 #include "saber/gsi/interpolation/unstructured_interp/UnstructuredInterpolation.interface.h"
 #include <fstream>
+#include "mpi.h"
+#include <string>
 
 namespace saber {
 namespace gsi {
@@ -36,10 +38,13 @@ UnstructuredInterpolation::UnstructuredInterpolation(
 {
   oops::Log::trace()<<"thinkdeb in gsi::UnstracutredInterpolation CTOR begin"<<std::endl;
   oops::Log::trace()<<"thinkdeb in gsi::UnstracutredInterpolation inner*.lonlat "<<innerFuncSpace_.lonlat()<<std::endl;
-  std::ofstream file("gsi_mgbf_latlon.txt");
+   int mpirank;
+   MPI_Comm_rank(MPI_COMM_WORLD, &mpirank);
+
+  std::ofstream file("gsi_mgbf_latlon_"+std::to_string(mpirank)+".txt");
   innerFuncSpace_.lonlat().dump(file);
   oops::Log::trace()<<"thinkdeb in gsi::UnstracutredInterpolation outer*.lonlat "<<outerFuncSpace_.lonlat()<<std::endl;
-  std::ofstream file2("gsi_model_latlon.txt");
+  std::ofstream file2("gsi_model_latlon_"+std::to_string(mpirank)+".txt");
   outerFuncSpace_.lonlat().dump(file2);
   oops::Log::trace()<<"xx         "<<std::endl;
   
