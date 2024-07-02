@@ -240,9 +240,8 @@ integer(kind=i_kind):: i,j,k,ij
             enddo
           enddo
          enddo
-
           call self%intstate%anal_to_filt_allmap(work_mgbf)
-          call self%intstate%filtering_procedure(self%intstate%mgbf_proc,-1)
+          call self%intstate%filtering_procedure(self%intstate%mgbf_proc,1)
          
           call self%intstate%filt_to_anal_allmap(work_mgbf)
           
