@@ -1,2 +1,2 @@
-dirac_fastlam_10
-dirac_fastlam_11
+dirac_fastlam-fftw_1
+dirac_fastlam-fftw_2
