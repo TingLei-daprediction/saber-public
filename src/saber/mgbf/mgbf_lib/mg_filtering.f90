@@ -69,6 +69,7 @@ include "type_intstat_point2this.inc"
 if(this%nxm*this%nym>1) then
    select case(mg_filt)
    case(1)
+      write(6,*)'thinkdeb filtering_rad3 is used'
       call this%filtering_rad3
    case(2)
       call this%filtering_lin3

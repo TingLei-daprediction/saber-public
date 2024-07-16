@@ -102,6 +102,7 @@ real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%
 logical, intent(in):: lquart
 !-----------------------------------------------------------------------
 
+           write(6,*)'thinkdeb in mg_generations.f90,lquart is ', lquart
         if(lquart) then
            call this%upsending2(V,H) 
         else

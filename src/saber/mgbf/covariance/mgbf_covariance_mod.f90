@@ -183,6 +183,7 @@ real(kind=r_kind), pointer :: ptr_2d(:,:)
 real(kind=r_kind), pointer :: ptr_3d(:,:,:)
 integer(kind=i_kind):: nz,ilev,isize
 real(kind=r_kind), allocatable :: work_mgbf(:,:,:)
+real(kind=r_kind), allocatable :: work_mgbf2(:,:,:)
 real(kind=r_kind), allocatable :: work2d_mgbf(:,:)
 integer(kind=i_kind) :: dim2d(2),dim3d(3)
 integer(kind=i_kind):: myrank,nxloc,nyloc,nzloc
@@ -196,7 +197,9 @@ integer(kind=i_kind):: i,j,k,ij
           write(6,*)"thinkdeb mgbf multiply mgbf_covariance_mod.f90 "
           write(6,*)"thinkdeb mgbf work_mgbf dim ",self%intstate%km_a_all,self%intstate%nm,self%intstate%mm
           allocate(work_mgbf(self%intstate%km_a_all,self%intstate%nm,self%intstate%mm))
+          allocate(work_mgbf2(self%intstate%km_a_all,self%intstate%nm,self%intstate%mm))
           allocate(work2d_mgbf(self%intstate%km_a_all,self%intstate%nm*self%intstate%mm))
+          work_mgbf2=0.0
              ilev=1
           do isize=1,fields%size()
   
@@ -224,26 +227,15 @@ integer(kind=i_kind):: i,j,k,ij
           nxloc=dim3d(2)
           nyloc=dim3d(3)
           nzloc=dim3d(1)
-          do k=1,nzloc
-            do ij=1,nxloc*nyloc
-              if(work2d_mgbf(k,ij).ne.0.0) then 
-                write(6,*)'thinkdeb begin non-zeror work2d_mgbf ',k,' ',ij,' ',work2d_mgbf(k,ij)
-              endif
-            enddo
-          enddo
-          do k=1,nzloc
-            do j=1,nyloc
-            do i=1,nxloc
-              if(work_mgbf(k,i,j).ne.0.0) then 
-                write(6,*)'thinkdeb begin non-zeror work_mgbf ',k,' ',i,' ',j,' ',work_mgbf(k,i,j)
-              endif
-            enddo
-          enddo
-         enddo
           call self%intstate%anal_to_filt_allmap(work_mgbf)
+       write(6,*)'thinkdeb skipp filtering stepxx 3'
+         if(1.gt.0) then
           call self%intstate%filtering_procedure(self%intstate%mgbf_proc,1)
+         endif
          
-          call self%intstate%filt_to_anal_allmap(work_mgbf)
+!cltorg          call self%intstate%filt_to_anal_allmap(work_mgbf)
+          call self%intstate%filt_to_anal_allmap(work_mgbf2)
+          work_mgbf=work_mgbf2
           
   if(1.gt.2) then 
           if(myrank == 0) then 
@@ -297,17 +289,22 @@ integer(kind=i_kind):: i,j,k,ij
             enddo
            enddo
           enddo
-         
+          write(6,*)"thinkdeb is2 continuous1 ",is_contiguous(work_mgbf)
+          write(6,*)"thinkdeb is continuous2 ",is_contiguous(work2d_mgbf)
+          write(6,*)'thinkdeb dim2d is ',dim2d(1),dim2d(2)
           work2d_mgbf=reshape(work_mgbf,[dim2d(1),dim2d(2)])
+               write(6,*)'thinkdeb-2 work2d_mgbf (20,60)  =',work2d_mgbf(20,60)
           do k=1,nzloc
             do ij=1,nxloc*nyloc
               if(work2d_mgbf(k,ij).ne.0.0) then 
-                write(6,*)'thinkdeb end non-zeror work2d_mgbf ',k,' ',ij,' ',work2d_mgbf(k,ij)
+                write(6,*)'thinkdebnon-zeror work2d_mgbf ',k,' ',ij,' ',work2d_mgbf(k,ij)
+               write(6,*)'thinkdeb-1 work2d_mgbf (20,60)  =',work2d_mgbf(20,60)
               endif
             enddo
           enddo
-             ilev=1
+               write(6,*)'thinkdeb2 work2d_mgbf (20,60)  =',work2d_mgbf(20,60)
           write(6,*)'thinkdeb fields name and size ',fields%size(),'' ,fields%name() 
+             ilev=1
           do isize=1,fields%size()
   
              afield=fields%field(isize)  !clttodo
@@ -315,7 +312,9 @@ integer(kind=i_kind):: i,j,k,ij
                call afield%data(ptr_2d)
                nz=afield%levels()
                write(6,*)'think nz of afield is ',nz
+               write(6,*)'thinkdeb3 work2d_mgbf (20,60)  =',work2d_mgbf(20,60)
                ptr_2d(1:nz,:)=work2d_mgbf(ilev:ilev+nz-1,:) 
+               write(6,*)'thinkdeb ptr_2d (20,60)  =',ptr_2d(20,60)
                ilev=ilev+nz
              elseif (afield%rank() == 3) then  
                call afield%data(ptr_3d)

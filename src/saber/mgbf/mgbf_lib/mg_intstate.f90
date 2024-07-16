@@ -1029,6 +1029,7 @@ write(6,*)"thinkdeb in allocate_mg_intstate hx,km3  ",this%km_all,this%hx,this%i
 call flush(6)
 
 allocate(this%V(1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,this%lm))        ; this%V=0.
+write(6,*)'thinkdeb VALL dimension ',this%km_all,1-this%hx,' ',this%im+this%hx,' ',1-this%hy, ' ',this%jm+this%hy
 allocate(this%VALL(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this%VALL=0.
 allocate(this%HALL(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this%HALL=0.
 

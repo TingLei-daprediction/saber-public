@@ -51,6 +51,10 @@
 #include "saber/oops/Utilities.h"
 #include "saber/util/FieldSetHelpers.h"
 
+#include "oops/base/PostProcessor.h"
+#include "oops/base/StructuredGridPostProcessor.h"
+#include  "oops/base/StructuredGridWriter.h"
+
 namespace saber {
 
 // -----------------------------------------------------------------------------
@@ -508,9 +512,34 @@ void  write_1d_covariances(const eckit::mpi::Comm & comm,
 
     // Seek and replace %id% with id, recursively
     util::seekAndReplace(outputBConf, "%id%", id);
+     for (auto& fld:dxo[0].fieldSet() ) {
+    oops::Log::trace()<<"thinkdeb dxo 0 input fld is "<<fld<<std::endl;
+    fld.dump(std::cout);
+   };
 
     // Write output increment
     dxo[0].write(outputBConf);
+
+     for (auto& fld:dxo[0].fieldSet() ) {
+    oops::Log::trace()<<"thinkdeb dxo 1 input fld is "<<fld<<std::endl;
+    fld.dump(std::cout);
+   };
+//cltb1 for output on latlon grids
+    if (outputBConf.has("analysis to structured grid")) {
+       oops::PostProcessor<State_> post;
+       const eckit::LocalConfiguration anLatlonConf(outputBConf, "analysis to structured grid");
+       oops::Log::trace() << "thinkdeb anaLatlonConf: " << anLatlonConf << std::endl;
+       oops::StructuredGridWriter<MODEL> latlonwriter(anLatlonConf,dxo.geometry());
+       oops::Log::trace() << "thinkdeb before latlonwrite.interpolatAndWriter " <<  std::endl;
+       latlonwriter.interpolateAndWrite(dxo[0]); //clttodo
+       
+//       post.enrollProcessor(new oops::StructuredGridPostProcessor<MODEL, State_>(
+ //           anLatlonConf, dxo.geometry() ));
+        };
+
+       
+ 
+//end of b1
     oops::Log::test() << "Covariance(" << id << ") * Increment:" << dxo << std::endl;
 
     // Look for hybrid or ensemble covariance models

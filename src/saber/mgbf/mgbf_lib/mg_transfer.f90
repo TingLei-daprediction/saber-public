@@ -124,6 +124,7 @@ allocate(F3D(km3_all,1:nm,1:mm,lm))
 !tothink
 
                                                  call btim(an2filt_tim)
+if(2.gt.3) then
      call this%S2C_ens(WORKA,A3D,1,nm,1,mm,lm_a,km_a,km_a_all)
    write(6,*)'thinkdeb in mg_transfer.f90 lm_a ,lm  ',lm_a,' ',lm 
   if(lm_a>lm) then
@@ -144,7 +145,9 @@ allocate(F3D(km3_all,1:nm,1:mm,lm))
 
       call this%C2S_ens(F3D,WORK,1,nm,1,mm,lm,km,km_all)
      write(6,*)'thinkdeb before anal_to_filt ,if WORK has non-zero ',contains_nonzero(WORK)
-     call this%anal_to_filt(WORK)
+endif !2.gt.3 
+!cltorg      call this%anal_to_filt(WORK)
+      call this%anal_to_filt(WORKA)
      write(6,*)'thinkdeb after anal_to_filt ,if WORK has non-zero ',contains_nonzero(WORK)
                                                  call etim(an2filt_tim)
 
@@ -171,6 +174,8 @@ include "type_intstat_locpointer.inc"
 include "type_parameter_point2this.inc"
 include "type_intstat_point2this.inc"
 !----------------------------------------------------------------------
+    call this%filt_to_anal(WORKA)  !cltadded
+if (2.gt.3) then ! clt
 allocate(WORK(km_all,1:nm,1:mm))
 allocate(A3D(km3_all,1:nm,1:mm,lm_a))
 allocate(F3D(km3_all,1:nm,1:mm,lm))
@@ -199,6 +204,7 @@ allocate(F3D(km3_all,1:nm,1:mm,lm))
                                                  call etim(filt2an_tim)
 
 deallocate(A3D,F3D,WORK)
+endif !2.gt. 3
 !----------------------------------------------------------------------
 endsubroutine filt_to_anal_all
 
@@ -434,6 +440,7 @@ include "type_intstat_point2this.inc"
 !----------------------------------------------------------------------
        VALL=0.
         write(6,*)"thinkdeb in anal_to_filt work nonzeor ? ",contains_nonzero(work)
+!clttothink
         write(6,*)"thinkdeb in anal_to_filt l_?_horizonal  ",l_lin_horizontal,l_quad_horizontal
 !clttothink
        if(l_lin_horizontal) then
