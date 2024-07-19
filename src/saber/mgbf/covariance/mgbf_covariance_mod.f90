@@ -188,28 +188,39 @@ real(kind=r_kind), allocatable :: work2d_mgbf(:,:)
 integer(kind=i_kind) :: dim2d(2),dim3d(3)
 integer(kind=i_kind):: myrank,nxloc,nyloc,nzloc
 integer(kind=i_kind):: i,j,k,ij
+integer(kind=i_kind):: n2d
+logical  ::  l3d_encountered  
+
 
 !clt now noly consider t
 !  afield = fields%field('air_temperature')
 !  call afield%data(t)
 !*** From the analysis to first generation of filter grid
-!***
-          write(6,*)"thinkdeb mgbf multiply mgbf_covariance_mod.f90 "
-          write(6,*)"thinkdeb mgbf work_mgbf dim ",self%intstate%km_a_all,self%intstate%nm,self%intstate%mm
+          n2d=0
+          l3d_encountered=.false.
           allocate(work_mgbf(self%intstate%km_a_all,self%intstate%nm,self%intstate%mm))
           allocate(work_mgbf2(self%intstate%km_a_all,self%intstate%nm,self%intstate%mm))
           allocate(work2d_mgbf(self%intstate%km_a_all,self%intstate%nm*self%intstate%mm))
           work_mgbf2=0.0
              ilev=1
           do isize=1,fields%size()
-  
+             
              afield= fields%field(isize)  !clttodo
              if(afield%rank() == 2)  then
                nz=afield%levels()
+             write(6,*)'thinkdeb55 isize/name/nz is ',isize,' ',afield%name(),' ',nz
                call afield%data(ptr_2d)
                work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d 
                ilev=ilev+1
+               if(nz >  1) l3d_encountered=.true.
+               if(nz == 1) then 
+                  if(l3d_encountered )  stop  !  is required 2d fields are saved consecutively 
+                 n2d=n2d+1
+               endif
              elseif (afield%rank() == 3) then  
+               write(6,*)'this case needs more work, stop' ! a better exption handling to be added
+               call flush(6)
+               stop 
                call afield%data(ptr_3d)
                nz=afield%levels()
                work_mgbf(ilev:ilev+nz-1,:,:)=ptr_3d 
@@ -219,6 +230,10 @@ integer(kind=i_kind):: i,j,k,ij
                stop
              endif 
           enddo
+          if(self%intstate%km2.ne.n2d) then 
+             write(6,*)'The numbers of 2d variables is different from  mgbf-expected ,stop'
+             stop   ! a better exception handling is to be added
+          endif
           dim2d=shape(work2d_mgbf)
           dim3d=shape(work_mgbf)
 
@@ -227,8 +242,18 @@ integer(kind=i_kind):: i,j,k,ij
           nxloc=dim3d(2)
           nyloc=dim3d(3)
           nzloc=dim3d(1)
+       write(6,*)"thinkdeb666-1"
+       do k=1,nzloc
+         do j=1,nxloc
+           do i=1,nxloc
+             if(work_mgbf(k,i,j) .gt.0.001) then 
+                write(6,*)'thinkdeb666, non zeror k,i,j work_mgbf ',i,j,k,' ',work_mgbf(k,i,j)
+             endif
+           enddo
+         enddo 
+       enddo 
+     if(1 > 0) then
           call self%intstate%anal_to_filt_allmap(work_mgbf)
-       write(6,*)'thinkdeb skipp filtering stepxx 3'
          if(1.gt.0) then
           call self%intstate%filtering_procedure(self%intstate%mgbf_proc,1)
          endif
@@ -236,74 +261,8 @@ integer(kind=i_kind):: i,j,k,ij
 !cltorg          call self%intstate%filt_to_anal_allmap(work_mgbf)
           call self%intstate%filt_to_anal_allmap(work_mgbf2)
           work_mgbf=work_mgbf2
-          
-  if(1.gt.2) then 
-          if(myrank == 0) then 
-            write(6,*)'thindkeb250 nxloc,nyloc/nzloc ',nxloc,nyloc,nzloc
-            do k=1,nzloc 
-             do j=1,nyloc
-              do i=1,nxloc
-                work_mgbf(k,i,j)=j
-              enddo
-             enddo
-            enddo 
-
-          else if(myrank == 1) then
-            write(6,*)'thindkeb250 nxloc,nyloc/nzloc ',nxloc,nyloc,nzloc
-            do k=1,nzloc 
-             do j=1,nyloc
-              do i=1,nxloc
-                work_mgbf(k,i,j)=j
-              enddo
-             enddo
-            enddo 
-          else if(myrank == 2) then 
-            write(6,*)'thindkeb250 nxloc,nyloc/nzloc ',nxloc,nyloc,nzloc
-            do k=1,nzloc 
-             do j=1,nyloc
-              do i=1,nxloc
-                work_mgbf(k,i,j)=nyloc+j
-              enddo
-             enddo
-            enddo 
-          else if(myrank == 3) then 
-            write(6,*)'thindkeb250 nxloc,nyloc/nzloc ',nxloc,nyloc,nzloc
-            do k=1,nzloc 
-             do j=1,nyloc
-              do i=1,nxloc
-                work_mgbf(k,i,j)=j+nyloc
-              enddo
-             enddo
-            enddo 
-          else
-           write(6,*)'something is wrong here 255, stop'
-           stop
-          endif
-     endif  !1>2
-          do k=1,nzloc
-            do j=1,nyloc
-            do i=1,nxloc
-              if(work_mgbf(k,i,j).ne.0.0) then 
-                write(6,*)'thinkdeb end non-zeror work_mgbf ',k,' ',i,' ',j,' ',work_mgbf(k,i,j)
-              endif
-            enddo
-           enddo
-          enddo
-          write(6,*)"thinkdeb is2 continuous1 ",is_contiguous(work_mgbf)
-          write(6,*)"thinkdeb is continuous2 ",is_contiguous(work2d_mgbf)
-          write(6,*)'thinkdeb dim2d is ',dim2d(1),dim2d(2)
+      endif !1>2    
           work2d_mgbf=reshape(work_mgbf,[dim2d(1),dim2d(2)])
-               write(6,*)'thinkdeb-2 work2d_mgbf (20,60)  =',work2d_mgbf(20,60)
-          do k=1,nzloc
-            do ij=1,nxloc*nyloc
-              if(work2d_mgbf(k,ij).ne.0.0) then 
-                write(6,*)'thinkdebnon-zeror work2d_mgbf ',k,' ',ij,' ',work2d_mgbf(k,ij)
-               write(6,*)'thinkdeb-1 work2d_mgbf (20,60)  =',work2d_mgbf(20,60)
-              endif
-            enddo
-          enddo
-               write(6,*)'thinkdeb2 work2d_mgbf (20,60)  =',work2d_mgbf(20,60)
-          write(6,*)'thinkdeb fields name and size ',fields%size(),'' ,fields%name() 
              ilev=1
           do isize=1,fields%size()
   
@@ -311,10 +270,8 @@ integer(kind=i_kind):: i,j,k,ij
              if(afield%rank() == 2) then 
                call afield%data(ptr_2d)
                nz=afield%levels()
-               write(6,*)'think nz of afield is ',nz
-               write(6,*)'thinkdeb3 work2d_mgbf (20,60)  =',work2d_mgbf(20,60)
+             write(6,*)'thinkdeb552 isize/name/nz is ',isize,' ',afield%name(),' ',nz
                ptr_2d(1:nz,:)=work2d_mgbf(ilev:ilev+nz-1,:) 
-               write(6,*)'thinkdeb ptr_2d (20,60)  =',ptr_2d(20,60)
                ilev=ilev+nz
              elseif (afield%rank() == 3) then  
                call afield%data(ptr_3d)
