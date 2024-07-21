@@ -201,7 +201,13 @@ logical  ::  l3d_encountered
           allocate(work_mgbf(self%intstate%km_a_all,self%intstate%nm,self%intstate%mm))
           allocate(work_mgbf2(self%intstate%km_a_all,self%intstate%nm,self%intstate%mm))
           allocate(work2d_mgbf(self%intstate%km_a_all,self%intstate%nm*self%intstate%mm))
+          dim2d=shape(work2d_mgbf)
+          dim3d=shape(work_mgbf)
+          nxloc=dim3d(2)
+          nyloc=dim3d(3)
+          nzloc=dim3d(1)
           work_mgbf2=0.0
+
              ilev=1
           do isize=1,fields%size()
              
@@ -211,12 +217,19 @@ logical  ::  l3d_encountered
              write(6,*)'thinkdeb55 isize/name/nz is ',isize,' ',afield%name(),' ',nz
                call afield%data(ptr_2d)
                work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d 
-               ilev=ilev+1
+               ilev=ilev+nz
                if(nz >  1) l3d_encountered=.true.
                if(nz == 1) then 
                   if(l3d_encountered )  stop  !  is required 2d fields are saved consecutively 
                  n2d=n2d+1
                endif
+       do k=1,64 ! #nzloc
+         do i=1,nxloc*nyloc
+             if(ptr_2d(k,i) .gt.0.001) then 
+                write(6,*)'thinkdeb666ptr, non zeror k,ij work2d_mgbf ',i,k+64*(isize-1),' ',ptr_2d(k,i)
+             endif
+         enddo 
+       enddo 
              elseif (afield%rank() == 3) then  
                write(6,*)'this case needs more work, stop' ! a better exption handling to be added
                call flush(6)
@@ -234,15 +247,18 @@ logical  ::  l3d_encountered
              write(6,*)'The numbers of 2d variables is different from  mgbf-expected ,stop'
              stop   ! a better exception handling is to be added
           endif
-          dim2d=shape(work2d_mgbf)
-          dim3d=shape(work_mgbf)
+       do k=1,nzloc
+          work_mgbf(k,:,:) =reshape(work2d_mgbf(k,:),[dim3d(2),dim3d(3)])
+       enddo
 
-          work_mgbf=reshape(work2d_mgbf,[dim3d(1),dim3d(2),dim3d(3)])
-
-          nxloc=dim3d(2)
-          nyloc=dim3d(3)
-          nzloc=dim3d(1)
        write(6,*)"thinkdeb666-1"
+       do k=1,nzloc
+         do i=1,nxloc*nyloc
+             if(work2d_mgbf(k,i) .gt.0.001) then 
+                write(6,*)'thinkdeb666, non zeror k,ij work2d_mgbf ',i,k,' ',work2d_mgbf(k,i)
+             endif
+         enddo 
+       enddo 
        do k=1,nzloc
          do j=1,nxloc
            do i=1,nxloc
@@ -252,7 +268,6 @@ logical  ::  l3d_encountered
            enddo
          enddo 
        enddo 
-     if(1 > 0) then
           call self%intstate%anal_to_filt_allmap(work_mgbf)
          if(1.gt.0) then
           call self%intstate%filtering_procedure(self%intstate%mgbf_proc,1)
@@ -261,8 +276,9 @@ logical  ::  l3d_encountered
 !cltorg          call self%intstate%filt_to_anal_allmap(work_mgbf)
           call self%intstate%filt_to_anal_allmap(work_mgbf2)
           work_mgbf=work_mgbf2
-      endif !1>2    
-          work2d_mgbf=reshape(work_mgbf,[dim2d(1),dim2d(2)])
+        do k=1,nzloc
+          work2d_mgbf(k,:)=reshape(work_mgbf(k,:,:),[dim2d(2)])
+        enddo
              ilev=1
           do isize=1,fields%size()
   
