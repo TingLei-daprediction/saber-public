@@ -59,8 +59,7 @@ include "type_intstat_locpointer.inc"
 include "type_parameter_point2this.inc"
 include "type_intstat_point2this.inc"
 !----------------------------------------------------------------------
- write(6,*)'thinkdeb in mg_transfer ',km_a_all, km_all,nm,im,mm,jm
- write(6,*)'thinkdeb in mg_transfer l_new_map ',l_new_map
+! write(6,*)'thinkdeb in mg_transfer ',km_a_all, km_all,nm,im,mm,jm
 !clttothink if(km_a_all==km_all.and.nm==im.and.mm==jm) then
 !cltothink   VALL=0.
 !clttohink   VALL(1:km_all,1:im,1:jm)=WORKA
@@ -68,6 +67,7 @@ include "type_intstat_point2this.inc"
 !clttothink   call this%anal_to_filt_all2(WORKA)
 !cltothinkelse
    call this%anal_to_filt_all(WORKA)
+! write(6,*)'thinkdeb in mg_transfer after anal_to_filt ',l_new_map
 !cltothinkendif
 !----------------------------------------------------------------------
 endsubroutine anal_to_filt_allmap
@@ -126,7 +126,6 @@ allocate(F3D(km3_all,1:nm,1:mm,lm))
                                                  call btim(an2filt_tim)
 if(2.gt.3) then
      call this%S2C_ens(WORKA,A3D,1,nm,1,mm,lm_a,km_a,km_a_all)
-   write(6,*)'thinkdeb in mg_transfer.f90 lm_a ,lm  ',lm_a,' ',lm 
   if(lm_a>lm) then
     if(l_lin_vertical) then
        call this%l_vertical_adjoint_spec(km3_all,lm_a,lm,1,nm,1,mm,A3D,F3D)
@@ -144,11 +143,9 @@ if(2.gt.3) then
   endif
 
       call this%C2S_ens(F3D,WORK,1,nm,1,mm,lm,km,km_all)
-     write(6,*)'thinkdeb before anal_to_filt ,if WORK has non-zero ',contains_nonzero(WORK)
 endif !2.gt.3 
 !cltorg      call this%anal_to_filt(WORK)
       call this%anal_to_filt(WORKA)
-     write(6,*)'thinkdeb after anal_to_filt ,if WORK has non-zero ',contains_nonzero(WORK)
                                                  call etim(an2filt_tim)
 
 deallocate(A3D,F3D,WORK)
@@ -439,9 +436,7 @@ include "type_parameter_point2this.inc"
 include "type_intstat_point2this.inc"
 !----------------------------------------------------------------------
        VALL=0.
-        write(6,*)"thinkdeb in anal_to_filt work nonzeor ? ",contains_nonzero(work)
 !clttothink
-        write(6,*)"thinkdeb in anal_to_filt l_?_horizonal  ",l_lin_horizontal,l_quad_horizontal
 !clttothink
        if(l_lin_horizontal) then
          ibm=1
@@ -462,7 +457,6 @@ include "type_intstat_point2this.inc"
 !***
 
          call this%bocoT_2d(VALL(1:km_all,1-ibm:im+ibm,1-jbm:jm+jbm),km_all,im,jm,ibm,jbm)
-        write(6,*)"thinkdeb in anal_to_filt VALL nonzeor ? ",contains_nonzero(VALL)
 
 !----------------------------------------------------------------------
 endsubroutine anal_to_filt

@@ -136,7 +136,9 @@ real(kind=r_kind), pointer :: psi(:,:), chi(:,:), t(:,:), q(:,:), qi(:,:), ql(:,
 real(kind=r_kind), pointer :: ps(:)
 
 integer, parameter :: rseed = 3
-
+write(6,*)'thinkdeb this is to be implemente'
+call flush(6)
+stop
 ! Get Atlas field
 afield = fields%field('stream_function')
 call afield%data(psi)
@@ -184,18 +186,36 @@ real(kind=r_kind), pointer :: ptr_3d(:,:,:)
 integer(kind=i_kind):: nz,ilev,isize
 real(kind=r_kind), allocatable :: work_mgbf(:,:,:)
 real(kind=r_kind), allocatable :: work_mgbf2(:,:,:)
+real(kind=r_kind), allocatable :: work1var_mgbf(:,:,:)
 real(kind=r_kind), allocatable :: work2d_mgbf(:,:)
 integer(kind=i_kind) :: dim2d(2),dim3d(3)
 integer(kind=i_kind):: myrank,nxloc,nyloc,nzloc
-integer(kind=i_kind):: i,j,k,ij
+integer(kind=i_kind)::nvar
+integer(kind=i_kind):: i,ivar,j,k,ij,lev1,lev2,iounit
 integer(kind=i_kind):: n2d
+integer(kind=i_kind),allocatable :: varvlev_index(:,:)
 logical  ::  l3d_encountered  
+logical :: test_once=.false.
+integer(kind=i_kind)::itest=0
+character(len=32) :: fileoutput
+character(len=4) :: str_rank
 
 
 !clt now noly consider t
 !  afield = fields%field('air_temperature')
 !  call afield%data(t)
 !*** From the analysis to first generation of filter grid
+          myrank=self%rank
+          write(str_rank,"(I4.4)")myrank
+          if(self%intstate%l_for_localization) then
+            fileoutput="mgbftest_loc_"//str_rank//".txt"
+          else
+            fileoutput="mgbftest_static_"//str_rank//".txt"
+          endif
+
+
+
+
           n2d=0
           l3d_encountered=.false.
           allocate(work_mgbf(self%intstate%km_a_all,self%intstate%nm,self%intstate%mm))
@@ -207,29 +227,31 @@ logical  ::  l3d_encountered
           nyloc=dim3d(3)
           nzloc=dim3d(1)
           work_mgbf2=0.0
-
+          nvar=fields%size() 
+          allocate( varvlev_index(nvar,2))
              ilev=1
           do isize=1,fields%size()
              
              afield= fields%field(isize)  !clttodo
              if(afield%rank() == 2)  then
                nz=afield%levels()
-             write(6,*)'thinkdeb55 isize/name/nz is ',isize,' ',afield%name(),' ',nz
                call afield%data(ptr_2d)
                work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d 
                ilev=ilev+nz
+                
                if(nz >  1) l3d_encountered=.true.
                if(nz == 1) then 
                   if(l3d_encountered )  stop  !  is required 2d fields are saved consecutively 
                  n2d=n2d+1
                endif
-       do k=1,64 ! #nzloc
-         do i=1,nxloc*nyloc
-             if(ptr_2d(k,i) .gt.0.001) then 
-                write(6,*)'thinkdeb666ptr, non zeror k,ij work2d_mgbf ',i,k+64*(isize-1),' ',ptr_2d(k,i)
-             endif
-         enddo 
-       enddo 
+               if(isize==1) then
+                 varvlev_index(isize,1)= 1
+                 varvlev_index(isize,2)= nz
+               else
+                 varvlev_index(isize,1)= varvlev_index(isize-1,1)+nz
+                 varvlev_index(isize,2)= varvlev_index(isize,1)+nz-1
+               endif
+                 
              elseif (afield%rank() == 3) then  
                write(6,*)'this case needs more work, stop' ! a better exption handling to be added
                call flush(6)
@@ -243,39 +265,72 @@ logical  ::  l3d_encountered
                stop
              endif 
           enddo
+       do k=1,nzloc
+          work_mgbf(k,:,:) =reshape(work2d_mgbf(k,:),[dim3d(2),dim3d(3)])
+       enddo
+       if(test_once) then
+!clt          open(iounit,file=trim(fileoutput), status='replace',form="formatted") 
+        
+               open(iounit,file=trim(fileoutput), status='unknown', action='write', position='append', form='formatted',iostat=i) 
+               write(iounit,*)"itest is  ",itest 
+               write(iounit,*) work_mgbf
+               itest=itest+1
+               if(itest==1) test_once=.false. 
+               close(iounit)
+               do k=1,nzloc
+                 do j=1,nyloc
+                   do i=1,nxloc
+                     if(work_mgbf(k,i,j).gt.0.002) then
+                      write(6,*)'thinkdeb work_mgbf .gt.0.002 ',i,j,k, ' ',work_mgbf(k,i,j)
+                     endif
+                   enddo
+                 enddo
+                enddo
+       endif
           if(self%intstate%km2.ne.n2d) then 
              write(6,*)'The numbers of 2d variables is different from  mgbf-expected ,stop'
              stop   ! a better exception handling is to be added
           endif
-       do k=1,nzloc
-          work_mgbf(k,:,:) =reshape(work2d_mgbf(k,:),[dim3d(2),dim3d(3)])
-       enddo
+          
+          if(test_once.and..1.gt.2) then
+          open(iounit,file=trim(fileoutput), status='replace',form="formatted") 
+          write(iounit,*) work_mgbf
+          test_once=.false. 
+          close(iounit)
+          endif
 
-       write(6,*)"thinkdeb666-1"
-       do k=1,nzloc
-         do i=1,nxloc*nyloc
-             if(work2d_mgbf(k,i) .gt.0.001) then 
-                write(6,*)'thinkdeb666, non zeror k,ij work2d_mgbf ',i,k,' ',work2d_mgbf(k,i)
-             endif
-         enddo 
-       enddo 
-       do k=1,nzloc
-         do j=1,nxloc
-           do i=1,nxloc
-             if(work_mgbf(k,i,j) .gt.0.001) then 
-                write(6,*)'thinkdeb666, non zeror k,i,j work_mgbf ',i,j,k,' ',work_mgbf(k,i,j)
-             endif
-           enddo
-         enddo 
-       enddo 
           call self%intstate%anal_to_filt_allmap(work_mgbf)
-         if(1.gt.0) then
           call self%intstate%filtering_procedure(self%intstate%mgbf_proc,1)
-         endif
          
 !cltorg          call self%intstate%filt_to_anal_allmap(work_mgbf)
           call self%intstate%filt_to_anal_allmap(work_mgbf2)
+        write(6,*)"thinkdeb22 in covarian*mod.f90 l_for_localization ",self%intstate%l_for_localization
+ 
+        if(.not. self%intstate%l_for_localization) then   !clthinkdeb
           work_mgbf=work_mgbf2
+        else  !now, only for cases all are 3d arrays 
+         allocate(work1var_mgbf(nz,nxloc,nyloc))
+         work1var_mgbf=0.0
+         do ivar=1,nvar
+           lev1=varvlev_index(ivar,1)
+           lev2=varvlev_index(ivar,2)
+           write(6,*)'ivar is ',ivar,' ',lev1,' ',lev2
+           work1var_mgbf=work1var_mgbf+work_mgbf2(lev1:lev2,:,:)
+          enddo
+         do ivar=1,nvar
+           lev1=varvlev_index(ivar,1)
+           lev2=varvlev_index(ivar,2)
+          work_mgbf(lev1:lev2,:,:)=work1var_mgbf
+         enddo
+         deallocate(work1var_mgbf)
+        endif
+        iounit=20+myrank
+        if(test_once.and.1.gt.2) then
+          open(iounit,file=trim(fileoutput), status='replace',form="formatted") 
+          write(iounit,*) work_mgbf
+          test_once=.false. 
+          close(iounit)
+        endif
         do k=1,nzloc
           work2d_mgbf(k,:)=reshape(work_mgbf(k,:,:),[dim2d(2)])
         enddo
@@ -286,7 +341,6 @@ logical  ::  l3d_encountered
              if(afield%rank() == 2) then 
                call afield%data(ptr_2d)
                nz=afield%levels()
-             write(6,*)'thinkdeb552 isize/name/nz is ',isize,' ',afield%name(),' ',nz
                ptr_2d(1:nz,:)=work2d_mgbf(ilev:ilev+nz-1,:) 
                ilev=ilev+nz
              elseif (afield%rank() == 3) then  
@@ -309,7 +363,9 @@ logical  ::  l3d_encountered
 
 
           deallocate(work_mgbf)
+          deallocate(work_mgbf2)
           deallocate(work2d_mgbf)
+          deallocate( varvlev_index)
 
 end subroutine multiply
 

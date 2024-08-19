@@ -450,7 +450,7 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
     util::seekAndReplace(outputBConf, "%id%", id);
      for (auto& fld:dxo[0].fieldSet() ) {
     oops::Log::trace()<<"thinkdeb dxo 0 input fld is "<<fld<<std::endl;
-    fld.dump(std::cout);
+//clt    fld.dump(std::cout);
    };
 
     // Write output increment

@@ -66,6 +66,7 @@ include "type_intstat_locpointer.inc"
 include "type_parameter_point2this.inc"
 include "type_intstat_point2this.inc"
 !-----------------------------------------------------------------------
+      write(6,*)'thinkdeb filtering_procedure nxm,nym ',this%nxm,' ',this%nym 
 if(this%nxm*this%nym>1) then
    select case(mg_filt)
    case(1)

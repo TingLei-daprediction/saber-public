@@ -84,18 +84,26 @@ mgbf_Interpolation::~mgbf_Interpolation() {
 // -------------------------------------------------------------------------------------------------
 
 void mgbf_Interpolation::multiply(oops::FieldSet3D & fset) const {
-  oops::Log::trace() << classname() << "::multiply starting" << std::endl;
+  oops::Log::trace() << classname() << "::multiply starting <<fset" << std::endl;
+//  std::cout <<"mgbf_Interpoalation::multiply starting <<fset "<<std::endl; 
+//  fset.print(std::cout) ;
   util::Timer timer(classname(), "multiply");
   interpolator_->apply(fset.fieldSet());
-  oops::Log::trace() << classname() << "::multiply done" << std::endl;
+//  std::cout <<"mgbf_Interpolation::multiply starting 2 fset" << std::endl;
+//  fset.print(std::cout) ;
+  oops::Log::trace() << "mgbf_Interpolation::multiply done" << std::endl;
 }
 
 // -------------------------------------------------------------------------------------------------
 
 void mgbf_Interpolation::multiplyAD(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
+//  std::cout<<"thinkdeb mgbf::interpolation::mutliplyAD cout<<fset "<<std::endl;
+//  fset.print(std::cout);
   util::Timer timer(classname(), "multiplyAD");
   interpolator_->applyAD(fset.fieldSet());
+//  std::cout<<"thinkdeb after mgbf::interpolation::mutliplyAD cout<<fset "<<std::endl;
+//  fset.print(std::cout);
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 

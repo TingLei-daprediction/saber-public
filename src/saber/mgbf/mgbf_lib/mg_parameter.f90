@@ -38,6 +38,7 @@ implicit none
 type::  mg_parameter_type
 !-----------------------------------------------------------------------
 !*** 
+logical:: l_for_localization=.false.  !used for localizaiton while multiple variates need additional treeatment
 !*** Namelist parameters
 !***
 real(r_kind):: mg_ampl01,mg_ampl02,mg_ampl03
@@ -481,8 +482,9 @@ real(r_kind):: mg_weig1,mg_weig2,mg_weig3,mg_weig4
 integer(i_kind):: mgbf_proc
 logical:: mgbf_line
 integer(i_kind):: nxPE,nyPE,im_filt,jm_filt
-logical:: lquart,lhelm
-logical:: ldelta
+logical:: lquart=.false.,lhelm=.false. !clt what should be the default
+logical:: ldelta=.false.
+logical:: l_for_localization=.false.
 
 integer(i_kind):: lm_a          ! number of vertical layers in analysis fields
 integer(i_kind):: lm            ! number of vertical layers in filter grids
@@ -490,10 +492,10 @@ integer(i_kind):: km2           ! number of 2d variables for filtering
 integer(i_kind):: km3           ! number of 3d variables for filtering
 integer(i_kind):: n_ens=1         ! number of ensemble members
 logical :: l_loc=.false.       
-logical :: l_filt_g1            ! logical flag for filtering of generation one
-logical :: l_lin_vertical       ! logical flag for linear interpolation in vertcial
-logical :: l_lin_horizontal     ! logical flag for linear interpolation in horizontal
-logical :: l_quad_horizontal    ! logical flag for quadratic interpolation in horizontal
+logical :: l_filt_g1=.false.            ! logical flag for filtering of generation one
+logical :: l_lin_vertical=.false.       ! logical flag for linear interpolation in vertcial
+logical :: l_lin_horizontal=.false.     ! logical flag for linear interpolation in horizontal
+logical :: l_quad_horizontal=.false.    ! logical flag for quadratic interpolation in horizontal
 logical :: l_new_map=.false.            ! logical flag for new mapping between analysis and filter grid
 logical :: l_vertical_filter=.true.    ! logical flag for vertical filtering
 integer(i_kind):: gm_max=4   !clt by defaul
@@ -519,7 +521,7 @@ integer(i_kind):: p
                               ,l_quad_horizontal                        &
                               ,l_new_map                                &
                               ,l_vertical_filter                        &
-                              ,ldelta,lquart,lhelm                      &
+                              ,l_for_localization,ldelta,lquart,lhelm                      &
                               ,gm_max                                   &
                               ,nm0,mm0                                  &
                               ,nxPE,nyPE,im_filt,jm_filt                
@@ -555,6 +557,8 @@ integer(i_kind):: p
   this%l_quad_horizontal=l_quad_horizontal
   this%l_new_map=l_new_map
   this%l_vertical_filter=l_vertical_filter
+  this%l_for_localization=l_for_localization
+  write(6,*)'thinkdeb22 this%l_for_localization ',this%l_for_localization
   this%ldelta=ldelta
   this%lquart=lquart
   this%lhelm=lhelm 
@@ -855,6 +859,7 @@ integer(i_kind):: p
 
   this%imL=this%im/2
   this%jmL=this%jm/2
+  write(6,*)'thinkdebzzz in mp_para imL/jmL  ',this%imL, ' ',this%jmL 
 
   this%imH=this%im0(this%gm)
   this%jmH=this%jm0(this%gm)

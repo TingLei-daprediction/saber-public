@@ -138,10 +138,18 @@ void Localization<MODEL>::multiply(Increment_ & dx) const {
   // SABER block chain multiplication
   oops::FieldSet4D fset4d({dx.validTime(), dx.geometry().getComm()});
   fset4d[0].shallowCopy(dx.fieldSet());
+  oops::Log::trace()<<dx << std::endl;
   loc_->multiply(fset4d);
+#if  1  
+    dx.fromFieldSet(fset4d[0].fieldSet());     //cltthinkdeb
+//  oops::Log::trace()<<dx << std::endl;
+//  fset4d[0].print(std::cout); 
 
+#else
   // ATLAS fieldset to Increment_
   dx.synchronizeFields();
+#endif 
+//cltthinkdeb
 
   oops::Log::trace() << "Localization:multiply done" << std::endl;
 }

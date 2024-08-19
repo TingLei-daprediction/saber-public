@@ -68,6 +68,7 @@ else
     read_from_file = .false.
 endif
 
+write(6,*)'thinkdeb in gsi_interp*interface.h ngrid1/2 =',ngrid1,' ',ngrid2  
 if (read_from_file) then
     call fckit_log%info("Reading interpolator from file")
     call f_config%get_or_die("infile", infile)
@@ -178,7 +179,9 @@ else
   call outfield%data(fout_r2)
 
   do jlev = 1, jlev1
+!clt     write(6,*)'thinkdeb in UnstructuredInterpolation.interface.F90 jlev ',jlev 
      call unstrc_int%apply(fin_r2(jlev,:), fout_r2(jlev,:))
+!clt     write(6,*)'thinkdeb in UnstructuredInterpolation.interface.F90 jlev end ' 
   enddo
 
 endif

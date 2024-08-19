@@ -848,7 +848,6 @@ include "type_intstat_point2this.inc"
 ! Limit comminications to selected number of generations
 !
 
-
          g_ind=1
 !
 ! from mg_domain
@@ -878,6 +877,7 @@ include "type_intstat_point2this.inc"
 
       if( itarg_w >= 0) then
         nebpe = itarg_w
+!clttothink1
 
               allocate( sBuf_W(1:km_in,1:nbx,1-nby:jmax+nby), stat = iaerr )
 
@@ -918,6 +918,7 @@ include "type_intstat_point2this.inc"
 
       if(  itarg_e >= 0 ) then
         nebpe = itarg_e
+!cltothink1-2
 
 
           allocate( rBuf_E(1:km_in,1:nbx,1-nby:jmax+nby), stat = iaerr )
@@ -928,10 +929,10 @@ include "type_intstat_point2this.inc"
       end if
 
 ! --- from WEST ---
+   
 
       if(  itarg_w >= 0 ) then
         nebpe = itarg_w
-
 
          allocate( rBuf_W(1:km_in,1:nbx,1-nby:jmax+nby), stat = iaerr )
           call MPI_IRECV( rBuf_W, ndatax, dtype, nebpe, nebpe,          &
@@ -985,6 +986,7 @@ include "type_intstat_point2this.inc"
       if( itarg_s >= 0 ) then
         nebpe = itarg_s
 
+
               allocate( sBuf_S(1:km_in,1:imax,1:nby), stat = iaerr )
 
               do j=1-nby,0
@@ -1001,6 +1003,7 @@ include "type_intstat_point2this.inc"
 
       if( itarg_n >= 0 ) then
         nebpe = itarg_n
+
 
              allocate( sBuf_N(1:km_in,1:imax,1:nby), stat = iaerr )
 
