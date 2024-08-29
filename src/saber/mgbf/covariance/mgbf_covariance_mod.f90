@@ -189,7 +189,7 @@ real(kind=r_kind), allocatable :: work_mgbf2(:,:,:)
 real(kind=r_kind), allocatable :: work1var_mgbf(:,:,:)
 real(kind=r_kind), allocatable :: work2d_mgbf(:,:)
 integer(kind=i_kind) :: dim2d(2),dim3d(3)
-integer(kind=i_kind):: myrank,nxloc,nyloc,nzloc
+integer(kind=i_kind):: myrank,nxloc,nyloc,nzloc,nz3d
 integer(kind=i_kind)::nvar
 integer(kind=i_kind):: i,ivar,j,k,ij,lev1,lev2,iounit
 integer(kind=i_kind):: n2d
@@ -205,6 +205,12 @@ character(len=4) :: str_rank
 !  afield = fields%field('air_temperature')
 !  call afield%data(t)
 !*** From the analysis to first generation of filter grid
+          if(self%intstate%l_for_localization .and. self%intstate%km2) then 
+           write(6,*)"when mgbf is used for localizaiton, all 2d variables will be treated as 3d variable",  &
+&        "in which, the first level contains the 2d variables and others zeros "  
+                                                                                                        
+           stop !to use a better exit procdure  
+          endif
           myrank=self%rank
           write(str_rank,"(I4.4)")myrank
           if(self%intstate%l_for_localization) then
@@ -221,14 +227,17 @@ character(len=4) :: str_rank
           allocate(work_mgbf(self%intstate%km_a_all,self%intstate%nm,self%intstate%mm))
           allocate(work_mgbf2(self%intstate%km_a_all,self%intstate%nm,self%intstate%mm))
           allocate(work2d_mgbf(self%intstate%km_a_all,self%intstate%nm*self%intstate%mm))
+          work2d_mgbf=0.0         
+     
           dim2d=shape(work2d_mgbf)
+
           dim3d=shape(work_mgbf)
           nxloc=dim3d(2)
           nyloc=dim3d(3)
           nzloc=dim3d(1)
-          work_mgbf2=0.0
+          nz3d=self%intstate%lm 
           nvar=fields%size() 
-          allocate( varvlev_index(nvar,2))
+          allocate( varvlev_index(nvar,3))
              ilev=1
           do isize=1,fields%size()
              
@@ -246,10 +255,20 @@ character(len=4) :: str_rank
                endif
                if(isize==1) then
                  varvlev_index(isize,1)= 1
-                 varvlev_index(isize,2)= nz
+                 if(.not.self%intstate%l_for_localization )then 
+                   varvlev_index(isize,2)= nz
+                 else
+                   varvlev_index(isize,2)= nz3d
+                 endif
+                 varvlev_index(isize,3)= nz
                else
-                 varvlev_index(isize,1)= varvlev_index(isize-1,1)+nz
-                 varvlev_index(isize,2)= varvlev_index(isize,1)+nz-1
+                 varvlev_index(isize,1)= varvlev_index(isize-1,1)+nz3d
+                 if(.not.self%intstate%l_for_localization )then 
+                   varvlev_index(isize,2)= varvlev_index(isize,1)+nz-1
+                 else
+                   varvlev_index(isize,2)= varvlev_index(isize,1)+nz3d-1
+                 endif
+                 varvlev_index(isize,3)=nz
                endif
                  
              elseif (afield%rank() == 3) then  
@@ -268,25 +287,6 @@ character(len=4) :: str_rank
        do k=1,nzloc
           work_mgbf(k,:,:) =reshape(work2d_mgbf(k,:),[dim3d(2),dim3d(3)])
        enddo
-       if(test_once) then
-!clt          open(iounit,file=trim(fileoutput), status='replace',form="formatted") 
-        
-               open(iounit,file=trim(fileoutput), status='unknown', action='write', position='append', form='formatted',iostat=i) 
-               write(iounit,*)"itest is  ",itest 
-               write(iounit,*) work_mgbf
-               itest=itest+1
-               if(itest==1) test_once=.false. 
-               close(iounit)
-               do k=1,nzloc
-                 do j=1,nyloc
-                   do i=1,nxloc
-                     if(work_mgbf(k,i,j).gt.0.002) then
-                      write(6,*)'thinkdeb work_mgbf .gt.0.002 ',i,j,k, ' ',work_mgbf(k,i,j)
-                     endif
-                   enddo
-                 enddo
-                enddo
-       endif
           if(self%intstate%km2.ne.n2d) then 
              write(6,*)'The numbers of 2d variables is different from  mgbf-expected ,stop'
              stop   ! a better exception handling is to be added
@@ -308,13 +308,12 @@ character(len=4) :: str_rank
  
         if(.not. self%intstate%l_for_localization) then   !clthinkdeb
           work_mgbf=work_mgbf2
-        else  !now, only for cases all are 3d arrays 
+        else  !  if in the multivariate localization, all output for 3d or 2d variables are 3d structures 
          allocate(work1var_mgbf(nz,nxloc,nyloc))
          work1var_mgbf=0.0
          do ivar=1,nvar
            lev1=varvlev_index(ivar,1)
            lev2=varvlev_index(ivar,2)
-           write(6,*)'ivar is ',ivar,' ',lev1,' ',lev2
            work1var_mgbf=work1var_mgbf+work_mgbf2(lev1:lev2,:,:)
           enddo
          do ivar=1,nvar
@@ -341,8 +340,8 @@ character(len=4) :: str_rank
              if(afield%rank() == 2) then 
                call afield%data(ptr_2d)
                nz=afield%levels()
-               ptr_2d(1:nz,:)=work2d_mgbf(ilev:ilev+nz-1,:) 
-               ilev=ilev+nz
+               lev1=varvlev_index(isize,1)
+               ptr_2d(1:nz,:)=work2d_mgbf(lev1:lev1+nz-1,:)!if nz=1, only the first level is used (like for surface pressure) 
              elseif (afield%rank() == 3) then  
                call afield%data(ptr_3d)
                nz=afield%levels()
