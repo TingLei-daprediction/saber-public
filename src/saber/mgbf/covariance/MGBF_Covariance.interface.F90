@@ -100,7 +100,6 @@ type(mgbf_covariance), pointer :: f_self
 ! LinkedList
 ! ----------
 call mgbf_covariance_registry%get(c_self, f_self)
-
 ! Call implementation
 ! -------------------
 call f_self%delete()

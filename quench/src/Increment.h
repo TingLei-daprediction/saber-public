@@ -50,6 +50,7 @@ class Increment : public util::Printable,
   void diff(const State &, const State &);
   void zero();
   void zero(const util::DateTime &);
+  void ones();
   void dirac(const eckit::Configuration &);
   Increment & operator =(const Increment &);
   Increment & operator+=(const Increment &);

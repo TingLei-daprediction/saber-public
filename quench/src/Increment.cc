@@ -15,6 +15,8 @@
 #include "oops/util/Logger.h"
 
 #include "src/Fields.h"
+#include <iostream>
+#include <stdexcept>
 
 namespace quench {
 
@@ -78,6 +80,10 @@ void Increment::zero() {
 void Increment::zero(const util::DateTime & vt) {
   fields_->zero();
   fields_->time() = vt;
+}
+void Increment::ones() {
+    std::cerr << "Error: quench::Increment::ones called unexpectedly. This method should not be used for being now" << std::endl;
+    throw std::runtime_error("Unexpected call to quench::Increment::ones");
 }
 // -----------------------------------------------------------------------------
 void Increment::axpy(const double & zz, const Increment & dx,

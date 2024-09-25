@@ -57,6 +57,7 @@ module mg_timers
   type(timer),save,public ::    hfiltT_tim
   type(timer),save,public ::    vfiltT_tim
   type(timer),save,public ::      vadv1_tim
+  type(timer),save,public ::      bfilt_tim
   type(timer),save,public ::      hfilt_tim
   type(timer),save,public ::      vfilt_tim
   type(timer),save,public ::       adv2_tim
@@ -77,6 +78,7 @@ module mg_timers
   type(timer),save,public ::       intp_tim
   type(timer),save,public ::      bocoT_tim
   type(timer),save,public ::       boco_tim
+  type(timer),save,public ::    bfiltT_tim
 
   integer, parameter, public :: print_clock = 1,                        &
                                 print_cpu   = 2,                        &

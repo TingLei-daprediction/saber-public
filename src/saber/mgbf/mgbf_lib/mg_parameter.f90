@@ -35,6 +35,7 @@ use mgbf_kinds, only: i_kind,r_kind
 use jp_pietc, only: u1
 
 implicit none
+integer(i_kind),parameter :: lm_max=200  
 type::  mg_parameter_type
 !-----------------------------------------------------------------------
 !*** 
@@ -138,6 +139,8 @@ integer(i_kind):: imL,jmL
 integer(i_kind):: imH,jmH
 integer(i_kind):: lm_a          ! number of vertical layers in analysis fields
 integer(i_kind):: lm            ! number of vertical layers in filter grids
+real(r_kind):: coef_normalization(lm_max)=1.0 !normalizaton coefficients
+
 integer(i_kind):: km2           ! number of 2d variables for filtering
 integer(i_kind):: km3           ! number of 3d variables for filtering
 integer(i_kind):: n_ens         ! number of ensemble members
@@ -488,6 +491,7 @@ logical:: l_for_localization=.false.
 
 integer(i_kind):: lm_a          ! number of vertical layers in analysis fields
 integer(i_kind):: lm            ! number of vertical layers in filter grids
+real(r_kind):: coef_normalization(lm_max)=1.0 !normalizaton coefficients
 integer(i_kind):: km2           ! number of 2d variables for filtering
 integer(i_kind):: km3           ! number of 3d variables for filtering
 integer(i_kind):: n_ens=1         ! number of ensemble members
@@ -511,7 +515,7 @@ integer(i_kind):: p
                               ,mg_weig1,mg_weig2,mg_weig3,mg_weig4      &
                               ,hx,hy,hz,p                               &
                               ,mgbf_line,mgbf_proc                      &
-                              ,lm_a,lm                                  &
+                              ,lm_a,lm,coef_normalization               & 
                               ,km2,km3                                  &
                               ,n_ens                                    &
                               ,l_loc                                    &
@@ -547,6 +551,7 @@ integer(i_kind):: p
   this%mgbf_proc=mgbf_proc          
   this%lm_a=lm_a
   this%lm=lm
+  this%coef_normalization=coef_normalization
   this%km2=km2
   this%km3=km3
   this%n_ens=n_ens
@@ -672,6 +677,7 @@ integer(i_kind):: p
   if(this%nxm*this%nym<=1) then
     this%gm=gm_max
   endif
+  write(6,*)"thindkeb888 gm is ",this%gm
 
 !***
 !***     Analysis grid

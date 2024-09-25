@@ -179,6 +179,7 @@ contains
   procedure :: filtering_procedure
   procedure :: filtering_rad3,filtering_lin3
   procedure :: filtering_rad2_bkg,filtering_lin2_bkg,filtering_fast_bkg
+  procedure :: filtering_rad2,filtering_lin2
   procedure :: filtering_rad2_ens,filtering_lin2_ens,filtering_fast_ens
   procedure :: filtering_rad_highest
   procedure :: sup_vrbeta1T,sup_vrbeta1,sup_vrbeta3T,sup_vrbeta3
@@ -841,10 +842,16 @@ interface
    module subroutine filtering_lin3(this)
      class(mg_intstate_type),target::this
    end subroutine
+   module subroutine filtering_rad2(this)
+     class(mg_intstate_type),target::this
+   end subroutine
    module subroutine filtering_rad2_bkg(this)
      class(mg_intstate_type),target::this
    end subroutine
    module subroutine filtering_lin2_bkg(this)
+     class(mg_intstate_type),target::this
+   end subroutine
+   module subroutine filtering_lin2(this)
      class(mg_intstate_type),target::this
    end subroutine
    module subroutine filtering_fast_bkg(this)

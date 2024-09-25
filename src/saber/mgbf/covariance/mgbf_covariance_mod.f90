@@ -35,6 +35,8 @@ type :: mgbf_covariance
   logical :: cv   ! cv=.true.; sv=.false.
   integer :: mp_comm_world
   integer :: rank
+  logical :: l_2dvar_last_vertical_level=.true.  !when used for localization,2dvars are put on the last vertical level
+                                          !when the fields in fset are stored from top to bottom  
 !clt  integer :: lat2,lon2 ! these belog to mgbf_grid
   contains
     procedure, public :: create
@@ -188,6 +190,7 @@ real(kind=r_kind), allocatable :: work_mgbf(:,:,:)
 real(kind=r_kind), allocatable :: work_mgbf2(:,:,:)
 real(kind=r_kind), allocatable :: work1var_mgbf(:,:,:)
 real(kind=r_kind), allocatable :: work2d_mgbf(:,:)
+real(kind=r_kind), allocatable :: rnormalization(:)
 integer(kind=i_kind) :: dim2d(2),dim3d(3)
 integer(kind=i_kind):: myrank,nxloc,nyloc,nzloc,nz3d
 integer(kind=i_kind)::nvar
@@ -227,7 +230,9 @@ character(len=4) :: str_rank
           allocate(work_mgbf(self%intstate%km_a_all,self%intstate%nm,self%intstate%mm))
           allocate(work_mgbf2(self%intstate%km_a_all,self%intstate%nm,self%intstate%mm))
           allocate(work2d_mgbf(self%intstate%km_a_all,self%intstate%nm*self%intstate%mm))
+          allocate(rnormalization(self%intstate%km_a_all))
           work2d_mgbf=0.0         
+          rnormalization=1.0
      
           dim2d=shape(work2d_mgbf)
 
@@ -237,6 +242,7 @@ character(len=4) :: str_rank
           nzloc=dim3d(1)
           nz3d=self%intstate%lm 
           nvar=fields%size() 
+          write(6,*)'thinkdeb l_2d is ',self%l_2dvar_last_vertical_level
           allocate( varvlev_index(nvar,3))
              ilev=1
           do isize=1,fields%size()
@@ -245,12 +251,29 @@ character(len=4) :: str_rank
              if(afield%rank() == 2)  then
                nz=afield%levels()
                call afield%data(ptr_2d)
-               work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d 
-               ilev=ilev+nz
+               if(nz == 1) then 
+                  if(self%intstate%l_for_localization) then 
+                    if( self%l_2dvar_last_vertical_level) then  !when used for localization,2dvars are put on the last vertical level
+                      write(6,*)'thinkdebxxx right250 ',ilev+nz3d-1
+                      work2d_mgbf(ilev+nz3d-1:ilev+nz3d-1,:)=ptr_2d 
+                    else
+                      work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d 
+                    endif
+                       
+                   
+                  else
+                    work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d 
+                  endif
+               else
+                  work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d 
+               endif
                 
                if(nz >  1) l3d_encountered=.true.
                if(nz == 1) then 
-                  if(l3d_encountered )  stop  !  is required 2d fields are saved consecutively 
+                  if(l3d_encountered ) then
+                     write(6,*)"l3d_encountered is true , 2dvariable is not put in the begining, stop"
+                       stop  !  is required 2d fields are saved consecutively 
+                  endif
                  n2d=n2d+1
                endif
                if(isize==1) then
@@ -260,17 +283,20 @@ character(len=4) :: str_rank
                  else
                    varvlev_index(isize,2)= nz3d
                  endif
-                 varvlev_index(isize,3)= nz
+                 varvlev_index(isize,3)= varvlev_index(isize,2) -varvlev_index(isize,1)+1 
                else
-                 varvlev_index(isize,1)= varvlev_index(isize-1,1)+nz3d
+!cltorg                 varvlev_index(isize,1)= varvlev_index(isize-1,1)+nz3d
+                 varvlev_index(isize,1)= varvlev_index(isize-1,2)+1
                  if(.not.self%intstate%l_for_localization )then 
                    varvlev_index(isize,2)= varvlev_index(isize,1)+nz-1
                  else
                    varvlev_index(isize,2)= varvlev_index(isize,1)+nz3d-1
                  endif
-                 varvlev_index(isize,3)=nz
+                 varvlev_index(isize,3)= varvlev_index(isize,2) -varvlev_index(isize,1)+1 
                endif
+                 rnormalization(varvlev_index(isize,1):varvlev_index(isize,2))=self%intstate%coef_normalization(1:(varvlev_index(isize,2)-varvlev_index(isize,1)+1))
                  
+               ilev=varvlev_index(isize,2)+1
              elseif (afield%rank() == 3) then  
                write(6,*)'this case needs more work, stop' ! a better exption handling to be added
                call flush(6)
@@ -285,9 +311,10 @@ character(len=4) :: str_rank
              endif 
           enddo
        do k=1,nzloc
+          work2d_mgbf(k,:)=work2d_mgbf(k,:)/rnormalization(k)
           work_mgbf(k,:,:) =reshape(work2d_mgbf(k,:),[dim3d(2),dim3d(3)])
        enddo
-          if(self%intstate%km2.ne.n2d) then 
+          if(self%intstate%km2.ne.n2d.and. .not.self%intstate%l_for_localization ) then 
              write(6,*)'The numbers of 2d variables is different from  mgbf-expected ,stop'
              stop   ! a better exception handling is to be added
           endif
@@ -309,7 +336,7 @@ character(len=4) :: str_rank
         if(.not. self%intstate%l_for_localization) then   !clthinkdeb
           work_mgbf=work_mgbf2
         else  !  if in the multivariate localization, all output for 3d or 2d variables are 3d structures 
-         allocate(work1var_mgbf(nz,nxloc,nyloc))
+         allocate(work1var_mgbf(nz3d,nxloc,nyloc))
          work1var_mgbf=0.0
          do ivar=1,nvar
            lev1=varvlev_index(ivar,1)
@@ -337,15 +364,34 @@ character(len=4) :: str_rank
           do isize=1,fields%size()
   
              afield=fields%field(isize)  !clttodo
+             write(6,*)'thinkdeb in mgbf_covariance_mod.f90 rank is ',afield%rank() 
              if(afield%rank() == 2) then 
                call afield%data(ptr_2d)
                nz=afield%levels()
                lev1=varvlev_index(isize,1)
-               ptr_2d(1:nz,:)=work2d_mgbf(lev1:lev1+nz-1,:)!if nz=1, only the first level is used (like for surface pressure) 
+               write(6,*)'thinkdeb right2503 ',lev1,nz3d
+               if(nz.gt.1) then 
+                  ptr_2d(1:nz,:)=work2d_mgbf(lev1:lev1+nz-1,:)!if nz=1, only the first level is used (like for surface pressure) 
+               else
+                  if(self%intstate%l_for_localization) then 
+                    if( self%l_2dvar_last_vertical_level) then !when used for localization,2dvars are put on the last vertical level
+                      write(6,*)'thinkdebxxx right2502, lev? ',lev1+nz3d-1
+
+                       ptr_2d(1,:)=work2d_mgbf(lev1+nz3d-1,:)!if nz=1, only the first level is used (like for surface pressure) 
+                    else
+                        ptr_2d(1,:)=work2d_mgbf(lev1,:)!if nz=1, only the first level is used (like for surface pressure) 
+                    endif
+                  else
+                    ptr_2d(1,:)=work2d_mgbf(lev1,:)!if nz=1, only the first level is used (like for surface pressure) 
+                    
+                  endif
+               endif
+             
              elseif (afield%rank() == 3) then  
                call afield%data(ptr_3d)
                nz=afield%levels()
                write(6,*)'wrong in mgbf_covariance_mod.f90 todo ' !todo  
+               call flush(6)
                stop
                  
 
@@ -353,6 +399,7 @@ character(len=4) :: str_rank
                ilev=ilev+nz
              else
                write(6,*)'wrong in mgbf_covariance_mod.f90 ' !todo  
+               call flush(6)
                stop
              endif 
            enddo
@@ -364,6 +411,7 @@ character(len=4) :: str_rank
           deallocate(work_mgbf)
           deallocate(work_mgbf2)
           deallocate(work2d_mgbf)
+          deallocate(rnormalization)
           deallocate( varvlev_index)
 
 end subroutine multiply

@@ -75,9 +75,11 @@ if(this%nxm*this%nym>1) then
    case(2)
       call this%filtering_lin3
    case(3)
-      call this%filtering_rad2_bkg
+!clt      call this%filtering_rad2_bkg
+      call this%filtering_rad2
    case(4)
-      call this%filtering_lin2_bkg
+!clt      call this%filtering_lin2_bkg
+      call this%filtering_lin2
    case(5)
       call this%filtering_fast_bkg
    case(6)
@@ -437,6 +439,151 @@ deallocate(H)
 deallocate(JCOL)
 !-----------------------------------------------------------------------
 endsubroutine filtering_lin3
+             module           subroutine filtering_rad2(this)
+!***********************************************************************
+!                                                                      !
+! Multigrid filtering procedure 2:                                     !
+!                                                                      !
+!     - Multiple of 2D and 3D variables                                !
+!     - 1 upsending and downsending                                    !
+!     - Applicaton of Helmholtz differential operator                  !
+!     - 2d radial filter + 1d vertical filter                          !
+!                                                                      !
+!***********************************************************************
+implicit none
+class (mg_intstate_type),target::this
+
+real(r_kind), allocatable, dimension(:,:,:):: VM2D
+real(r_kind), allocatable, dimension(:,:,:):: HM2D
+real(r_kind), allocatable, dimension(:,:,:,:):: VM3D
+real(r_kind), allocatable, dimension(:,:,:,:):: HM3D
+
+integer(i_kind) L,i,j
+include  "type_parameter_locpointer.inc"
+include "type_intstat_locpointer.inc"
+include  "type_parameter_point2this.inc"
+include "type_intstat_point2this.inc"
+!-----------------------------------------------------------------------
+
+allocate(VM3D(km3,i0-hx:im+hx,j0-hy:jm+hy,lm))                  ; VM3D=0.
+allocate(VM2D(km2,i0-hx:im+hx,j0-hy:jm+hy   ))                  ; VM2D=0.
+allocate(HM3D(km3,i0-hx:im+hx,j0-hy:jm+hy,lm))                  ; HM3D=0.
+allocate(HM2D(km2,i0-hx:im+hx,j0-hy:jm+hy   ))                  ; HM2D=0.
+
+
+
+!==================== Adjoint (Conservative step) ======================
+
+!***
+!*** Adjoint interpolate and upsend 
+!***
+     
+                                                 call btim( upsend_tim)
+       call this%upsending_all(VALL,HALL,lquart)
+                                                 call etim( upsend_tim)
+!----------------------------------------------------------------------
+
+
+!----------------------------------------------------------------------
+
+!***
+!*** Apply adjoint of Beta filter at all generations 
+!***
+                                                 call btim(    bfiltT_tim)
+
+
+
+!fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+
+      call this%rbetaT(km,hx,i0,im,hy,j0,jm,pasp2,ss2,VALL(:,:,:))
+      call this%stack_to_composite(VALL,VM2D,VM3D)
+
+  if(l_hgen)  then
+      call this%rbetaT(km,hx,i0,im,hy,j0,jm,pasp2,ss2,HALL(:,:,:))
+      call this%stack_to_composite(HALL,HM2D,HM3D)
+  endif
+
+      call this%sup_vrbeta1T(km3,hx,hy,hz,im,jm,lm,pasp1,ss1,VM3D)
+      call this%composite_to_stack(VM2D,VM3D,VALL)
+  if(l_hgen)  then
+      call this%sup_vrbeta1T(km3,hx,hy,hz,im,jm,lm,pasp1,ss1,HM3D)
+      call this%composite_to_stack(HM2D,HM3D,HALL)
+   endif
+
+
+!fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+
+
+        write(6,*)'thinkdeb33 2 ', km,im,jm,hx,hy 
+        call this%bocoT_2d(VALL,km,im,jm,hx,hy)
+        call this%bocoT_2d(HALL,km,im,jm,hx,hy,Fimax,Fjmax,2,gm)
+
+
+                                                 call etim(    bfiltT_tim)
+!***
+!*** Apply (a-b\nabla^2)
+!***
+
+                                                call btim( weight_tim)
+
+      call this%weighting_all(VALL,HALL,lhelm)
+
+
+                                                call etim( weight_tim)
+
+
+!***
+!*** Apply Beta filter at all generations (Step 7)
+!***
+                                                 call btim( bfilt_tim)
+
+      call this%boco_2d(VALL,km,im,jm,hx,hy)
+      call this%boco_2d(HALL,km,im,jm,hx,hy,Fimax,Fjmax,2,gm)
+
+
+!fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+!
+! Filtering
+!
+
+      call this%rbeta(km,hx,i0,im,hy,j0,jm,pasp2,ss2,VALL(:,:,:))
+      call this%stack_to_composite(VALL,VM2D,VM3D)
+  if(this%l_hgen)  then
+      call this%rbeta(km,hx,i0,im,hy,j0,jm,pasp2,ss2,HALL(:,:,:))
+      call this%stack_to_composite(HALL,HM2D,HM3D)
+  endif
+
+      call this%sup_vrbeta1(km3,hx,hy,hz,im,jm,lm,pasp1,ss1,VM3D)
+      call this%composite_to_stack(VM2D,VM3D,VALL)
+  if(l_hgen)  then
+      call this%sup_vrbeta1(km3,hx,hy,hz,im,jm,lm,pasp1,ss1,HM3D)
+      call this%composite_to_stack(HM2D,HM3D,HALL)
+   endif
+       call this%barrierMPI
+
+
+
+!fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+
+                                                 call etim(    bfilt_tim)
+
+!***
+!***  Downsend, interpolate and add (Step 4)
+!***  Then zero high generations (Step 5)
+!***
+
+                                                 call btim(   dnsend_tim)
+       call this%downsending_all(HALL,VALL,lquart)
+
+                                                 call etim(   dnsend_tim)
+
+deallocate(VM3D) 
+deallocate(VM2D)
+deallocate(HM3D)
+deallocate(HM2D)
+
+!-----------------------------------------------------------------------
+                        endsubroutine filtering_rad2
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine filtering_rad2_bkg(this)
@@ -520,6 +667,184 @@ include "type_intstat_point2this.inc"
   endif
 !-----------------------------------------------------------------------
 endsubroutine filtering_rad2_bkg
+ module           subroutine filtering_lin2(this)
+!***********************************************************************
+!                                                                      !
+! Multigrid filtering procedure 5:                                     !
+!                                                                      !
+!     - Multiple of 2D  line filter                                    !
+!     - 1 upsending and downsending                                    !
+!     - Applicaton of Helmholtz differential operator                  !
+!     - 2d radial filter + 1d vertical filter
+!                                                                      !
+!***********************************************************************
+implicit none
+class (mg_intstate_type),target::this
+
+integer(i_kind) L,i,j
+integer(i_kind) icol,iout,jout
+logical:: ff
+
+real(r_kind), allocatable, dimension(:,:,:):: VM2D
+real(r_kind), allocatable, dimension(:,:,:):: HM2D
+real(r_kind), allocatable, dimension(:,:,:,:):: VM3D
+real(r_kind), allocatable, dimension(:,:,:,:):: HM3D
+include  "type_parameter_locpointer.inc"
+include "type_intstat_locpointer.inc"
+include  "type_parameter_point2this.inc"
+include "type_intstat_point2this.inc"
+
+!----------------------------------------------------------------------
+
+allocate(VM3D(km3,i0-hx:im+hx,j0-hy:jm+hy,lm))                 ; VM3D=0.
+allocate(VM2D(km2,i0-hx:im+hx,j0-hy:jm+hy   ))                 ; VM2D=0.
+allocate(HM3D(km3,i0-hx:im+hx,j0-hy:jm+hy,lm))                 ; HM3D=0.
+allocate(HM2D(km2,i0-hx:im+hx,j0-hy:jm+hy   ))                 ; HM2D=0.
+
+
+!-----------------------------------------------------------------------
+
+
+!==================== Adjoint (Conservative step) ======================
+
+!***
+!*** Adjoint interpolate and upsend (Step 1)
+!***
+     
+                                                 call btim( upsend_tim)
+       call this%upsending_all(VALL,HALL,lquart)
+                                                 call etim( upsend_tim)
+!----------------------------------------------------------------------
+
+
+!----------------------------------------------------------------------
+
+!***
+!*** Apply adjoint of Beta filter at all generations 
+!***
+                                                 call btim(    bfiltT_tim)
+
+
+
+!fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+!
+! Horizontal
+!
+
+       do icol=3,1,-1
+         call dibetat(km,i0-hx,i0,im,im+hx, j0-hy,j0,jm,jm+hy, nfil,  &
+                      dixs(:,:,icol),diys(:,:,icol),hss2(:,:,icol), VALL, ff, iout,jout)
+         call this%bocoT_2d(VALL,km,im,jm,hx,hy)
+       enddo
+
+     do icol=3,1,-1
+       if(l_hgen)  then
+         call dibetat(km,i0-hx,i0,im,im+hx, j0-hy,j0,jm,jm+hy, nfil,  &
+                      dixs(:,:,icol),diys(:,:,icol),hss2(:,:,icol), HALL, ff, iout,jout)
+       endif
+        write(6,*)'thinkdeb33 5 ', km,im,jm,hx,hy 
+         call this%bocoT_2d(HALL,km,im,jm,hx,hy,Fimax,Fjmax,2,gm)
+     enddo
+!
+! Vertical
+!
+
+       call this%stack_to_composite(VALL,VM2D,VM3D)
+         call this%sup_vrbeta1T(km3,hx,hy,hz,im,jm,lm,pasp1,ss1,VM3D)
+       call this%composite_to_stack(VM2D,VM3D,VALL)
+
+    if(l_hgen)  then
+      call this%stack_to_composite(HALL,HM2D,HM3D)
+        call this%sup_vrbeta1T(km3,hx,hy,hz,im,jm,lm,pasp1,ss1,HM3D)
+      call this%composite_to_stack(HM2D,HM3D,HALL)
+    endif
+
+        write(6,*)'thinkdeb33 6 ', km,im,jm,hx,hy 
+        call this%bocoT_2d(VALL,km,im,jm,hx,hy)
+        call this%bocoT_2d(HALL,km,im,jm,hx,hy,Fimax,Fjmax,2,gm)
+
+!fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+
+                                                call etim(    bfiltT_tim)
+!***
+!*** Apply (a-b\nabla^2)
+!***
+
+                                                call btim( weight_tim)
+
+      call this%weighting_all(VALL,HALL,lhelm)
+
+
+                                                call etim( weight_tim)
+
+
+!***
+!*** Apply Beta filter at all generations
+!***
+
+
+                                                 call btim( bfilt_tim)
+
+!fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+!
+! Horizontal
+!
+       do icol=1,3
+         call this%boco_2d(VALL,km,im,jm,hx,hy)
+         call dibeta(km,i0-hx,i0,im,im+hx, j0-hy,j0,jm,jm+hy, nfil,  &
+                     dixs(:,:,icol),diys(:,:,icol),hss2(:,:,icol), VALL, ff, iout,jout)
+       enddo
+
+     do icol=1,3
+         call this%boco_2d(HALL,km,im,jm,hx,hy,Fimax,Fjmax,2,gm)
+       if(l_hgen)  then
+         call dibeta(km,i0-hx,i0,im,im+hx, j0-hy,j0,jm,jm+hy, nfil,  &
+                     dixs(:,:,icol),diys(:,:,icol),hss2(:,:,icol), HALL, ff, iout,jout)
+       endif
+     enddo
+!
+! Vertical
+!
+      write(6,*)'thinkdeb888 '
+      call this%boco_2d(VALL,km,im,jm,hx,hy)
+      call this%boco_2d(HALL,km,im,jm,hx,hy,Fimax,Fjmax,2,gm)
+
+
+      call this%stack_to_composite(VALL,VM2D,VM3D)
+        call this%sup_vrbeta1(km3,hx,hy,hz,im,jm,lm,pasp1,ss1,VM3D)
+      call this%composite_to_stack(VM2D,VM3D,VALL)
+
+    if(l_hgen)  then
+      call this%stack_to_composite(HALL,HM2D,HM3D)
+        call this%sup_vrbeta1(km3,hx,hy,hz,im,jm,lm,pasp1,ss1,HM3D)
+      call this%composite_to_stack(HM2D,HM3D,HALL)
+    endif
+
+
+       call this%barrierMPI
+!fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+
+
+                                                 call etim(    bfilt_tim)
+
+!***
+!***  Downsend, interpolate and add, then zero high generations 
+!***
+
+                                                 call btim(   dnsend_tim)
+       call this%downsending_all(HALL,VALL,lquart)
+
+                                                 call etim(   dnsend_tim)
+
+
+deallocate(VM3D)
+deallocate(VM2D)
+deallocate(HM3D)
+deallocate(HM2D)
+
+
+!-----------------------------------------------------------------------
+                        endsubroutine filtering_lin2
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine filtering_lin2_bkg(this)
