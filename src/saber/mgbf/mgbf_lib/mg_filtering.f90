@@ -78,8 +78,8 @@ if(this%nxm*this%nym>1) then
 !clt      call this%filtering_rad2_bkg
       call this%filtering_rad2
    case(4)
-!clt      call this%filtering_lin2_bkg
-      call this%filtering_lin2
+      call this%filtering_lin2_bkg
+!clt      call this%filtering_lin2
    case(5)
       call this%filtering_fast_bkg
    case(6)

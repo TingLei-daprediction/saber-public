@@ -967,6 +967,74 @@ do e=0,en-1
 enddo
 !-----------------------------------------------------------------------
 endsubroutine l_vertical_direct_spec2
+module subroutine test_vertical_interpolation_adj(this, km_in, nm_in, imin, imax, jmin, jmax, adj_F, adj_W)
+  implicit none
+  !-----------------------------------------------------------------------
+  class(mg_intstate_type), target :: this
+  integer(i_kind), intent(in) :: km_in, nm_in, imin, imax, jmin, jmax
+  real(r_kind), intent(inout) :: adj_F(1:km_in, imin:imax, jmin:jmax)
+  real(r_kind), intent(in) :: adj_W(1:nm_in, imin:imax, jmin:jmax)
+  ! Local variables
+  integer(i_kind) :: i, j, n, k
+  real(r_kind) :: s, alpha
+  !-----------------------------------------------------------------------
+  ! Initialize adj_F to zero
+  adj_F(:, :, :) = 0.0_r_kind
+
+  ! Loop over spatial dimensions
+  do i = imin, imax           ! Loop over X dimension
+    do j = jmin, jmax         ! Loop over Y dimension
+      ! Loop over fine vertical levels n
+      do n = 1, nm_in
+        ! Compute the fractional position in the coarse grid
+        s = real(n - 1) * real(km_in - 1) / real(nm_in - 1)
+        k = int(s) + 1  ! Coarse level index
+        if (k >= km_in) then
+          k = km_in - 1
+          s = real(km_in - 1)
+        end if
+        alpha = s - real(k - 1)
+        ! Accumulate adjoints back to adj_F
+        adj_F(k, i, j)     = adj_F(k, i, j)     + (1.0_r_kind - alpha) * adj_W(n, i, j)
+        adj_F(k + 1, i, j) = adj_F(k + 1, i, j) + alpha * adj_W(n, i, j)
+      end do
+    end do
+  end do
+  !-----------------------------------------------------------------------
+end subroutine test_vertical_interpolation_adj
+module subroutine test_vertical_interpolation(this, km_in, nm_in, imin, imax, jmin, jmax, F, W)
+  implicit none
+  !-----------------------------------------------------------------------
+  class(mg_intstate_type), target :: this
+  integer(i_kind), intent(in) :: km_in, nm_in, imin, imax, jmin, jmax
+  real(r_kind), intent(in) :: F(1:km_in, imin:imax, jmin:jmax)
+  real(r_kind), intent(out) :: W(1:nm_in, imin:imax, jmin:jmax)
+  ! Local variables
+  integer(i_kind) :: i, j, n, k
+  real(r_kind) :: s, alpha
+  !-----------------------------------------------------------------------
+  ! Loop over spatial dimensions
+  do i = imin, imax           ! Loop over X dimension
+    do j = jmin, jmax         ! Loop over Y dimension
+      ! Loop over fine vertical levels n
+      do n = 1, nm_in
+        ! Compute the fractional position in the coarse grid
+        s = real(n - 1) * real(km_in - 1) / real(nm_in - 1)
+        k = int(s) + 1  ! Coarse level index
+        if (k >= km_in) then
+          k = km_in - 1
+          s = real(km_in - 1)
+        end if
+        alpha = s - real(k - 1)
+        ! Perform linear interpolation
+        W(n, i, j) = (1.0_r_kind - alpha) * F(k, i, j) + alpha * F(k + 1, i, j)
+      end do
+    end do
+  end do
+  !-----------------------------------------------------------------------
+end subroutine test_vertical_interpolation
+
+
 
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 end submodule mg_interpolate

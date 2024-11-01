@@ -159,6 +159,7 @@ real(dp),parameter:: eps=1.e-12
 real(dp)          :: s,rr,rrc,exx,x
 integer           :: ix,gxl,gxm,gx
 !=============================================================================
+!clt  write(6,*)'thinkdebss Lx,MX = ',Lx, ' ',Mx
 do ix=Lx,Mx
    s=0
    exx=el(1,1,ix)*this%rmom2_1
@@ -172,6 +173,7 @@ do ix=Lx,Mx
       s=s+rrc**this%p
    enddo
    ss(ix)=u1/s
+!clt   write(6,*)'thinkdebss is ',ss(ix)
 enddo
 end subroutine getlinesum1
 !=============================================================================

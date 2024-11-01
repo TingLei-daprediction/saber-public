@@ -122,6 +122,7 @@ contains
   procedure :: lsqr_mg_coef,lwq_vertical_coef
   procedure :: lwq_vertical_direct,lwq_vertical_adjoint
   procedure :: lwq_vertical_direct_spec,lwq_vertical_adjoint_spec
+  procedure :: test_vertical_interpolation, test_vertical_interpolation_adj
   procedure :: l_vertical_direct_spec,l_vertical_adjoint_spec
   procedure :: l_vertical_direct_spec2,l_vertical_adjoint_spec2
   procedure :: lsqr_direct_offset,lsqr_adjoint_offset
@@ -242,6 +243,9 @@ interface
      real(r_kind), dimension(1:km3_in,imin:imax,jmin:jmax,1:km_in), intent(in):: F
      real(r_kind), dimension(1:km3_in,imin:imax,jmin:jmax,1:nm_in), intent(out):: W
    end subroutine
+
+
+
    module subroutine lwq_vertical_adjoint_spec &
         (this,km3_in,nm_in,km_in,imin,imax,jmin,jmax,c1,c2,c3,c4,kref,W,F)
      implicit none
@@ -335,6 +339,24 @@ interface
      integer(i_kind):: km_in,ibm,jbm
      real(r_kind), dimension(km_in,1:this%nm,1:this%mm),intent(in):: W
      real(r_kind), dimension(km_in,1-ibm:this%im+ibm,1-jbm:this%jm+jbm), intent(out):: V_out
+   end subroutine
+   module subroutine test_vertical_interpolation &
+     (this, km_in, nm_in, imin, imax, jmin, jmax, F, W)
+     implicit none
+     !-----------------------------------------------------------------------
+     class(mg_intstate_type), target :: this
+     integer(i_kind), intent(in) :: km_in, nm_in, imin, imax, jmin, jmax
+     real(r_kind), intent(in) :: F(1:km_in, imin:imax, jmin:jmax)
+     real(r_kind), intent(out) :: W(1:nm_in, imin:imax, jmin:jmax)
+   end subroutine
+   module subroutine test_vertical_interpolation_adj &
+     (this, km_in, nm_in, imin, imax, jmin, jmax, adj_F, adj_W)
+     implicit none
+     !-----------------------------------------------------------------------
+     class(mg_intstate_type), target :: this
+     integer(i_kind), intent(in) :: km_in, nm_in, imin, imax, jmin, jmax
+     real(r_kind), intent(inout) :: adj_F(1:km_in, imin:imax, jmin:jmax)
+     real(r_kind), intent(in) :: adj_W(1:nm_in, imin:imax, jmin:jmax)
    end subroutine
 !from mg_bocos.f90 
    module subroutine boco_2d_g1 &
@@ -1236,7 +1258,7 @@ do L=1,this%lm
 end do
 
 
-if(.not.this%mgbf_line) then
+!cltorg  if(.not.this%mgbf_line) then
    if(this%nxm*this%nym>1) then
       if(this%l_loc) then
          if(this%l_vertical_filter) then
@@ -1274,6 +1296,7 @@ if(.not.this%mgbf_line) then
          this%ssy=this%ssy/sqrt(this%VALL(1,1,this%jm/2))
          this%VALL(1,1,:)=0.
       else
+         write(6,*)"thinkdeb tothink"
          call this%cholaspect(1,this%lm,this%pasp1)
          call this%cholaspect(1,this%im,1,this%jm,this%pasp2)
          call this%cholaspect(1,this%im,1,this%jm,1,this%lm,this%pasp3)
@@ -1282,8 +1305,15 @@ if(.not.this%mgbf_line) then
          call this%getlinesum(this%hz,1,this%lm,this%pasp1,this%ss1)
          call this%getlinesum(this%hx,1,this%im,this%hy,1,this%jm,this%pasp2,this%ss2)
          call this%getlinesum(this%hx,1,this%im,this%hy,1,this%jm,this%hz,1,this%lm,this%pasp3,this%ss3)
+!        this%ssx=1.0 !cltthinkdeb
+!        this%ssy=1.0 !cltthinkdeb
+!clt the following still fail
+!        this%ss1=0.0 !cltthinkdeb
+!        this%ss2=0.0 !cltthinkdeb
+!        this%ss3=0.0 !cltthinkdeb
       end if
    else
+         write(6,*)"thinkdeb tothink2"
       call this%cholaspect(1,this%imH,1,this%jmH,&
            &this%pasp2(:,:,1:this%imH,1:this%jmH))
       call this%getlinesum(this%hx,1,this%imH,this%hy,1,this%jmH,&
@@ -1298,7 +1328,7 @@ if(.not.this%mgbf_line) then
       this%ss2=this%ss2/sqrt(this%VALL(1,this%imH/2,this%jmH/2))
       this%VALL(1,1-this%hx:this%imH+this%hx,1-this%hy:this%jmH+this%hy)=0.
    end if
-end if
+!cltorg  end if
 !-----------------------------------------------------------------------
 endsubroutine def_mg_weights
 
@@ -1314,7 +1344,6 @@ logical:: ff
 !                                                                      !
 !***********************************************************************
 !-----------------------------------------------------------------------
-
 do j=1,this%jm
 do i=1,this%im
    call t22_to_3(this%pasp2(:,:,i,j),this%vpasp2(:,i,j))

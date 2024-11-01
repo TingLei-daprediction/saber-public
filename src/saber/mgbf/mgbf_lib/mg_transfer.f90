@@ -113,6 +113,7 @@ real(r_kind),allocatable,dimension(:,:,:,:):: A3D
 real(r_kind),allocatable,dimension(:,:,:,:):: F3D
 real(r_kind),allocatable,dimension(:,:,:):: WORK
 integer(i_kind):: L
+integer(i_kind):: ivar,lev1_a,lev2_a,lev1_f,lev2_f
 include "type_parameter_locpointer.inc"
 include "type_intstat_locpointer.inc"
 include "type_parameter_point2this.inc"
@@ -144,8 +145,28 @@ if(2.gt.3) then
 
       call this%C2S_ens(F3D,WORK,1,nm,1,mm,lm,km,km_all)
 endif !2.gt.3 
-!cltorg      call this%anal_to_filt(WORK)
-      call this%anal_to_filt(WORKA)
+     if(lm_a>lm) then
+      do ivar=1,this%km2 !2dvar is directly passed
+        work(ivar,:,:)=worka(ivar,:,:)
+      enddo
+      
+      do ivar=1,this%km3
+         lev1_a=this%km2+1+(ivar-1)*this%lm_a
+         lev1_f=this%km2+1+(ivar-1)*this%lm
+         lev2_a=lev1_a+this%lm_a-1
+         lev2_f=lev1_f+this%lm-1
+        
+!clt        call this%lwq_vertical_adjoint(nm_in,km_in,imin,imax,jmin,jmax,c1,c2,c3,c4,kref,w,f)
+!cltorg        call this%lwq_vertical_adjoint(this%lm_a,this%lm,1,nm,1,mm,this%cvf1,this%cvf2,this%cvf3,this%cvf4,this%lref,  &
+!clt             worka(lev1_a:lev2_a,:,:),work(lev1_f:lev2_f,:,:))
+        call this%test_vertical_interpolation_adj(this%lm,this%lm_a,1,nm,1,mm, work(lev1_f:lev2_f,:,:), &
+             worka(lev1_a:lev2_a,:,:))
+       enddo
+      else
+        work=worka
+      endif
+!clt      call this%anal_to_filt(WORKA)
+      call this%anal_to_filt(WORK)
                                                  call etim(an2filt_tim)
 
 deallocate(A3D,F3D,WORK)
@@ -166,12 +187,34 @@ real(r_kind),allocatable,dimension(:,:,:,:):: A3D
 real(r_kind),allocatable,dimension(:,:,:,:):: F3D
 real(r_kind),allocatable,dimension(:,:,:):: WORK
 integer(i_kind):: L
+integer(i_kind)::ivar, lev1_a,lev2_a,lev1_f,lev2_f
+
 include "type_parameter_locpointer.inc"
 include "type_intstat_locpointer.inc"
 include "type_parameter_point2this.inc"
 include "type_intstat_point2this.inc"
 !----------------------------------------------------------------------
-    call this%filt_to_anal(WORKA)  !cltadded
+     allocate(WORK(km_all,1:nm,1:mm))
+    call this%filt_to_anal(WORK)  !cltadded
+     if(lm_a>lm) then
+      do ivar=1,this%km2 !2dvar is directly passed
+        worka(ivar,:,:)=work(ivar,:,:)
+      enddo
+      
+      do ivar=1,this%km3
+         lev1_a=this%km2+1+(ivar-1)*this%lm_a
+         lev1_f=this%km2+1+(ivar-1)*this%lm
+         lev2_a=lev1_a+this%lm_a-1
+         lev2_f=lev1_f+this%lm-1
+!clt        call this%lwq_vertical_direct(this%lm,this%lm_a,1,nm,1,mm,this%cvf1,this%cvf2,this%cvf3,this%cvf4,this%lref,  &
+!clt             work(lev1_f:lev2_f,:,:),worka(lev1_a:lev2_a,:,:))
+        call this%test_vertical_interpolation(this%lm,this%lm_a,1,nm,1,mm, work(lev1_f:lev2_f,:,:), &
+             worka(lev1_a:lev2_a,:,:))
+       enddo
+      else
+        worka=work
+      endif
+    deallocate(WORK)
 if (2.gt.3) then ! clt
 allocate(WORK(km_all,1:nm,1:mm))
 allocate(A3D(km3_all,1:nm,1:mm,lm_a))

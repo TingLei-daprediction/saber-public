@@ -140,6 +140,8 @@ integer(i_kind):: imH,jmH
 integer(i_kind):: lm_a          ! number of vertical layers in analysis fields
 integer(i_kind):: lm            ! number of vertical layers in filter grids
 real(r_kind):: coef_normalization(lm_max)=1.0 !normalizaton coefficients
+real(r_kind):: coef_normalization_const=-9999.0 ! constant, if set, this contant will be 
+                                                ! assigned to all elements of coef_normalization 
 
 integer(i_kind):: km2           ! number of 2d variables for filtering
 integer(i_kind):: km3           ! number of 3d variables for filtering
@@ -492,6 +494,7 @@ logical:: l_for_localization=.false.
 integer(i_kind):: lm_a          ! number of vertical layers in analysis fields
 integer(i_kind):: lm            ! number of vertical layers in filter grids
 real(r_kind):: coef_normalization(lm_max)=1.0 !normalizaton coefficients
+real(r_kind):: coef_normalization_const=-9999.0 ! constant, if set, this contant will be 
 integer(i_kind):: km2           ! number of 2d variables for filtering
 integer(i_kind):: km3           ! number of 3d variables for filtering
 integer(i_kind):: n_ens=1         ! number of ensemble members
@@ -516,6 +519,7 @@ integer(i_kind):: p
                               ,hx,hy,hz,p                               &
                               ,mgbf_line,mgbf_proc                      &
                               ,lm_a,lm,coef_normalization               & 
+                              ,coef_normalization_const & 
                               ,km2,km3                                  &
                               ,n_ens                                    &
                               ,l_loc                                    &
@@ -529,7 +533,7 @@ integer(i_kind):: p
                               ,gm_max                                   &
                               ,nm0,mm0                                  &
                               ,nxPE,nyPE,im_filt,jm_filt                
-!
+   
   open(unit=10,file=inputfilename,status='old',action='read')
   read(10,nml=parameters_mgbeta)
   close(unit=10)
@@ -551,6 +555,10 @@ integer(i_kind):: p
   this%mgbf_proc=mgbf_proc          
   this%lm_a=lm_a
   this%lm=lm
+  
+  if (coef_normalization_const >0 ) then  ! constant, if set, this contant will be 
+    coef_normalization=coef_normalization_const
+  endif
   this%coef_normalization=coef_normalization
   this%km2=km2
   this%km3=km3
