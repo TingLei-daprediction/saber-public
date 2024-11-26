@@ -481,20 +481,25 @@ include "type_intstat_point2this.inc"
        VALL=0.
 !clttothink
 !clttothink
-       if(l_lin_horizontal) then
-         ibm=1
-         jbm=1
-         call this%lin_adjoint_offset(WORK,VALL(1:km_all,1-ibm:im+ibm,1-jbm:jm+jbm),km_all,ibm,jbm)
-       elseif(l_quad_horizontal) then
-         ibm=2
-         jbm=2
-         call this%quad_adjoint_offset(WORK,VALL(1:km_all,1-ibm:im+ibm,1-jbm:jm+jbm),km_all,ibm,jbm)
-       else
-         ibm=3
-         jbm=3
-         call this%lsqr_adjoint_offset(WORK,VALL(1:km_all,1-ibm:im+ibm,1-jbm:jm+jbm),km_all,ibm,jbm)
-       endif
+     if(.not.this%l_anal_sub_of_filt) then
+          if(l_lin_horizontal) then
+            ibm=1
+            jbm=1
+            call this%lin_adjoint_offset(WORK,VALL(1:km_all,1-ibm:im+ibm,1-jbm:jm+jbm),km_all,ibm,jbm)
+          elseif(l_quad_horizontal) then
+            ibm=2
+            jbm=2
+            call this%quad_adjoint_offset(WORK,VALL(1:km_all,1-ibm:im+ibm,1-jbm:jm+jbm),km_all,ibm,jbm)
+          else
+            ibm=3
+            jbm=3
+            call this%lsqr_adjoint_offset(WORK,VALL(1:km_all,1-ibm:im+ibm,1-jbm:jm+jbm),km_all,ibm,jbm)
+          endif
+     else
+          VALL(1:km_all,1:im,1:jm)=WORK
+          call this%lin_adjoint_offset(WORK,VALL(1:km_all,1-ibm:im+ibm,1-jbm:jm+jbm),km_all,ibm,jbm)
 
+     endif
 !***
 !***  Apply adjoint lateral bc on PKF and WKF
 !***
@@ -537,7 +542,10 @@ include "type_intstat_point2this.inc"
 !***
 
          call this%boco_2d(VALL(1:km_all,1-ibm:im+ibm,1-jbm:jm+jbm),km_all,im,jm,ibm,jbm)
-
+   if(this%l_anal_sub_of_filt) then
+       WORK(:,:,:)=VALL(:,1:im,1:jm)
+       call this%lin_direct_offset_add(VALL(1:km_all,1-ibm:im+ibm,1-jbm:jm+jbm),WORK,km_all,ibm,jbm)
+   else
        if(l_lin_horizontal) then
          call this%lin_direct_offset(VALL(1:km_all,1-ibm:im+ibm,1-jbm:jm+jbm),WORK,km_all,ibm,jbm)
        elseif(l_quad_horizontal) then
@@ -545,6 +553,7 @@ include "type_intstat_point2this.inc"
        else
          call this%lsqr_direct_offset(VALL(1:km_all,1-ibm:im+ibm,1-jbm:jm+jbm),WORK,km_all,ibm,jbm)
        endif
+   endif
 
 !----------------------------------------------------------------------
 endsubroutine filt_to_anal

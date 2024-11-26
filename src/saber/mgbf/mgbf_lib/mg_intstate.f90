@@ -128,6 +128,7 @@ contains
   procedure :: lsqr_direct_offset,lsqr_adjoint_offset
   procedure :: quad_direct_offset,quad_adjoint_offset
   procedure :: lin_direct_offset,lin_adjoint_offset
+  procedure :: lin_direct_offset_add,lin_adjoint_offset_add
 !from mg_bocos.f90
   generic :: boco_2d => boco_2d_g1,boco_2d_gh
   procedure :: boco_2d_g1,boco_2d_gh
@@ -297,7 +298,25 @@ interface
      real(r_kind), dimension(km_in,1:this%nm,1:this%mm),intent(out):: W
      real(r_kind), dimension(km_in,1:this%nm,1-jbm:this%jm+jbm):: VX
    end subroutine
+   module subroutine lsqr_direct_offset_add &
+        (this,V_in,W,km_in,ibm,jbm)
+     implicit none
+     class(mg_intstate_type),target::this
+     integer(i_kind),intent(in):: km_in,ibm,jbm
+     real(r_kind), dimension(km_in,1-ibm:this%im+ibm,1-jbm:this%jm+jbm), intent(in):: V_in
+     real(r_kind), dimension(km_in,1:this%nm,1:this%mm),intent(out):: W
+     real(r_kind), dimension(km_in,1:this%nm,1-jbm:this%jm+jbm):: VX
+   end subroutine
    module subroutine lsqr_adjoint_offset &
+        (this,W,V_out,km_in,ibm,jbm)
+     implicit none
+     class(mg_intstate_type),target::this
+     integer(i_kind):: km_in,ibm,jbm
+     real(r_kind), dimension(km_in,1:this%nm,1:this%mm),intent(in):: W
+     real(r_kind), dimension(km_in,1-ibm:this%im+ibm,1-jbm:this%jm+jbm), intent(out):: V_out
+     real(r_kind), dimension(km_in,1:this%nm,1-jbm:this%jm+jbm):: VX
+   end subroutine
+   module subroutine lsqr_adjoint_offset_add &
         (this,W,V_out,km_in,ibm,jbm)
      implicit none
      class(mg_intstate_type),target::this
@@ -332,7 +351,23 @@ interface
      real(r_kind), dimension(km_in,1-ibm:this%im+ibm,1-jbm:this%jm+jbm), intent(in):: V_in
      real(r_kind), dimension(km_in,1:this%nm,1:this%mm),intent(out):: W
    end subroutine
+   module subroutine lin_direct_offset_add &
+        (this,V_in,W,km_in,ibm,jbm)
+     implicit none
+     class(mg_intstate_type),target::this
+     integer(i_kind),intent(in):: km_in,ibm,jbm
+     real(r_kind), dimension(km_in,1-ibm:this%im+ibm,1-jbm:this%jm+jbm), intent(in):: V_in
+     real(r_kind), dimension(km_in,1:this%nm,1:this%mm),intent(out):: W
+   end subroutine
    module subroutine lin_adjoint_offset &
+        (this,W,V_out,km_in,ibm,jbm)
+     implicit none
+     class(mg_intstate_type),target::this
+     integer(i_kind):: km_in,ibm,jbm
+     real(r_kind), dimension(km_in,1:this%nm,1:this%mm),intent(in):: W
+     real(r_kind), dimension(km_in,1-ibm:this%im+ibm,1-jbm:this%jm+jbm), intent(out):: V_out
+   end subroutine
+   module subroutine lin_adjoint_offset_add &
         (this,W,V_out,km_in,ibm,jbm)
      implicit none
      class(mg_intstate_type),target::this

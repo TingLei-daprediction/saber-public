@@ -642,6 +642,50 @@ real(r_kind),dimension(km_in):: v0,v1,v2,v3
    enddo
 !-----------------------------------------------------------------------
 endsubroutine lsqr_direct_offset
+module subroutine lsqr_direct_offset_add&
+!***********************************************************************
+!                                                                      !
+! Given a source array  V(km,1-ib:im+ib,1-jb:jm+jb) perform            !
+! direct interpolations to get target array W(km,1:nm,1:mm)            !
+! using two passes of 1d interpolator                                  !
+!clt from lsqr_direct_offset, for  l_anal_sub_of_filt=.true.
+!                                                                      !
+!***********************************************************************
+(this,V_in,W,km_in,ibm,jbm)
+!-----------------------------------------------------------------------
+implicit none
+class(mg_intstate_type),target::this
+integer(i_kind),intent(in):: km_in,ibm,jbm
+real(r_kind), dimension(km_in,1-ibm:this%im+ibm,1-jbm:this%jm+jbm), intent(in):: V_in
+real(r_kind), dimension(km_in,1:this%nm,1:this%mm),intent(out):: W  
+
+real(r_kind), dimension(km_in,1:this%nm,1-jbm:this%jm+jbm):: VX
+integer(i_kind):: i,j,n,m
+real(r_kind),dimension(km_in):: v0,v1,v2,v3     
+!-----------------------------------------------------------------------
+   do j=1-jbm,this%jm+jbm
+   do n=1,this%nm
+       i = this%iref(n)
+     v0(:)=V_in(:,i  ,j)
+     v1(:)=V_in(:,i+1,j)
+     v2(:)=V_in(:,i+2,j)
+     v3(:)=V_in(:,i+3,j)
+     VX(:,n,j) = this%cx0(n)*v0(:)+this%cx1(n)*v1(:)+this%cx2(n)*v2(:)+this%cx3(n)*v3(:)
+   enddo
+   enddo
+
+   do m=1,this%mm
+     j = this%jref(m)
+   do n=1,this%nm
+     v0(:)=VX(:,n,j  ) 
+     v1(:)=VX(:,n,j+1) 
+     v2(:)=VX(:,n,j+2) 
+     v3(:)=VX(:,n,j+3) 
+     W(:,n,m) =  this%cy0(m)*v0(:)+this%cy1(m)*v1(:)+this%cy2(m)*v2(:)+this%cy3(m)*v3(:)
+   enddo
+   enddo
+!-----------------------------------------------------------------------
+endsubroutine lsqr_direct_offset_add
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine lsqr_adjoint_offset &
@@ -700,6 +744,64 @@ real(r_kind):: c0,c1,c2,c3
    enddo
 !-----------------------------------------------------------------------
 endsubroutine lsqr_adjoint_offset
+module subroutine lsqr_adjoint_offset_add &
+!clt to be finished
+!***********************************************************************
+!                                                                      !
+! Given a target array W(km,1:nm,1:mm) perform adjoint                 !
+! interpolations to get source array V(km,1-ib:im+ib,1-jb:jm+jb)       !
+! using two passes of 1d interpolator                                  !
+!                      - offset version -                              !
+!clt from lsqr_adjoint_offset, for  l_anal_sub_of_filt=.true.
+!                                                                      !
+!***********************************************************************
+(this,W,V_out,km_in,ibm,jbm)
+!-----------------------------------------------------------------------
+implicit none
+class(mg_intstate_type),target::this
+integer(i_kind):: km_in,ibm,jbm
+real(r_kind), dimension(km_in,1:this%nm,1:this%mm),intent(in):: W  
+real(r_kind), dimension(km_in,1-ibm:this%im+ibm,1-jbm:this%jm+jbm), intent(out):: V_out
+real(r_kind), dimension(km_in,1:this%nm,1-jbm:this%jm+jbm):: VX
+real(r_kind), dimension(km_in):: wk
+real(r_kind), dimension(km_in):: vxk
+integer(i_kind):: i,j,n,m,l,k
+real(r_kind):: c0,c1,c2,c3
+!-----------------------------------------------------------------------
+   V_out(:,:,:)=0.
+   VX(:,:,:)=0.
+
+   do m=1,this%mm,this%mm-1
+     j = this%jref(m)
+     c0 = this%cy0(m)
+     c1 = this%cy1(m)
+     c2 = this%cy2(m)
+     c3 = this%cy3(m)
+   do n=1,this%nm
+       wk(:)=W(:,n,m)
+     VX(:,n,j  ) = VX(:,n,j  )+wk(:)*c0
+     VX(:,n,j+1) = VX(:,n,j+1)+wk(:)*c1
+     VX(:,n,j+2) = VX(:,n,j+2)+wk(:)*c2
+     VX(:,n,j+3) = VX(:,n,j+3)+wk(:)*c3
+   enddo
+   enddo
+
+   do n=1,this%nm,this%nm-1
+     i = this%iref(n)
+     c0 = this%cx0(n)
+     c1 = this%cx1(n)
+     c2 = this%cx2(n)
+     c3 = this%cx3(n)
+   do j=1-jbm,this%jm+jbm
+       vxk(:)=VX(:,n,j)
+     V_out(:,i  ,j) = V_out(:,i  ,j)+vxk(:)*c0
+     V_out(:,i+1,j) = V_out(:,i+1,j)+vxk(:)*c1
+     V_out(:,i+2,j) = V_out(:,i+2,j)+vxk(:)*c2
+     V_out(:,i+3,j) = V_out(:,i+3,j)+vxk(:)*c3
+   enddo
+   enddo
+!-----------------------------------------------------------------------
+endsubroutine lsqr_adjoint_offset_add
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine quad_direct_offset &
@@ -839,6 +941,49 @@ real(r_kind),dimension(km_in):: v0,v1
    enddo
 !-----------------------------------------------------------------------
 endsubroutine lin_direct_offset
+module subroutine lin_direct_offset_add &
+!clt to be finished
+!***********************************************************************
+!                                                                      !
+! Given a source array  V(km,1-ib:im+ib,1-jb:jm+jb) perform            !
+! direct interpolations to get target array W(km,1:nm,1:mm)            !
+! using two passes of 1d linear interpolator                           !
+!clt copied from lin_driect_offset, when l_anal_filt =.true
+!                                                                      !
+!                      - offset version -                              !
+!                                                                      !
+!***********************************************************************
+(this,V_in,W,km_in,ibm,jbm)
+!-----------------------------------------------------------------------
+implicit none
+class(mg_intstate_type),target::this
+integer(i_kind),intent(in):: km_in,ibm,jbm
+real(r_kind), dimension(km_in,1-ibm:this%im+ibm,1-jbm:this%jm+jbm), intent(in):: V_in
+real(r_kind), dimension(km_in,1:this%nm,1:this%mm),intent(out):: W
+real(r_kind), dimension(km_in,1:this%nm,1-jbm:this%jm+jbm):: VX
+integer(i_kind):: i,j,n,m
+real(r_kind),dimension(km_in):: v0,v1
+!-----------------------------------------------------------------------
+   do n=1,this%nm,this%nm-1
+     i = this%irefL(n)
+   do j=1-jbm,this%jm+jbm
+     v0(:)=V_in(:,i  ,j)
+     v1(:)=V_in(:,i+1,j)
+     VX(:,n,j) = this%Lx0(n)*v0(:)+this%Lx1(n)*v1(:)
+   enddo
+   enddo
+
+   do m=1,this%mm,this%mm-1
+     j = this%jrefL(m)
+   do n=1,this%nm
+     v0(:)=VX(:,n,j  )
+     v1(:)=VX(:,n,j+1)
+     W(:,n,m) =  this%Ly0(m)*v0(:)+this%Ly1(m)*v1(:)
+   enddo
+   enddo
+!-----------------------------------------------------------------------
+endsubroutine lin_direct_offset_add
+
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine lin_adjoint_offset &
@@ -864,7 +1009,7 @@ real(r_kind), dimension(km_in):: vxk
 integer(i_kind):: i,j,n,m,l,k
 real(r_kind):: c0,c1
 !-----------------------------------------------------------------------
-   V_out(:,:,:)=0.
+  V_out(:,:,:)=0.
    VX(:,:,:)=0.
 
    do m=1,this%mm
@@ -890,6 +1035,57 @@ real(r_kind):: c0,c1
    enddo
 !-----------------------------------------------------------------------
 endsubroutine lin_adjoint_offset
+module subroutine lin_adjoint_offset_add &
+!***********************************************************************
+!                                                                      !
+! Given a target array W(km,1:nm,1:mm) perform adjoint                 !
+! interpolations to get source array V(km,1-ib:im+ib,1-jb:jm+jb)       !
+! using two passes of 1d linear interpolator                           !
+!                                                                      !
+!                      - offset version -                              !
+!ctl modified from lin_adjoint_offset, when analysis grids are part of 
+!clt the filtering grids, only halo points are to be defined
+!                                                                      !
+!***********************************************************************
+(this,W,V_out,km_in,ibm,jbm)
+!-----------------------------------------------------------------------
+implicit none
+class(mg_intstate_type),target::this
+integer(i_kind):: km_in,ibm,jbm
+real(r_kind), dimension(km_in,1:this%nm,1:this%mm),intent(in):: W
+real(r_kind), dimension(km_in,1-ibm:this%im+ibm,1-jbm:this%jm+jbm), intent(out):: V_out
+real(r_kind), dimension(km_in,1:this%nm,1-jbm:this%jm+jbm):: VX
+real(r_kind), dimension(km_in):: wk
+real(r_kind), dimension(km_in):: vxk
+integer(i_kind):: i,j,n,m,l,k
+real(r_kind):: c0,c1
+!-----------------------------------------------------------------------
+
+   VX(:,:,:)=0.
+
+   do m=1,this%mm,this%mm-1
+     j = this%jrefL(m)
+     c0 = this%Ly0(m)
+     c1 = this%Ly1(m)
+   do n=1,this%nm
+       wk(:)=W(:,n,m)
+     VX(:,n,j  ) = VX(:,n,j  )+wk(:)*c0
+     VX(:,n,j+1) = VX(:,n,j+1)+wk(:)*c1
+   enddo
+   enddo
+
+   do n=1,this%nm,this%nm-1
+     i = this%irefL(n)
+     c0 = this%Lx0(n)
+     c1 = this%Lx1(n)
+   do j=1-jbm,this%jm+jbm
+       vxk(:)=VX(:,n,j)
+     V_out(:,i  ,j) = V_out(:,i  ,j)+vxk(:)*c0
+     V_out(:,i+1,j) = V_out(:,i+1,j)+vxk(:)*c1
+   enddo
+   enddo
+!-----------------------------------------------------------------------
+endsubroutine lin_adjoint_offset_add
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine l_vertical_adjoint_spec2 &

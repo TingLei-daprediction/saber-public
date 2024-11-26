@@ -158,6 +158,7 @@ logical :: l_lin_horizontal=.true.     ! logical flag for linear interpolation i
 logical :: l_quad_horizontal=.false.    ! logical flag for quadratic interpolation in horizontal
 logical :: l_new_map            ! logical flag for new mapping between analysis and filter grid
 logical :: l_vertical_filter    ! logical flag for vertical filtering
+logical :: l_anal_sub_of_filt   ! true : analysis grids and filtering grids are the same excpet for later has boundary points 
 integer(i_kind):: km            ! number of vertically stacked all variables (km=km2+lm*km3)
 integer(i_kind):: km_4
 integer(i_kind):: km_16
@@ -505,6 +506,7 @@ logical :: l_lin_horizontal=.false.     ! logical flag for linear interpolation 
 logical :: l_quad_horizontal=.false.    ! logical flag for quadratic interpolation in horizontal
 logical :: l_new_map=.false.            ! logical flag for new mapping between analysis and filter grid
 logical :: l_vertical_filter=.true.    ! logical flag for vertical filtering
+logical ::  l_anal_sub_of_filt=.false.
 integer(i_kind):: gm_max=4   !clt by defaul
 
 ! Global number of data on Analysis grid
@@ -529,7 +531,8 @@ integer(i_kind):: p
                               ,l_quad_horizontal                        &
                               ,l_new_map                                &
                               ,l_vertical_filter                        &
-                              ,l_for_localization,ldelta,lquart,lhelm                      &
+                              ,l_anal_sub_of_filt                       &
+                              ,l_for_localization,ldelta,lquart,lhelm   &
                               ,gm_max                                   &
                               ,nm0,mm0                                  &
                               ,nxPE,nyPE,im_filt,jm_filt                
@@ -570,6 +573,7 @@ integer(i_kind):: p
   this%l_quad_horizontal=l_quad_horizontal
   this%l_new_map=l_new_map
   this%l_vertical_filter=l_vertical_filter
+  this%l_anal_sub_of_filt=l_anal_sub_of_filt
   this%l_for_localization=l_for_localization
   write(6,*)'thinkdeb22 this%l_for_localization ',this%l_for_localization
   this%ldelta=ldelta
@@ -581,7 +585,6 @@ integer(i_kind):: p
   this%nyPE=nyPE
   this%im_filt=im_filt
   this%jm_filt=jm_filt                
-
   this%nxm = nxPE
   this%nym = nyPE
 
@@ -704,6 +707,16 @@ integer(i_kind):: p
   write(6,*)'thinkdeb mg_parameter nm0,nxm',this%nm0,this%nxm
   this%nm = this%nm0/this%nxm
   this%mm = this%mm0/this%nym
+  if(this%l_anal_sub_of_filt ) then
+    if(this%im_filt.ne.this%nm.or.this%jm_filt.ne.this%mm) then
+       write(6,*)'l_anal_sub_of_filter is true but the numbers of analysis/filtering grids are wrong, stop'
+       stop 
+    endif
+    if(.not. l_lin_horizontal) then
+       write(6,*)'l_anal_sub_of_filter is true ,now, only work for l_lin_horizontal=.ture. stop'
+       stop
+    endif
+  endif
 
 !***
 !***     Filter grid
