@@ -712,8 +712,8 @@ integer(i_kind):: p
        write(6,*)'l_anal_sub_of_filter is true but the numbers of analysis/filtering grids are wrong, stop'
        stop 
     endif
-    if(.not. l_lin_horizontal) then
-       write(6,*)'l_anal_sub_of_filter is true ,now, only work for l_lin_horizontal=.ture. stop'
+    if(l_lin_horizontal.or.l_quad_horizontal) then
+       write(6,*)'l_anal_sub_of_filter is true,now, only work for lsqr, stop'
        stop
     endif
   endif

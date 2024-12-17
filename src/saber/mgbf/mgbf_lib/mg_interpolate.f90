@@ -770,7 +770,7 @@ real(r_kind):: c0,c1,c2,c3
 !-----------------------------------------------------------------------
    V_out(:,:,:)=0.
    VX(:,:,:)=0.
-
+if(1.gt.2) then
    do m=1,this%mm,this%mm-1
      j = this%jref(m)
      c0 = this%cy0(m)
@@ -800,6 +800,8 @@ real(r_kind):: c0,c1,c2,c3
      V_out(:,i+3,j) = V_out(:,i+3,j)+vxk(:)*c3
    enddo
    enddo
+endif
+   V_out(:,1: this%im,1:this%jm)= V_out(:,1: this%im,1:this%jm)+W
 !-----------------------------------------------------------------------
 endsubroutine lsqr_adjoint_offset_add
 
@@ -964,6 +966,7 @@ real(r_kind), dimension(km_in,1:this%nm,1-jbm:this%jm+jbm):: VX
 integer(i_kind):: i,j,n,m
 real(r_kind),dimension(km_in):: v0,v1
 !-----------------------------------------------------------------------
+if (1.gt.2 ) then
    do n=1,this%nm,this%nm-1
      i = this%irefL(n)
    do j=1-jbm,this%jm+jbm
@@ -981,6 +984,8 @@ real(r_kind),dimension(km_in):: v0,v1
      W(:,n,m) =  this%Ly0(m)*v0(:)+this%Ly1(m)*v1(:)
    enddo
    enddo
+end if ! 1>2
+   W=V_in(:,1: this%im,1:this%jm)
 !-----------------------------------------------------------------------
 endsubroutine lin_direct_offset_add
 
@@ -1062,7 +1067,7 @@ real(r_kind):: c0,c1
 !-----------------------------------------------------------------------
 
    VX(:,:,:)=0.
-
+if(1.gt.2) then
    do m=1,this%mm,this%mm-1
      j = this%jrefL(m)
      c0 = this%Ly0(m)
@@ -1084,6 +1089,8 @@ real(r_kind):: c0,c1
      V_out(:,i+1,j) = V_out(:,i+1,j)+vxk(:)*c1
    enddo
    enddo
+endif
+   V_out(:,1: this%im,1:this%jm)= V_out(:,1: this%im,1:this%jm)+W
 !-----------------------------------------------------------------------
 endsubroutine lin_adjoint_offset_add
 
