@@ -242,10 +242,6 @@ character(len=4) :: str_rank
           nzloc=dim3d(1)
           nz3d=self%intstate%lm_a 
           nvar=fields%size() 
-          write(6,*)'thinkdeb l_2d is ',self%l_2dvar_last_vertical_level
-          call flush(6)
-          write(6,*)'thinkdeb nvar is ',nvar
-          call flush(6)
        
           allocate( varvlev_index(nvar,3))
              ilev=1
@@ -258,7 +254,6 @@ character(len=4) :: str_rank
                if(nz == 1) then 
                   if(self%intstate%l_for_localization) then 
                     if( self%l_2dvar_last_vertical_level) then  !when used for localization,2dvars are put on the last vertical level
-                      write(6,*)'thinkdebxxx right250 ',ilev+nz3d-1
                       work2d_mgbf(ilev+nz3d-1:ilev+nz3d-1,:)=ptr_2d 
                     else
                       work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d 
@@ -314,8 +309,6 @@ character(len=4) :: str_rank
                stop
              endif 
           enddo
-          write(6,*)'thinkdeb333 nzloc is ',nzloc
-          call flush(6)
        do k=1,nzloc
           work2d_mgbf(k,:)=work2d_mgbf(k,:)/rnormalization(k)
           work_mgbf(k,:,:) =reshape(work2d_mgbf(k,:),[dim3d(2),dim3d(3)])
@@ -331,37 +324,26 @@ character(len=4) :: str_rank
           test_once=.false. 
           close(iounit)
           endif
-          write(6,*)'thinkdeb mfbf begin ',nvar
-          call flush(6)
           call self%intstate%anal_to_filt_allmap(work_mgbf)
           call self%intstate%filtering_procedure(self%intstate%mgbf_proc,1)
          
 !cltorg          call self%intstate%filt_to_anal_allmap(work_mgbf)
           call self%intstate%filt_to_anal_allmap(work_mgbf2)
-        write(6,*)"thinkdeb22 in covarian*mod.f90 l_for_localization ",self%intstate%l_for_localization
-          write(6,*)'thinkdeb mgbf after' 
-          call flush(6)
 !clt#        work_mgbf=999.0 !thinkdeb for debug
  
         if(.not. self%intstate%l_for_localization ) then   !clthinkdebxxx
           work_mgbf=work_mgbf2
         else  !  if in the multivariate localization, all output for 3d or 2d variables are 3d structures 
          allocate(work1var_mgbf(nz3d,nxloc,nyloc))
-         write(6,*)'thinkdeb 333 work1var_mgbf.shape ',shape(work1var_mgbf)
-         write(6,*)'thinkdeb 3331 work_mgbf2.shape ',shape(work_mgbf2)
-         write(6,*)'thinkdeb 3331 work_mgbf.shape ',shape(work_mgbf)
          work1var_mgbf=0.0
-           write(6,*)'thinkdeb 555 0 ',self%intstate%km_a_all 
          do ivar=1,nvar
            lev1=varvlev_index(ivar,1)
            lev2=varvlev_index(ivar,2)
-           write(6,*)'thinkdeb 555 is ',lev1,lev2, ' nz3d =',nz3d 
            work1var_mgbf=work1var_mgbf+work_mgbf2(lev1:lev2,:,:)
           enddo
          do ivar=1,nvar
            lev1=varvlev_index(ivar,1)
            lev2=varvlev_index(ivar,2)
-           write(6,*)'thinkdeb 555 2 is ',lev1,lev2, ' nz3d =',nz3d
           work_mgbf(lev1:lev2,:,:)=work1var_mgbf
          enddo
          deallocate(work1var_mgbf)
@@ -373,18 +355,15 @@ character(len=4) :: str_rank
           do isize=1,fields%size()
   
              afield=fields%field(isize)  !clttodo
-             write(6,*)'thinkdeb in mgbf_covariance_mod.f90 rank is ',afield%rank() 
              if(afield%rank() == 2) then 
                call afield%data(ptr_2d)
                nz=afield%levels()
                lev1=varvlev_index(isize,1)
-               write(6,*)'thinkdeb right2503 ',lev1,nz3d,nz
                if(nz.gt.1) then 
                   ptr_2d(1:nz,:)=work2d_mgbf(lev1:lev1+nz-1,:)!if nz=1, only the first level is used (like for surface pressure) 
                else
                   if(self%intstate%l_for_localization) then 
                     if( self%l_2dvar_last_vertical_level) then !when used for localization,2dvars are put on the last vertical level
-                      write(6,*)'thinkdebxxx right2502, lev? ',lev1+nz3d-1
 
                        ptr_2d(1,:)=work2d_mgbf(lev1+nz3d-1,:)!if nz=1, only the first level is used (like for surface pressure) 
                     else
@@ -416,8 +395,6 @@ character(len=4) :: str_rank
 
 
 
-          write(6,*)'thinkdeb end of covariance multiply  '
-          call flush(6)
 
           deallocate(work_mgbf)
           deallocate(work_mgbf2)

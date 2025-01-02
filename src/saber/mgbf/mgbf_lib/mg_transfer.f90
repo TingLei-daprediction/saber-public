@@ -545,7 +545,6 @@ include "type_intstat_point2this.inc"
 
          call this%boco_2d(VALL(1:km_all,1-ibm:im+ibm,1-jbm:jm+jbm),km_all,im,jm,ibm,jbm)
    if(this%l_anal_sub_of_filt) then
-      write(6,*)'thinkdeb555 l_anl_sub_of ', this%l_anal_sub_of_filt
        WORK(:,:,:)=VALL(:,1:im,1:jm)
 !cltorg       call this%lin_direct_offset_add(VALL(1:km_all,1-ibm:im+ibm,1-jbm:jm+jbm),WORK,km_all,ibm,jbm)
    else

@@ -575,7 +575,6 @@ integer(i_kind):: p
   this%l_vertical_filter=l_vertical_filter
   this%l_anal_sub_of_filt=l_anal_sub_of_filt
   this%l_for_localization=l_for_localization
-  write(6,*)'thinkdeb22 this%l_for_localization ',this%l_for_localization
   this%ldelta=ldelta
   this%lquart=lquart
   this%lhelm=lhelm 
@@ -659,13 +658,10 @@ integer(i_kind):: p
 !
 
   this%km_a = this%km2+this%lm_a*this%km3
-  write(6,*)'thinkdeb mg_parameter.f90 km2,lm,km3 ',this%km2,' ',this%lm  ,' ',this%km3 
   this%km   = this%km2+this%lm  *this%km3
-  write(6,*)'thinkdeb mg_parameter.f90 km ',this%km,' ',this%km_a 
 
   this%km_a_all = this%km_a * this%n_ens
   this%km_all   = this%km   * this%n_ens
-  write(6,*)'thinkdeb mg_parameter.f90 km_all ',this%km_all,' ',this%n_ens 
 
   this%km2_all = this%km2 * this%n_ens
   this%km3_all = this%km3 * this%n_ens
@@ -704,7 +700,6 @@ integer(i_kind):: p
 !
 ! Number of grid points on the analysis grid after padding
 !
-  write(6,*)'thinkdeb mg_parameter nm0,nxm',this%nm0,this%nxm
   this%nm = this%nm0/this%nxm
   this%mm = this%mm0/this%nym
   if(this%l_anal_sub_of_filt ) then
@@ -886,7 +881,6 @@ integer(i_kind):: p
 
   this%imL=this%im/2
   this%jmL=this%jm/2
-  write(6,*)'thinkdebzzz in mp_para imL/jmL  ',this%imL, ' ',this%jmL 
 
   this%imH=this%im0(this%gm)
   this%jmH=this%jm0(this%gm)

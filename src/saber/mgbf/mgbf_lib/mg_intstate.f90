@@ -1082,18 +1082,14 @@ subroutine allocate_mg_intstate(this)
 implicit none
 class(mg_intstate_type),target::this
 
-write(6,*)"thinkdeb in allocate_mg_intstate ",this%l_loc
 if(this%l_loc) then
    allocate(this%w1_loc(this%km_all   ,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this%w1_loc=0.
    allocate(this%w2_loc(this%km_all/4 ,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this%w2_loc=0.
    allocate(this%w3_loc(this%km_all/16,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this%w3_loc=0.
    allocate(this%w4_loc(this%km_all/64,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this%w4_loc=0.
 endif
-write(6,*)"thinkdeb in allocate_mg_intstate hx,km3  ",this%km_all,this%hx,this%im,this%hy,this%jm,this%lm
-call flush(6)
 
 allocate(this%V(1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,this%lm))        ; this%V=0.
-write(6,*)'thinkdeb VALL dimension ',this%km_all,1-this%hx,' ',this%im+this%hx,' ',1-this%hy, ' ',this%jm+this%hy
 allocate(this%VALL(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this%VALL=0.
 allocate(this%HALL(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this%HALL=0.
 
@@ -1331,7 +1327,6 @@ end do
          this%ssy=this%ssy/sqrt(this%VALL(1,1,this%jm/2))
          this%VALL(1,1,:)=0.
       else
-         write(6,*)"thinkdeb tothink"
          call this%cholaspect(1,this%lm,this%pasp1)
          call this%cholaspect(1,this%im,1,this%jm,this%pasp2)
          call this%cholaspect(1,this%im,1,this%jm,1,this%lm,this%pasp3)
@@ -1348,7 +1343,6 @@ end do
 !        this%ss3=0.0 !cltthinkdeb
       end if
    else
-         write(6,*)"thinkdeb tothink2"
       call this%cholaspect(1,this%imH,1,this%jmH,&
            &this%pasp2(:,:,1:this%imH,1:this%jmH))
       call this%getlinesum(this%hx,1,this%imH,this%hy,1,this%jmH,&
