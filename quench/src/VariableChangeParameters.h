@@ -8,17 +8,21 @@
 
 #pragma once
 
-#include "eckit/config/LocalConfiguration.h"
-
-#include "oops/base/VariableChangeParametersBase.h"
+#include "oops/base/ParameterTraitsVariables.h"
+#include "oops/base/Variables.h"
+#include "oops/util/parameters/OptionalParameter.h"
+#include "oops/util/parameters/Parameters.h"
 
 namespace quench {
 
 // -------------------------------------------------------------------------------------------------
 /// VariableChange parameters class
 
-class VariableChangeParameters : public oops::VariableChangeParametersBase {
-  OOPS_CONCRETE_PARAMETERS(VariableChangeParameters, VariableChangeParametersBase)
+class VariableChangeParameters : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(VariableChangeParameters, Parameters)
+ public:
+  oops::OptionalParameter<oops::Variables> inputVariables{"input variables", this};
+  oops::OptionalParameter<oops::Variables> outputVariables{"output variables", this};
 };
 
 // -------------------------------------------------------------------------------------------------
