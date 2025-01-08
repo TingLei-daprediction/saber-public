@@ -108,7 +108,6 @@ template <typename MODEL> class OutputWriteParameters :
   OOPS_CONCRETE_PARAMETERS(OutputWriteParameters, oops::Parameters)
 
  public:
-  typedef typename oops::Increment<MODEL>::WriteParameters_  IncrementWriteParameters_;
   typedef ErrorCovarianceParameters<MODEL>                   ErrorCovarianceParameters_;
 
   // This is there to get ErrorCovarianceParameters and in particular
@@ -121,7 +120,7 @@ template <typename MODEL> class OutputWriteParameters :
     genericWrite{"generic write", this};
 
   /// Write parameters using model increment writer
-  oops::OptionalParameter<IncrementWriteParameters_>
+  oops::OptionalParameter<eckit::LocalConfiguration>
     modelWrite{"model write", this};
 };
 
@@ -173,7 +172,6 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
   typedef oops::Increment<MODEL>                            Increment_;
   typedef oops::State<MODEL>                                State_;
   typedef oops::State4D<MODEL>                              State4D_;
-  typedef typename oops::Increment<MODEL>::WriteParameters_ IncrementWriteParameters_;
   typedef ProcessPertsParameters<MODEL>                     ProcessPertsParameters_;
 
  public:
@@ -383,10 +381,8 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
           pert.zero();
           pert.fromFieldSet(fset4dDx[0].fieldSet());
 
-          IncrementWriteParameters_ writeParams;
-          writeParams.deserialize(mconf);
-          writeParams.setMember(jm+1);
-          pert.write(writeParams);
+          util::setMember(mconf, jm+1);
+          pert.write(mconf);
         }
       }
     }

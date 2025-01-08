@@ -121,7 +121,7 @@ oops::FieldSets readEnsemble(const oops::Geometry<MODEL> & geom,
     ensemblePertParams.deserialize(ensemblePert);
     nens = ensemblePertParams.size();
     outputConf.set("ensemble pert", ensemblePert);
-    ensemblePertParams.getIncrementParameters(0).serialize(varConf);
+    varConf = ensemblePertParams.getIncrementParameters(0);
     ++ensembleFound;
   }
 
