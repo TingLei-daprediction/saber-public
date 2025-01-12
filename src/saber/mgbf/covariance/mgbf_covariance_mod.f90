@@ -21,6 +21,7 @@ use random_mod
 ! saber
 !clt use mgbf_grid_mod,                   only: mgbf_grid
 use mg_intstate , only:            mg_intstate_type
+use mg_timers
 
 implicit none
 private
@@ -115,6 +116,7 @@ class(mgbf_covariance) :: self
 ! Locals
 
 !clt //if (.not. self%noMGBF) then
+   call  print_mg_timers("mg_timer_output",999,self%rank)
    call self%intstate%mg_finalize()
 !clt endif
 
@@ -204,10 +206,13 @@ character(len=32) :: fileoutput
 character(len=4) :: str_rank
 
 
+
 !clt now noly consider t
 !  afield = fields%field('air_temperature')
 !  call afield%data(t)
 !*** From the analysis to first generation of filter grid
+          call btim(mg_multiply_time)
+          call btim(mg_preprocess_time)
           if(self%intstate%l_for_localization .and. self%intstate%km2) then 
            write(6,*)"when mgbf is used for localizaiton, all 2d variables will be treated as 3d variable",  &
 &        "in which, the first level contains the 2d variables and others zeros "  
@@ -324,13 +329,22 @@ character(len=4) :: str_rank
           test_once=.false. 
           close(iounit)
           endif
+          call etim(mg_preprocess_time)
+
+          call btim(mg_anal_to_filt_time)
           call self%intstate%anal_to_filt_allmap(work_mgbf)
+          call etim(mg_anal_to_filt_time)
+          call btim(mg_filtering_time)
           call self%intstate%filtering_procedure(self%intstate%mgbf_proc,1)
+          call btim(mg_filtering_time)
          
 !cltorg          call self%intstate%filt_to_anal_allmap(work_mgbf)
+          call btim(mg_filt_to_anal_time)
           call self%intstate%filt_to_anal_allmap(work_mgbf2)
+          call etim(mg_filt_to_anal_time)
 !clt#        work_mgbf=999.0 !thinkdeb for debug
  
+          call btim(mg_postprocess_time)
         if(.not. self%intstate%l_for_localization ) then   !clthinkdebxxx
           work_mgbf=work_mgbf2
         else  !  if in the multivariate localization, all output for 3d or 2d variables are 3d structures 
@@ -392,6 +406,7 @@ character(len=4) :: str_rank
              endif 
            enddo
 
+          call etim(mg_postprocess_time)
 
 
 
@@ -401,6 +416,7 @@ character(len=4) :: str_rank
           deallocate(work2d_mgbf)
           deallocate(rnormalization)
           deallocate( varvlev_index)
+          call etim(mg_multiply_time)
 
 end subroutine multiply
 

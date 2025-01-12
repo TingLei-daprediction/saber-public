@@ -79,6 +79,12 @@ module mg_timers
   type(timer),save,public ::      bocoT_tim
   type(timer),save,public ::       boco_tim
   type(timer),save,public ::    bfiltT_tim
+  type(timer),save,public ::     mg_multiply_time
+  type(timer),save,public ::     mg_preprocess_time
+  type(timer),save,public ::     mg_postprocess_time
+  type(timer),save,public ::     mg_anal_to_filt_time
+  type(timer),save,public ::     mg_filt_to_anal_time
+  type(timer),save,public ::     mg_filtering_time
 
   integer, parameter, public :: print_clock = 1,                        &
                                 print_cpu   = 2,                        &
@@ -92,9 +98,11 @@ contains
     implicit none
     type(timer), intent(inout) :: t
 
-    if (t%running) then
-      write(0,*)'btim: timer is already running'
-      STOP
+    if (.not.t%running) then
+     t%time_clock = 0
+     t%time_cpu = 0
+!     write(0,*)'btim: timer is already running'
+!     STOP
     end if
     t%running = .true.
 
@@ -119,8 +127,8 @@ contains
 
     t%time_clock = t%time_clock + (wt - t%start_clock)
     t%time_cpu = t%time_cpu + (ct - t%start_cpu)
-    t%start_clock = 0.0
-    t%start_cpu = 0.0
+!clt noneed    t%start_clock = 0.0
+!clt noneed    t%start_cpu = 0.0
 
   endsubroutine etim
 !-----------------------------------------------------------------------
@@ -136,16 +144,21 @@ contains
     integer :: ierr
     integer(kind=MPI_OFFSET_KIND) :: disp
     integer, dimension(MPI_STATUS_SIZE) :: stat
-    character(len=1024) :: buffer, header
-    integer :: bufsize
-
+!    character(len=1024) :: header
+    character(len=1024) :: header1,header2
+    character(len=1024) :: buffer1,buffer2,buffer3,buffer4
+!    integer :: bufsize
+    integer :: bufsize1,bufsize2,bufsize3,bufsize4
+    integer(i_kind):: num_ranks
+    call MPI_Comm_size(MPI_COMM_WORLD, num_ranks, ierr)
     call MPI_File_open(MPI_COMM_WORLD, filename, &
                        MPI_MODE_WRONLY + MPI_MODE_CREATE, &
                        MPI_INFO_NULL, fh, ierr)
 
-    buffer = ' '
-    if ( print_type == print_clock ) then
-    write(buffer,"(I6,12(',',F10.4))") mype,                            &
+!clt    buffer = ' '
+       buffer1=' '; buffer2=' ';buffer3=' ';buffer4=' '
+!cltj#    if ( print_type == print_clock ) then
+    write(buffer1,"(I6,18(',',F10.4))") mype,                            &
                                        init_tim%time_clock,             &
                                        upsend_tim%time_clock,           &
                                        dnsend_tim%time_clock,           &
@@ -157,50 +170,75 @@ contains
                                        intp_tim%time_clock,             &
                                        an2filt_tim%time_clock,          &
                                        output_tim%time_clock,           &
-                                       total_tim%time_clock
-    else if ( print_type == print_cpu ) then
-    write(buffer,"(I6,14(',',F10.4))") mype,                            &
-                                       init_tim%time_cpu,               &
-                                       an2filt_tim%time_cpu,            &
-                                       vfiltT_tim%time_cpu,             &
-                                       upsend_tim%time_cpu,             &
-                                       hfiltT_tim%time_cpu,             &
-                                       bocoT_tim%time_cpu,              &
-                                       weight_tim%time_cpu,             &
-                                       boco_tim%time_cpu,               &
-                                       hfilt_tim%time_cpu,              &
-                                       dnsend_tim%time_cpu,             &
-                                       vfilt_tim%time_cpu,              &
-                                       filt2an_tim%time_cpu,            &
-                                       output_tim%time_cpu,             &
-                                       total_tim%time_cpu
-    end if
+                                       total_tim%time_clock,            &
+                                       mg_multiply_time%time_clock ,  &
+                                       mg_preprocess_time%time_clock ,  &
+                                       mg_anal_to_filt_time%time_clock,   &
+                                       mg_filtering_time%time_clock,   &
+                                       mg_filt_to_anal_time%time_clock,   &
+                                       mg_postprocess_time%time_clock   
+    write(buffer2,"(I6,18(',',F10.4))") mype,                            &
+                                       init_tim%time_cpu,             &
+                                       upsend_tim%time_cpu,           &
+                                       dnsend_tim%time_cpu,           &
+                                       weight_tim%time_cpu,           &
+                                       hfiltT_tim%time_cpu,           &
+                                       hfilt_tim%time_cpu,            &
+                                       filt2an_tim%time_cpu,          &
+                                       aintp_tim%time_cpu,            &
+                                       intp_tim%time_cpu,             &
+                                       an2filt_tim%time_cpu,          &
+                                       output_tim%time_cpu,           &
+                                       total_tim%time_cpu,            &
+                                       mg_multiply_time%time_cpu ,  &
+                                       mg_preprocess_time%time_cpu ,  &
+                                       mg_anal_to_filt_time%time_cpu,   &
+                                       mg_filtering_time%time_cpu,   &
+                                       mg_filt_to_anal_time%time_cpu,   &
+                                       mg_postprocess_time%time_cpu   
+!clt#    else if ( print_type == print_cpu ) then
+!    end if
 
-    bufsize = LEN(TRIM(buffer)) + 1
-    buffer(bufsize:bufsize) = NEW_LINE(' ')
+    bufsize1 = LEN(TRIM(buffer1)) + 1
+    bufsize2 = LEN(TRIM(buffer2)) + 1
+    buffer1(bufsize1:bufsize1) = NEW_LINE(' ')
+    buffer2(bufsize2:bufsize2) = NEW_LINE(' ')
 
-    write(header,"(A6,14(',',A10))") "mype",                            &
+    write(header1,"(A6,18(',',A10))") "mype",                            &
                                      "init",                            &
-                                     "an2filt",                         &
-                                     "vfiltT",                          &
                                      "upsend",                          &
-                                     "hfiltT",                          &
-                                     "bocoT" ,                          &
-                                     "weight",                          &
-                                     "boco",                            &
-                                     "hfilt",                           &
                                      "dnsend",                          &
-                                     "vfilt",                           &
+                                     "weight",                          &
+                                     "hfiltT",                           &
+                                     "hfilt",                           &
                                      "filt2an",                         &
-                                     "output",                          &
-                                     "total"
+                                     "aintp"  ,                        &
+                                     "intp"  ,                        &
+                                     "an2filt" ,                          &
+                                     "output",                            &
+                                     "total",                           &
+                                     "multiply",                           &
+                                     "preprocess",                            &
+                                     "anal_to_filt",                          &
+                                     "filtering",                          &
+                                     "filt_to_anal",                         &
+                                     "postprocess"                         
 
-    header(bufsize:bufsize) = NEW_LINE(' ')
+    header1(bufsize1:bufsize1) = NEW_LINE(' ')
+    if(sizeof(header1(1:1)) /= 1) then
+      write(6,*)" the one character is not using one byte as assumened ,stop"
+      stop
+    endif
     disp = 0
-    call MPI_File_write_at(fh, disp, header, bufsize, MPI_BYTE, stat, ierr)
-
-    disp = (mype+1)*bufsize
-    call MPI_File_write_at(fh, disp, buffer, bufsize, MPI_BYTE, stat, ierr)
+    write(6,*)'thinkdebxxx bufsize 1/2 num_ranks is ',bufsize1, ' ',bufsize2,' ',num_ranks
+ if(mype==0)    call MPI_File_write_at(fh, disp, header1, bufsize1, MPI_BYTE, stat, ierr)
+    disp =disp+ bufsize1
+    disp = disp+(mype)*bufsize1
+    call MPI_File_write_at(fh, disp, buffer1, bufsize1, MPI_BYTE, stat, ierr)
+    disp=bufsize1+num_ranks*bufsize1
+    disp = disp+(mype)*bufsize2
+    call MPI_File_write_at(fh, disp, buffer2, bufsize2, MPI_BYTE, stat, ierr)
+    
 
     call MPI_File_close(fh, ierr)
 
