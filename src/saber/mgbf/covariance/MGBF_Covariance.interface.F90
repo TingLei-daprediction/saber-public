@@ -18,6 +18,7 @@ use fckit_configuration_module, only: fckit_configuration
 
 ! saber
 use mgbf_covariance_mod,         only: mgbf_covariance
+use mg_timers
 
 
 implicit none
@@ -152,18 +153,23 @@ type(c_ptr), value, intent(in) :: c_afieldset
 type(mgbf_covariance), pointer :: f_self
 type(atlas_fieldset)          :: f_fieldset
 !cltthink type(fieldset_type)          :: f_fieldset
-
+call btim(mg_interface_multiply_time)
 ! LinkedList
 ! ----------
+call btim(mg_interface_registry_get_time)
 call mgbf_covariance_registry%get(c_self, f_self)
+call etim(mg_interface_registry_get_time)
 
 ! Fortran APIs
 ! ------------
+call btim(mg_interface_fldset_time)
 f_fieldset = atlas_fieldset(c_afieldset)
+call etim(mg_interface_fldset_time)
 
 ! Call implementation
 ! -------------------
 call f_self%multiply(f_fieldset)
+call etim(mg_interface_multiply_time)
 
 end subroutine mgbf_covariance_multiply_cpp
 

@@ -336,7 +336,7 @@ character(len=4) :: str_rank
           call etim(mg_anal_to_filt_time)
           call btim(mg_filtering_time)
           call self%intstate%filtering_procedure(self%intstate%mgbf_proc,1)
-          call btim(mg_filtering_time)
+          call etim(mg_filtering_time)
          
 !cltorg          call self%intstate%filt_to_anal_allmap(work_mgbf)
           call btim(mg_filt_to_anal_time)

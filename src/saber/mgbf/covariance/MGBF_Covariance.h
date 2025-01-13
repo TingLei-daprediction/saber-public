@@ -124,7 +124,7 @@ MGBF_Covariance::MGBF_Covariance(const oops::GeometryData & geometryData,
   // Get active variables
   activeVars_ = getActiveVars(params, centralVars);
 
-//clt  util::Timer timer(classname(), "Covariance");
+  util::Timer timer(classname(), "Covariance");
   std::cout<<"thinkdebconfig0 ifhas -1 "<<std::endl;
   eckit::LocalConfiguration mgbf_config = params.toConfiguration();
   std::cout<<"thinkdebconfig0 ifhas "<<mgbf_config<<std::endl;

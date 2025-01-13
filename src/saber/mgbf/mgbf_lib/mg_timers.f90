@@ -41,6 +41,7 @@ module mg_timers
     real(r_kind) :: start_cpu = 0.0
     real(r_kind) :: time_clock = 0.0
     real(r_kind) :: time_cpu = 0.0
+    integer(i_kind) :: icount = 0.0
   end type timer
 
   type(timer),save,public ::      total_tim
@@ -80,6 +81,9 @@ module mg_timers
   type(timer),save,public ::       boco_tim
   type(timer),save,public ::    bfiltT_tim
   type(timer),save,public ::     mg_multiply_time
+  type(timer),save,public ::     mg_interface_multiply_time 
+  type(timer),save,public ::     mg_interface_registry_get_time 
+  type(timer),save,public ::     mg_interface_fldset_time 
   type(timer),save,public ::     mg_preprocess_time
   type(timer),save,public ::     mg_postprocess_time
   type(timer),save,public ::     mg_anal_to_filt_time
@@ -101,6 +105,7 @@ contains
     if (.not.t%running) then
      t%time_clock = 0
      t%time_cpu = 0
+     t%icount=0
 !     write(0,*)'btim: timer is already running'
 !     STOP
     end if
@@ -127,6 +132,7 @@ contains
 
     t%time_clock = t%time_clock + (wt - t%start_clock)
     t%time_cpu = t%time_cpu + (ct - t%start_cpu)
+    t%icount = t%icount+1
 !clt noneed    t%start_clock = 0.0
 !clt noneed    t%start_cpu = 0.0
 
@@ -145,8 +151,8 @@ contains
     integer(kind=MPI_OFFSET_KIND) :: disp
     integer, dimension(MPI_STATUS_SIZE) :: stat
 !    character(len=1024) :: header
-    character(len=1024) :: header1,header2
-    character(len=1024) :: buffer1,buffer2,buffer3,buffer4
+    character(len=2048) :: header1,header2
+    character(len=2048) :: buffer1,buffer2,buffer3,buffer4
 !    integer :: bufsize
     integer :: bufsize1,bufsize2,bufsize3,bufsize4
     integer(i_kind):: num_ranks
@@ -158,7 +164,7 @@ contains
 !clt    buffer = ' '
        buffer1=' '; buffer2=' ';buffer3=' ';buffer4=' '
 !cltj#    if ( print_type == print_clock ) then
-    write(buffer1,"(I6,18(',',F10.4))") mype,                            &
+    write(buffer1,"(I6,21(',',F10.4),',',I10)") mype,                            &
                                        init_tim%time_clock,             &
                                        upsend_tim%time_clock,           &
                                        dnsend_tim%time_clock,           &
@@ -172,12 +178,16 @@ contains
                                        output_tim%time_clock,           &
                                        total_tim%time_clock,            &
                                        mg_multiply_time%time_clock ,  &
+                                  mg_interface_multiply_time%time_clock,& 
+                                  mg_interface_registry_get_time%time_clock,& 
+                                  mg_interface_fldset_time%time_clock,& 
                                        mg_preprocess_time%time_clock ,  &
                                        mg_anal_to_filt_time%time_clock,   &
                                        mg_filtering_time%time_clock,   &
                                        mg_filt_to_anal_time%time_clock,   &
-                                       mg_postprocess_time%time_clock   
-    write(buffer2,"(I6,18(',',F10.4))") mype,                            &
+                                       mg_postprocess_time%time_clock  , &
+                                  mg_interface_multiply_time%icount 
+    write(buffer2,"(I6,21(',',F10.4),',',I10)") mype,                            &
                                        init_tim%time_cpu,             &
                                        upsend_tim%time_cpu,           &
                                        dnsend_tim%time_cpu,           &
@@ -191,11 +201,15 @@ contains
                                        output_tim%time_cpu,           &
                                        total_tim%time_cpu,            &
                                        mg_multiply_time%time_cpu ,  &
+                                  mg_interface_multiply_time%time_cpu,& 
+                                  mg_interface_registry_get_time%time_cpu,& 
+                                  mg_interface_fldset_time%time_cpu,& 
                                        mg_preprocess_time%time_cpu ,  &
                                        mg_anal_to_filt_time%time_cpu,   &
                                        mg_filtering_time%time_cpu,   &
                                        mg_filt_to_anal_time%time_cpu,   &
-                                       mg_postprocess_time%time_cpu   
+                                       mg_postprocess_time%time_cpu, &   
+                                  mg_interface_multiply_time%icount 
 !clt#    else if ( print_type == print_cpu ) then
 !    end if
 
@@ -204,7 +218,7 @@ contains
     buffer1(bufsize1:bufsize1) = NEW_LINE(' ')
     buffer2(bufsize2:bufsize2) = NEW_LINE(' ')
 
-    write(header1,"(A6,18(',',A10))") "mype",                            &
+    write(header1,"(A6,22(',',A10))") "mype",                            &
                                      "init",                            &
                                      "upsend",                          &
                                      "dnsend",                          &
@@ -218,11 +232,15 @@ contains
                                      "output",                            &
                                      "total",                           &
                                      "multiply",                           &
+                                     "ifc_mult",& 
+                                     "ifc_reg",& 
+                                     "ifc_fset",          & 
                                      "preprocess",                            &
                                      "anal_to_filt",                          &
                                      "filtering",                          &
                                      "filt_to_anal",                         &
-                                     "postprocess"                         
+                                     "postprocess"  ,   &                      
+                                     "icount"                         
 
     header1(bufsize1:bufsize1) = NEW_LINE(' ')
     if(sizeof(header1(1:1)) /= 1) then
