@@ -123,6 +123,10 @@ type geom_type
    integer,allocatable :: l0_to_l0i(:)                !< Levels to independent levels in Sl0
    integer,allocatable :: l0i_to_l0(:)                !< Independent levels to level in Sl0
 
+   ! 2D groups
+   logical,allocatable :: grp2d(:)                    !< 2D groups (for which all variables are 2D)
+   integer :: nl2d                                    !< 2D level index
+
    ! Other fields
    real(kind_real),allocatable :: vert_coordavg(:)    !< Averaged vertical coordinate
    real(kind_real),allocatable :: disth(:)            !< Horizontal distance
@@ -295,6 +299,7 @@ if (allocated(geom%lat_c0a)) deallocate(geom%lat_c0a)
 if (allocated(geom%vert_coord_c0a)) deallocate(geom%vert_coord_c0a)
 if (allocated(geom%gmask_c0a)) deallocate(geom%gmask_c0a)
 if (allocated(geom%l0_to_l0i)) deallocate(geom%l0_to_l0i)
+if (allocated(geom%grp2d)) deallocate(geom%grp2d)
 call geom%io%dealloc
 geom%allocated = .false.
 
@@ -320,7 +325,7 @@ type(atlas_functionspace),intent(in) :: afunctionspace !< ATLAS function space
 type(fieldset_type),intent(in),optional :: fieldset    !< Fieldset containing geometry elements
 
 ! Local variables
-integer :: il0,jl0off,jl0r,jc3,jc4,iproc
+integer :: il0,jl0off,jl0r,jc3,jc4,iproc,iv,ig
 integer,allocatable :: order_c0a(:)
 real(kind_real),allocatable :: lon_c0(:),lat_c0(:)
 type(mesh_type) :: mesh_c0u
@@ -349,6 +354,19 @@ do il0=1,geom%nl0
       if (geom%l0rl0_to_l0(jl0r,il0)==il0) geom%il0rz(il0) = jl0r
    end do
 end do
+
+! Get 2D groups
+allocate(geom%grp2d(nam%ng))
+geom%grp2d = .true.
+do iv=1,nam%nv
+  ig = nam%group_index(iv)
+  if (.not.nam%var2d(iv)) geom%grp2d(ig) = .false.
+end do
+if (trim(nam%lev2d)=='first') then
+   geom%nl2d = 1
+else if (trim(nam%lev2d)=='last') then
+   geom%nl2d = geom%nl0
+end if
 
 ! Copy function space pointer
 if (present(fieldset)) then

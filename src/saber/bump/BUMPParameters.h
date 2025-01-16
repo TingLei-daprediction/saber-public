@@ -150,7 +150,7 @@ class DiracPointParameters : public oops::Parameters {
   // Diracs latitudes [in degrees]
   oops::RequiredParameter<double> latitude{"latitude", this};
   // Diracs level
-  oops::RequiredParameter<int> level{"level", this};
+  oops::OptionalParameter<int> level{"level", this};
   // Diracs variable indices
   oops::RequiredParameter<std::string> variable{"variable", this};
 };

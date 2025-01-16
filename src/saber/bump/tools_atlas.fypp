@@ -204,7 +204,7 @@ call afield%data(ptr)
 if (afield%levels()==1) then
    if (trim(llev2d)=='first') then
       nl2d = 1
-   elseif (trim(llev2d)=='last') then
+   else if (trim(llev2d)=='last') then
       nl2d = nl0
    end if
    if (nmga>0) array(:,nl2d) = ptr(1,1:nmga)
@@ -322,7 +322,7 @@ ptr(:,:) = ${zero[dtype]}$
 if (afield%levels()==1) then
    if (trim(llev2d)=='first') then
       nl2d = 1
-   elseif (trim(llev2d)=='last') then
+   else if (trim(llev2d)=='last') then
       nl2d = nl0
    end if
    if (nmga>0) ptr(1,1:nmga) = array(:,nl2d)

@@ -169,6 +169,8 @@ type nicas_cmp_type
    logical :: interp_in_global_file                     !< Read/write interpolation in global file
    integer :: nc0a                                      !< Number of points in subset Sc0, halo A
    integer :: nl0                                       !< Number of levels in subset Sl0
+   integer :: ias                                       !< Starting index in the control variable
+   integer :: iae                                       !< End index in the control variable
 
    ! Number of processors
    integer :: nproc                                     !< Number of processors
@@ -274,6 +276,9 @@ type nicas_cmp_type
    real(kind_real),allocatable :: fld_ssrf(:,:)         !< SSRF-based interpolated field
    real(kind_real),allocatable :: fld_op(:,:)           !< Operator-based interpolated field
    real(kind_real),allocatable :: fld_ssrf_from_op(:,:) !< SSRF-based interpolated field, operator-based gradient
+
+   ! Control variable size
+   integer :: ncv                                       !< Control variable size
 contains
    procedure :: partial_dealloc => nicas_cmp_partial_dealloc
    procedure :: dealloc => nicas_cmp_dealloc
@@ -2580,6 +2585,9 @@ logical :: slev(nicas_cmp%nl0)
 ! Probe in
 @:probe_in()
 
+! Associate
+associate(ig=>nicas_cmp%ig)
+
 if (.not.nam%load_nicas_global) then
    ! Vertical sampling
    write(mpl%info,'(a13,a)') '','Compute vertical subset L1'
@@ -2593,6 +2601,11 @@ if (.not.nam%load_nicas_global) then
    call mpl%f_comm%allreduce(npos,fckit_mpi_sum())
    call mpl%f_comm%allreduce(nmis,fckit_mpi_sum())
    nicas_cmp%vlev = nicas_cmp%vlev.and.(npos>0).and.(nmis==0)
+   if (geom%grp2d(ig)) then
+      do il0=1,nicas_cmp%nl0
+         nicas_cmp%vlev(il0) = (nicas_cmp%vlev(il0).and.(geom%nl2d==il0))
+      end do
+   end if
 end if
 
 ! Initialization
@@ -2729,6 +2742,9 @@ end do
 
 ! Conversion
 nicas_cmp%v%col = l0_to_l1(nicas_cmp%v%col)
+
+! End associate
+end associate
 
 ! Probe out
 @:probe_out()
@@ -3492,6 +3508,7 @@ write(mpl%info,'(a13,a)') '','Define subgrid, conversions and communication'
 call mpl%flush(flush=nicas_cmp%verbosity)
 
 ! Count subgrid points
+! Warning: ascending level order is important to handle 2D groups correctly
 nicas_cmp%ns = 0
 nicas_cmp%nsa = 0
 nicas_cmp%nsb = 0
@@ -3671,6 +3688,13 @@ call nicas_cmp%com_s_AU%setup(mpl,'com_s_AU',nicas_cmp%nsa,nicas_cmp%nsu,nicas_c
 
 ! Halo extension from zone A to zone U
 if (nam%write_nicas_global) call nicas_cmp%com_s_AU%ext(mpl,order_inv_sa,nicas_cmp%order_inv_su)
+
+! Default control variable size
+nicas_cmp%ncv = nicas_cmp%nsa
+
+! Default control variable section starting and end indices
+nicas_cmp%ias = 1
+nicas_cmp%iae = nicas_cmp%nsa
 
 ! Release memory
 deallocate(sb_to_s)
@@ -4611,7 +4635,7 @@ type(cv_cmp_type) :: cv_cmp
 
 ! Allocation
 allocate(nicas_cmp%norm(geom%nc0a,geom%nl0))
-call cv_cmp%alloc(mpl,nicas_cmp%nsa)
+call cv_cmp%alloc(mpl,nicas_cmp%ncv)
 
 ! Initialization
 m2 = zero
@@ -4708,7 +4732,7 @@ if (mpl%main) then
 end if
 
 ! Copy local section
-call mpl%glb_to_loc(nicas_cmp%nsa,nicas_cmp%ns,nicas_cmp%sa_to_s,alpha,cv_cmp%alpha)
+call mpl%glb_to_loc(nicas_cmp%nsa,nicas_cmp%ns,nicas_cmp%sa_to_s,alpha,cv_cmp%alpha(nicas_cmp%ias:nicas_cmp%iae))
 
 ! Release memory
 deallocate(order_s)
@@ -4825,11 +4849,8 @@ if (any(nicas_cmp%vlev)) then
    if (nicas_cmp%nl0==geom%nl0) then
       ! Full 3D NICAS
 
-      ! Check dimension
-      if (cv_cmp%n/=nicas_cmp%nsa) call mpl%abort('${subr}$','wrong control vector dimension')
-
       ! Initialization
-      alpha_a = cv_cmp%alpha
+      alpha_a = cv_cmp%alpha(nicas_cmp%ias:nicas_cmp%iae)
 
       ! Convolution square-root
       call nicas_cmp%apply_convol_sqrt(mpl,alpha_a)
@@ -4957,12 +4978,15 @@ if (any(nicas_cmp%vlev)) then
       call nicas_cmp%apply_interp_ad(mpl,fld_tmp,alpha_b)
 
       ! Halo reduction from zone B to zone A
-      call nicas_cmp%com_s_AB%red(mpl,alpha_b,cv_cmp%alpha)
-      if (lsteps) call nicas_cmp%steps(3)%add(mpl,nicas_cmp%nsa,nicas_cmp%lon_sa,nicas_cmp%lat_sa,nicas_cmp%lev_sa,cv_cmp%alpha)
+      cv_cmp%alpha = zero
+      call nicas_cmp%com_s_AB%red(mpl,alpha_b,cv_cmp%alpha(nicas_cmp%ias:nicas_cmp%iae))
+      if (lsteps) call nicas_cmp%steps(3)%add(mpl,nicas_cmp%nsa,nicas_cmp%lon_sa,nicas_cmp%lat_sa,nicas_cmp%lev_sa, &
+ & cv_cmp%alpha(nicas_cmp%ias:nicas_cmp%iae))
 
       ! Convolution square-root adjoint
-      call nicas_cmp%apply_convol_sqrt_ad(mpl,cv_cmp%alpha)
-      if (lsteps) call nicas_cmp%steps(4)%add(mpl,nicas_cmp%nsa,nicas_cmp%lon_sa,nicas_cmp%lat_sa,nicas_cmp%lev_sa,cv_cmp%alpha)
+      call nicas_cmp%apply_convol_sqrt_ad(mpl,cv_cmp%alpha(nicas_cmp%ias:nicas_cmp%iae))
+      if (lsteps) call nicas_cmp%steps(4)%add(mpl,nicas_cmp%nsa,nicas_cmp%lon_sa,nicas_cmp%lat_sa,nicas_cmp%lev_sa, &
+ & cv_cmp%alpha(nicas_cmp%ias:nicas_cmp%iae))
    else
       ! Same horizontal convolution for all levels, no vertical convolution
       do il0=1,geom%nl0
@@ -5535,11 +5559,11 @@ deallocate(alpha2_save)
 
 ! Allocation
 if (nicas_cmp%nl0==geom%nl0) then
-   call cv_cmp1%alloc(mpl,nicas_cmp%nsa)
-   call cv_cmp2%alloc(mpl,nicas_cmp%nsa)
+   call cv_cmp1%alloc(mpl,nicas_cmp%ncv)
+   call cv_cmp2%alloc(mpl,nicas_cmp%ncv)
 else
-   call cv_cmp1%alloc(mpl,nicas_cmp%nsa*geom%nl0)
-   call cv_cmp2%alloc(mpl,nicas_cmp%nsa*geom%nl0)
+   call cv_cmp1%alloc(mpl,nicas_cmp%ncv*geom%nl0)
+   call cv_cmp2%alloc(mpl,nicas_cmp%ncv*geom%nl0)
 end if
 
 ! Initialization

@@ -951,7 +951,15 @@ if (conf%get('dirac',confs)) then
                nam%ivdir(nam%ndir) = iv
                call confs(iconf)%get_or_die('longitude',nam%londir(nam%ndir))
                call confs(iconf)%get_or_die('latitude',nam%latdir(nam%ndir))
-               call confs(iconf)%get_or_die('level',nam%levdir(nam%ndir))
+               if (nam%var2d(iv)) then
+                  if (nam%lev2d=='first') then
+                     nam%levdir(nam%ndir) = 1
+                  else
+                     nam%levdir(nam%ndir) = nam%nl0
+                  end if
+               else
+                  call confs(iconf)%get_or_die('level',nam%levdir(nam%ndir))
+               end if
             end if
          end do
       end do
@@ -1560,7 +1568,7 @@ end subroutine nam_get_${dtype}$
 
 !----------------------------------------------------------------------
 ! Subroutine: nam_get_int_value
-!> Get integer profile
+!> Get integer value
 !----------------------------------------------------------------------
 subroutine nam_get_int_value(nam,mpl,conf,key,val)
 
