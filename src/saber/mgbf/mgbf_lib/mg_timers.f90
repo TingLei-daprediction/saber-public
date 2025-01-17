@@ -41,7 +41,7 @@ module mg_timers
     real(r_kind) :: start_cpu = 0.0
     real(r_kind) :: time_clock = 0.0
     real(r_kind) :: time_cpu = 0.0
-    integer(i_kind) :: icount = 0.0
+    integer(i_kind) :: icount = 0
   end type timer
 
   type(timer),save,public ::      total_tim
@@ -128,7 +128,7 @@ contains
       write(0,*)'etim: timer is not running'
       STOP
     end if
-    t%running = .false.
+!clt    t%running = .true.
 
     t%time_clock = t%time_clock + (wt - t%start_clock)
     t%time_cpu = t%time_cpu + (ct - t%start_cpu)
@@ -164,13 +164,19 @@ contains
 !clt    buffer = ' '
        buffer1=' '; buffer2=' ';buffer3=' ';buffer4=' '
 !cltj#    if ( print_type == print_clock ) then
-    write(buffer1,"(I6,21(',',F10.4),',',I10)") mype,                            &
+    write(6,*)'thinkdebxxx icound is ',mg_interface_multiply_time%icount
+    write(buffer1,"(I6,25(',',F10.4),',',I10)") mype,                            &
                                        init_tim%time_clock,             &
                                        upsend_tim%time_clock,           &
                                        dnsend_tim%time_clock,           &
                                        weight_tim%time_clock,           &
                                        hfiltT_tim%time_clock,           &
                                        hfilt_tim%time_clock,            &
+                                       vfiltT_tim%time_clock,           &
+                                       vfilt_tim%time_clock,           &
+                                       bocoT_tim%time_clock,           &
+                                       boco_tim%time_clock,           &
+  
                                        filt2an_tim%time_clock,          &
                                        aintp_tim%time_clock,            &
                                        intp_tim%time_clock,             &
@@ -187,13 +193,17 @@ contains
                                        mg_filt_to_anal_time%time_clock,   &
                                        mg_postprocess_time%time_clock  , &
                                   mg_interface_multiply_time%icount 
-    write(buffer2,"(I6,21(',',F10.4),',',I10)") mype,                            &
+    write(buffer2,"(I6,25(',',F10.4),',',I10)") mype,                            &
                                        init_tim%time_cpu,             &
                                        upsend_tim%time_cpu,           &
                                        dnsend_tim%time_cpu,           &
                                        weight_tim%time_cpu,           &
                                        hfiltT_tim%time_cpu,           &
                                        hfilt_tim%time_cpu,            &
+                                       vfiltT_tim%time_cpu,           &
+                                       bocoT_tim%time_cpu,           &
+                                       boco_tim%time_cpu,           &
+                                       vfilt_tim%time_cpu,           &
                                        filt2an_tim%time_cpu,          &
                                        aintp_tim%time_cpu,            &
                                        intp_tim%time_cpu,             &
@@ -218,13 +228,17 @@ contains
     buffer1(bufsize1:bufsize1) = NEW_LINE(' ')
     buffer2(bufsize2:bufsize2) = NEW_LINE(' ')
 
-    write(header1,"(A6,22(',',A10))") "mype",                            &
+    write(header1,"(A6,26(',',A10))") "mype",                            &
                                      "init",                            &
                                      "upsend",                          &
                                      "dnsend",                          &
                                      "weight",                          &
                                      "hfiltT",                           &
                                      "hfilt",                           &
+                                     "vfiltT",                           &
+                                     "vfilt",                           &
+                                     "bocoT",                           &
+                                     "boco",                           &
                                      "filt2an",                         &
                                      "aintp"  ,                        &
                                      "intp"  ,                        &
