@@ -1,5 +1,5 @@
 Input Dirac increment:
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: CS-LFR-12
 - size: 864
@@ -19,7 +19,7 @@ Fields:
   air_horizontal_velocity_potential: 0.0000000000000000e+00
 Adjoint test for block diffusion passed
 Covariance(SABER) * Increment:
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: CS-LFR-12
 - size: 864

@@ -1,5 +1,5 @@
 Input Dirac increment:
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: L40x21
 - size: 840
@@ -17,7 +17,7 @@ Groups:
 Fields:
   eastward_wind: 1.0000000000000000e+00
   northward_wind: 0.0000000000000000e+00
-Valid time:2010-01-01T18:00:00Z
+Valid time: 2010-01-01T18:00:00Z
 Quench geometry grid:
 - name: L40x21
 - size: 840
@@ -111,7 +111,7 @@ Square-root test for block BUMP_NICAS passed
 Adjoint test for block Ensemble passed
 Square-root test for block Ensemble passed
 Covariance(hybrid) * Increment:
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: L40x21
 - size: 840
@@ -129,7 +129,7 @@ Groups:
 Fields:
   eastward_wind: 1.5885846717183985e+00
   northward_wind: 5.0803567566774199e-01
-Valid time:2010-01-01T18:00:00Z
+Valid time: 2010-01-01T18:00:00Z
 Quench geometry grid:
 - name: L40x21
 - size: 840
@@ -211,7 +211,7 @@ Adjoint test for block BUMP_StdDev passed
 Adjoint test for block BUMP_NICAS passed
 Square-root test for block BUMP_NICAS passed
 Covariance(hybrid1_SABER) * Increment:
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: L40x21
 - size: 840
@@ -229,7 +229,7 @@ Groups:
 Fields:
   eastward_wind: 3.7259415926535306e-12
   northward_wind: 1.3202009593235781e-12
-Valid time:2010-01-01T18:00:00Z
+Valid time: 2010-01-01T18:00:00Z
 Quench geometry grid:
 - name: L40x21
 - size: 840
@@ -260,7 +260,7 @@ Square-root test for block BUMP_NICAS passed
 Adjoint test for block Ensemble passed
 Square-root test for block Ensemble passed
 Covariance(hybrid2_SABER) * Increment:
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: L40x21
 - size: 840
@@ -278,7 +278,7 @@ Groups:
 Fields:
   eastward_wind: 3.1771693434345925e+00
   northward_wind: 1.0160713513355568e+00
-Valid time:2010-01-01T18:00:00Z
+Valid time: 2010-01-01T18:00:00Z
 Quench geometry grid:
 - name: L40x21
 - size: 840

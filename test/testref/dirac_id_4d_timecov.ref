@@ -1,5 +1,5 @@
 Input Dirac increment:
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: F10
 - size: 800
@@ -17,7 +17,7 @@ Groups:
 Fields:
   air_horizontal_streamfunction: 1.0000000000000000e+00
   air_horizontal_velocity_potential: 0.0000000000000000e+00
-Valid time:2010-01-01T18:00:00Z
+Valid time: 2010-01-01T18:00:00Z
 Quench geometry grid:
 - name: F10
 - size: 800
@@ -43,7 +43,7 @@ Covariance(SABER) diagnostics:
   + Value for variable air_horizontal_streamfunction, subwindow 1, at (longitude, latitude, vertical index) point (0.00000, -4.38894, 1): 1.0000000000000000e+00
   + Value for variable air_horizontal_streamfunction, subwindow 1, at (longitude, latitude, vertical index) point (9.00000, -4.38894, 1): 0.0000000000000000e+00
 Covariance(SABER) * Increment:
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: F10
 - size: 800
@@ -61,7 +61,7 @@ Groups:
 Fields:
   air_horizontal_streamfunction: 1.0000000000000000e+00
   air_horizontal_velocity_potential: 0.0000000000000000e+00
-Valid time:2010-01-01T18:00:00Z
+Valid time: 2010-01-01T18:00:00Z
 Quench geometry grid:
 - name: F10
 - size: 800
@@ -80,7 +80,7 @@ Fields:
   air_horizontal_streamfunction: 1.0000000000000000e+00
   air_horizontal_velocity_potential: 0.0000000000000000e+00
 Randomized variance: 
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: F10
 - size: 800
@@ -98,7 +98,7 @@ Groups:
 Fields:
   air_horizontal_streamfunction: 4.0899866276594516e+01
   air_horizontal_velocity_potential: 4.0616497024838942e+01
-Valid time:2010-01-01T18:00:00Z
+Valid time: 2010-01-01T18:00:00Z
 Quench geometry grid:
 - name: F10
 - size: 800

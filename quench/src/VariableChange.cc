@@ -13,7 +13,6 @@
 #include "oops/util/FieldSetOperations.h"
 
 #include "src/Geometry.h"
-#include "src/VariableChangeParameters.h"
 
 namespace quench {
 

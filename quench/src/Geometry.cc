@@ -181,7 +181,8 @@ Geometry::Geometry(const eckit::Configuration & config,
       // No mask
     } else if (groupParams.maskType.value() == "sea") {
       // Read sea mask
-      readSeaMask(groupParams.maskPath.value(), group.levels_, group.lev2d_, gmask);
+      ASSERT(groupParams.maskPath.value());
+      readSeaMask(*groupParams.maskPath.value(), group.levels_, group.lev2d_, gmask);
     } else {
       throw eckit::UserError("Wrong mask type", Here());
     }
@@ -262,11 +263,7 @@ Geometry::Geometry(const eckit::Configuration & config,
     interpolation_ = interpParams->toConfiguration();
   } else {
     interpolation_ = eckit::LocalConfiguration();
-    if (grid_.domain().global()) {
-      interpolation_.set("interpolation type", "atlas interpolation wrapper");
-    } else {
-      interpolation_.set("interpolation type", "regional");
-    }
+      interpolation_.set("interpolation type", "unstructured");
   }
 
   // Check for duplicate points
@@ -281,6 +278,11 @@ Geometry::Geometry(const eckit::Configuration & config,
   }
   comm_.allReduceInPlace(duplicatedPointsCount, eckit::mpi::sum());
   duplicatePoints_ = (duplicatedPointsCount > 0);
+
+  // GeometryData
+  if (interpolation_.getString("interpolation type") == "unstructured") {
+    geomData_.reset(new oops::GeometryData(functionSpace_, fields_, levelsAreTopDown_, comm_));
+  }
 
   // Print summary
   this->print(oops::Log::info());
@@ -344,6 +346,11 @@ Geometry::Geometry(const Geometry & other)
 
     // Save group
     groups_.push_back(group);
+  }
+
+  // Geometry data
+  if (interpolation_.getString("interpolation type") == "unstructured") {
+    geomData_.reset(new oops::GeometryData(functionSpace_, fields_, levelsAreTopDown_, comm_));
   }
 
   oops::Log::trace() << classname() << "::Geometry done" << std::endl;

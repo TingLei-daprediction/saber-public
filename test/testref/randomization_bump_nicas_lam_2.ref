@@ -1,6 +1,6 @@
 Norm of input parameter StdDev: 2.7433556094680836e+02
 Member 0: 
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: structured
 - size: 3763
@@ -26,7 +26,7 @@ Fields:
   air_horizontal_velocity_potential: 2.5528311197939723e+02
   air_pressure_at_surface: 0.0000000000000000e+00
 Member 1: 
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: structured
 - size: 3763

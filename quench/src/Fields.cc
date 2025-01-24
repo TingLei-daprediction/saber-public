@@ -267,6 +267,31 @@ void Fields::constantValue(const double & value) {
 
 // -----------------------------------------------------------------------------
 
+void Fields::constantValue(const std::vector<double> & profile) {
+  oops::Log::trace() << classname() << "::constantValue starting" << std::endl;
+
+  for (const auto & var : vars_) {
+    atlas::Field field = fset_[var.name()];
+    const std::string gmaskName = "gmask_" + std::to_string(geom_->groupIndex(var.name()));
+    const auto gmaskView = atlas::array::make_view<int, 2>(geom_->fields()[gmaskName]);
+    if (field.rank() == 2) {
+      ASSERT(field.shape(1) == static_cast<int>(profile.size()));
+      auto view = atlas::array::make_view<double, 2>(field);
+      view.assign(0.0);
+      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
+        for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+          if (gmaskView(jnode, jlevel) == 1) view(jnode, jlevel) = profile[jlevel];
+        }
+      }
+    }
+  }
+  fset_.set_dirty(false);
+
+  oops::Log::trace() << classname() << "::constantValue end" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
 void Fields::constantValue(const eckit::Configuration & config) {
   oops::Log::trace() << "Fields::constantValue starting" << std::endl;
   for (const auto & group : config.getSubConfigurations("constant group-specific value")) {
@@ -1327,17 +1352,14 @@ std::vector<Interpolation>::iterator Fields::setupGridInterpolation(const Geomet
 
   // Compare with existing UIDs
   for (auto it = interpolations().begin(); it != interpolations().end(); ++it) {
-    if ((it->srcUid() == srcGeomUid) && (it->dstUid() == geomUid)) {
+    if ((it->srcUid() == srcGeomUid) && (it->tgtUid() == geomUid)) {
       oops::Log::trace() << classname() << "::setupGridInterpolation done" << std::endl;
       return it;
     }
   }
 
   // Create interpolation
-  Interpolation interpolation(geom_->interpolation(),
-                              geom_->getComm(),
-                              srcGeom.partitioner(),
-                              srcGeom.functionSpace(),
+  Interpolation interpolation(srcGeom,
                               srcGeomUid,
                               geom_->grid(),
                               geom_->functionSpace(),

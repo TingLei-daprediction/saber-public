@@ -8,6 +8,7 @@ geometry:
     - air_horizontal_streamfunction
     levels: 1
     mask type: sea
+    mask path: ../quench/data/landsea.nc
   halo: 1
 background:
   date: 2010-01-01T12:00:00Z

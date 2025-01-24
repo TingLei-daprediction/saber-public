@@ -1,5 +1,5 @@
 Input Dirac increment:
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: F12
 - size: 1152
@@ -22,7 +22,7 @@ Fields:
 Adjoint test for block gauss winds to geostrophic pressure passed
 Adjoint test for block ID passed
 Covariance(SABER) * Increment:
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: F12
 - size: 1152

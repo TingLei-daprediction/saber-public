@@ -1,5 +1,5 @@
 Input Dirac increment:
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: L40x21
 - size: 840
@@ -17,7 +17,7 @@ Groups:
 Fields:
   eastward_wind: 1.0000000000000000e+00
   northward_wind: 0.0000000000000000e+00
-Valid time:2010-01-01T18:00:00Z
+Valid time: 2010-01-01T18:00:00Z
 Quench geometry grid:
 - name: L40x21
 - size: 840
@@ -106,7 +106,7 @@ Square-root test for block BUMP_NICAS passed
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
 Covariance(hybrid) * Increment:
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: L40x21
 - size: 840
@@ -124,7 +124,7 @@ Groups:
 Fields:
   eastward_wind: 1.3541398063751613e+01
   northward_wind: 4.0498383512132081e+00
-Valid time:2010-01-01T18:00:00Z
+Valid time: 2010-01-01T18:00:00Z
 Quench geometry grid:
 - name: L40x21
 - size: 840
@@ -206,7 +206,7 @@ Adjoint test for block BUMP_StdDev passed
 Adjoint test for block BUMP_NICAS passed
 Square-root test for block BUMP_NICAS passed
 Covariance(hybrid1_SABER) * Increment:
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: L40x21
 - size: 840
@@ -224,7 +224,7 @@ Groups:
 Fields:
   eastward_wind: 3.7259415926535306e-12
   northward_wind: 1.3202009593235781e-12
-Valid time:2010-01-01T18:00:00Z
+Valid time: 2010-01-01T18:00:00Z
 Quench geometry grid:
 - name: L40x21
 - size: 840
@@ -250,7 +250,7 @@ Fields:
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
 Covariance(hybrid2_ensemble) * Increment:
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: L40x21
 - size: 840
@@ -268,7 +268,7 @@ Groups:
 Fields:
   eastward_wind: 2.7082796127500622e+01
   northward_wind: 8.0996767024264411e+00
-Valid time:2010-01-01T18:00:00Z
+Valid time: 2010-01-01T18:00:00Z
 Quench geometry grid:
 - name: L40x21
 - size: 840
@@ -297,7 +297,7 @@ Localization(hybrid2_ensemble_localization) diagnostics:
 - Localization at zero separation:
   + Value for variable eastward_wind, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 1.0000000000000000e+00
 Localization(hybrid2_ensemble) * Increment:
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: L40x21
 - size: 840
@@ -315,7 +315,7 @@ Groups:
 Fields:
   eastward_wind: 2.2517366841554374e+00
   northward_wind: 2.2517366841554374e+00
-Valid time:2010-01-01T18:00:00Z
+Valid time: 2010-01-01T18:00:00Z
 Quench geometry grid:
 - name: L40x21
 - size: 840

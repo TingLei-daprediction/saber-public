@@ -1,5 +1,5 @@
 Input Dirac increment:
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: F15
 - size: 1800
@@ -36,7 +36,7 @@ Covariance(SABER) diagnostics:
   + Value for variable eastward_wind, subwindow 0, at (longitude, latitude, vertical index) point (18.00000, 20.65284, 2): 0.0000000000000000e+00
   + Value for variable air_pressure, subwindow 0, at (longitude, latitude, vertical index) point (18.00000, 20.65284, 2): 0.0000000000000000e+00
 Covariance(SABER) * Increment:
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: F15
 - size: 1800

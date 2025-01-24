@@ -1,5 +1,5 @@
 Member 0: 
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: CS-LFR-14
 - size: 1176
@@ -20,7 +20,7 @@ Fields:
   unbalanced_pressure_levels_minus_one: 2.6969772664181569e+03
   air_horizontal_velocity_potential: 2.9857380090833718e+08
 Member 1: 
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: CS-LFR-14
 - size: 1176

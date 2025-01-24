@@ -269,6 +269,9 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
       }
       const auto & localSpaceComm = globalSpaceComm.split(myComponent_, spaceCommName.c_str());
 
+      // Set up default MPI communicator for atlas
+      eckit::mpi::setCommDefault(localSpaceComm.name().c_str());
+
       // Create block geometry (needed for ensemble reading and local geometries)
       if (!hybridConf.has("geometry")) {
         throw eckit::UserError("Parallel hybrid block requires geometry key", Here());
@@ -298,9 +301,6 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
                                             localHybridGeom_->functionSpace());
       }
       globalSpaceComm.barrier();
-
-      // Set up default MPI communicator for atlas
-      eckit::mpi::setCommDefault(localSpaceComm.name().c_str());
 
       const oops::FieldSet4D localFset4dXbTmp(localXb);
       const oops::FieldSet4D localFset4dFgTmp(localFg);

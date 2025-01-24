@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include <memory>
 #include <ostream>
 #include <string>
 #include <unordered_map>
@@ -19,6 +20,7 @@
 
 #include "eckit/mpi/Comm.h"
 
+#include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 #include "oops/mpi/mpi.h"
 #include "oops/util/ObjectCounter.h"
@@ -87,7 +89,7 @@ class GroupParameters : public oops::Parameters {
   oops::Parameter<std::string> maskType{"mask type", "none", this};
 
   // Mask path
-  oops::Parameter<std::string> maskPath{"mask path", "../quench/data/landsea.nc", this};
+  oops::OptionalParameter<std::string> maskPath{"mask path", this};
 };
 
 // -----------------------------------------------------------------------------
@@ -212,6 +214,8 @@ class Geometry : public util::Printable,
     {return interpolation_;}
   bool duplicatePoints() const
     {return duplicatePoints_;}
+  const oops::GeometryData & generic() const
+    {return *geomData_;}
 
  private:
   // Print
@@ -279,6 +283,9 @@ class Geometry : public util::Printable,
 
   // Duplicate points
   bool duplicatePoints_;
+
+  // Geometry data structure
+  std::unique_ptr<oops::GeometryData> geomData_;
 };
 
 // -----------------------------------------------------------------------------

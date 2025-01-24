@@ -73,3 +73,5 @@ states:
     constant value: 0.7
   output:
     filepath: testdata/convertstate_constant/ensemble_weight
+test:
+  reference filename: testref/convertstate_constant.ref

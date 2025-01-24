@@ -44,17 +44,17 @@ class Covariance : public util::Printable,
   ~Covariance()
     {}
 
-  // Multiply and inverse multiply (identity)
-  void multiply(const Increment & dxi,
-                Increment & dxo) const
-    {dxo = dxi;}
-  void inverseMultiply(const Increment & dxi,
-                       Increment & dxo) const
-    {dxo = dxi;}
+  // Multiply and inverse multiply
+  void multiply(const Increment &,
+                Increment &) const
+    {throw eckit::NotImplemented(Here());}
+  void inverseMultiply(const Increment &,
+                       Increment &) const
+    {throw eckit::NotImplemented(Here());}
 
   // Randomization
   void randomize(Increment & dxo) const
-    {dxo.random();}
+    {throw eckit::NotImplemented(Here());}
 
  private:
   // Print

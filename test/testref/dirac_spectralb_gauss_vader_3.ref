@@ -1,5 +1,5 @@
 Input Dirac increment:
-Valid time:2016-01-01T16:00:00Z
+Valid time: 2016-01-01T16:00:00Z
 Quench geometry grid:
 - name: F12
 - size: 1152
@@ -36,7 +36,7 @@ Covariance(hybrid) diagnostics:
   + Value for variable dry_air_density_levels_minus_one, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 3.67270, 70): 5.0615244201968752e-14
   + Value for variable dry_air_density_levels_minus_one, subwindow 0, at (longitude, latitude, vertical index) point (180.00000, 3.67270, 1): 1.7712392158825259e-05
 Covariance(hybrid) * Increment:
-Valid time:2016-01-01T16:00:00Z
+Valid time: 2016-01-01T16:00:00Z
 Quench geometry grid:
 - name: F12
 - size: 1152
@@ -73,7 +73,7 @@ Covariance(hybrid1_SABER) diagnostics:
   + Value for variable dry_air_density_levels_minus_one, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 3.67270, 70): 5.0615244201968752e-14
   + Value for variable dry_air_density_levels_minus_one, subwindow 0, at (longitude, latitude, vertical index) point (180.00000, 3.67270, 1): 1.7712392158825259e-05
 Covariance(hybrid1_SABER) * Increment:
-Valid time:2016-01-01T16:00:00Z
+Valid time: 2016-01-01T16:00:00Z
 Quench geometry grid:
 - name: F12
 - size: 1152

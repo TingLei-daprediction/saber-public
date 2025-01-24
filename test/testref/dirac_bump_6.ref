@@ -1,5 +1,5 @@
 Input Dirac increment:
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: L40x21
 - size: 840
@@ -20,7 +20,7 @@ Fields:
 Adjoint test for block Ensemble passed
 Square-root test for block Ensemble passed
 Covariance(hybrid) * Increment:
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: L40x21
 - size: 840
@@ -41,7 +41,7 @@ Fields:
 Adjoint test for block Ensemble passed
 Square-root test for block Ensemble passed
 Covariance(hybrid1_SABER) * Increment:
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: L40x21
 - size: 840
@@ -60,7 +60,7 @@ Fields:
   eastward_wind: 9.5069162749111804e+00
   northward_wind: 1.0248748436398657e+01
 Covariance(hybrid2_ensemble) * Increment:
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: L40x21
 - size: 840

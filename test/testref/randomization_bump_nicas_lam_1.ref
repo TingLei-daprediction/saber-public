@@ -1,6 +1,6 @@
 Norm of input parameter StdDev: 1.4055514931869269e+06
 Member 0: 
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: structured
 - size: 3763

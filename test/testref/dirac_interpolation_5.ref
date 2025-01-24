@@ -1,5 +1,5 @@
 Input Dirac increment:
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: F15
 - size: 1800
@@ -21,7 +21,7 @@ Inner inverse test for block interpolation passed: U Uinv (U x) == (U x)
 Outer inverse test for block interpolation passed: Uinv U (Uinv x) == (Uinv x)
 Adjoint test for block ID passed
 Covariance(SABER) * Increment:
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: F15
 - size: 1800

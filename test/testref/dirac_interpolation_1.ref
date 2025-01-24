@@ -1,5 +1,5 @@
 Input Dirac increment:
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: CS-LFR-12
 - size: 864
@@ -21,7 +21,7 @@ Inner inverse test for block gauss to cubed-sphere-dual passed: U Uinv (U x) == 
 Outer inverse test for block gauss to cubed-sphere-dual passed: Uinv U (Uinv x) == (Uinv x)
 Adjoint test for block ID passed
 Covariance(SABER) * Increment:
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: CS-LFR-12
 - size: 864

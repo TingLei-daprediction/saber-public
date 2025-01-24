@@ -1,5 +1,5 @@
 Input Dirac increment:
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: CS-LFR-14
 - size: 1176
@@ -23,7 +23,7 @@ Covariance(SABER) diagnostics:
 - Covariances at diagnostic points:
   + Value for variable air_horizontal_streamfunction, subwindow 0, at (longitude, latitude, vertical index) point (176.78571, 3.20924, 1): 6.4119046085434017e+09
 Covariance(SABER) * Increment:
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: CS-LFR-14
 - size: 1176
@@ -47,7 +47,7 @@ Covariance(SABER1_SABER) diagnostics:
 - Covariances at diagnostic points:
   + Value for variable air_horizontal_streamfunction, subwindow 0, at (longitude, latitude, vertical index) point (176.78571, 3.20924, 1): 2.6805307751386386e+08
 Covariance(SABER1_SABER) * Increment:
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: CS-LFR-14
 - size: 1176
@@ -71,7 +71,7 @@ Covariance(SABER2_SABER) diagnostics:
 - Covariances at diagnostic points:
   + Value for variable air_horizontal_streamfunction, subwindow 0, at (longitude, latitude, vertical index) point (176.78571, 3.20924, 1): 1.1126729220048926e+09
 Covariance(SABER2_SABER) * Increment:
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: CS-LFR-14
 - size: 1176
@@ -95,7 +95,7 @@ Covariance(SABER3_SABER) diagnostics:
 - Covariances at diagnostic points:
   + Value for variable air_horizontal_streamfunction, subwindow 0, at (longitude, latitude, vertical index) point (176.78571, 3.20924, 1): 5.0311786090246449e+09
 Covariance(SABER3_SABER) * Increment:
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: CS-LFR-14
 - size: 1176
