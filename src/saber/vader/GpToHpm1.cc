@@ -16,16 +16,7 @@
 
 #include "eckit/exception/Exceptions.h"
 
-#include "mo/common_varchange.h"
-#include "mo/control2analysis_varchange.h"
-#include "mo/eval_air_pressure_levels.h"
-#include "mo/eval_air_temperature.h"
-#include "mo/eval_exner.h"
 #include "mo/eval_geostrophic_to_hydrostatic_pressure_levels_minus_one.h"
-#include "mo/eval_sat_vapour_pressure.h"
-#include "mo/eval_total_mixing_ratio.h"
-#include "mo/eval_virtual_potential_temperature.h"
-#include "mo/eval_water_vapor_mixing_ratio.h"
 
 #include "oops/base/FieldSet3D.h"
 #include "oops/base/Variables.h"

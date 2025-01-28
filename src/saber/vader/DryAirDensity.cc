@@ -16,12 +16,7 @@
 
 #include "eckit/exception/Exceptions.h"
 
-#include "mo/common_varchange.h"
-#include "mo/eval_cloud_ice_mixing_ratio.h"
-#include "mo/eval_cloud_liquid_mixing_ratio.h"
 #include "mo/eval_dry_air_density.h"
-#include "mo/eval_total_mixing_ratio.h"
-#include "mo/eval_water_vapor_mixing_ratio.h"
 
 #include "oops/base/FieldSet3D.h"
 #include "oops/base/Variables.h"

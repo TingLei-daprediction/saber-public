@@ -1,4 +1,4 @@
-# (C) Crown Copyright 2022 Met Office
+# (C) Crown Copyright 2022-2025 Met Office
 # (C) Copyright 2024 UCAR
 #
 # This software is licensed under the terms of the Apache Licence Version 2.0
@@ -12,6 +12,8 @@ CovarianceStatisticsUtils.cc
 CovarianceStatisticsUtils.h
 DryAirDensity.cc
 DryAirDensity.h
+DryAirDensityFromExnerm1.cc
+DryAirDensityFromExnerm1.h
 GpToHp.cc
 GpToHp.h
 GpToHpm1.cc
@@ -20,8 +22,12 @@ HpToHexner.cc
 HpToHexner.h
 HpHexnerToPExner.cc
 HpHexnerToPExner.h
+Hpm1ToHexnerExnerm1.cc
+Hpm1ToHexnerExnerm1.h
 HydroBal.cc
 HydroBal.h
+HydroBalm1.cc
+HydroBalm1.h
 MoistIncrOp.cc
 MoistIncrOp.h
 MoistIncrOpParameters.h

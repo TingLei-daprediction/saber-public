@@ -21,13 +21,13 @@ Groups:
   Mask size: 100%
 Fields:
   air_pressure_levels: 0.0000000000000000e+00
-  eastward_wind: 3.0967430421701226e+02
   dry_air_density_levels_minus_one: 0.0000000000000000e+00
-  geostrophic_pressure_levels_minus_one: 7.2651206786424491e+03
-  hydrostatic_pressure_levels: 5.8701751835606165e+03
-  mu: 1.1217104257676147e+02
-  northward_wind: 3.1480155973282615e+02
-  unbalanced_pressure_levels_minus_one: 3.1922272798622948e+03
+  eastward_wind: 3.1124947973002946e+02
+  geostrophic_pressure_levels_minus_one: 7.2676395490015839e+03
+  hydrostatic_pressure_levels: 5.4230753330630296e+03
+  mu: 1.1072489235059504e+02
+  northward_wind: 3.0958259605739141e+02
+  unbalanced_pressure_levels_minus_one: 3.2899090818417326e+03
 Member 1: 
 Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -51,13 +51,13 @@ Groups:
   Mask size: 100%
 Fields:
   air_pressure_levels: 0.0000000000000000e+00
-  eastward_wind: 3.1586478245236833e+02
   dry_air_density_levels_minus_one: 0.0000000000000000e+00
-  geostrophic_pressure_levels_minus_one: 7.4918767900779994e+03
-  hydrostatic_pressure_levels: 5.5501862809274335e+03
-  mu: 1.1196208097843194e+02
-  northward_wind: 3.1085059389221584e+02
-  unbalanced_pressure_levels_minus_one: 3.2149696846396482e+03
+  eastward_wind: 3.1203305902229124e+02
+  geostrophic_pressure_levels_minus_one: 7.3909839732156452e+03
+  hydrostatic_pressure_levels: 6.2024450271708101e+03
+  mu: 1.1147695959020385e+02
+  northward_wind: 3.1944574919483603e+02
+  unbalanced_pressure_levels_minus_one: 3.7514020272889870e+03
 Member 2: 
 Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -81,13 +81,13 @@ Groups:
   Mask size: 100%
 Fields:
   air_pressure_levels: 0.0000000000000000e+00
-  eastward_wind: 3.1471921196762889e+02
   dry_air_density_levels_minus_one: 0.0000000000000000e+00
-  geostrophic_pressure_levels_minus_one: 7.0212767631397937e+03
-  hydrostatic_pressure_levels: 5.3383877193992030e+03
-  mu: 1.1362356612120531e+02
-  northward_wind: 3.0826991730858822e+02
-  unbalanced_pressure_levels_minus_one: 3.2622449963782474e+03
+  eastward_wind: 3.2014815019075320e+02
+  geostrophic_pressure_levels_minus_one: 7.7061947499904136e+03
+  hydrostatic_pressure_levels: 5.8085493874914018e+03
+  mu: 1.0942998214579863e+02
+  northward_wind: 3.1710318576412499e+02
+  unbalanced_pressure_levels_minus_one: 3.1934345975605233e+03
 Member 3: 
 Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -111,13 +111,13 @@ Groups:
   Mask size: 100%
 Fields:
   air_pressure_levels: 0.0000000000000000e+00
-  eastward_wind: 3.1094932164955225e+02
   dry_air_density_levels_minus_one: 0.0000000000000000e+00
-  geostrophic_pressure_levels_minus_one: 7.1138112219146187e+03
-  hydrostatic_pressure_levels: 5.9229448287991336e+03
-  mu: 1.1003351657026117e+02
-  northward_wind: 3.1569756298525959e+02
-  unbalanced_pressure_levels_minus_one: 3.3423884535908824e+03
+  eastward_wind: 3.1728699577094966e+02
+  geostrophic_pressure_levels_minus_one: 6.7985596448761125e+03
+  hydrostatic_pressure_levels: 4.7302698503665442e+03
+  mu: 1.1312011456048151e+02
+  northward_wind: 3.0903448428050166e+02
+  unbalanced_pressure_levels_minus_one: 3.1804772817779485e+03
 Member 4: 
 Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -141,13 +141,13 @@ Groups:
   Mask size: 100%
 Fields:
   air_pressure_levels: 0.0000000000000000e+00
-  eastward_wind: 3.1676521192303079e+02
   dry_air_density_levels_minus_one: 0.0000000000000000e+00
-  geostrophic_pressure_levels_minus_one: 7.7999975878904897e+03
-  hydrostatic_pressure_levels: 5.6792086813701189e+03
-  mu: 1.1453030046231207e+02
-  northward_wind: 3.1155637660201108e+02
-  unbalanced_pressure_levels_minus_one: 3.4597882149972770e+03
+  eastward_wind: 3.1258777118362224e+02
+  geostrophic_pressure_levels_minus_one: 7.5796297040495838e+03
+  hydrostatic_pressure_levels: 5.6990448851356250e+03
+  mu: 1.1277327690062700e+02
+  northward_wind: 3.1424466501881813e+02
+  unbalanced_pressure_levels_minus_one: 3.1640146624118825e+03
 Member 5: 
 Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -171,13 +171,13 @@ Groups:
   Mask size: 100%
 Fields:
   air_pressure_levels: 0.0000000000000000e+00
-  eastward_wind: 3.1323453834691185e+02
   dry_air_density_levels_minus_one: 0.0000000000000000e+00
-  geostrophic_pressure_levels_minus_one: 7.1044050189222853e+03
-  hydrostatic_pressure_levels: 5.5275917266550896e+03
-  mu: 1.1592091126212783e+02
-  northward_wind: 3.1502978288729014e+02
-  unbalanced_pressure_levels_minus_one: 3.1026255508882127e+03
+  eastward_wind: 3.1717096111487058e+02
+  geostrophic_pressure_levels_minus_one: 8.3743355249714223e+03
+  hydrostatic_pressure_levels: 5.5357534149155072e+03
+  mu: 1.0981902173483081e+02
+  northward_wind: 3.0770546243413946e+02
+  unbalanced_pressure_levels_minus_one: 3.2108054570659901e+03
 Member 6: 
 Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -201,13 +201,13 @@ Groups:
   Mask size: 100%
 Fields:
   air_pressure_levels: 0.0000000000000000e+00
-  eastward_wind: 3.1448274949058430e+02
   dry_air_density_levels_minus_one: 0.0000000000000000e+00
-  geostrophic_pressure_levels_minus_one: 7.7893907845548119e+03
-  hydrostatic_pressure_levels: 5.7932490477139027e+03
-  mu: 1.1212936600597889e+02
-  northward_wind: 3.2156709491778241e+02
-  unbalanced_pressure_levels_minus_one: 3.5106246076185616e+03
+  eastward_wind: 3.0820660789949551e+02
+  geostrophic_pressure_levels_minus_one: 7.6614136183437377e+03
+  hydrostatic_pressure_levels: 5.9508732902109887e+03
+  mu: 1.1077457411236550e+02
+  northward_wind: 3.1806693997583631e+02
+  unbalanced_pressure_levels_minus_one: 3.3976432203875916e+03
 Member 7: 
 Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -231,13 +231,13 @@ Groups:
   Mask size: 100%
 Fields:
   air_pressure_levels: 0.0000000000000000e+00
-  eastward_wind: 3.1145561392300664e+02
   dry_air_density_levels_minus_one: 0.0000000000000000e+00
-  geostrophic_pressure_levels_minus_one: 7.8572603612103376e+03
-  hydrostatic_pressure_levels: 5.7077012401658212e+03
-  mu: 1.1087509243860892e+02
-  northward_wind: 3.1882957930421850e+02
-  unbalanced_pressure_levels_minus_one: 3.1744453341803851e+03
+  eastward_wind: 3.1256422779955636e+02
+  geostrophic_pressure_levels_minus_one: 7.6073759127199728e+03
+  hydrostatic_pressure_levels: 6.0597513337410055e+03
+  mu: 1.1206395831484167e+02
+  northward_wind: 3.1063724280283134e+02
+  unbalanced_pressure_levels_minus_one: 3.6145591034790073e+03
 Member 8: 
 Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -261,13 +261,13 @@ Groups:
   Mask size: 100%
 Fields:
   air_pressure_levels: 0.0000000000000000e+00
-  eastward_wind: 3.1255157077893580e+02
   dry_air_density_levels_minus_one: 0.0000000000000000e+00
-  geostrophic_pressure_levels_minus_one: 7.2816412871251223e+03
-  hydrostatic_pressure_levels: 5.2614153604685534e+03
-  mu: 1.1263677872631810e+02
-  northward_wind: 3.0742835435365134e+02
-  unbalanced_pressure_levels_minus_one: 3.5719035928559379e+03
+  eastward_wind: 3.1453971996105321e+02
+  geostrophic_pressure_levels_minus_one: 7.5088804821238718e+03
+  hydrostatic_pressure_levels: 5.5870023447443955e+03
+  mu: 1.1685156272833476e+02
+  northward_wind: 3.0745378042918747e+02
+  unbalanced_pressure_levels_minus_one: 3.0815209669921201e+03
 Member 9: 
 Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -291,13 +291,13 @@ Groups:
   Mask size: 100%
 Fields:
   air_pressure_levels: 0.0000000000000000e+00
-  eastward_wind: 3.1101993708341678e+02
   dry_air_density_levels_minus_one: 0.0000000000000000e+00
-  geostrophic_pressure_levels_minus_one: 7.3280207709163242e+03
-  hydrostatic_pressure_levels: 5.5364220580233396e+03
-  mu: 1.1172026527832273e+02
-  northward_wind: 3.0804373990711923e+02
-  unbalanced_pressure_levels_minus_one: 3.3581981193957681e+03
+  eastward_wind: 3.1236002790481228e+02
+  geostrophic_pressure_levels_minus_one: 7.7622870378047601e+03
+  hydrostatic_pressure_levels: 6.0745674285252780e+03
+  mu: 1.1138944749410197e+02
+  northward_wind: 3.1283900726831484e+02
+  unbalanced_pressure_levels_minus_one: 3.5042236930789913e+03
 Randomized variance: 
 Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -321,10 +321,10 @@ Groups:
   Mask size: 100%
 Fields:
   air_pressure_levels: 0.0000000000000000e+00
-  eastward_wind: 6.7597893649111234e+02
   dry_air_density_levels_minus_one: 0.0000000000000000e+00
-  geostrophic_pressure_levels_minus_one: 3.1056685261383577e+05
-  hydrostatic_pressure_levels: 1.9666762906887993e+05
-  mu: 6.3021217035701994e+01
-  northward_wind: 6.8708274078139914e+02
-  unbalanced_pressure_levels_minus_one: 6.2199903492923106e+04
+  eastward_wind: 6.8717894708456731e+02
+  geostrophic_pressure_levels_minus_one: 3.2264419032933179e+05
+  hydrostatic_pressure_levels: 2.0537142335938968e+05
+  mu: 6.2067006737471786e+01
+  northward_wind: 6.7635077056230841e+02
+  unbalanced_pressure_levels_minus_one: 6.5208676456073998e+04

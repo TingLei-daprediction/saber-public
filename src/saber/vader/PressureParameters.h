@@ -36,7 +36,7 @@ class GaussUVToGPParameters : public SaberBlockParametersBase {
     "northward_wind"}});}
 
   oops::Variables activeInnerVars(const oops::Variables& outerVars) const override {
-    const int modelLevels = outerVars["geostrophic_pressure_levels_minus_one"].getLevels();
+    const int modelLevels = outerVars["eastward_wind"].getLevels();
     eckit::LocalConfiguration conf;
     conf.set("levels", modelLevels);
     oops::Variables vars;
@@ -130,7 +130,7 @@ class GpToHpm1Parameters : public SaberBlockParametersBase {
     "unbalanced_pressure_levels_minus_one"}});}
 
   oops::Variables activeInnerVars(const oops::Variables& outerVars) const override {
-    const int modelLevels = outerVars["hydrostatic_pressure_levels_minus_one"].getLevels();
+    const int modelLevels = outerVars["eastward_wind"].getLevels();
     eckit::LocalConfiguration conf;
     conf.set("levels", modelLevels);
     oops::Variables vars;
@@ -209,7 +209,7 @@ class HydrostaticPressureMinusOneParameters : public SaberBlockParametersBase {
     "unbalanced_pressure_levels_minus_one"}});}
 
   oops::Variables activeInnerVars(const oops::Variables& outerVars) const override {
-    const int modelLevels = outerVars["hydrostatic_pressure_levels_minus_one"].getLevels();
+    const int modelLevels = outerVars["eastward_wind"].getLevels();
     eckit::LocalConfiguration conf;
     conf.set("levels", modelLevels);
     oops::Variables vars;

@@ -5,9 +5,9 @@ geometry:
     N: 12
   groups:
   - variables:
-    - dry_air_density_levels_minus_one
-    - dimensionless_exner_function_levels_minus_one
     - air_potential_temperature
+    - dimensionless_exner_function_levels_minus_one
+    - dry_air_density_levels_minus_one   
     - eastward_wind
     levels: 70
   partitioner: ectrans
@@ -15,9 +15,9 @@ geometry:
 background:
   date: 2016-01-01T16:00:00Z
   state variables:
-  - dry_air_density_levels_minus_one
-  - dimensionless_exner_function_levels_minus_one
   - air_potential_temperature
+  - dimensionless_exner_function_levels_minus_one
+  - dry_air_density_levels_minus_one
   - eastward_wind
   filepath: testdata/gauss_state
 background error:

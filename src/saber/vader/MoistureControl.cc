@@ -16,18 +16,7 @@
 
 #include "eckit/exception/Exceptions.h"
 
-#include "mo/common_varchange.h"
-#include "mo/control2analysis_varchange.h"
-#include "mo/eval_air_temperature.h"
-#include "mo/eval_cloud_ice_mixing_ratio.h"
-#include "mo/eval_cloud_liquid_mixing_ratio.h"
 #include "mo/eval_moisture_control.h"
-#include "mo/eval_moisture_incrementing_operator.h"
-#include "mo/eval_rain_mixing_ratio.h"
-#include "mo/eval_sat_vapour_pressure.h"
-#include "mo/eval_total_mixing_ratio.h"
-#include "mo/eval_total_relative_humidity.h"
-#include "mo/eval_water_vapor_mixing_ratio.h"
 
 #include "oops/base/FieldSet3D.h"
 #include "oops/base/Variables.h"
@@ -71,7 +60,6 @@ MoistureControl::MoistureControl(const oops::GeometryData & outerGeometryData,
   for (const auto & s : mandatoryStateVariables.variables()) {
     augmentedStateFieldSet_.add(xb.fieldSet()[s]);
   }
-
 
   oops::Log::trace() << classname() << "::MoistureControl done" << std::endl;
 }

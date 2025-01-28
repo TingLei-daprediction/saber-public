@@ -16,16 +16,7 @@
 
 #include "eckit/exception/Exceptions.h"
 
-#include "mo/common_varchange.h"
-#include "mo/control2analysis_varchange.h"
-#include "mo/eval_air_pressure_levels.h"
-#include "mo/eval_air_temperature.h"
-#include "mo/eval_exner.h"
 #include "mo/eval_geostrophic_to_hydrostatic_pressure.h"
-#include "mo/eval_sat_vapour_pressure.h"
-#include "mo/eval_total_mixing_ratio.h"
-#include "mo/eval_virtual_potential_temperature.h"
-#include "mo/eval_water_vapor_mixing_ratio.h"
 
 #include "oops/base/FieldSet3D.h"
 #include "oops/base/Variables.h"
@@ -109,6 +100,7 @@ void GpToHp::multiply(oops::FieldSet3D & fset) const {
 
 void GpToHp::multiplyAD(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
+
   // Allocate inner-only variables
   checkFieldsAreNotAllocated(fset, innerOnlyVars_);
   allocateMissingFields(fset, innerOnlyVars_, innerOnlyVars_,

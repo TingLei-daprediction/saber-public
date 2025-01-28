@@ -5,12 +5,12 @@ geometry:
     N: 15
   groups:
   - variables: &vars
-    - water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water
-    - q_cl
-    - q_cf
-    - air_temperature
-    - dimensionless_exner_function
-    - air_pressure
+    - var1
+    - var2
+    - var3
+    - var4
+    - var5
+    - var6
     levels: 2
   partitioner: ectrans
 background:
@@ -24,15 +24,15 @@ background error:
   saber outer blocks:
   - saber block name: duplicate variables
     variable groupings:
-    - group variable name: specific_humidity__q_cl__q_cf
+    - group variable name: var1_var2_var3
       group components:
-      - water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water
-      - q_cl
-      - q_cf
-    - group variable name: exner_air_temperature
+      - var1
+      - var2
+      - var3
+    - group variable name: var4_var5
       group components:
-      - air_temperature
-      - dimensionless_exner_function
+      - var4
+      - var5
   - saber block name: spectral to gauss
 dirac:
   lon:
@@ -71,9 +71,9 @@ diagnostic points:
   - 2
   - 2
   variable:
-  - water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water
-  - dimensionless_exner_function
-  - air_pressure
+  - var1
+  - var4
+  - var6
 output dirac:
   mpi pattern: '%MPI%'
   filepath: testdata/dirac_spectralb_duplicate_variables/%MPI%_dirac_%id%

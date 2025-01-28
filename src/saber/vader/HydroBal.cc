@@ -1,5 +1,5 @@
 /*
- * (C) Crown Copyright 2022-2024 Met Office
+ * (C) Crown Copyright 2022-2025 Met Office
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -16,24 +16,14 @@
 
 #include "eckit/exception/Exceptions.h"
 
-#include "mo/common_varchange.h"
-#include "mo/control2analysis_varchange.h"
-#include "mo/eval_air_pressure_levels.h"
-#include "mo/eval_air_temperature.h"
 #include "mo/eval_hydrostatic_balance.h"
-#include "mo/eval_sat_vapour_pressure.h"
-#include "mo/eval_total_mixing_ratio.h"
-#include "mo/eval_virtual_potential_temperature.h"
-#include "mo/eval_water_vapor_mixing_ratio.h"
 
-#include "mo/model2geovals_varchange.h"
 #include "oops/base/FieldSet3D.h"
 #include "oops/base/Variables.h"
 #include "oops/util/Timer.h"
 
 #include "saber/blocks/SaberOuterBlockBase.h"
 #include "saber/oops/Utilities.h"
-#include "saber/vader/CovarianceStatisticsUtils.h"
 
 namespace saber {
 namespace vader {
@@ -115,7 +105,7 @@ void HydroBal::leftInverseMultiply(oops::FieldSet3D & fset) const {
 
 void HydroBal::directCalibration(const oops::FieldSets & fsetEns) {
   oops::Log::trace() << classname() << "::directCalibration starting" << std::endl;
-
+  oops::Log::info() << classname() << "::directCalibration (empty step)" << std::endl;
   oops::Log::trace() << classname() << "::directCalibration done" << std::endl;
 }
 

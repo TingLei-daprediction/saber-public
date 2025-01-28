@@ -7,8 +7,8 @@ geometry:
   - variables:
     - air_horizontal_streamfunction
     - air_horizontal_velocity_potential
-    - unbalanced_pressure_levels_minus_one
     - mu
+    - unbalanced_pressure_levels_minus_one
     levels: 70
   partitioner: ectrans
 background:
@@ -16,8 +16,8 @@ background:
   state variables:
   - air_horizontal_streamfunction
   - air_horizontal_velocity_potential
-  - unbalanced_pressure_levels_minus_one
   - mu
+  - unbalanced_pressure_levels_minus_one
 background error:
   covariance model: SABER
   adjoint test: true
@@ -49,8 +49,8 @@ dirac:
   variable:
   - air_horizontal_streamfunction
   - air_horizontal_velocity_potential
-  - unbalanced_pressure_levels_minus_one
   - mu
+  - unbalanced_pressure_levels_minus_one
 diagnostic points:
   lon:
   - 20.0
@@ -70,8 +70,8 @@ diagnostic points:
   variable:
   - air_horizontal_streamfunction
   - air_horizontal_velocity_potential
-  - unbalanced_pressure_levels_minus_one
   - mu
+  - unbalanced_pressure_levels_minus_one
 output dirac:
   mpi pattern: '%MPI%'
   filepath: testdata/dirac_spectralb_from_saber_file_2/%MPI%_dirac_%id%

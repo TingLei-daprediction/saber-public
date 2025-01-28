@@ -1,5 +1,5 @@
 /*
- * (C) Crown Copyright 2022-2025 Met Office
+ * (C) Crown Copyright 2024-2025 Met Office
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -31,14 +31,14 @@ namespace vader {
 
 // -----------------------------------------------------------------------------
 
-class HydroBalParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(HydroBalParameters, SaberBlockParametersBase)
+class HydroBalm1Parameters : public SaberBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(HydroBalm1Parameters, SaberBlockParametersBase)
 
  public:
   oops::Variables mandatoryActiveVars() const override {
     return oops::Variables({
         std::vector<std::string>{
-        "air_pressure_levels",
+        "dimensionless_exner_function_levels_minus_one",
         "hydrostatic_exner_levels",
         "virtual_potential_temperature"}});
   }
@@ -46,18 +46,21 @@ class HydroBalParameters : public SaberBlockParametersBase {
   const oops::Variables mandatoryStateVars() const override {
     return oops::Variables({
         "air_pressure_levels",
-        "hydrostatic_exner_levels",
+        "hydrostatic_pressure_levels",
         "virtual_potential_temperature",
         "height_above_mean_sea_level_levels"});
   }
 
   oops::Variables activeInnerVars(const oops::Variables& outerVars) const override {
-    const int modelLevels = outerVars["virtual_potential_temperature"].getLevels();
+    const int modelLevels =
+      outerVars["dimensionless_exner_function_levels_minus_one"].getLevels();
     eckit::LocalConfiguration conf;
-    conf.set("levels", modelLevels + 1);
+    conf.set("levels", modelLevels);
+    eckit::LocalConfiguration conf2;
+    conf2.set("levels", modelLevels+1);
     oops::Variables vars;
-    vars.push_back({"air_pressure_levels", conf});
-    vars.push_back({"hydrostatic_exner_levels", conf});
+    vars.push_back({"air_pressure_levels_minus_one", conf});
+    vars.push_back({"hydrostatic_exner_levels", conf2});
     return vars;
   }
 
@@ -69,19 +72,19 @@ class HydroBalParameters : public SaberBlockParametersBase {
 
 // -----------------------------------------------------------------------------
 
-class HydroBal : public SaberOuterBlockBase {
+class HydroBalm1 : public SaberOuterBlockBase {
  public:
-  static const std::string classname() {return "saber::vader::HydroBal";}
+  static const std::string classname() {return "saber::vader::HydroBalm1";}
 
-  typedef HydroBalParameters Parameters_;
+  typedef HydroBalm1Parameters Parameters_;
 
-  HydroBal(const oops::GeometryData &,
+  HydroBalm1(const oops::GeometryData &,
            const oops::Variables &,
            const eckit::Configuration &,
            const Parameters_ &,
            const oops::FieldSet3D &,
            const oops::FieldSet3D &);
-  virtual ~HydroBal();
+  virtual ~HydroBalm1();
 
   const oops::GeometryData & innerGeometryData() const override {return innerGeometryData_;}
   const oops::Variables & innerVars() const override {return innerVars_;}

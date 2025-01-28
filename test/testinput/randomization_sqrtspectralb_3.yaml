@@ -5,14 +5,14 @@ geometry:
     N: 12
   groups:
   - variables:
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
     - eastward_wind
     - dry_air_density_levels_minus_one
     - geostrophic_pressure_levels_minus_one
     - mu
-    - northward_wind
-    - air_horizontal_streamfunction
-    - unbalanced_pressure_levels_minus_one
-    - air_horizontal_velocity_potential
+    - northward_wind 
+    - unbalanced_pressure_levels_minus_one 
     levels: 70
   - variables:
     - air_pressure_levels
@@ -23,8 +23,8 @@ background:
   date: 2010-01-01T12:00:00Z
   state variables:
   - air_pressure_levels
-  - eastward_wind
   - dry_air_density_levels_minus_one
+  - eastward_wind
   - geostrophic_pressure_levels_minus_one
   - hydrostatic_pressure_levels
   - mu
@@ -37,28 +37,28 @@ background error:
   saber central block:
     saber block name: ID
     active variables:
-    - mu
     - air_horizontal_streamfunction
-    - unbalanced_pressure_levels_minus_one
     - air_horizontal_velocity_potential
+    - mu
+    - unbalanced_pressure_levels_minus_one    
   saber outer blocks:
   - saber block name: square root of spectral covariance
     skip inverse test: true
     read:
       covariance_file: testdata/error_covariance_training_spectralb_1/spectralsabercov_1.nc
     active variables:
-    - mu
     - air_horizontal_streamfunction
-    - unbalanced_pressure_levels_minus_one
     - air_horizontal_velocity_potential
+    - mu
+    - unbalanced_pressure_levels_minus_one  
   - saber block name: spectral to gauss
     active variables:
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
     - eastward_wind
     - mu
     - northward_wind
-    - air_horizontal_streamfunction
     - unbalanced_pressure_levels_minus_one
-    - air_horizontal_velocity_potential
   - saber block name: gauss winds to geostrophic pressure
     skip inverse test: true  # Tested within mo_hydrostatic_pressure block
   - saber block name: mo_hydrostatic_pressure_from_geostrophic_pressure

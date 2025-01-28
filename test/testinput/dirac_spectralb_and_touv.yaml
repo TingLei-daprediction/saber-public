@@ -5,21 +5,21 @@ geometry:
     N: 15
   groups:
   - variables:
-    - eastward_wind
-    - northward_wind
     - air_horizontal_streamfunction
     - air_horizontal_velocity_potential
-    - unbalanced_pressure_levels_minus_one
+    - eastward_wind
     - mu
+    - northward_wind
+    - unbalanced_pressure_levels_minus_one
     levels: 70
   partitioner: ectrans
 background:
   date: 2010-01-01T12:00:00Z
   state variables:
   - eastward_wind
+  - mu
   - northward_wind
   - unbalanced_pressure_levels_minus_one
-  - mu
 background error:
   covariance model: SABER
   adjoint test: true
@@ -29,24 +29,24 @@ background error:
     active variables:
     - air_horizontal_streamfunction
     - air_horizontal_velocity_potential
-    - unbalanced_pressure_levels_minus_one
     - mu
+    - unbalanced_pressure_levels_minus_one
     read:
       covariance_file: testdata/spectralcov.nc
       umatrix_netcdf_names:
       - PSI_inc_Uv_matrix
       - CHI_inc_Uv_matrix
-      - aP_inc_Uv_matrix
       - MU_inc_Uv_matrix
+      - aP_inc_Uv_matrix
   saber outer blocks:
   - saber block name: spectral to gauss
     active variables:
-    - unbalanced_pressure_levels_minus_one
-    - mu
     - air_horizontal_streamfunction
     - air_horizontal_velocity_potential
     - eastward_wind
+    - mu
     - northward_wind
+    - unbalanced_pressure_levels_minus_one
     outer inverse tolerance: 1e-8
 dirac:
   lon:
@@ -63,8 +63,8 @@ dirac:
   - 1
   variable:
   - eastward_wind
-  - unbalanced_pressure_levels_minus_one
   - mu
+  - unbalanced_pressure_levels_minus_one
 diagnostic points:
   lon:
   - 20.0
@@ -80,8 +80,8 @@ diagnostic points:
   - 2
   variable:
   - eastward_wind
-  - unbalanced_pressure_levels_minus_one
   - mu
+  - unbalanced_pressure_levels_minus_one
 output dirac:
   mpi pattern: '%MPI%'
   filepath: testdata/dirac_spectralb_and_touv/%MPI%_dirac_%id%
