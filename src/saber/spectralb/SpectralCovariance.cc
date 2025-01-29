@@ -1,5 +1,5 @@
 /*
- * (C) Crown Copyright 2022-2024 Met Office
+ * (C) Crown Copyright 2022-2025 Met Office
  * (C) Copyright 2022- UCAR
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
@@ -7,6 +7,8 @@
  */
 
 #include "saber/spectralb/SpectralCovariance.h"
+
+#include <algorithm>
 
 #include "atlas/array/MakeView.h"
 #include "atlas/field/Field.h"
@@ -128,8 +130,19 @@ void SpectralCovariance::read() {
   }
 
   const auto & umatrixNetCDFParams = sparams.umatrixNetCDFNames.value();
+  const std::size_t nSpectralBins = specFunctionSpace_.truncation() + 1;  // 2N
+  // Get file spectral bins
+  const std::vector<std::size_t> nFileSpectralBinsVec =
+    specutils::getNSpectralBinsFull(sparams, activeVars_);
+  const std::size_t nFileSpectralBins =
+    *(std::max_element(nFileSpectralBinsVec.begin(), nFileSpectralBinsVec.end()));
+  // We are asserting that the spectral resolution of all variables in the file
+  // are the same.
+  ASSERT(nFileSpectralBins ==
+         *(std::min_element(nFileSpectralBinsVec.begin(), nFileSpectralBinsVec.end())));
 
-  const int nSpectralBins = specFunctionSpace_.truncation() + 1;  // 2N
+  const int nSpectralBinsUse = std::min(nSpectralBins, nFileSpectralBins);
+
   spectralVerticalCovariances_.clear();
 
   for (std::size_t i = 0; i < activeVars_.size(); ++i) {
@@ -137,16 +150,20 @@ void SpectralCovariance::read() {
     auto spectralVertCov =
       atlas::Field(activeVars_[i].name(),
                    atlas::array::make_datatype<double>(),
-                   atlas::array::make_shape(nSpectralBins,
+                   atlas::array::make_shape(nSpectralBinsUse,
                                             activeVars_[i].getLevels(),
                                             activeVars_[i].getLevels()));
     if (umatrixNetCDFParams != boost::none) {
       const oops::Variables netCDFVars(umatrixNetCDFParams.value());
+      // Note that in this variant nSpectralBinsUse can be smaller than the
+      // spectral resolution in file. This is done for pragmatic reasons.
       specutils::createSpectralCovarianceFromUMatrixFile(activeVars_[i].name(),
                                                          netCDFVars[i].name(),
                                                          sparams,
                                                          spectralVertCov);
     } else {
+      // Note that in this variant nSpectralBinsUse is always the same spectral
+      // resolution as what is in the file.
       specutils::readSpectralCovarianceFromFile(activeVars_[i].name(),
                                                 activeVars_[i].name(),
                                                 sparams,

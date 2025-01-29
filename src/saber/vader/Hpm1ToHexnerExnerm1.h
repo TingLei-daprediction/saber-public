@@ -36,8 +36,8 @@ namespace vader {
 
 // -----------------------------------------------------------------------------
 
-class HpHexnerToPExnerm1Parameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(HpHexnerToPExnerm1Parameters, SaberBlockParametersBase)
+class Hpm1ToHexnerExnerm1Parameters : public SaberBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(Hpm1ToHexnerExnerm1Parameters, SaberBlockParametersBase)
 
  public:
   oops::Variables mandatoryActiveVars() const override {return oops::Variables({
@@ -48,6 +48,7 @@ class HpHexnerToPExnerm1Parameters : public SaberBlockParametersBase {
 
   const oops::Variables mandatoryStateVars() const override {
     return oops::Variables({"air_pressure_levels",
+                            "dimensionless_exner_function_levels_minus_one",
                             "hydrostatic_exner_levels",
                             "hydrostatic_pressure_levels"});
   }
@@ -73,19 +74,19 @@ class HpHexnerToPExnerm1Parameters : public SaberBlockParametersBase {
 ///        dimensionless_exner_function_levels_minus_one and hydrostatic_pressure_levels into
 ///        air_pressure_levels
 
-class HpHexnerToPExnerm1 : public SaberOuterBlockBase {
+class Hpm1ToHexnerExnerm1 : public SaberOuterBlockBase {
  public:
-  static const std::string classname() {return "saber::vader::HpHexnerToPExnerm1";}
+  static const std::string classname() {return "saber::vader::Hpm1ToHexnerExnerm1";}
 
-  typedef HpHexnerToPExnerm1Parameters Parameters_;
+  typedef Hpm1ToHexnerExnerm1Parameters Parameters_;
 
-  HpHexnerToPExnerm1(const oops::GeometryData &,
+  Hpm1ToHexnerExnerm1(const oops::GeometryData &,
                      const oops::Variables &,
                      const eckit::Configuration &,
                      const Parameters_ &,
                      const oops::FieldSet3D &,
                      const oops::FieldSet3D &);
-  virtual ~HpHexnerToPExnerm1();
+  virtual ~Hpm1ToHexnerExnerm1();
 
   const oops::GeometryData & innerGeometryData() const override {return innerGeometryData_;}
   const oops::Variables & innerVars() const override {return innerVars_;}

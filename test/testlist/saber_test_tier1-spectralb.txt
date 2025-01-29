@@ -1,4 +1,5 @@
 compare_diagnostics_spectralb_write_read
+compare_diagnostics_spectralb_from_saber_file_1
 compare_diagnostics_sqrtspectralb_1
 compare_diagnostics_sqrtspectralb_2
 dirac_ens_both_geom
@@ -18,6 +19,8 @@ dirac_spectralb_from_CS
 dirac_spectralb_from_L15
 dirac_spectralb_from_saber_file_1
 dirac_spectralb_from_saber_file_2
+dirac_spectralb_from_saber_file_3
+dirac_spectralb_from_saber_file_4
 dirac_spectralb_localization_1
 dirac_spectralb_localization_2
 dirac_spectraltouv

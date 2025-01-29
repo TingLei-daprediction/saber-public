@@ -50,10 +50,8 @@ void eval_dry_air_density_from_exner_levels_minus_one_tl(atlas::FieldSet & incFl
                      << std::endl;
   // State Fields
   auto dryrhoView = make_view<const double, 2>(stateFlds["dry_air_density_levels_minus_one"]);
-  auto hexnerView = make_view<const double, 2>(stateFlds["hydrostatic_exner_levels"]);
-  auto hpView = make_view<const double, 2>(stateFlds["hydrostatic_pressure_levels"]);
-  auto pView = make_view<const double, 2>(stateFlds["air_pressure_levels"]);
-
+  auto exnerView = make_view<const double, 2>(
+    stateFlds["dimensionless_exner_function_levels_minus_one"]);
   auto hlView = make_view<const double, 2>(stateFlds["height_above_mean_sea_level_levels"]);
   auto hView = make_view<const double, 2>(stateFlds["height_above_mean_sea_level"]);
   auto ptView = make_view<const double, 2>(stateFlds["air_potential_temperature"]);
@@ -104,8 +102,8 @@ void eval_dry_air_density_from_exner_levels_minus_one_tl(atlas::FieldSet & incFl
                     / (1.0 - qView(jn, 0) - qclView(jn, 0) - qcfView(jn, 0));
 
     dryrhoIncView(jn, 0) = dryrhoView(jn, 0) * (
-      (1.0 - ::mo::constants::rd_over_cp)  * exnerIncView(jn, 0) * hpView(jn, 0) /
-      (hexnerView(jn, 0) * ::mo::constants::rd_over_cp * pView(jn, 0)) -
+      (1.0 - ::mo::constants::rd_over_cp)  * exnerIncView(jn, 0) /
+      (exnerView(jn, 0) * ::mo::constants::rd_over_cp) -
       vptdrydensInc / vptdrydens);
 
     for (idx_t jl = 1; jl < numLevels; ++jl) {
@@ -135,8 +133,8 @@ void eval_dry_air_density_from_exner_levels_minus_one_tl(atlas::FieldSet & incFl
 
       dryrhoIncView(jn, jl) = dryrhoView(jn, jl) * (
         (1.0 - ::mo::constants::rd_over_cp) *
-        (exnerIncView(jn, jl) * hpView(jn, jl) /
-        (hexnerView(jn, jl) * ::mo::constants::rd_over_cp)) / pView(jn, jl) -
+        (exnerIncView(jn, jl) /
+        (exnerView(jn, jl) * ::mo::constants::rd_over_cp)) -
         vptdrydensInc_intp_times_h_minus_hm1 / vptdrydens_intp_times_h_minus_hm1);
     }
   }
@@ -153,9 +151,8 @@ void eval_dry_air_density_from_exner_levels_minus_one_ad(atlas::FieldSet & hatFl
                      << std::endl;
   // State fields
   auto dryrhoView = make_view<const double, 2>(stateFlds["dry_air_density_levels_minus_one"]);
-  auto hexnerView = make_view<const double, 2>(stateFlds["hydrostatic_exner_levels"]);
-  auto hpView = make_view<const double, 2>(stateFlds["hydrostatic_pressure_levels"]);
-  auto pView = make_view<const double, 2>(stateFlds["air_pressure_levels"]);
+  auto exnerView = make_view<const double, 2>(
+    stateFlds["dimensionless_exner_function_levels_minus_one"]);
   auto hlView = make_view<const double, 2>(stateFlds["height_above_mean_sea_level_levels"]);
   auto hView = make_view<const double, 2>(stateFlds["height_above_mean_sea_level"]);
   auto ptView = make_view<const double, 2>(stateFlds["air_potential_temperature"]);
@@ -164,8 +161,6 @@ void eval_dry_air_density_from_exner_levels_minus_one_ad(atlas::FieldSet & hatFl
     stateFlds["cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water"]);
   auto qcfView = make_view<const double, 2>(
     stateFlds["cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water"]);
-  auto exnerView = make_view<const double, 2>(
-    stateFlds["dimensionless_exner_function_levels_minus_one"]);
 
   // Increment (adjoint) fields
   auto exnerHatView = make_view<double, 2>(
@@ -201,8 +196,8 @@ void eval_dry_air_density_from_exner_levels_minus_one_ad(atlas::FieldSet & hatFl
                    - qclView(jn, jl) - qcfView(jn, jl));
 
       exnerHatView(jn, jl) += dryrhoView(jn, jl) *
-        (1.0 - ::mo::constants::rd_over_cp)  * dryrhoHatView(jn, jl) * hpView(jn, jl) /
-        (hexnerView(jn, jl) * ::mo::constants::rd_over_cp * pView(jn, jl));
+        (1.0 - ::mo::constants::rd_over_cp)  * dryrhoHatView(jn, jl) /
+        (exnerView(jn, jl) * ::mo::constants::rd_over_cp);
 
       vptdrydens_jlm1 = ptView(jn, jl-1) * (1.0 + ::mo::constants::c_virtual * qView(jn, jl-1)
                         - qclView(jn, jl-1) - qcfView(jn, jl-1)) / (1.0 - qView(jn, jl-1)
@@ -255,8 +250,8 @@ void eval_dry_air_density_from_exner_levels_minus_one_ad(atlas::FieldSet & hatFl
     }
 
     exnerHatView(jn, 0) += dryrhoView(jn, 0) *
-      (1.0 - ::mo::constants::rd_over_cp) * dryrhoHatView(jn, 0) * hpView(jn, 0) /
-      (hexnerView(jn, 0) * ::mo::constants::rd_over_cp * pView(jn, 0));
+      (1.0 - ::mo::constants::rd_over_cp) * dryrhoHatView(jn, 0) /
+      (exnerView(jn, 0) * ::mo::constants::rd_over_cp);
 
     vptdrydens = ptView(jn, 0) *
       (1.0 + ::mo::constants::c_virtual * qView(jn, 0) - qclView(jn, 0) - qcfView(jn, 0)) /
