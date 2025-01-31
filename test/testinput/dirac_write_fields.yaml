@@ -1,8 +1,8 @@
 geometry:
-  function space: StructuredColumns
+  function space: NodeColumns
   grid:
-    type: regular_gaussian
-    N: 12
+    name: CS-LFR-15
+  partitioner: cubedsphere
   groups:
   - variables:
     - air_pressure
@@ -53,7 +53,6 @@ geometry:
     - hydrostatic_exner_levels
     - hydrostatic_pressure_levels
     levels: 71
-  partitioner: ectrans
   halo: 1
 
 background:
@@ -105,18 +104,17 @@ background error:
       - aP_inc_Uv_matrix
       - CHI_inc_Uv_matrix
   saber outer blocks:
-  # Write out fields for the final time
+  # Write out fields in spectral space
   - saber block name: write fields
     output path: testdata/dirac_write_fields
-    xb filename: fields_final_xb
-    fg filename: fields_final_fg
-    multiply fset filename: fields_final_multiply
-    multiplyad fset filename: fields_final_multiplyad
-    left inverse fset filename: fields_final_leftinverse
+    xb filename: fields_Spectral_space_final_xb
+    fg filename: fields_Spectral_space_final_fg
+    save netCDF file: False
+    save GMSH file: true
     field names:
-    - air_horizontal_streamfunction
+    - eastward_wind
+    - northward_wind
     skip inverse: true
-    save netCDF file: false
   - saber block name: spectral to gauss
     inner inverse tolerance: 1e-12
     outer inverse tolerance: 1e-8
@@ -127,52 +125,52 @@ background error:
     - air_horizontal_streamfunction
     - unbalanced_pressure_levels_minus_one
     - air_horizontal_velocity_potential
-  # Write out fields after the mo_hydrostatic_pressure transform
+  - saber block name: gauss winds to geostrophic pressure
+    skip inverse test: true  # Tested within mo_hydrostatic_pressure block
+  # Write out fields in Gaussian space
   - saber block name: write fields
     output path: testdata/dirac_write_fields
-    xb filename: fields_before_mo_hydrostatic_pressure_xb
-    fg filename: fields_before_mo_hydrostatic_pressure_fg
-    multiply fset filename: fields_before_mo_hydrostatic_pressure_multiply
-    multiplyad fset filename: fields_before_mo_hydrostatic_pressure_multiplyad
-    left inverse fset filename: fields_before_mo_hydrostatic_pressure_leftinverse
+    multiply fset filename: fields_Gaussian_space_multiply
+    multiplyad fset filename: fields_Gaussian_space_multiplyad
+    left inverse fset filename: fields_Gaussian_space_leftinverse
     field names:
     - eastward_wind
-  - saber block name: mo_hydrostatic_pressure
-    inner inverse tolerance: 1e-12
-    outer inverse tolerance: 1e-10
-    inner variables to compare:
-    - unbalanced_pressure_levels_minus_one
+    - northward_wind
+    skip inverse: true
+    save GMSH file: true
+  - saber block name: gauss to cubed-sphere-dual
+    inner inverse tolerance: 0.2
+    outer inverse tolerance: 0.2
+    gauss grid uid: F15
+    interpolation type: "structured-bicubic"
+    active variables:
+    - eastward_wind
+    - mu
+    - northward_wind
     - geostrophic_pressure_levels_minus_one
+  # Write out fields in cubed-sphere space
+  - saber block name: write fields
+    output path: testdata/dirac_write_fields
+    multiply fset filename: inner_fields_CS_space_multiply
+    multiplyad fset filename: inner_fields_CS_space_multiplyad
+    left inverse fset filename: inner_fields_CS_space_leftinverse
+    field names:
+     - geostrophic_pressure_levels_minus_one
+     - mu
+  - saber block name: mo_hydrostatic_pressure_from_geostrophic_pressure
+    skip inverse test: true  # Tested within mo_hydrostatic_pressure block
     read:
       covariance file path: testdata/FPstats.nc
       number of covariance latitude rings: 481
       gp regression bins: 18
-  # Write out chosen fields after the mo_hydro_bal transform, but do not save the netCDF file
-  - saber block name: write fields
-    output path: testdata/dirac_write_fields
-    xb filename: fields_after_mo_hydrostatic_pressure_xb
-    fg filename: fields_after_mo_hydrostatic_pressure_fg
-    multiply fset filename: fields_after_mo_hydrostatic_pressure_multiply
-    multiplyad fset filename: fields_after_mo_hydrostatic_pressure_multiplyad
-    left inverse fset filename: fields_after_mo_hydrostatic_pressure_leftinverse
-    field names:
-    - eastward_wind
-    save netCDF file: false
   - saber block name: mo_hydrostatic_pressure_to_hydrostatic_exner
     saturation vapour pressure file: testdata/svp_dlsvp_svpW_dlsvpW.nc
+    skip inverse test: true
   - saber block name: mo_hydro_bal
+    skip inverse test: true
     inner inverse tolerance: 1e-9  #TODO to be replaced by relative tolerance
     outer variables to compare: [virtual_potential_temperature, air_pressure_levels_minus_one]
     outer inverse tolerance: 1e-13
-  # Write out all fields after the mo_moisture_control transform.
-  # The output fields are not specified, so all fields are written out.
-  - saber block name: write fields
-    output path: testdata/dirac_write_fields
-    xb filename: fields_after_mo_moisture_control_xb
-    fg filename: fields_after_mo_moisture_control_fg
-    multiply fset filename: fields_after_mo_moisture_control_multiply
-    multiplyad fset filename: fields_after_mo_moisture_control_multiplyad
-    left inverse fset filename: fields_after_mo_moisture_control_leftinverse
   - saber block name: mo_hydrostatic_pressure_hydrostatic_exner_to_pressure_exner
     inner variables to compare:
     - hydrostatic_exner_levels
@@ -196,17 +194,19 @@ background error:
     moisture incrementing operator file: testdata/MIO_coefficients.nc
   - saber block name: mo_dry_air_density
     skip inverse test: true
-  # Write out fields for the first time
+  # Write out fields in cubed-sphere space
   - saber block name: write fields
     output path: testdata/dirac_write_fields
-    xb filename: fields_initial_xb
-    fg filename: fields_initial_fg
-    multiply fset filename: fields_initial_multiply
-    multiplyad fset filename: fields_initial_multiplyad
-    left inverse fset filename: fields_initial_leftinverse
+    xb filename: outer_fields_CS_space_xb
+    fg filename: outer_fields_CS_space_fg
+    multiply fset filename: outer_fields_CS_space_multiply
+    multiplyad fset filename: outer_fields_CS_space_multiplyad
+    left inverse fset filename: outer_fields_CS_space_leftinverse
+    save netCDF file: false
+    save GMSH file: true
     field names:
-    - air_temperature
-    - eastward_wind
-    - northward_wind
+    - dry_air_density_levels_minus_one
+
 test:
+  test output filename: testref/dirac_write_fields.out
   reference filename: testref/dirac_write_fields.ref
