@@ -1,5 +1,5 @@
 /*
- * (C) Crown Copyright 2023 Met Office
+ * (C) Crown Copyright 2023-2024 Met Office
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -67,6 +67,9 @@ class HydrostaticPressure : public SaberOuterBlockBase {
   void multiply(oops::FieldSet3D &) const override;
   void multiplyAD(oops::FieldSet3D &) const override;
   void leftInverseMultiply(oops::FieldSet3D &) const override;
+  void read() override;
+  void directCalibration(const oops::FieldSets & fset) override;
+  void write() const override;
 
  private:
   void print(std::ostream &) const override;
@@ -75,6 +78,7 @@ class HydrostaticPressure : public SaberOuterBlockBase {
   const oops::Variables intermediateTempVars_;
   /// Gaussian (outer) functionspace
   const atlas::functionspace::StructuredColumns gaussFunctionSpace_;
+  Parameters_ params_;
   std::unique_ptr<saber::vader::GpToHp> gptohp_;
   std::unique_ptr<GaussUVToGP> gaussuvtogp_;
 };

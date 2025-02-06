@@ -1,5 +1,5 @@
 Input Dirac increment:
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: F12
 - size: 1152
@@ -47,7 +47,7 @@ Covariance(SABER) diagnostics:
   + Value for variable var1_levels_minus_one, subwindow 0, at (longitude, latitude, vertical index) point (195.00000, 69.76378, 1): 6.5681021199141276e-01
   + Value for variable var1_levels, subwindow 0, at (longitude, latitude, vertical index) point (90.00000, 33.05347, 1): 1.8667751207191532e-01
 Covariance(SABER) * Increment:
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: F12
 - size: 1152

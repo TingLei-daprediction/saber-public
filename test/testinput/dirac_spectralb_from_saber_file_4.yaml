@@ -1,0 +1,79 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_gaussian
+    N: 15
+  groups:
+  - variables:
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
+    - unbalanced_pressure_levels_minus_one
+    - mu
+    levels: 70
+  partitioner: ectrans
+background:
+  date: 2010-01-01T12:00:00Z
+  state variables:
+  - air_horizontal_streamfunction
+  - air_horizontal_velocity_potential
+  - unbalanced_pressure_levels_minus_one
+  - mu
+background error:
+  covariance model: SABER
+  adjoint test: true
+  inverse test: true
+  saber central block:
+    saber block name: spectral covariance
+    read:
+      covariance_file: testdata/error_covariance_training_spectralb_1/spectralsabercov_1.nc
+  saber outer blocks:
+  - saber block name: spectral to spectral
+    input truncation: 12
+  - saber block name: spectral to gauss
+dirac:
+  lon:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  lat:  # slightly less than 0 to remove ambiguity on chosen grid point.
+  - -0.01
+  - -0.01
+  - -0.01
+  - -0.01
+  level:
+  - 1
+  - 1
+  - 1
+  - 1
+  variable:
+  - air_horizontal_streamfunction
+  - air_horizontal_velocity_potential
+  - unbalanced_pressure_levels_minus_one
+  - mu
+diagnostic points:
+  lon:
+  - 18.01
+  - 18.01
+  - 18.01
+  - 18.01
+  lat:
+  - 20.66
+  - 20.66
+  - 20.66
+  - 20.66
+  level:
+  - 2
+  - 2
+  - 2
+  - 2
+  variable:
+  - air_horizontal_streamfunction
+  - air_horizontal_velocity_potential
+  - unbalanced_pressure_levels_minus_one
+  - mu
+output dirac:
+  mpi pattern: '%MPI%'
+  filepath: testdata/dirac_spectralb_from_saber_file_4/%MPI%_dirac_%id%
+test:
+  reference filename: testref/dirac_spectralb_from_saber_file_4.ref

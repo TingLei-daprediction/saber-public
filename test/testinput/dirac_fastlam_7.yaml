@@ -15,14 +15,14 @@ geometry:
   partitioner: checkerboard
   groups:
   - variables:
-    - stream_function
-    - velocity_potential
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
     levels: 10
 background:
-  date: '2010-01-01T12:00:00Z'
+  date: 2010-01-01T12:00:00Z
   state variables:
-  - stream_function
-  - velocity_potential
+  - air_horizontal_streamfunction
+  - air_horizontal_velocity_potential
 background error:
   covariance model: SABER
   adjoint test: true
@@ -32,38 +32,38 @@ background error:
     calibration:
       multivariate strategy: crossed
       groups:
-      - group name: stream_function
-        variable in model file: stream_function
+      - group name: air_horizontal_streamfunction
+        variable in model file: air_horizontal_streamfunction
         variables:
-        - stream_function
-      - group name: velocity_potential
-        variable in model file: velocity_potential
+        - air_horizontal_streamfunction
+      - group name: air_horizontal_velocity_potential
+        variable in model file: air_horizontal_velocity_potential
         variables:
-        - velocity_potential
+        - air_horizontal_velocity_potential
       horizontal length-scale:
-      - group: stream_function
+      - group: air_horizontal_streamfunction
         profile: [10.0e3, 12.0e3, 14.0e3, 16.0e3, 18.0e3, 20.0e3, 22.0e3, 24.0e3, 26.0e3, 28.0e3]
-      - group: velocity_potential
+      - group: air_horizontal_velocity_potential
         profile: [20.0e3, 24.0e3, 28.0e3, 32.0e3, 36.0e3, 40.0e3, 44.0e3, 48.0e3, 52.0e3, 56.0e3]
       vertical length-scale:
-      - group: stream_function
+      - group: air_horizontal_streamfunction
         profile: [2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8]
-      - group: velocity_potential
+      - group: air_horizontal_velocity_potential
         profile: [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9]
       number of layers: 3
       resolution: 5
       normalization accuracy stride: 3
-      data file: testdata/dirac_fastlam_7/_MPI__data
+      data file: testdata/dirac_fastlam_7/_MPI_-_OMP__data
       output model files:
       - parameter: normalized horizontal length-scale
         file:
-          filepath: testdata/dirac_fastlam_7/_MPI__normalized_rh
+          filepath: testdata/dirac_fastlam_7/_MPI_-_OMP__normalized_rh
       - parameter: weight
         file:
-          filepath: testdata/dirac_fastlam_7/_MPI__weight_%component%
+          filepath: testdata/dirac_fastlam_7/_MPI_-_OMP__weight_%component%
       - parameter: normalization
         file:
-          filepath: testdata/dirac_fastlam_7/_MPI__norm_%component%
+          filepath: testdata/dirac_fastlam_7/_MPI_-_OMP__norm_%component%
 dirac:
   lon:
   - 10.04
@@ -96,15 +96,15 @@ dirac:
   - 1
   - 1
   variable:
-  - stream_function
-  - stream_function
-  - stream_function
-  - stream_function
-  - velocity_potential
-  - stream_function
-  - stream_function
-  - stream_function
-  - stream_function
+  - air_horizontal_streamfunction
+  - air_horizontal_streamfunction
+  - air_horizontal_streamfunction
+  - air_horizontal_streamfunction
+  - air_horizontal_velocity_potential
+  - air_horizontal_streamfunction
+  - air_horizontal_streamfunction
+  - air_horizontal_streamfunction
+  - air_horizontal_streamfunction
 output dirac:
   mpi pattern: '%MPI%'
   filepath: testdata/dirac_fastlam_7/%MPI%_dirac_%id%

@@ -11,15 +11,15 @@ geometry:
     y_numbering: 1
   groups:
   - variables:
-    - stream_function
-    - velocity_potential
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
     levels: 2
   halo: 1
 background:
-  date: '2010-01-01T12:00:00Z'
+  date: 2010-01-01T12:00:00Z
   state variables:
-  - stream_function
-  - velocity_potential
+  - air_horizontal_streamfunction
+  - air_horizontal_velocity_potential
 background error:
   covariance model: SABER
   saber central block:
@@ -50,9 +50,9 @@ background error:
           value: 3.0
         common localization weights:
         - row variables:
-          - stream_function
+          - air_horizontal_streamfunction
           column variables:
-          - velocity_potential
+          - air_horizontal_velocity_potential
           value: 0.5
         positive-definiteness test: true
         horizontal interpolation test: true
@@ -60,6 +60,6 @@ background error:
       - longitude: 150.0
         latitude: -30.0
         level: 1
-        variable: stream_function
+        variable: air_horizontal_streamfunction
 test:
   reference filename: testref/error_covariance_training_bump_nicas_5.ref

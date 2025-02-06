@@ -1,5 +1,5 @@
 /*
- * (C) Crown Copyright 2023-2024 Met Office
+ * (C) Crown Copyright 2023-2025 Met Office
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -10,15 +10,60 @@
 #include <sys/stat.h>
 
 #include <sstream>
-#include <vector>
+
+#include "atlas/functionspace.h"
+#include "atlas/grid/detail/partitioner/TransPartitioner.h"
+#include "atlas/grid/Partitioner.h"
+#include "atlas/mesh.h"
+#include "atlas/meshgenerator/detail/StructuredMeshGenerator.h"
+#include "atlas/output/Gmsh.h"
+
+#include "eckit/exception/Exceptions.h"
 
 #include "oops/base/FieldSet3D.h"
-#include "oops/util/FieldSetHelpers.h"
+#include "oops/mpi/mpi.h"
 #include "oops/util/FieldSetOperations.h"
 #include "oops/util/Logger.h"
 
 namespace saber {
 namespace generic {
+
+namespace {
+void makeLocalGmshOutput(const std::string& fileName,
+                         const atlas::FieldSet& fields) {
+  const auto& fs = fields[0].functionspace();
+  auto configGmsh =
+    atlas::util::Config("coordinates", "xyz") |
+    atlas::util::Config("ghost", true) |
+    atlas::util::Config("info", true);
+  if (fs.type() == "NodeColumns") {
+    const auto& mesh = atlas::functionspace::NodeColumns(fs).mesh();
+    const auto gmsh = atlas::output::Gmsh(fileName, configGmsh);
+    gmsh.write(mesh);
+    gmsh.write(fields, fs);
+  } else if (fs.type() == "StructuredColumns") {
+    if ((fs.distribution() == "ectrans") || ((fs.distribution() == "serial") &&
+       (eckit::mpi::comm().size() == 1))) {
+      atlas::StructuredMeshGenerator meshgenerator;
+      atlas::Mesh mesh = meshgenerator.generate(
+        atlas::functionspace::StructuredColumns(fs).grid(),
+        atlas::grid::Partitioner(new atlas::grid::detail::partitioner::TransPartitioner()));
+      const auto gmsh = atlas::output::Gmsh(fileName, configGmsh);
+      gmsh.write(mesh);
+      gmsh.write(fields, fs);
+    } else {
+      oops::Log::info() << "WriteFields::StructuredColumns partitioner name = "
+                        << fs.distribution() << " not accounted for in code."
+                        << std::endl;
+    }
+  } else {
+    std::cout << fs.type() <<std::endl;
+    throw eckit::NotImplemented(
+      "functionspace type", Here());
+  }
+}
+
+}  // namespace
 
 // -----------------------------------------------------------------------------
 
@@ -75,6 +120,13 @@ void WriteFields::writeToFile(const oops::FieldSet3D & fset,
   } else {
     // Output filename to test stream.
     oops::Log::test() << "Did not write file " << filepathnc << std::endl;
+  }
+
+  if (params_.saveGMSHFile) {
+    std::string fileName = filepath.str() + ".gmsh";
+    makeLocalGmshOutput(fileName, fsetWrite.fieldSet());
+    // Output filename to test stream.
+    oops::Log::test() << "Wrote file " << fileName << std::endl;
   }
 
   // Output basic field information to test output stream.

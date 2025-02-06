@@ -256,9 +256,17 @@ struct DriversDef {
   std::pair<const char *, bool> load_wind_local =
     std::make_pair("read local psichitouv", false);
 
+  // Read global wind transform
+  std::pair<const char *, bool> load_wind_global =
+    std::make_pair("read global psichitouv", false);
+
   // Write local wind transform
   std::pair<const char *, bool> write_wind_local =
     std::make_pair("write local psichitouv", false);
+
+  // Write global wind transform
+  std::pair<const char *, bool> write_wind_global =
+    std::make_pair("write global psichitouv", false);
 
   // Test vertical balance inverse
   std::pair<const char *, bool> check_vbal =
@@ -408,9 +416,10 @@ struct DiagnosticsDef {
   std::pair<const char *, bool> gau_approx =
     std::make_pair("gaussian approximation", false);
 
-  // Compute localization from correlation
-  std::pair<const char *, bool> loc_from_cor =
-    std::make_pair("localization from correlation", false);
+  // Localization option ('default', 'from_squared_correlation', 'nice_with_table' and
+  // 'nice_without_table')
+  std::pair<const char *, std::string> loc_option =
+    std::make_pair("localization option", "default");
 
   // Threshold on generalized kurtosis (3.0 = Gaussian distribution)
   std::pair<const char *, double> gen_kurt_th =
@@ -550,6 +559,10 @@ struct NICASDef {
   std::pair<const char *, bool> forced_radii =
     std::make_pair("explicit length-scales", false);
 
+  // Factor to get interpolation radius from convolution radius if nicas_interp_type = 'si'
+  std::pair<const char *, double> nicas_si_factor =
+    std::make_pair("smooth interpolation factor", 0.25);
+
   // Normalization randomization size
   std::pair<const char *, int> norm_rand_size =
     std::make_pair("normalization randomization size", 0);
@@ -581,21 +594,9 @@ struct NICASDef {
 
 // Psichitouv section
 struct PsichitouvDef {
-  // Number of longitudes for the regular grid
-  std::pair<const char *, int> wind_nlon =
-    std::make_pair("longitudes", 0);
-
-  // Number of latitudes for the regular grid
-  std::pair<const char *, int> wind_nlat =
-    std::make_pair("latitudes", 0);
-
-  // Half-width of the Savitzky-Golay to compute derivatives
-  std::pair<const char *, int> wind_nsg =
-    std::make_pair("savitzky-golay half width", 0);
-
-  // Wind inflation to compensate the Savitzky-Golay smoothing
-  std::pair<const char *, double> wind_inflation =
-    std::make_pair("wind inflation", 1.0);
+  // Dipole test (bypass the adjoint)
+  std::pair<const char *, bool> wind_dipole_test =
+    std::make_pair("dipole test", false);
 };
 
 // External section

@@ -5,29 +5,29 @@ geometry:
     N: 10
   groups:
   - variables:
-    - stream_function
+    - air_horizontal_streamfunction
     levels: 10
   halo: 1
 background:
-  date: '2010-01-01T12:00:00Z'
+  date: 2010-01-01T12:00:00Z
   state variables:
-  - stream_function
+  - air_horizontal_streamfunction
 background error:
   covariance model: SABER
   ensemble:
     members from template:
       template:
-        date: '2010-01-01T12:00:00Z'
+        date: 2010-01-01T12:00:00Z
         filepath: testdata/randomization_bump_nicas_L10L10/_MPI_-_OMP__member_%mem%
         state variables:
-        - stream_function
+        - air_horizontal_streamfunction
       pattern: '%mem%'
       nmembers: 25
       zero padding: 6
   saber central block:
     saber block name: BUMP_NICAS
     fields metadata:
-      stream_function:
+      air_horizontal_streamfunction:
         vert_coord: vert_coord_0
     calibration:
       general:
@@ -55,11 +55,11 @@ background error:
         - type: stddev
           threshold: 1.005
           side: lower
-          variable: stream_function
+          variable: air_horizontal_streamfunction
         - type: input
           threshold: 0.5
           side: upper
-          variable: stream_function
+          variable: air_horizontal_streamfunction
         contiguous levels threshold: 3
       local profiles:
       - longitude: 0.0

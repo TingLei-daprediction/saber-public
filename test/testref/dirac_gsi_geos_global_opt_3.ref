@@ -1,5 +1,5 @@
 Input Dirac increment:
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: L72x46
 - size: 3312
@@ -20,12 +20,13 @@ Groups:
   - vert_coord: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 2.2360679774997898e+00
-  velocity_potential: 0.0000000000000000e+00
-  surface_pressure: 0.0000000000000000e+00
+  air_horizontal_streamfunction: 2.2360679774997898e+00
+  air_horizontal_velocity_potential: 0.0000000000000000e+00
+  air_pressure_at_surface: 0.0000000000000000e+00
+Adjoint test for block gsi interpolation to model grid passed
 Adjoint test for block gsi static covariance passed
 Covariance(SABER) * Increment:
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: L72x46
 - size: 3312
@@ -46,6 +47,6 @@ Groups:
   - vert_coord: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 1.1608302132835172e+01
-  velocity_potential: 0.0000000000000000e+00
-  surface_pressure: 0.0000000000000000e+00
+  air_horizontal_streamfunction: 1.1477894674003418e+01
+  air_horizontal_velocity_potential: 0.0000000000000000e+00
+  air_pressure_at_surface: 0.0000000000000000e+00

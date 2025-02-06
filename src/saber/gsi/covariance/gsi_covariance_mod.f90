@@ -291,10 +291,11 @@ real(kind=kind_real), pointer :: ps(:,:)
 integer, parameter :: rseed = 3
 
 ! Get Atlas field
-if (fields%has('stream_function').and.fields%has('velocity_potential')) then
-  afield = fields%field('stream_function')
+if (fields%has('air_horizontal_streamfunction').and. &
+    fields%has('air_horizontal_velocity_potential')) then
+  afield = fields%field('air_horizontal_streamfunction')
   call afield%data(psi)
-  afield = fields%field('velocity_potential')
+  afield = fields%field('air_horizontal_velocity_potential')
   call afield%data(chi)
 elseif (fields%has('eastward_wind').and.fields%has('northward_wind')) then
   afield = fields%field('eastward_wind')
@@ -308,13 +309,13 @@ if (fields%has('air_temperature')) then
   call afield%data(t)
 endif
 
-if (fields%has('surface_pressure')) then
-  afield = fields%field('surface_pressure')
+if (fields%has('air_pressure_at_surface')) then
+  afield = fields%field('air_pressure_at_surface')
   call afield%data(ps)
 endif
 
-if (fields%has('specific_humidity')) then
-  afield = fields%field('specific_humidity')
+if (fields%has('water_vapor_mixing_ratio_wrt_moist_air')) then
+  afield = fields%field('water_vapor_mixing_ratio_wrt_moist_air')
   call afield%data(q)
 endif
 
@@ -371,7 +372,7 @@ integer :: iv,k,ier,itbd,ii
 character(len=32),allocatable :: gvars2d(:),gvars3d(:)
 character(len=30),allocatable :: tbdvars(:),needvrs(:)
 
-! afield = fields%field('surface_pressure')
+! afield = fields%field('air_pressure_at_surface')
 ! call afield%data(rank2)
 ! rank2 = 0.0_kind_real
 ! rank2(1,int(size(rank1)/2)) = 1.0_kind_real
@@ -576,23 +577,25 @@ end subroutine multiply
    real(kind=kind_real), pointer :: rank2(:,:)
    type(atlas_field) :: afield
    integer,intent(out):: ier
+   integer,save :: icount = 0
    ier=-1
    if (trim(vname) == 'ps') then
-      if (.not.fields%has('surface_pressure')) return
-      afield = fields%field('surface_pressure')
+      if (.not.fields%has('air_pressure_at_surface')) return
+      afield = fields%field('air_pressure_at_surface')
       call afield%data(rank2)
       ier=0
    endif
-   if (trim(vname) == 'air_pressure_thickness') then
-      if (.not.fields%has('air_pressure_thickness')) return
-      afield = fields%field('air_pressure_thickness')
+!  if (trim(vname) == 'air_pressure_thickness') then
+!     if (.not.fields%has('air_pressure_thickness')) return
+!     afield = fields%field('air_pressure_thickness')
+!     call afield%data(rank2)
+!     ier=0
+!  endif
+   if (trim(vname) == 'ts' .or. trim(vname) == 'sst') then !  ts=gsi background name
+      if (.not.fields%has('skin_temperature_at_surface')) return      ! sst=gsi S/CV name
+      afield = fields%field('skin_temperature_at_surface')
       call afield%data(rank2)
-      ier=0
-   endif
-   if (trim(vname) == 'ts' .or. trim(vname) == 'sst') then ! needs to be sorted out
-      if (.not.fields%has('sea_surface_temperature')) return ! should be skin-temperature
-      afield = fields%field('sea_surface_temperature')
-      call afield%data(rank2)
+      icount = icount + 1
       ier=0
    endif
    if (trim(vname) == 'u' .or. trim(vname) == 'ua' ) then
@@ -608,14 +611,14 @@ end subroutine multiply
       ier=0
    endif
    if (trim(vname) == 'sf') then
-      if (.not.fields%has('stream_function')) return
-      afield = fields%field('stream_function')
+      if (.not.fields%has('air_horizontal_streamfunction')) return
+      afield = fields%field('air_horizontal_streamfunction')
       call afield%data(rank2)
       ier=0
    endif
    if (trim(vname) == 'vp') then
-      if (.not.fields%has('velocity_potential')) return
-      afield = fields%field('velocity_potential')
+      if (.not.fields%has('air_horizontal_velocity_potential')) return
+      afield = fields%field('air_horizontal_velocity_potential')
       call afield%data(rank2)
       ier=0
    endif
@@ -632,8 +635,8 @@ end subroutine multiply
       ier=0
    endif
    if (trim(vname) == 'q' .or. trim(vname) == 'sphum' ) then
-      if (.not.fields%has('specific_humidity')) return
-      afield = fields%field('specific_humidity')
+      if (.not.fields%has('water_vapor_mixing_ratio_wrt_moist_air')) return
+      afield = fields%field('water_vapor_mixing_ratio_wrt_moist_air')
       call afield%data(rank2)
       ier=0
    endif
@@ -650,14 +653,26 @@ end subroutine multiply
       ier=0
    endif
    if (trim(vname) == 'qr') then
-      if (.not.fields%has('cloud_liquid_rain')) return
-      afield = fields%field('cloud_liquid_rain')
+      if (.not.fields%has('rain_water')) return
+      afield = fields%field('rain_water')
       call afield%data(rank2)
       ier=0
    endif
    if (trim(vname) == 'qs') then
-      if (.not.fields%has('cloud_liquid_snow')) return
-      afield = fields%field('cloud_liquid_snow')
+      if (.not.fields%has('snow_water')) return
+      afield = fields%field('snow_water')
+      call afield%data(rank2)
+      ier=0
+   endif
+   if (trim(vname) == 'qg') then
+      if (.not.fields%has('graupel')) return
+      afield = fields%field('graupel')
+      call afield%data(rank2)
+      ier=0
+   endif
+   if (trim(vname) == 'qh') then
+      if (.not.fields%has('hail')) return
+      afield = fields%field('hail')
       call afield%data(rank2)
       ier=0
    endif
@@ -680,9 +695,9 @@ end subroutine multiply
       ier=0
    endif
    if (trim(vname) == 'phis' ) then
-      if (.not.fields%has('sfc_geopotential_height_times_grav')) then
-         if (fields%has('surface_geopotential_height')) then
-            afield = fields%field('surface_geopotential_height')
+      if (.not.fields%has('geopotential_height_times_gravity_at_surface')) then
+         if (fields%has('geopotential_height_at_surface')) then
+            afield = fields%field('geopotential_height_at_surface')
             call afield%data(rank2)
             rank2 = grav*rank2
             ier=0
@@ -690,7 +705,7 @@ end subroutine multiply
             return
          endif
       else
-         afield = fields%field('sfc_geopotential_height_times_grav')
+         afield = fields%field('geopotential_height_times_gravity_at_surface')
          call afield%data(rank2)
          ier=0
       end if
@@ -872,6 +887,7 @@ end subroutine multiply
 
    implicit none
 
+   character, parameter :: myname_ = myname//'*svfix_'
    type(gsi_bundle),intent(inout) :: gsisv(:)
    type(atlas_fieldset),intent(inout) :: jedicv(:)
    logical,intent(in) :: vflip
@@ -891,15 +907,9 @@ end subroutine multiply
    if(size(need)<1) return
 
    if (any(need=='prse')) then
-        where(need=='prse')  ! gsi will take care of this
-           need='filled-'//need
-        endwhere
-   endif
-
-   if (any(need=='sst')) then
-        where(need=='sst')   ! unclear way this is needed here
-           need='filled-'//need
-        endwhere
+       where(need=='prse')  ! gsi will take care of this
+          need='filled-'//need
+       endwhere
    endif
 
    if (any(need=='tv')) then

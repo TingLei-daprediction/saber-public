@@ -5,13 +5,13 @@ geometry:
     N: 50
   groups:
   - variables:
-    - stream_function
+    - air_horizontal_streamfunction
     levels: 1
   halo: 1
 background:
-  date: '2010-01-01T12:00:00Z'
+  date: 2010-01-01T12:00:00Z
   state variables:
-  - stream_function
+  - air_horizontal_streamfunction
 background error:
   covariance model: SABER
   saber central block:
@@ -19,8 +19,8 @@ background error:
     read:
       io:
         data directory: testdata
-        files prefix: error_covariance_training_tutorial_1/1-1
-        overriding nicas file: error_covariance_training_doc_6/1-1_nicas
+        files prefix: error_covariance_training_tutorial_1/_MPI_-_OMP_
+        overriding nicas file: error_covariance_training_doc_6/_MPI_-_OMP__nicas
       drivers:
         multivariate strategy: univariate
         read local nicas: true
@@ -29,51 +29,51 @@ background error:
       - longitude: -45.0
         latitude: 0.0
         level: 1
-        variable: stream_function
+        variable: air_horizontal_streamfunction
       - longitude: -135.0
         latitude: 0.0
         level: 1
-        variable: stream_function
+        variable: air_horizontal_streamfunction
       - longitude: 45.0
         latitude: 0.0
         level: 1
-        variable: stream_function
+        variable: air_horizontal_streamfunction
       - longitude: 135.0
         latitude: 0.0
         level: 1
-        variable: stream_function
+        variable: air_horizontal_streamfunction
       - longitude: -135.0
         latitude: 45.0
         level: 1
-        variable: stream_function
+        variable: air_horizontal_streamfunction
       - longitude: -45.0
         latitude: 45.0
         level: 1
-        variable: stream_function
+        variable: air_horizontal_streamfunction
       - longitude: 45.0
         latitude: 45.0
         level: 1
-        variable: stream_function
+        variable: air_horizontal_streamfunction
       - longitude: 135.0
         latitude: 45.0
         level: 1
-        variable: stream_function
+        variable: air_horizontal_streamfunction
       - longitude: -135.0
         latitude: -45.0
         level: 1
-        variable: stream_function
+        variable: air_horizontal_streamfunction
       - longitude: -45.0
         latitude: -45.0
         level: 1
-        variable: stream_function
+        variable: air_horizontal_streamfunction
       - longitude: 45.0
         latitude: -45.0
         level: 1
-        variable: stream_function
+        variable: air_horizontal_streamfunction
       - longitude: 135.0
         latitude: -45.0
         level: 1
-        variable: stream_function
+        variable: air_horizontal_streamfunction
       output model files:
       - parameter: dirac_nicas
         file:

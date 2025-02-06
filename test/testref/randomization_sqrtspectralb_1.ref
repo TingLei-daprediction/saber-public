@@ -1,5 +1,5 @@
 Member 0: 
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: F12
 - size: 1152
@@ -20,7 +20,7 @@ Fields:
   northward_wind: 3.1173582902908777e+02
   unbalanced_pressure_levels_minus_one: 3.2697762909863736e+03
 Member 1: 
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: F12
 - size: 1152
@@ -41,7 +41,7 @@ Fields:
   northward_wind: 3.1974164276855612e+02
   unbalanced_pressure_levels_minus_one: 3.1537346952413936e+03
 Randomized variance: 
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: F12
 - size: 1152

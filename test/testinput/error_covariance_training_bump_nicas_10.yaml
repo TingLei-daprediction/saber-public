@@ -5,18 +5,18 @@ geometry:
     N: 10
   groups:
   - variables:
-    - stream_function
-    - velocity_potential
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
     levels: 2
   - variables:
     - variable_at_interfaces
     levels: 3
   halo: 1
 background:
-  date: '2010-01-01T12:00:00Z'
+  date: 2010-01-01T12:00:00Z
   state variables:
-  - stream_function
-  - velocity_potential
+  - air_horizontal_streamfunction
+  - air_horizontal_velocity_potential
   - variable_at_interfaces
 background error:
   covariance model: SABER
@@ -41,25 +41,25 @@ background error:
         explicit length-scales: true
         horizontal length-scale:
         - groups:
-          - stream_function
+          - air_horizontal_streamfunction
           value: 4000.0e3
         - groups:
-          - velocity_potential
+          - air_horizontal_velocity_potential
           value: 5000.0e3
         - groups:
           - variable_at_interfaces
           value: 3000.0e3
         vertical length-scale:
         - groups:
-          - stream_function
-          - velocity_potential
+          - air_horizontal_streamfunction
+          - air_horizontal_velocity_potential
           - variable_at_interfaces
           value: 3.0
       grids:
       - model:
           variables:
-          - stream_function
-          - velocity_potential
+          - air_horizontal_streamfunction
+          - air_horizontal_velocity_potential
       - model:
           variables:
           - variable_at_interfaces
@@ -67,7 +67,7 @@ background error:
       - longitude: 0.0
         latitude: 0.0
         level: 1
-        variable: stream_function
+        variable: air_horizontal_streamfunction
       - longitude: 0.0
         latitude: 0.0
         level: 3

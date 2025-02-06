@@ -5,13 +5,13 @@ geometry:
   partitioner: cubedsphere
   groups:
   - variables:
-    - stream_function
+    - air_horizontal_streamfunction
     levels: 1
   halo: 1
 background:
-  date: '2010-01-01T12:00:00Z'
+  date: 2010-01-01T12:00:00Z
   state variables:
-  - stream_function
+  - air_horizontal_streamfunction
 background error:
   covariance model: SABER
   adjoint test: true
@@ -37,20 +37,20 @@ background error:
         type: cubedsphere-bilinear
         adjoint: true
     active variables:
-    - stream_function
+    - air_horizontal_streamfunction
     state variables to inverse:
-    - stream_function
+    - air_horizontal_streamfunction
     inner inverse tolerance: 0.05
     outer inverse tolerance: 0.05
 dirac:
   lon:
-  - 0.0
+  - 3.75
   lat:
-  - 0.0
+  - 3.74199
   level:
   - 1
   variable:
-  - stream_function
+  - air_horizontal_streamfunction
 output dirac:
   mpi pattern: '%MPI%'
   filepath: testdata/dirac_interpolation_3/dirac_%id%_%MPI%

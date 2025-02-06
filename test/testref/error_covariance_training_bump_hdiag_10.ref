@@ -22,31 +22,31 @@
              Level   9 ~>  0.900E+01 vert. coord.
              Level  10 ~>  0.100E+02 vert. coord.
 Norm of input parameter sampling_mask_field - 1: 8.6550514186807519e+01
-          Norm of stream_function:  0.81273758E+02
-          Norm of stream_function:  0.76319847E+02
-          Norm of stream_function:  0.75801574E+02
-          Norm of stream_function:  0.81944832E+02
-          Norm of stream_function:  0.82572896E+02
-          Norm of stream_function:  0.79119802E+02
-          Norm of stream_function:  0.81516876E+02
-          Norm of stream_function:  0.79431752E+02
-          Norm of stream_function:  0.77062958E+02
-          Norm of stream_function:  0.76022783E+02
-          Norm of stream_function:  0.81959106E+02
-          Norm of stream_function:  0.81840404E+02
-          Norm of stream_function:  0.80644225E+02
-          Norm of stream_function:  0.83544175E+02
-          Norm of stream_function:  0.80836254E+02
-          Norm of stream_function:  0.79084479E+02
-          Norm of stream_function:  0.82720913E+02
-          Norm of stream_function:  0.81449845E+02
-          Norm of stream_function:  0.82985734E+02
-          Norm of stream_function:  0.81340782E+02
-          Norm of stream_function:  0.79721839E+02
-          Norm of stream_function:  0.80122202E+02
-          Norm of stream_function:  0.76845427E+02
-          Norm of stream_function:  0.81904005E+02
-          Norm of stream_function:  0.78134228E+02
+          Norm of air_horizontal_streamfunction:  0.81273758E+02
+          Norm of air_horizontal_streamfunction:  0.76319847E+02
+          Norm of air_horizontal_streamfunction:  0.75801574E+02
+          Norm of air_horizontal_streamfunction:  0.81944832E+02
+          Norm of air_horizontal_streamfunction:  0.82572896E+02
+          Norm of air_horizontal_streamfunction:  0.79119802E+02
+          Norm of air_horizontal_streamfunction:  0.81516876E+02
+          Norm of air_horizontal_streamfunction:  0.79431752E+02
+          Norm of air_horizontal_streamfunction:  0.77062958E+02
+          Norm of air_horizontal_streamfunction:  0.76022783E+02
+          Norm of air_horizontal_streamfunction:  0.81959106E+02
+          Norm of air_horizontal_streamfunction:  0.81840404E+02
+          Norm of air_horizontal_streamfunction:  0.80644225E+02
+          Norm of air_horizontal_streamfunction:  0.83544175E+02
+          Norm of air_horizontal_streamfunction:  0.80836254E+02
+          Norm of air_horizontal_streamfunction:  0.79084479E+02
+          Norm of air_horizontal_streamfunction:  0.82720913E+02
+          Norm of air_horizontal_streamfunction:  0.81449845E+02
+          Norm of air_horizontal_streamfunction:  0.82985734E+02
+          Norm of air_horizontal_streamfunction:  0.81340782E+02
+          Norm of air_horizontal_streamfunction:  0.79721839E+02
+          Norm of air_horizontal_streamfunction:  0.80122202E+02
+          Norm of air_horizontal_streamfunction:  0.76845427E+02
+          Norm of air_horizontal_streamfunction:  0.81904005E+02
+          Norm of air_horizontal_streamfunction:  0.78134228E+02
           Level   1 ~>   0.8%
           Level   2 ~>   1.2%
           Level   3 ~>   2.2%
@@ -103,7 +103,7 @@ Norm of input parameter sampling_mask_field - 1: 8.6550514186807519e+01
                 Level:   8 ~> cov. at class zero:  0.11E+01
                 Level:   9 ~> cov. at class zero:  0.12E+01
                 Level:  10 ~> cov. at class zero:  0.12E+01
-             Block stream_function:  0.47314540E+19 for     1579 diagnostic points
+             Block air_horizontal_streamfunction:  0.30212995E+00 for     1473 diagnostic points
                    Level:   1 ~> amplitude:        1.00
                                  cor. hor. support:      3565.46 km
                                  cor. ver. support:         6.73 vertical units

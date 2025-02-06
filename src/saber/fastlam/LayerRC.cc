@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2024 Meteorlogisk Institutt
+ * (C) Copyright 2024 Meteorologisk Institutt
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -201,12 +201,12 @@ void LayerRC::setupParallelization() {
   }
 
   // Communicate indices
-  std::vector<int> xIndex_i;
-  std::vector<int> xIndex_j;
+  std::vector<int> xIndex_i(nx_*nyPerTask_[myrank_]);
+  std::vector<int> xIndex_j(nx_*nyPerTask_[myrank_]);
   for (size_t i = 0; i < nx_; ++i) {
     for (size_t j = 0; j < nyPerTask_[myrank_]; ++j) {
-      xIndex_i.push_back(i);
-      xIndex_j.push_back(j+nyStart_[myrank_]);
+      xIndex_i[i*nyPerTask_[myrank_]+j] = i;
+      xIndex_j[i*nyPerTask_[myrank_]+j] = j+nyStart_[myrank_];
     }
   }
   yIndex_i_.resize(ySendSize_);

@@ -2,10 +2,10 @@
 # with ensemble perturbations read on different geometries.
 
 background:
-  date: &date '2010-01-01T12:00:00Z'
+  date: &date 2010-01-01T12:00:00Z
   state variables: &vars
-  - streamfunction
-  - velocity_potential
+  - air_horizontal_streamfunction
+  - air_horizontal_velocity_potential
 
 geometry:
   function space: NodeColumns
@@ -141,13 +141,13 @@ background error:
 
 dirac: &dirac
   lon:
-  - 180.0
+  - 176.786
   lat:
-  - 3.672
+  - 3.20924
   level:
   - 1
   variable:
-  - streamfunction
+  - air_horizontal_streamfunction
 
 diagnostic points: *dirac
 

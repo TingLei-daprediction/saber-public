@@ -1,5 +1,5 @@
 Input Dirac increment:
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: L40x21
 - size: 840
@@ -17,7 +17,7 @@ Groups:
 Fields:
   eastward_wind: 1.0000000000000000e+00
   northward_wind: 0.0000000000000000e+00
-Valid time:2010-01-01T18:00:00Z
+Valid time: 2010-01-01T18:00:00Z
 Quench geometry grid:
 - name: L40x21
 - size: 840
@@ -42,6 +42,22 @@ Fields:
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
+       Accuracy tests:
+          Wavenumber:  1
+             - psi/chi to u:  89.76376%
+             - psi/chi to v:  89.76376%
+          Wavenumber:  2
+             - psi/chi to u:  75.59054%
+             - psi/chi to v:  75.59054%
+          Wavenumber:  3
+             - psi/chi to u:  89.76377%
+             - psi/chi to v:  89.76377%
+          Wavenumber:  4
+             - psi/chi to u:  67.19160%
+             - psi/chi to v:  83.98950%
+          Wavenumber:  5
+             - psi/chi to u:  39.37007%
+             - psi/chi to v:  39.37007%
 Adjoint test for block BUMP_PsiChiToUV passed
        Independent levels:  1[2]
           Subset Sc0 size:              762
@@ -82,8 +98,8 @@ Adjoint test for block BUMP_StdDev passed
              Level   2 ~>  0.200E+01 vert. coord.
 Adjoint test for block BUMP_NICAS passed
 Square-root test for block BUMP_NICAS passed
-Norm of input parameter inflation: 5.7319844819175621e+01
-Norm of input parameter StdDev: 5.3046693215269400e+01
+Norm of input parameter inflation: 6.9558608381710329e+01
+Norm of input parameter StdDev: 1.7389652095427326e+02
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Domain area (% of Earth area): 0.100E+03%
@@ -95,7 +111,7 @@ Square-root test for block BUMP_NICAS passed
 Adjoint test for block Ensemble passed
 Square-root test for block Ensemble passed
 Covariance(hybrid) * Increment:
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: L40x21
 - size: 840
@@ -111,9 +127,9 @@ Groups:
   - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  eastward_wind: 4.6284246666698758e-01
-  northward_wind: 1.2609406938134360e-01
-Valid time:2010-01-01T18:00:00Z
+  eastward_wind: 1.5885846717183985e+00
+  northward_wind: 5.0803567566774199e-01
+Valid time: 2010-01-01T18:00:00Z
 Quench geometry grid:
 - name: L40x21
 - size: 840
@@ -129,8 +145,8 @@ Groups:
   - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  eastward_wind: 9.3477435959848754e-02
-  northward_wind: 7.7324492848183490e-02
+  eastward_wind: 3.6332544284472684e-01
+  northward_wind: 2.8798332323318876e-01
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Domain area (% of Earth area): 0.100E+03%
@@ -138,6 +154,22 @@ Fields:
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
+       Accuracy tests:
+          Wavenumber:  1
+             - psi/chi to u:  89.76376%
+             - psi/chi to v:  89.76376%
+          Wavenumber:  2
+             - psi/chi to u:  75.59054%
+             - psi/chi to v:  75.59054%
+          Wavenumber:  3
+             - psi/chi to u:  89.76377%
+             - psi/chi to v:  89.76377%
+          Wavenumber:  4
+             - psi/chi to u:  67.19160%
+             - psi/chi to v:  83.98950%
+          Wavenumber:  5
+             - psi/chi to u:  39.37007%
+             - psi/chi to v:  39.37007%
 Adjoint test for block BUMP_PsiChiToUV passed
        Independent levels:  1[2]
           Subset Sc0 size:              762
@@ -179,7 +211,7 @@ Adjoint test for block BUMP_StdDev passed
 Adjoint test for block BUMP_NICAS passed
 Square-root test for block BUMP_NICAS passed
 Covariance(hybrid1_SABER) * Increment:
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: L40x21
 - size: 840
@@ -195,9 +227,9 @@ Groups:
   - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  eastward_wind: 8.9637016223071983e-14
-  northward_wind: 2.6916848772841084e-14
-Valid time:2010-01-01T18:00:00Z
+  eastward_wind: 3.7259415926535306e-12
+  northward_wind: 1.3202009593235781e-12
+Valid time: 2010-01-01T18:00:00Z
 Quench geometry grid:
 - name: L40x21
 - size: 840
@@ -213,10 +245,10 @@ Groups:
   - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  eastward_wind: 8.9637016223071983e-14
-  northward_wind: 2.6916848772841084e-14
-Norm of input parameter inflation: 5.7319844819175621e+01
-Norm of input parameter StdDev: 5.3046693215269400e+01
+  eastward_wind: 3.7259415926535306e-12
+  northward_wind: 1.3202009593235781e-12
+Norm of input parameter inflation: 6.9558608381710329e+01
+Norm of input parameter StdDev: 1.7389652095427326e+02
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Domain area (% of Earth area): 0.100E+03%
@@ -228,7 +260,7 @@ Square-root test for block BUMP_NICAS passed
 Adjoint test for block Ensemble passed
 Square-root test for block Ensemble passed
 Covariance(hybrid2_SABER) * Increment:
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: L40x21
 - size: 840
@@ -244,9 +276,9 @@ Groups:
   - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  eastward_wind: 6.2965917988665343e-01
-  northward_wind: 2.5815576567472753e-01
-Valid time:2010-01-01T18:00:00Z
+  eastward_wind: 3.1771693434345925e+00
+  northward_wind: 1.0160713513355568e+00
+Valid time: 2010-01-01T18:00:00Z
 Quench geometry grid:
 - name: L40x21
 - size: 840
@@ -262,5 +294,5 @@ Groups:
   - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  eastward_wind: 1.8166685323863077e-01
-  northward_wind: 1.8219618402775314e-01
+  eastward_wind: 7.2665088568883618e-01
+  northward_wind: 5.7596664646668794e-01

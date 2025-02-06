@@ -1988,7 +1988,8 @@ do iv=1,nam%nv
    do jv=1,iv
       if (nam%vbal_block(iv,jv)) then
          ! Interpolate
-         if ((nam%variables(iv)=='velocity_potential').and.(nam%variables(jv)=='stream_function')) then
+         if ((nam%variables(iv)=='air_horizontal_velocity_potential').and. & 
+             (nam%variables(jv)=='air_horizontal_streamfunction')) then
             ! Stream function / velocity potential regression
             do ic2b=1,samp%nc2b
                vbal%blk(iv,jv)%reg_c2b(:,:,ic2b) = zero
@@ -2002,7 +2003,8 @@ do iv=1,nam%nv
  & +rlatp*gsi%rlevp(il0)*gsi%vpcon(ilatp,gsi%l0_to_levp(il0))
                end do
             end do
-         else if ((nam%variables(iv)=='air_temperature').and.(nam%variables(jv)=='stream_function')) then
+         else if ((nam%variables(iv)=='air_temperature').and. &
+                  (nam%variables(jv)=='air_horizontal_streamfunction')) then
             ! Stream function / air temperature regression
             do ic2b=1,samp%nc2b
                ic2u = samp%c2b_to_c2u(ic2b)
@@ -2021,7 +2023,7 @@ do iv=1,nam%nv
                   end do
                end do
             end do
-         else if ((nam%variables(iv)=='surface_pressure').and.(nam%variables(jv)=='stream_function')) then
+         else if ((nam%variables(iv)=='air_pressure_at_surface').and.(nam%variables(jv)=='air_horizontal_streamfunction')) then
             ! Stream function / surface pressure regression
             do ic2b=1,samp%nc2b
                vbal%blk(iv,jv)%reg_c2b(:,:,ic2b) = zero

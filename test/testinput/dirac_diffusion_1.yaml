@@ -5,15 +5,15 @@ geometry:
   partitioner: cubedsphere
   groups:
   - variables: &vars
-    - stream_function
-    - velocity_potential
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
     levels: &levels 10
   # TODO: why does Diffusion only work when cubed-sphere halo is 0?
   halo: 0
 
 background:
   states:
-  - date: '2010-01-01T12:00:00Z'
+  - date: 2010-01-01T12:00:00Z
     state variables: *vars
 
 background error:
@@ -36,7 +36,7 @@ dirac:
   - 0.01
   level:
   - 1
-  variable: [stream_function]
+  variable: [air_horizontal_streamfunction]
 output dirac:
   mpi pattern: '%MPI%'
   filepath: testdata/dirac_diffusion_1/%MPI%_dirac_%id%

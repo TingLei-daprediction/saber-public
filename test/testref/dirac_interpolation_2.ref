@@ -1,5 +1,5 @@
 Input Dirac increment:
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: CS-LFR-15
 - size: 1350
@@ -15,13 +15,13 @@ Groups:
   - vert_coord: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 1.0000000000000000e+00
+  air_horizontal_streamfunction: 1.0000000000000000e+00
 Adjoint test for block interpolation passed
 Inner inverse test for block interpolation passed: U Uinv (U x) == (U x)
 Outer inverse test for block interpolation passed: Uinv U (Uinv x) == (Uinv x)
 Adjoint test for block ID passed
 Covariance(SABER) * Increment:
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: CS-LFR-15
 - size: 1350
@@ -37,4 +37,4 @@ Groups:
   - vert_coord: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 6.0558992597602312e-01
+  air_horizontal_streamfunction: 6.0786179717068090e-01

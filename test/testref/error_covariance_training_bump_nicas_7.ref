@@ -115,8 +115,8 @@
                 Level:   8 ~> cov. at class zero:  0.10E+01
                 Level:   9 ~> cov. at class zero:  0.10E+01
                 Level:  10 ~> cov. at class zero:  0.10E+01
-             Block stream_function:  0.10899532E+00 for      700 diagnostic points
-             Block velocity_potential:  0.74054034E-01 for      700 diagnostic points
+             Block air_horizontal_streamfunction:  0.10899532E+00 for      700 diagnostic points
+             Block air_horizontal_velocity_potential:  0.74054034E-01 for      700 diagnostic points
                    Level:   1 ~> amplitude:        1.00
                                  cor. hor. support:      3930.93 km
                                  cor. ver. support:         3.07 vertical units

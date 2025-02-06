@@ -30,10 +30,10 @@ namespace {
 
 oops::Variables createInnerVars(const oops::Variables & outerVars) {
   oops::Variables innerVars(std::vector<std::string>(
-    {"stream_function", "velocity_potential"}));
+    {"air_horizontal_streamfunction", "air_horizontal_velocity_potential"}));
   const int modelLevels(outerVars["eastward_wind"].getLevels());
-  innerVars["stream_function"].setLevels(modelLevels);
-  innerVars["velocity_potential"].setLevels(modelLevels);
+  innerVars["air_horizontal_streamfunction"].setLevels(modelLevels);
+  innerVars["air_horizontal_velocity_potential"].setLevels(modelLevels);
   return innerVars;
 }
 
@@ -44,7 +44,8 @@ oops::Variables createActiveVars(const oops::Variables & innerVars,
   oops::Variables activeVars;
   activeVars += innerVars;
   activeVars += outerVars;
-  const std::vector<std::string> activeStrings{"stream_function", "velocity_potential",
+  const std::vector<std::string> activeStrings{"air_horizontal_streamfunction",
+                                               "air_horizontal_velocity_potential",
                                                "eastward_wind", "northward_wind"};
   activeVars.intersection(oops::Variables(activeStrings));
   return activeVars;

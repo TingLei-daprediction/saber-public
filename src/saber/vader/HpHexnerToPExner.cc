@@ -34,11 +34,11 @@ static SaberOuterBlockMaker<HpHexnerToPExner>
 // -----------------------------------------------------------------------------
 
 HpHexnerToPExner::HpHexnerToPExner(const oops::GeometryData & outerGeometryData,
-                     const oops::Variables & outerVars,
-                     const eckit::Configuration & covarConf,
-                     const Parameters_ & params,
-                     const oops::FieldSet3D & xb,
-                     const oops::FieldSet3D & fg)
+                                   const oops::Variables & outerVars,
+                                   const eckit::Configuration & covarConf,
+                                   const Parameters_ & params,
+                                   const oops::FieldSet3D & xb,
+                                   const oops::FieldSet3D & fg)
   : SaberOuterBlockBase(params, xb.validTime()),
     innerGeometryData_(outerGeometryData),
     innerVars_(getUnionOfInnerActiveAndOuterVars(params, outerVars)),
@@ -74,7 +74,7 @@ void HpHexnerToPExner::multiply(oops::FieldSet3D & fset) const {
   auto airPressureView =
     atlas::array::make_view<double, 2>(fset["air_pressure_levels"]);
   auto exnerLevelsMinusOneView =
-     atlas::array::make_view<double, 2>(fset["exner_levels_minus_one"]);
+     atlas::array::make_view<double, 2>(fset["dimensionless_exner_function_levels_minus_one"]);
 
   airPressureView.assign(hydrostaticPressureView);
   // Note that the number of levels in hydrostaticExnerView is one more than
@@ -103,10 +103,12 @@ void HpHexnerToPExner::multiplyAD(oops::FieldSet3D & fset) const {
   auto hydrostaticExnerView =
       atlas::array::make_view<double, 2>(fset["hydrostatic_exner_levels"]);
   auto exnerLevelsMinusOneView =
-      atlas::array::make_view<double, 2>(fset["exner_levels_minus_one"]);
+      atlas::array::make_view<double, 2>(fset["dimensionless_exner_function_levels_minus_one"]);
 
-  for (atlas::idx_t jn = 0; jn < fset["exner_levels_minus_one"].shape(0); ++jn) {
-    for (atlas::idx_t jl = 0; jl < fset["exner_levels_minus_one"].shape(1); ++jl) {
+  for (atlas::idx_t jn = 0;
+      jn < fset["dimensionless_exner_function_levels_minus_one"].shape(0); ++jn) {
+    for (atlas::idx_t jl = 0;
+         jl < fset["dimensionless_exner_function_levels_minus_one"].shape(1); ++jl) {
       hydrostaticExnerView(jn, jl) += exnerLevelsMinusOneView(jn, jl);
       exnerLevelsMinusOneView(jn, jl) = 0.0;
     }
@@ -131,7 +133,8 @@ void HpHexnerToPExner::leftInverseMultiply(oops::FieldSet3D & fset) const {
                         innerGeometryData_.functionSpace());
 
   // Retrieve hydrostatic Exner from Exner. Need to extrapolate top level
-  auto exner_view = atlas::array::make_view<const double, 2>(fset["exner_levels_minus_one"]);
+  auto exner_view = atlas::array::make_view<const double, 2>
+                    (fset["dimensionless_exner_function_levels_minus_one"]);
   auto hexner_view = atlas::array::make_view<double, 2>(fset["hydrostatic_exner_levels"]);
   auto airPressureView =
     atlas::array::make_view<const double, 2>(fset["air_pressure_levels"]);
@@ -152,6 +155,14 @@ void HpHexnerToPExner::leftInverseMultiply(oops::FieldSet3D & fset) const {
   }
 
   oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void HpHexnerToPExner::directCalibration(const oops::FieldSets & fset) {
+  oops::Log::trace() << classname() << "::directCalibration start" << std::endl;
+  oops::Log::info() << classname() << "::directCalibration (empty step)" << std::endl;
+  oops::Log::trace() << classname() << "::directCalibration end" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

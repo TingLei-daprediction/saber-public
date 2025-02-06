@@ -47,8 +47,8 @@ class SaberOuterBlockBase : public util::Printable, private boost::noncopyable {
  public:
   explicit SaberOuterBlockBase(const SaberBlockParametersBase & params,
                                const util::DateTime & validTime)
-    : blockName_(params.saberBlockName), skipInverse_(params.skipInverse),
-      filterMode_(params.filterMode), validTime_(validTime) {}
+    : validTime_(validTime), blockName_(params.saberBlockName), skipInverse_(params.skipInverse),
+      filterMode_(params.filterMode) {}
   virtual ~SaberOuterBlockBase() {}
 
   // Accessor
@@ -69,7 +69,6 @@ class SaberOuterBlockBase : public util::Printable, private boost::noncopyable {
 
   // Block left inverse multiplication
   virtual void leftInverseMultiply(oops::FieldSet3D &) const
-
     {throw eckit::NotImplemented("leftInverseMultiply not implemented yet for the block "
       + blockName_, Here());}
 
@@ -77,7 +76,8 @@ class SaberOuterBlockBase : public util::Printable, private boost::noncopyable {
 
   // Read block data
   virtual void read()
-    {throw eckit::NotImplemented("read not implemented yet for the block " + this->blockName());}
+    {throw eckit::NotImplemented("read not implemented yet for the block "
+      + this->blockName(), Here());}
 
   // Read model fields
   virtual std::vector<std::pair<std::string, eckit::LocalConfiguration>> getReadConfs() const
@@ -142,7 +142,7 @@ class SaberOuterBlockBase : public util::Printable, private boost::noncopyable {
   // Return flag to skip inverse application
   bool skipInverse() const {return skipInverse_;}
 
-  // Return flag to skip inverse application
+  // Return flag to replace adjoint with inverse in blockchain
   bool filterMode() const {return filterMode_;}
 
   // Return date/time
@@ -175,11 +175,13 @@ class SaberOuterBlockBase : public util::Printable, private boost::noncopyable {
                    const double &,
                    const double &) const;
 
+ protected:
+  const util::DateTime validTime_;
+
  private:
   const std::string blockName_;
   const bool skipInverse_;
   const bool filterMode_;
-  const util::DateTime validTime_;
   virtual void print(std::ostream &) const = 0;
 };
 

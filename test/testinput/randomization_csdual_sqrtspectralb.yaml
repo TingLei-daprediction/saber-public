@@ -6,14 +6,14 @@ geometry:
   partitioner: cubedsphere
   groups:
   - variables: &vars
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
     - mu
-    - streamfunction
-    - unbalanced_pressure_levels_minus_one
-    - velocity_potential
+    - unbalanced_pressure_levels_minus_one   
     levels: 70
   halo: 1
 background:
-  date: '2010-01-01T12:00:00Z'
+  date: 2010-01-01T12:00:00Z
   state variables: *vars
 background error:
   covariance model: SABER
@@ -26,10 +26,10 @@ background error:
     read:
       covariance_file: testdata/spectralcov.nc
       umatrix_netcdf_names:
-      - MU_inc_Uv_matrix
       - PSI_inc_Uv_matrix
-      - aP_inc_Uv_matrix
       - CHI_inc_Uv_matrix
+      - MU_inc_Uv_matrix
+      - aP_inc_Uv_matrix
   - saber block name: spectral to gauss
     active variables: *vars
   - saber block name: gauss to cubed-sphere-dual

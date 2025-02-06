@@ -67,10 +67,18 @@ void copyFields(const std::vector<VariableGroupParameters> & gps,
   for (const VariableGroupParameters & gp : gps) {
     std::string key = gp.groupVariableName.value();
     oops::Variables v = gp.groupComponents.value();
+    // copy metadata in to re-expanded fields
+    std::string interpType;
+    if (fsetIn[key].metadata().has("interp_type")) {
+      interpType = fsetIn[key].metadata().get<std::string>("interp_type");
+    }
     auto otherView = atlas::array::make_view<double, 2>(fsetIn[key]);
     for (const auto & component : v) {
       auto view = atlas::array::make_view<double, 2>(fsetOut[component.name()]);
       view.assign(otherView);
+      if (!interpType.empty()) {
+        fsetOut[component.name()].metadata().set("interp_type", interpType);
+      }
     }
   }
 }
@@ -82,8 +90,19 @@ void gatherFields(const std::vector<VariableGroupParameters> & gps,
   for (const VariableGroupParameters & gp : gps) {
     std::string key = gp.groupVariableName.value();
     oops::Variables v = gp.groupComponents.value();
+    std::string interpType;
+
+    // copy metadata from 0th variable, if present
+    if (fsetIn[v[0].name()].metadata().has("interp_type")) {
+      interpType = fsetIn[v[0].name()].metadata().get<std::string>("interp_type");
+    }
     auto otherView = atlas::array::make_view<double, 2>(fsetOut[key]);
     for (const auto & component : v) {
+      if (!interpType.empty()) {
+        // check other fields have same 'interp_type' as component0
+        ASSERT(fsetIn[component.name()].metadata().has("interp_type"));
+        ASSERT(fsetIn[component.name()].metadata().get<std::string>("interp_type") == interpType);
+      }
       auto view = atlas::array::make_view<double, 2>(fsetIn[component.name()]);
       for (atlas::idx_t jn = 0; jn < fsetOut[key].shape(0); ++jn) {
         for (atlas::idx_t jl = 0; jl < fsetOut[key].shape(1); ++jl) {
@@ -91,6 +110,9 @@ void gatherFields(const std::vector<VariableGroupParameters> & gps,
           view(jn, jl) = 0.0;
         }
       }
+    }
+    if (!interpType.empty()) {
+      fsetOut[key].metadata().set("interp_type", interpType);
     }
   }
 }
