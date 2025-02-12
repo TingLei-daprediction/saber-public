@@ -162,6 +162,7 @@ contains
 !from mg_generation.f90
   procedure:: upsending_all,downsending_all,weighting_all
   procedure:: upsending,downsending
+  procedure:: upsending_normalized
   procedure:: upsending_highest,downsending_highest
   procedure:: upsending2,downsending2
   procedure:: upsending_ens,downsending_ens
@@ -175,6 +176,7 @@ contains
   generic :: weighting_loc => weighting_loc_g3,weighting_loc_g4
   procedure:: weighting_loc_g3,weighting_loc_g4
   procedure:: adjoint,direct1
+  procedure:: adjoint_normalized
   procedure:: adjoint2,direct2
   procedure:: adjoint_nearest,direct_nearest
   procedure:: adjoint_highest,direct_highest
@@ -648,6 +650,15 @@ interface
      real(r_kind),dimension(this%km,-1:this%imL+2,-1:this%jmL+2):: V_INT
      real(r_kind),dimension(this%km,-1:this%imL+2,-1:this%jmL+2):: H_INT
    end subroutine
+   module subroutine upsending_normalized &
+        (this,V,H)
+     implicit none
+     class (mg_intstate_type),target:: this
+     real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(in):: V
+     real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(out):: H
+     real(r_kind),dimension(this%km,-1:this%imL+2,-1:this%jmL+2):: V_INT
+     real(r_kind),dimension(this%km,-1:this%imL+2,-1:this%jmL+2):: H_INT
+   end subroutine
    module subroutine downsending &
         (this,H,V)
      implicit none
@@ -817,6 +828,15 @@ interface
      real(r_kind),dimension(km_64_in,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: H64
    end subroutine
    module subroutine adjoint &
+        (this,F,W,km_in,g)
+     implicit none
+     class (mg_intstate_type),target:: this
+     integer(i_kind),intent(in):: g
+     integer(i_kind),intent(in):: km_in
+     real(r_kind), dimension(km_in,1:this%im,1:this%jm), intent(in):: F
+     real(r_kind), dimension(km_in,-1:this%imL+2,-1:this%jmL+2), intent(out):: W
+   end subroutine
+   module subroutine adjoint_normalized &
         (this,F,W,km_in,g)
      implicit none
      class (mg_intstate_type),target:: this
@@ -1293,7 +1313,7 @@ if(this%l_mg_weig_readin) then
 !clt to convert data in weigt_var to their correct locations
    do ig=start_idx,end_idx
      weigh_tmp=this%weig_var(:,:,:,ig)
-     call this%upsending(weigh_tmp,this%weig_var(:,:,:,ig))
+     call this%upsending_normalized(weigh_tmp,this%weig_var(:,:,:,ig))
    enddo 
 
     deallocate(weig_g,weigh_tmp)
@@ -1302,7 +1322,7 @@ else
  par_weig_g=(/this%mg_weig1,this%mg_weig2,this%mg_weig3,this%mg_weig4/)
  do ig=start_idx,end_idx
  weigh_tmp=par_weig_g(ig)
- call this%upsending(weigh_tmp,this%weig_var(:,:,:,ig))
+ call this%upsending_normalized(weigh_tmp,this%weig_var(:,:,:,ig))
  enddo 
 
  deallocate(par_weig_g)

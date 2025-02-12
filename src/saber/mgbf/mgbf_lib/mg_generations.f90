@@ -208,6 +208,51 @@ integer(i_kind):: g,L
 
 !-----------------------------------------------------------------------
 endsubroutine upsending
+module subroutine upsending_normalized &
+!***********************************************************************
+! using adjoint_normalized
+!                                                                      !
+!  Adjoint interpolate and upsend:                                     !
+!       First from g1->g2 (V -> H)                                     !
+!       Then  from g2->...->gn  (H -> H)                               !
+!                                                                      !
+!***********************************************************************
+(this,V,H)
+!-----------------------------------------------------------------------
+implicit none
+class (mg_intstate_type),target:: this
+real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(in):: V
+real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(out):: H
+real(r_kind),dimension(this%km,-1:this%imL+2,-1:this%jmL+2):: V_INT
+real(r_kind),dimension(this%km,-1:this%imL+2,-1:this%jmL+2):: H_INT
+integer(i_kind):: g,L
+!-----------------------------------------------------------------------
+!
+! From generation 1 to generation 2
+!
+
+        call this%adjoint_normalized(V(1:this%km,1:this%im,1:this%jm),V_INT,this%km,1) 
+
+        call this%bocoT_2d(V_INT,this%km,this%imL,this%jmL,2,2)
+
+        call this%upsend_all(V_INT(1:this%km,1:this%imL,1:this%jmL),H,this%km)
+!
+! From generation 2 sequentially to higher generations
+!
+  do g=2,this%gm-1 
+
+    if(g==this%my_hgen) then
+        call this%adjoint_normalized(H(1:this%km,1:this%im,1:this%jm),H_INT,this%km,g) 
+    endif
+
+        call this%bocoT_2d(H_INT,this%km,this%imL,this%jmL,2,2,this%FimaxL,this%FjmaxL,g,g)
+
+        call this%upsend_all(H_INT(1:this%km,1:this%imL,1:this%jmL),H,this%km,g,g+1)
+
+  end do    
+
+!-----------------------------------------------------------------------
+endsubroutine upsending_normalized
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine downsending &
@@ -1322,6 +1367,122 @@ integer(i_kind):: i,j,iL,jL
 
 !-----------------------------------------------------------------------
 endsubroutine adjoint
+module subroutine adjoint_normalized &
+!***********************************************************************
+!clt normalized adjoint , more efficient way to be explored later
+!                                                                      !
+!   Mapping from the high to low resolution grid                       !
+!   using linearly squared interpolations                              !
+!                         - offset version -                           ! 
+!                                                                      !
+!***********************************************************************
+(this,F,W,km_in,g)
+!-----------------------------------------------------------------------
+implicit none
+class (mg_intstate_type),target:: this
+integer(i_kind),intent(in):: g 
+integer(i_kind),intent(in):: km_in
+real(r_kind), dimension(km_in,1:this%im,1:this%jm), intent(in):: F
+real(r_kind), dimension(km_in,-1:this%imL+2,-1:this%jmL+2), intent(out):: W
+real(r_kind), dimension(km_in,1:this%im,-1:this%jmL+2):: W_AUX
+real(r_kind), dimension(km_in,1:this%im,-1:this%jmL+2):: WEIG_AUX
+integer(i_kind):: i,j,iL,jL
+!-----------------------------------------------------------------------
+!
+! 3)
+!
+     W_AUX(:,:,:)= 0.
+     WEIG_AUX(:,:,:)= 0.
+
+  do j=this%jm-mod(this%jm,2),2,-2
+    jL = j/2
+    do i=this%im,1,-1
+      W_AUX(:,i,jL+2)=W_AUX(:,i,jL+2)+this%p_coef(4)*F(:,i,j)
+      W_AUX(:,i,jL+1)=W_AUX(:,i,jL+1)+this%p_coef(3)*F(:,i,j)
+      W_AUX(:,i,jL  )=W_AUX(:,i,jL  )+this%p_coef(2)*F(:,i,j)
+      W_AUX(:,i,jL-1)=W_AUX(:,i,jL-1)+this%p_coef(1)*F(:,i,j)
+
+      WEIG_AUX(:,i,jL+2)=WEIG_AUX(:,i,jL+2)+this%p_coef(4)
+      WEIG_AUX(:,i,jL+1)=WEIG_AUX(:,i,jL+1)+this%p_coef(3)
+      WEIG_AUX(:,i,jL  )=WEIG_AUX(:,i,jL  )+this%p_coef(2)
+      WEIG_AUX(:,i,jL-1)=WEIG_AUX(:,i,jL-1)+this%p_coef(1)
+    enddo
+  enddo
+!
+! 2)
+!
+  do j=this%jm-1+mod(this%jm,2),1,-2
+    jL=j/2
+    do i=this%im,1,-1
+      W_AUX(:,i,jL+2)=W_AUX(:,i,jL+2)+this%q_coef(4)*F(:,i,j)
+      W_AUX(:,i,jL+1)=W_AUX(:,i,jL+1)+this%q_coef(3)*F(:,i,j)
+      W_AUX(:,i,jL  )=W_AUX(:,i,jL  )+this%q_coef(2)*F(:,i,j)
+      W_AUX(:,i,jL-1)=W_AUX(:,i,jL-1)+this%q_coef(1)*F(:,i,j)
+
+      WEIG_AUX(:,i,jL+2)=WEIG_AUX(:,i,jL+2)+this%q_coef(4)
+      WEIG_AUX(:,i,jL+1)=WEIG_AUX(:,i,jL+1)+this%q_coef(3)
+      WEIG_AUX(:,i,jL  )=WEIG_AUX(:,i,jL  )+this%q_coef(2)
+      WEIG_AUX(:,i,jL-1)=WEIG_AUX(:,i,jL-1)+this%q_coef(1)
+
+
+    enddo
+  enddo
+
+    W(:,:,:)=0.
+!
+! 1)
+!
+  do jL=this%jmL+2,-1,-1
+    do i=this%im-1+mod(this%im,2),1,-2
+    iL = i/2
+      W(:,iL+2,jL)=W(:,iL+2,jL)+this%q_coef(4)*W_AUX(:,i,jL)
+      W(:,iL+1,jL)=W(:,iL+1,jL)+this%q_coef(3)*W_AUX(:,i,jL)
+      W(:,iL  ,jL)=W(:,iL  ,jL)+this%q_coef(2)*W_AUX(:,i,jL)
+      W(:,iL-1,jL)=W(:,iL-1,jL)+this%q_coef(1)*W_AUX(:,i,jL)
+
+      WEIG_AUX(:,iL+2,jL)=WEIG_AUX(:,iL+2,jL)+this%q_coef(4)*WEIG_AUX(:,i,jL)
+      WEIG_AUX(:,iL+1,jL)=WEIG_AUX(:,iL+1,jL)+this%q_coef(3)*WEIG_AUX(:,i,jL)
+      WEIG_AUX(:,iL  ,jL)=WEIG_AUX(:,iL  ,jL)+this%q_coef(2)*WEIG_AUX(:,i,jL)
+      WEIG_AUX(:,iL-1,jL)=WEIG_AUX(:,iL-1,jL)+this%q_coef(1)*WEIG_AUX(:,i,jL)
+    enddo
+    do i=this%im-mod(this%im,2),2,-2
+    iL=i/2
+      W(:,iL+2,jL)=W(:,iL+2,jL)+this%p_coef(4)*W_AUX(:,i,jL)
+      W(:,iL+1,jL)=W(:,iL+1,jL)+this%p_coef(3)*W_AUX(:,i,jL)
+      W(:,iL  ,jL)=W(:,iL  ,jL)+this%p_coef(2)*W_AUX(:,i,jL)
+      W(:,iL-1,jL)=W(:,iL-1,jL)+this%p_coef(1)*W_AUX(:,i,jL)
+
+      WEIG_AUX(:,iL+2,jL)=WEIG_AUX(:,iL+2,jL)+this%p_coef(4)*WEIG_AUX(:,i,jL)
+      WEIG_AUX(:,iL+1,jL)=WEIG_AUX(:,iL+1,jL)+this%p_coef(3)*WEIG_AUX(:,i,jL)
+      WEIG_AUX(:,iL  ,jL)=WEIG_AUX(:,iL  ,jL)+this%p_coef(2)*WEIG_AUX(:,i,jL)
+      WEIG_AUX(:,iL-1,jL)=WEIG_AUX(:,iL-1,jL)+this%p_coef(1)*WEIG_AUX(:,i,jL)
+     enddo
+   enddo
+!clt normalization
+!
+  do jL=this%jmL+2,-1,-1
+    do i=this%im-1+mod(this%im,2),1,-2
+    iL = i/2
+      W(:,iL+2,jL)=W(:,iL+2,jL)/WEIG_AUX(:,iL+2,jL)
+      W(:,iL+1,jL)=W(:,iL+1,jL)+this%q_coef(3)*W_AUX(:,i,jL)
+      W(:,iL+1,jL)=W(:,iL+1,jL)/WEIG_AUX(:,iL+1,jL)
+      W(:,iL  ,jL)=W(:,iL  ,jL)/WEIG_AUX(:,iL,jL)
+      W(:,iL-1,jL)=W(:,iL-1,jL)/WEIG_AUX(:,iL-1,jL)
+
+    enddo
+    do i=this%im-mod(this%im,2),2,-2
+    iL=i/2
+      W(:,iL+2,jL)=W(:,iL+2,jL)/WEIG_AUX(:,iL+2,jL)
+      W(:,iL+1,jL)=W(:,iL+1,jL)/WEIG_AUX(:,iL+1,jL)
+      W(:,iL  ,jL)=W(:,iL  ,jL)/WEIG_AUX(:,iL,jL)
+      W(:,iL-1,jL)=W(:,iL-1,jL)+this%p_coef(1)*W_AUX(:,i,jL)
+      W(:,iL-1 ,jL)=W(:,iL-1  ,jL)/WEIG_AUX(:,iL-1,jL)
+
+     enddo
+   enddo
+
+!-----------------------------------------------------------------------
+endsubroutine adjoint_normalized
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine direct1 &
