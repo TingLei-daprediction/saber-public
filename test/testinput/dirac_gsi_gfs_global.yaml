@@ -22,7 +22,7 @@ dirac:
   level:
   - 1
   variable:
-  - stream_function
+  - air_horizontal_streamfunction
 geometry:
   function space: StructuredColumns
   grid:
@@ -30,20 +30,20 @@ geometry:
     N: 15
   groups:
   - variables:
-    - stream_function
-    - velocity_potential
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
     - air_temperature
     levels: 127
   - variables:
-    - surface_pressure
+    - air_pressure_at_surface
     levels: 1
 background:
-  date: '2010-01-01T12:00:00Z'
+  date: 2010-01-01T12:00:00Z
   state variables:
-  - stream_function
-  - velocity_potential
+  - air_horizontal_streamfunction
+  - air_horizontal_velocity_potential
   - air_temperature
-  - surface_pressure
+  - air_pressure_at_surface
 output dirac:
   mpi pattern: '%MPI%'
   filepath: testdata/dirac_gsi_gfs_global/%MPI%_dirac_%id%

@@ -902,7 +902,7 @@ if (bump%nam%new_nicas.or.bump%nam%load_nicas_local.or.bump%nam%load_nicas_globa
    end if
 end if
 
-if (bump%nam%new_wind.or.bump%nam%load_wind_local) then
+if (bump%nam%new_wind.or.bump%nam%load_wind_local.or.bump%nam%load_wind_global) then
    ! Run psi/chi to u/v driver
    write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
@@ -1568,8 +1568,8 @@ call bump%geom(1)%fieldset_to_c0(bump%mpl,bump%nam,fieldset,fld_c0a)
 
 ! Get psi/chi/ua/va indices
 do iv=1,bump%nam%nv
-   if (bump%nam%variables(iv)=='stream_function') iv_psi = iv
-   if (bump%nam%variables(iv)=='velocity_potential') iv_chi = iv
+   if (bump%nam%variables(iv)=='air_horizontal_streamfunction') iv_psi = iv
+   if (bump%nam%variables(iv)=='air_horizontal_velocity_potential') iv_chi = iv
    if (bump%nam%variables(iv)=='eastward_wind') iv_ua = iv
    if (bump%nam%variables(iv)=='northward_wind') iv_va = iv
 end do
@@ -1613,18 +1613,18 @@ type(atlas_field) :: afield
 @:probe_in()
 
 ! Get psi/chi variables in fieldset or create and add them
-if (fieldset%has_field('stream_function')) then
-   afield = fieldset%field('stream_function')
+if (fieldset%has_field('air_horizontal_streamfunction')) then
+   afield = fieldset%field('air_horizontal_streamfunction')
 else
-   afield = bump%geom(1)%afunctionspace_mg%create_field(name='stream_function',kind=atlas_real(kind_real), &
- & levels=bump%geom(1)%nl0)
+   afield = bump%geom(1)%afunctionspace_mg%create_field(name='air_horizontal_streamfunction', &
+            kind=atlas_real(kind_real), levels=bump%geom(1)%nl0)
    call fieldset%add(afield)
 end if
-if (fieldset%has_field('velocity_potential')) then
-   afield = fieldset%field('velocity_potential')
+if (fieldset%has_field('air_horizontal_velocity_potential')) then
+   afield = fieldset%field('air_horizontal_velocity_potential')
 else
-   afield = bump%geom(1)%afunctionspace_mg%create_field(name='velocity_potential',kind=atlas_real(kind_real), &
- & levels=bump%geom(1)%nl0)
+   afield = bump%geom(1)%afunctionspace_mg%create_field(name='air_horizontal_velocity_potential', &
+            kind=atlas_real(kind_real), levels=bump%geom(1)%nl0)
    call fieldset%add(afield)
 end if
 
@@ -1636,8 +1636,8 @@ call bump%geom(1)%fieldset_to_c0(bump%mpl,bump%nam,fieldset,fld_c0a)
 
 ! Get psi/chi/ua/va indices
 do iv=1,bump%nam%nv
-   if (bump%nam%variables(iv)=='stream_function') iv_psi = iv
-   if (bump%nam%variables(iv)=='velocity_potential') iv_chi = iv
+   if (bump%nam%variables(iv)=='air_horizontal_streamfunction') iv_psi = iv
+   if (bump%nam%variables(iv)=='air_horizontal_velocity_potential') iv_chi = iv
    if (bump%nam%variables(iv)=='eastward_wind') iv_ua = iv
    if (bump%nam%variables(iv)=='northward_wind') iv_va = iv
 end do

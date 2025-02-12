@@ -1,5 +1,5 @@
 Input Dirac increment:
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: structured
 - size: 3763
@@ -16,8 +16,8 @@ Groups:
   - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
   Mask size: 100%
 Fields:
-  stream_function: 2.8284271247461903e+00
-  velocity_potential: 1.0000000000000000e+00
+  air_horizontal_streamfunction: 2.8284271247461903e+00
+  air_horizontal_velocity_potential: 1.0000000000000000e+00
     FastLAM interpolation accuracy test passed
     FastLAM interpolation adjoint test passed
     FastLAM redToRows test passed
@@ -52,7 +52,7 @@ Norm of output parameter normalization - 2: 3.2922227652017955e+02
 Adjoint test for block FastLAM passed
 Square-root test for block FastLAM passed
 Covariance(SABER) * Increment:
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: structured
 - size: 3763
@@ -69,5 +69,5 @@ Groups:
   - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
   Mask size: 100%
 Fields:
-  stream_function: 6.9086231569106387e+00
-  velocity_potential: 8.8282852527008959e+00
+  air_horizontal_streamfunction: 6.9086231569106387e+00
+  air_horizontal_velocity_potential: 8.8282852527008959e+00

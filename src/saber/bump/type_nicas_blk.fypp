@@ -1292,6 +1292,9 @@ do icmp=1,nicas_blk%ncmp
          call mpl%warning('${subr}$',message)
       end if
    end if
+
+   ! Copy C matrix scaling
+   nicas_blk%cmp(icmp)%scaling = cmat_blk%scaling
 end do
 
 ! End associate
@@ -1424,11 +1427,11 @@ allocate(cv_blk1%cmp(nicas_blk%ncmp))
 allocate(cv_blk2%cmp(nicas_blk%ncmp))
 do icmp=1,nicas_blk%ncmp
    if (nam%same_horizontal) then
-      call cv_blk1%cmp(icmp)%alloc(mpl,nicas_blk%cmp(icmp)%nsa*geom%nl0)
-      call cv_blk2%cmp(icmp)%alloc(mpl,nicas_blk%cmp(icmp)%nsa*geom%nl0)
+      call cv_blk1%cmp(icmp)%alloc(mpl,nicas_blk%cmp(icmp)%ncv*geom%nl0)
+      call cv_blk2%cmp(icmp)%alloc(mpl,nicas_blk%cmp(icmp)%ncv*geom%nl0)
    else
-      call cv_blk1%cmp(icmp)%alloc(mpl,nicas_blk%cmp(icmp)%nsa)
-      call cv_blk2%cmp(icmp)%alloc(mpl,nicas_blk%cmp(icmp)%nsa)
+      call cv_blk1%cmp(icmp)%alloc(mpl,nicas_blk%cmp(icmp)%ncv)
+      call cv_blk2%cmp(icmp)%alloc(mpl,nicas_blk%cmp(icmp)%ncv)
    end if
 end do
 
@@ -1508,9 +1511,9 @@ allocate(cv_blk%cmp(cv_blk%ncmp))
 do icmp=1,cv_blk%ncmp
    ! Allocation and initialization
    if (nam%same_horizontal) then
-      call cv_blk%cmp(icmp)%alloc(mpl,nicas_blk%cmp(icmp)%nsa*geom%nl0)
+      call cv_blk%cmp(icmp)%alloc(mpl,nicas_blk%cmp(icmp)%ncv*geom%nl0)
    else
-      call cv_blk%cmp(icmp)%alloc(mpl,nicas_blk%cmp(icmp)%nsa)
+      call cv_blk%cmp(icmp)%alloc(mpl,nicas_blk%cmp(icmp)%ncv)
    end if
 end do
 
@@ -1599,9 +1602,9 @@ allocate(cv_blk%cmp(cv_blk%ncmp))
 do icmp=1,cv_blk%ncmp
    ! Allocation and initialization
    if (nam%same_horizontal) then
-      call cv_blk%cmp(icmp)%alloc(mpl,nicas_blk%cmp(icmp)%nsa*geom%nl0)
+      call cv_blk%cmp(icmp)%alloc(mpl,nicas_blk%cmp(icmp)%ncv*geom%nl0)
    else
-      call cv_blk%cmp(icmp)%alloc(mpl,nicas_blk%cmp(icmp)%nsa)
+      call cv_blk%cmp(icmp)%alloc(mpl,nicas_blk%cmp(icmp)%ncv)
    end if
 end do
 

@@ -37,6 +37,9 @@ class WriteFieldsParameters : public SaberBlockParametersBase {
   /// to the test output stream.
   oops::Parameter<bool> saveNetCDFFile{"save netCDF file", true, this};
 
+  /// Save fields to GMSH files.
+  oops::Parameter<bool> saveGMSHFile{"save GMSH file", false, this};
+
   /// List of fields to write out.
   /// If this parameter is empty (the default) then all fields contained in the
   /// FieldSet are written out.

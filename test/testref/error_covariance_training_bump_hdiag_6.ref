@@ -56,21 +56,21 @@
                 Level:   2 ~> cov. at class zero:  0.91E+00
                 Level:   1 ~> cov. at class zero:  0.10E+01
                 Level:   2 ~> cov. at class zero:  0.99E+00
-             Block stream_function:  0.14846263E+00 for       60 diagnostic points
+             Block air_horizontal_streamfunction:  0.14846263E+00 for       60 diagnostic points
                    Level:   1 ~> amplitude:        1.00
                                  cor. hor. support:      3672.48 km
                                  cor. ver. support:         3.09 vertical units
                    Level:   2 ~> amplitude:        1.00
                                  cor. hor. support:      3769.01 km
                                  cor. ver. support:         3.09 vertical units
-             Block stream_function:  0.18141370E+00 for       60 diagnostic points
+             Block air_horizontal_streamfunction:  0.18141370E+00 for       60 diagnostic points
                    Level:   1 ~> amplitude:        1.00
                                  cor. hor. support:      3495.00 km
                                  cor. ver. support:         3.24 vertical units
                    Level:   2 ~> amplitude:        1.00
                                  cor. hor. support:      3595.96 km
                                  cor. ver. support:         3.24 vertical units
-             Block stream_function:  0.24300529E+00 for       33 diagnostic points
+             Block air_horizontal_streamfunction:  0.24300529E+00 for       33 diagnostic points
                 Level:   1 ~> loc. at class zero:       0.83
                 Level:   2 ~> loc. at class zero:       0.82
                    Level:   1 ~> amplitude:        1.00
@@ -79,7 +79,7 @@
                    Level:   2 ~> amplitude:        1.00
                                  loc. hor. support:      4277.69 km
                                  loc. ver. support:         4.09 vertical units
-             Block stream_function:  0.26462522E+00 for       40 diagnostic points
+             Block air_horizontal_streamfunction:  0.26462522E+00 for       40 diagnostic points
                 Level:   1 ~> loc. at class zero:       0.92
                 Level:   2 ~> loc. at class zero:       0.92
                    Level:   1 ~> amplitude:        1.00

@@ -29,6 +29,7 @@ target_link_libraries( ${PROJECT_NAME} PUBLIC eckit )
 target_link_libraries( ${PROJECT_NAME} PUBLIC fckit )
 target_link_libraries( ${PROJECT_NAME} PUBLIC atlas_f )
 target_link_libraries( ${PROJECT_NAME} PUBLIC ${oops_LIBRARIES} )
+target_link_libraries( ${PROJECT_NAME} PUBLIC vader )
 
 if( gsibec_FOUND )
     target_link_libraries( ${PROJECT_NAME} PUBLIC gsibec )
@@ -44,9 +45,6 @@ endif()
 if( FFTW_FOUND )
     target_link_libraries( ${PROJECT_NAME} PUBLIC FFTW::fftw3)
 endif()
-if( vader_FOUND )
-    target_link_libraries( ${PROJECT_NAME} PUBLIC vader )
-endif()
 if ( ENABLE_OFFLINE_CODECOV )
     target_link_libraries( ${PROJECT_NAME} PUBLIC gcov )
 endif()
@@ -56,6 +54,28 @@ target_include_directories( ${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CUR
 
 # Process fypp files
 fckit_target_preprocess_fypp( ${PROJECT_NAME} )
+
+# Enable TotalView debugging in BUMP. The f90 subdirectory duplicates the .F90
+# files created by "fckit" FYPP processing but with the extension .f90. Otherwise,
+# TotalView cannot load either .fypp or .F90 extensions and uses assembly code
+# instead.
+if ( CMAKE_BUILD_TYPE MATCHES "Debug" )
+    file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/f90")
+    foreach( bump_file ${bump_src_files} )
+        if( bump_file MATCHES ".fypp" )
+            string( REGEX REPLACE ".*\/(.*)\.fypp" "\\1" file ${bump_file} )
+            set(f90_file "${CMAKE_CURRENT_BINARY_DIR}/f90/${file}.f90" )
+            list( APPEND f90_files ${f90_file} )
+            set_source_files_properties( ${CMAKE_CURRENT_BINARY_DIR}/bump/${file}.F90 PROPERTIES HEADER_FILE_ONLY 1 )
+            add_custom_command(OUTPUT ${f90_file}
+                               COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/bump/${file}.F90
+                                                                ${f90_file}
+                               DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/bump/${file}.F90)
+            target_sources( ${PROJECT_NAME} PRIVATE ${f90_file} )
+        endif()
+    endforeach()
+    add_custom_target(bump_f90 ALL DEPENDS ${f90_files})
+endif()
 
 # Fortran module output directory for build and install interfaces
 set( MODULE_DIR module/${PROJECT_NAME}/${CMAKE_Fortran_COMPILER_ID}/${CMAKE_Fortran_COMPILER_VERSION} )

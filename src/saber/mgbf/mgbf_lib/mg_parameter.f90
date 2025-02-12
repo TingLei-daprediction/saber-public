@@ -44,6 +44,7 @@ logical:: l_for_localization=.false.  !used for localizaiton while multiple vari
 !***
 real(r_kind):: mg_ampl01,mg_ampl02,mg_ampl03
 real(r_kind):: mg_weig1,mg_weig2,mg_weig3,mg_weig4
+                                              ! avoid a global version of it to avoid memory usage 
 integer(i_kind):: mgbf_proc   !1-2: 3D filter                  (1: radial, 2: line)
                               !3-5: 2D filter for static B     (3: radial, 4: line, 5: isotropic line)
                               !6-8: 2D filter for localization (6: radial, 7: line, 8: isotropic line)
@@ -210,6 +211,7 @@ integer(i_kind):: itargdn_sw_loc21,itargdn_se_loc21,itargdn_nw_loc21,itargdn_ne_
 integer(i_kind):: itargdn_sw_loc32,itargdn_se_loc32,itargdn_nw_loc32,itargdn_ne_loc32
 integer(i_kind):: itargdn_sw_loc43,itargdn_se_loc43,itargdn_nw_loc43,itargdn_ne_loc43
 logical:: lsendup_sw_loc,lsendup_se_loc,lsendup_nw_loc,lsendup_ne_loc
+logical:: l_mg_weig_readin=.false.
 
 contains
   procedure :: init_mg_parameter 
@@ -515,6 +517,7 @@ integer(i_kind):: mm0
 
 integer(i_kind):: hx,hy,hz
 integer(i_kind):: p
+logical:: l_mg_weig_readin=.false.
 
   namelist /parameters_mgbeta/ mg_ampl01,mg_ampl02,mg_ampl03            &
                               ,mg_weig1,mg_weig2,mg_weig3,mg_weig4      &
@@ -535,7 +538,8 @@ integer(i_kind):: p
                               ,l_for_localization,ldelta,lquart,lhelm   &
                               ,gm_max                                   &
                               ,nm0,mm0                                  &
-                              ,nxPE,nyPE,im_filt,jm_filt                
+                              ,nxPE,nyPE,im_filt,jm_filt ,              &               
+                              l_mg_weig_readin
    
   open(unit=10,file=inputfilename,status='old',action='read')
   read(10,nml=parameters_mgbeta)
@@ -669,6 +673,7 @@ integer(i_kind):: p
   this%km_4  = this%km/4
   this%km_16 = this%km/16
   this%km_64 = this%km/64
+  this%l_mg_weig_readin=l_mg_weig_readin
 
 !
 ! Define maximum number of generations 'gm'

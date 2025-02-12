@@ -73,7 +73,15 @@ Diffusion::Diffusion(
     diffusionGeom_(oops::Diffusion::calculateDerivedGeom(geometryData)),
     params_(params),
     vars_(params.activeVars.value().get_value_or(centralVars))
-{ }
+{
+  // Compute total number of levels
+  size_t nlevs = 0;
+  for (const auto & var : vars_) {
+    nlevs += var.getLevels();
+  }
+  // Compute control vector size
+  ctlVecSize_ = nlevs*geom_.functionSpace().size();
+}
 
 // --------------------------------------------------------------------------------------
 

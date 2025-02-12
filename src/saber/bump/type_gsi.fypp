@@ -236,13 +236,13 @@ if (mpl%main) then
       gsivar = ''
       gsi%var2d(iv) = .false.
       select case (trim(nam%variables(iv)))
-      case ('stream_function')
+      case ('air_horizontal_streamfunction')
          gsivar = 'sf'
-      case ('velocity_potential')
+      case ('air_horizontal_velocity_potential')
          gsivar = 'vp'
       case ('air_temperature')
          gsivar = 't'
-      case ('specific_humidity')
+      case ('water_vapor_mixing_ratio_wrt_moist_air')
          gsivar = 'q'
       case ('cloud_liquid_ice')
          gsivar = 'qi'
@@ -250,7 +250,7 @@ if (mpl%main) then
          gsivar = 'ql'
       case ('ozone_mass_mixing_ratio')
          gsivar = 'oz'
-      case ('surface_pressure')
+      case ('air_pressure_at_surface')
          gsivar = 'ps'
          gsi%var2d(iv) = .true.
       case default
@@ -357,13 +357,13 @@ if (mpl%main) then
          ! Find variable
          select case (trim(adjustl(var)))
          case ('sf')
-            bumpvar = 'stream_function'
+            bumpvar = 'air_horizontal_streamfunction'
          case ('vp')
-            bumpvar = 'velocity_potential'
+            bumpvar = 'air_horizontal_velocity_potential'
          case ('t')
             bumpvar = 'air_temperature'
          case ('q')
-            bumpvar = 'specific_humidity'
+            bumpvar = 'water_vapor_mixing_ratio_wrt_moist_air'
          case ('qi')
             bumpvar = 'cloud_liquid_ice'
          case ('ql')
@@ -371,7 +371,7 @@ if (mpl%main) then
          case ('oz')
             bumpvar = 'ozone_mass_mixing_ratio'
          case ('ps')
-            bumpvar = 'surface_pressure'
+            bumpvar = 'air_pressure_at_surface'
          case default
             call mpl%abort('${subr}$','cannot find BUMP variable name')
          end select

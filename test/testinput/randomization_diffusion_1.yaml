@@ -5,13 +5,13 @@ geometry:
   partitioner: cubedsphere
   groups:
   - variables: &vars
-    - stream_function
+    - air_horizontal_streamfunction
     levels: &levels 10
   # TODO: why does Diffusion only work when cubed-sphere halo is 0?
   halo: 0
 
 background:
-  date: '2010-01-01T12:00:00Z'
+  date: 2010-01-01T12:00:00Z
   state variables: *vars
 
 background error:

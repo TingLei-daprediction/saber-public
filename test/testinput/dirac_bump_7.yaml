@@ -6,21 +6,22 @@ geometry:
     ny : 46
   groups:
   - variables:
-    - stream_function
-    - velocity_potential
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
     - air_temperature
     levels: 4
     vert_coord: [-1.0,-5.0,-9.0,-11.0]
   - variables:
-    - surface_pressure
+    - air_pressure_at_surface
     levels: 1
+  latitude south to north: false
 background:
-  date: '2010-01-01T12:00:00Z'
+  date: 2010-01-01T12:00:00Z
   state variables:
-  - stream_function
-  - velocity_potential
+  - air_horizontal_streamfunction
+  - air_horizontal_velocity_potential
   - air_temperature
-  - surface_pressure
+  - air_pressure_at_surface
 background error:
   covariance model: SABER
   adjoint test: true
@@ -28,13 +29,13 @@ background error:
   saber central block:
     saber block name: BUMP_NICAS
     fields metadata:
-      stream_function:
+      air_horizontal_streamfunction:
         vert_coord: vert_coord_0
-      velocity_potential:
+      air_horizontal_velocity_potential:
         vert_coord: vert_coord_0
       air_temperature:
         vert_coord: vert_coord_0
-      surface_pressure:
+      air_pressure_at_surface:
         vert_coord: vert_coord_1
     read:
       general:
@@ -49,35 +50,35 @@ background error:
       grids:
       - model:
           variables:
-          - stream_function
-          - velocity_potential
+          - air_horizontal_streamfunction
+          - air_horizontal_velocity_potential
           - air_temperature
       - model:
           variables:
-          - surface_pressure
+          - air_pressure_at_surface
   saber outer blocks:
   - saber block name: StdDev
     fields metadata:
-      stream_function:
+      air_horizontal_streamfunction:
         vert_coord: vert_coord_0
-      velocity_potential:
+      air_horizontal_velocity_potential:
         vert_coord: vert_coord_0
       air_temperature:
         vert_coord: vert_coord_0
-      surface_pressure:
+      air_pressure_at_surface:
         vert_coord: vert_coord_1
     read:
       model file:
         filepath: testdata/error_covariance_training_bump_stddev_6/_MPI_-_OMP__stddev
   - saber block name: BUMP_VerticalBalance
     fields metadata:
-      stream_function:
+      air_horizontal_streamfunction:
         vert_coord: vert_coord_0
-      velocity_potential:
+      air_horizontal_velocity_potential:
         vert_coord: vert_coord_0
       air_temperature:
         vert_coord: vert_coord_0
-      surface_pressure:
+      air_pressure_at_surface:
         vert_coord: vert_coord_1
     read:
       general:
@@ -92,12 +93,12 @@ background error:
         read vertical balance: true
       vertical balance:
         vbal:
-        - balanced variable: velocity_potential
-          unbalanced variable: stream_function
+        - balanced variable: air_horizontal_velocity_potential
+          unbalanced variable: air_horizontal_streamfunction
         - balanced variable: air_temperature
-          unbalanced variable: stream_function
-        - balanced variable: surface_pressure
-          unbalanced variable: stream_function
+          unbalanced variable: air_horizontal_streamfunction
+        - balanced variable: air_pressure_at_surface
+          unbalanced variable: air_horizontal_streamfunction
 dirac:
   lon:
   - 0.0
@@ -106,7 +107,7 @@ dirac:
   level:
   - 4
   variable:
-  - stream_function
+  - air_horizontal_streamfunction
 output dirac:
   mpi pattern: '%MPI%'
   filepath: testdata/dirac_bump_7/%MPI%_dirac_%id%

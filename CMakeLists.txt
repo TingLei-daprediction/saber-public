@@ -25,6 +25,7 @@ option( ENABLE_SABER_INSTRUMENTATION "Enable SABER instrumentation" OFF )
 option( ENABLE_OFFLINE_CODECOV "Enable SABER offline code coverage" OFF )
 option( ENABLE_SABER_DOC "Enable SABER documentation" OFF )
 option( ENABLE_MKL "Use MKL for LAPACK implementation (if available)" ON )
+option( ENABLE_QUENCH "Compile QUENCH and run QUENCH-based tests" ON )
 include( ${PROJECT_NAME}_compiler_flags )
 
 ## Dependencies
@@ -35,10 +36,22 @@ if(OPENMP)
 endif()
 find_package( MPI REQUIRED COMPONENTS Fortran )
 find_package( NetCDF REQUIRED COMPONENTS C Fortran )
-find_package( eckit 1.24.4 REQUIRED COMPONENTS MPI )
-find_package( fckit 0.11.0 REQUIRED )
+#cltol find_package( eckit 1.24.4 REQUIRED COMPONENTS MPI )
+#cltold find_package( fckit 0.11.0 REQUIRED )
 #cltorg find_package( atlas 0.35.0 REQUIRED COMPONENTS OMP_Fortran TESSELATION)
-find_package( atlas 0.35.0 REQUIRED COMPONENTS OMP_Fortran )
+#cltold find_package( atlas 0.35.0 REQUIRED COMPONENTS OMP_Fortran )
+find_package( eckit 1.17.1 REQUIRED COMPONENTS MPI )
+find_package( fckit 0.9.5 REQUIRED )
+find_package( atlas 0.35.0 REQUIRED COMPONENTS OMP_Fortran TESSELATION)
+# TODO(Benjamin): check when ATLAS PR #215 is merged into a tagged version to update the version number
+if( atlas_VERSION VERSION_GREATER "0.38.1" )
+    set( ATLAS_REGIONAL_INTERP ON )
+else()
+    set( ATLAS_REGIONAL_INTERP OFF )
+endif()
+if( DEFINED ENV{ATLAS_REGIONAL_INTERP} )
+    set( ATLAS_REGIONAL_INTERP $ENV{ATLAS_REGIONAL_INTERP} )
+endif()
 
 if( ENABLE_MKL )
     find_package( MKL )
@@ -49,13 +62,18 @@ else()
     find_package( LAPACK REQUIRED )
 endif()
 
-# OOPS
+# Required
 find_package( oops 1.10.0 REQUIRED )
+find_package( vader 1.7.0 REQUIRED )
 
 # Optionals
 find_package( FFTW 3.3.8 QUIET )
 find_package( gsibec 1.2.1 QUIET )
-find_package( vader 1.7.0 QUIET )
+find_package( eccodes 2.24 QUIET )
+if( eccodes_FOUND )
+    set( ECCODES_LIBRARIES eccodes )
+    add_definitions(-DECCODES_FOUND=1)
+endif()
 
 # Optional SABER blocks
 if( gsibec_FOUND )
@@ -73,11 +91,6 @@ if( atlas_TRANS_FOUND OR atlas_ECTRANS_FOUND )
     message( STATUS "SABER block SPECTRALB is enabled" )
 else()
     message( STATUS "SABER block SPECTRALB is NOT enabled" )
-endif()
-if( vader_FOUND )
-    message( STATUS "SABER blocks based on VADER are enabled" )
-else()
-    message( STATUS "SABER blocks based on VADER are NOT enabled" )
 endif()
 
 ## SABER instrumentation
@@ -101,7 +114,9 @@ else()
 endif()
 
 ## Sources
-add_subdirectory( quench )
+if( ENABLE_QUENCH )
+  add_subdirectory( quench )
+endif()
 add_subdirectory( src/saber )
 add_subdirectory( tools )
 add_subdirectory( test )

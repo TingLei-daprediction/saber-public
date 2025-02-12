@@ -5,16 +5,16 @@ geometry:
     N: 15
   groups:
   - variables: &vars
-    - specific_humidity
-    - q_cl
-    - q_cf
-    - air_temperature
-    - exner
-    - air_pressure
+    - var1
+    - var2
+    - var3
+    - var4
+    - var5
+    - var6
     levels: 2
   partitioner: ectrans
 background:
-  date: '2010-01-01T12:00:00Z'
+  date: 2010-01-01T12:00:00Z
   state variables: *vars
 background error:
   covariance model: SABER
@@ -24,15 +24,15 @@ background error:
   saber outer blocks:
   - saber block name: duplicate variables
     variable groupings:
-    - group variable name: specific_humidity__q_cl__q_cf
+    - group variable name: var1_var2_var3
       group components:
-      - specific_humidity
-      - q_cl
-      - q_cf
-    - group variable name: exner_air_temperature
+      - var1
+      - var2
+      - var3
+    - group variable name: var4_var5
       group components:
-      - air_temperature
-      - exner
+      - var4
+      - var5
   - saber block name: spectral to gauss
 dirac:
   lon:
@@ -71,9 +71,9 @@ diagnostic points:
   - 2
   - 2
   variable:
-  - specific_humidity
-  - exner
-  - air_pressure
+  - var1
+  - var4
+  - var6
 output dirac:
   mpi pattern: '%MPI%'
   filepath: testdata/dirac_spectralb_duplicate_variables/%MPI%_dirac_%id%

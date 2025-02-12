@@ -12,6 +12,7 @@
 
 #include "oops/base/ParameterTraitsVariables.h"
 #include "oops/base/Variables.h"
+#include "oops/util/parameters/NumericConstraints.h"
 #include "oops/util/parameters/OptionalParameter.h"
 #include "oops/util/parameters/Parameter.h"
 #include "oops/util/parameters/Parameters.h"
@@ -39,9 +40,6 @@ class SaberBlockParametersBase : public oops::Parameters {
 
   // Flag to skip inverse test
   oops::Parameter<bool> skipInverseTest{"skip inverse test", false, this};
-
-  // Flag to skip square-root test
-  oops::Parameter<bool> skipSqrtTest{"skip square-root test", false, this};
 
   // Flag to run the left inverse instead of the adjoint.
   oops::Parameter<bool> filterMode{"filter mode", false, this};
@@ -104,6 +102,10 @@ class SaberBlockParametersBase : public oops::Parameters {
   // Mandatory active outer variables, must be a subset of mandatoryActiveVars()
   // Can be used to define outer variables to allocate when randomizing
   virtual oops::Variables activeOuterVars(const oops::Variables & outerVars) const {
+    return oops::Variables();
+  }
+
+  virtual const oops::Variables mandatoryStateVars() const {
     return oops::Variables();
   }
 };

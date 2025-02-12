@@ -353,20 +353,20 @@ geometry:
   no point on last task: true
   groups:
   - variables:
-    - stream_function
+    - air_horizontal_streamfunction
     levels: 2
 background:
-  date: '2010-01-01T12:00:00Z'
+  date: 2010-01-01T12:00:00Z
   state variables:
-  - stream_function
+  - air_horizontal_streamfunction
 background error:
   covariance model: SABER
   ensemble pert:
-    date: '2010-01-01T12:00:00Z'
+    date: 2010-01-01T12:00:00Z
     members from template:
       template:
-        date: '2010-01-01T12:00:00Z'
-        filepath: testdata/randomization_bump_nicas_UL2/member_pert_%mem%
+        date: 2010-01-01T12:00:00Z
+        filepath: testdata/randomization_bump_nicas_unstructured_global/_MPI_-_OMP__member_pert_%mem%
       pattern: '%mem%'
       nmembers: 25
       zero padding: 6
@@ -410,7 +410,7 @@ background error:
       - longitude: 0.0
         latitude: 0.0
         level: 1
-        variable: stream_function
+        variable: air_horizontal_streamfunction
       output model files:
       - parameter: dirac_mom
         file:

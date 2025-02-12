@@ -3,7 +3,7 @@
     FastLAM redToRows test passed
     FastLAM rowsToCols test passed
 Member 0: 
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: structured
 - size: 3763
@@ -20,9 +20,9 @@ Groups:
   - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 8.1488556410001237e+01
+  air_horizontal_streamfunction: 8.1488556410001237e+01
 Member 1: 
-Valid time:2010-01-01T12:00:00Z
+Valid time: 2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: structured
 - size: 3763
@@ -39,4 +39,4 @@ Groups:
   - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 9.1289067615923599e+01
+  air_horizontal_streamfunction: 9.1289067615923599e+01

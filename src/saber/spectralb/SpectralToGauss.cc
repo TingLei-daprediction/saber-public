@@ -29,23 +29,27 @@ namespace {
 atlas::Field allocateGaussUVField(const atlas::FunctionSpace & gaussFS,
                                   const oops::Variables & innerVariables) {
   std::array<size_t, 2> lvls{{0, 0}};
-  if (innerVariables.has("vorticity") && innerVariables.has("divergence")) {
-    lvls[0] = innerVariables["vorticity"].getLevels();
-    lvls[1] = innerVariables["divergence"].getLevels();
-  } else if (innerVariables.has("streamfunction") && innerVariables.has("velocity_potential")) {
-    lvls[0] = innerVariables["streamfunction"].getLevels();
-    lvls[1] = innerVariables["velocity_potential"].getLevels();
+  if (innerVariables.has("air_upward_absolute_vorticity") &&
+      innerVariables.has("air_horizontal_divergence")) {
+    lvls[0] = innerVariables["air_upward_absolute_vorticity"].getLevels();
+    lvls[1] = innerVariables["air_horizontal_divergence"].getLevels();
+  } else if (innerVariables.has("air_horizontal_streamfunction") &&
+             innerVariables.has("air_horizontal_velocity_potential")) {
+    lvls[0] = innerVariables["air_horizontal_streamfunction"].getLevels();
+    lvls[1] = innerVariables["air_horizontal_velocity_potential"].getLevels();
   } else {
     // error trap
-    oops::Log::error() << "ERROR - either vorticity and divergence "
-                       << "or streamfunction and velocity_potential "
+    oops::Log::error() << "ERROR - either:"
+                       << "air_upward_absolute_vorticity and air_horizontal_divergence "
+                       << "or air_horizontal_streamfunction and "
+                       << "   air_horizontal_velocity_potential "
                        << "not present " << std::endl;
     throw std::runtime_error("inner fields mis-specified");
   }
   if (lvls[0] != lvls[1]) {
     oops::Log::error() << "ERROR - the number of model levels in "
-                       << "vorticity and divergence or "
-                       << "streamfunction and velocity potential "
+                       << "air_upward_absolute_vorticity and air_horizontal_divergence or "
+                       << "air_horizontal_streamfunction and velocity potential "
                        << lvls[0] << " "
                        << lvls[1]
                        << std::endl;
@@ -66,23 +70,27 @@ atlas::FieldSet allocateSpectralVortDiv(
     const atlas::functionspace::Spectral & specfs,
     const oops::Variables & innerVariables) {
   std::array<size_t, 2> lvls{{0, 0}};
-  if (innerVariables.has("vorticity") && innerVariables.has("divergence")) {
-    lvls[0] = innerVariables["vorticity"].getLevels();
-    lvls[1] = innerVariables["divergence"].getLevels();
-  } else if (innerVariables.has("streamfunction") && innerVariables.has("velocity_potential")) {
-    lvls[0] = innerVariables["streamfunction"].getLevels();
-    lvls[1] = innerVariables["velocity_potential"].getLevels();
+  if (innerVariables.has("air_upward_absolute_vorticity") &&
+      innerVariables.has("air_horizontal_divergence")) {
+    lvls[0] = innerVariables["air_upward_absolute_vorticity"].getLevels();
+    lvls[1] = innerVariables["air_horizontal_divergence"].getLevels();
+  } else if (innerVariables.has("air_horizontal_streamfunction") &&
+             innerVariables.has("air_horizontal_velocity_potential")) {
+    lvls[0] = innerVariables["air_horizontal_streamfunction"].getLevels();
+    lvls[1] = innerVariables["air_horizontal_velocity_potential"].getLevels();
   } else {
     // error trap
-    oops::Log::error() << "ERROR - either vorticity and divergence "
-                       << "or streamfunction and velocity_potential "
+    oops::Log::error() << "ERROR - either:"
+                       << "air_upward_absolute_vorticity and air_horizontal_divergence "
+                       << "or air_horizontal_streamfunction and "
+                       << "   air_horizontal_velocity_potential "
                        << "not present " << std::endl;
     throw std::runtime_error("inner fields mis-specified");
   }
   if (lvls[0] != lvls[1]) {
     oops::Log::error() << "ERROR - the number of model levels in "
-                       << "vorticity and divergence or "
-                       << "streamfunction and velocity potential "
+                       << "air_upward_absolute_vorticity and air_horizontal_divergence or "
+                       << "air_horizontal_streamfunction and velocity potential "
                        << lvls[0] << " "
                        << lvls[1]
                        << std::endl;
@@ -91,9 +99,9 @@ atlas::FieldSet allocateSpectralVortDiv(
 
   atlas::FieldSet specfset;
   atlas::Field specvort = specfs.createField<double>(
-    atlas::option::name("vorticity") | atlas::option::levels(lvls[0]));
+    atlas::option::name("air_upward_absolute_vorticity") |atlas::option::levels(lvls[0]));
   atlas::Field specdiv = specfs.createField<double>(
-    atlas::option::name("divergence") | atlas::option::levels(lvls[1]));
+    atlas::option::name("air_horizontal_divergence") | atlas::option::levels(lvls[1]));
 
   specfset.add(specvort);
   specfset.add(specdiv);
@@ -201,13 +209,15 @@ oops::Variables createInnerVars(const oops::Variables & outerVars,
     eckit::LocalConfiguration conf;
     conf.set("levels", levels);
 
-    if (activeVars.has("streamfunction") && activeVars.has("velocity_potential")) {
-      innerVars.push_back({"streamfunction", conf});
-      innerVars.push_back({"velocity_potential", conf});
+    if (activeVars.has("air_horizontal_streamfunction") &&
+        activeVars.has("air_horizontal_velocity_potential")) {
+      innerVars.push_back({"air_horizontal_streamfunction", conf});
+      innerVars.push_back({"air_horizontal_velocity_potential", conf});
     }
-    if (activeVars.has("divergence") && activeVars.has("vorticity")) {
-      innerVars.push_back({"divergence", conf});
-      innerVars.push_back({"vorticity", conf});
+    if (activeVars.has("air_horizontal_divergence") &&
+        activeVars.has("air_upward_absolute_vorticity")) {
+      innerVars.push_back({"air_horizontal_divergence", conf});
+      innerVars.push_back({"air_upward_absolute_vorticity", conf});
     }
     innerVars -= innerVars["eastward_wind"];
     innerVars -= innerVars["northward_wind"];
@@ -306,26 +316,41 @@ SpectralToGauss::SpectralToGauss(const oops::GeometryData & outerGeometryData,
 
 void SpectralToGauss::multiplyVectorFields(atlas::FieldSet & spectralWindFieldSet,
                                            atlas::FieldSet & outFieldSet) const {
-  // 1- Convert stream function and potential vorticity to divergence and vorticity.
   oops::Log::trace() << classname() << "::multiplyVectorFields starting" << std::endl;
-  // Scale by n(n+1) / squaredEarthRadius and rename fields to vorticity and divergence
-  if (spectralWindFieldSet.has("streamfunction") &&
-      spectralWindFieldSet.has("velocity_potential")) {
-    ASSERT(innerVars_.has("streamfunction") && innerVars_.has("velocity_potential"));
+
+  std::string interpType;
+  if (spectralWindFieldSet[0].metadata().has("interp_type")) {
+    interpType = spectralWindFieldSet[0].metadata().get<std::string>("interp_type");
+    // partner winds field should have same metadata
+    ASSERT(spectralWindFieldSet[1].metadata().has("interp_type"));
+    ASSERT(spectralWindFieldSet[1].metadata().get<std::string>("interp_type") == interpType);
+  }
+
+  // 1- Convert atm_horiz_streamfunction and atm_horiz_velocity_potential to
+  //    "air_horizontal_divergence" and "air_upward_absolute_vorticity".
+  // Scale by n(n+1) / squaredEarthRadius and rename fields
+  if (spectralWindFieldSet.has("air_horizontal_streamfunction") &&
+      spectralWindFieldSet.has("air_horizontal_velocity_potential")) {
+    ASSERT(innerVars_.has("air_horizontal_streamfunction") &&
+           innerVars_.has("air_horizontal_velocity_potential"));
     const int N = specFunctionSpace_.truncation();
     applyNtimesNplus1SpectralScaling(
-         oops::Variables(std::vector<std::string>{"streamfunction", "velocity_potential"}),
-         oops::Variables(std::vector<std::string>{"vorticity", "divergence"}),
+         oops::Variables(std::vector<std::string>{"air_horizontal_streamfunction",
+                                                  "air_horizontal_velocity_potential"}),
+         oops::Variables(std::vector<std::string>{"air_upward_absolute_vorticity",
+                                                  "air_horizontal_divergence"}),
          specFunctionSpace_, N, spectralWindFieldSet);
   }
 
-  // 2- Convert divergence and vorticity to eastward and northward wind.
-  ASSERT(spectralWindFieldSet.has("divergence") && spectralWindFieldSet.has("vorticity"));
+  // 2- Convert air_horizontal_divergence and air_upward_absolute_vorticity to
+  //    eastward and northward wind.
+  ASSERT(spectralWindFieldSet.has("air_horizontal_divergence") &&
+         spectralWindFieldSet.has("air_upward_absolute_vorticity"));
   atlas::Field uvgp = allocateGaussUVField(gaussFunctionSpace_,
                                            innerVars_);
   // Transform to Gaussian grid
-  trans_.invtrans_vordiv2wind(spectralWindFieldSet["vorticity"],
-                              spectralWindFieldSet["divergence"],
+  trans_.invtrans_vordiv2wind(spectralWindFieldSet["air_upward_absolute_vorticity"],
+                              spectralWindFieldSet["air_horizontal_divergence"],
                               uvgp);
 
   const atlas::FieldSet uvfset = convertUVToFieldSet(uvgp);
@@ -333,6 +358,12 @@ void SpectralToGauss::multiplyVectorFields(atlas::FieldSet & spectralWindFieldSe
   ASSERT(!outFieldSet.has("eastward_wind") && !outFieldSet.has("northward_wind"));
   outFieldSet.add(uvfset["eastward_wind"]);
   outFieldSet.add(uvfset["northward_wind"]);
+
+  if (!interpType.empty()) {
+    outFieldSet["eastward_wind"].metadata().set("interp_type", interpType);
+    outFieldSet["northward_wind"].metadata().set("interp_type", interpType);
+  }
+
   oops::Log::trace() << classname() << "::multiplyVectorFields done" << std::endl;
 }
 
@@ -342,8 +373,19 @@ void SpectralToGauss::multiplyVectorFieldsAD(atlas::FieldSet & windFieldSet,
                                              atlas::FieldSet & outFieldSet) const {
   oops::Log::trace() << classname() << "::multiplyVectorFieldsAD starting" << std::endl;
   ASSERT(windFieldSet.has("eastward_wind") && windFieldSet.has("northward_wind"));
-  ASSERT(!outFieldSet.has("vorticity") && !outFieldSet.has("divergence"));
-  ASSERT(!outFieldSet.has("streamfunction") && !outFieldSet.has("velocity_potential"));
+  ASSERT(!outFieldSet.has("air_upward_absolute_vorticity") &&
+         !outFieldSet.has("air_horizontal_divergence"));
+  ASSERT(!outFieldSet.has("air_horizontal_streamfunction") &&
+         !outFieldSet.has("air_horizontal_velocity_potential"));
+
+  std::string interpType;
+  if (windFieldSet["eastward_wind"].metadata().has("interp_type")) {
+    interpType = windFieldSet["eastward_wind"].metadata().get<std::string>("interp_type");
+    // partner winds field should have same metadata
+    ASSERT(windFieldSet["northward_wind"].metadata().has("interp_type"));
+    ASSERT(windFieldSet["northward_wind"].metadata().get<std::string>("interp_type")
+                        == interpType);
+  }
 
   atlas::Field uvgp = convertUVToFieldSetAD(windFieldSet);
 
@@ -351,20 +393,40 @@ void SpectralToGauss::multiplyVectorFieldsAD(atlas::FieldSet & windFieldSet,
                                                                  innerVars_);
 
   trans_.invtrans_vordiv2wind_adj(uvgp,
-                                  spectralWindFieldSet["vorticity"],
-                                  spectralWindFieldSet["divergence"]);
+                                  spectralWindFieldSet["air_upward_absolute_vorticity"],
+                                  spectralWindFieldSet["air_horizontal_divergence"]);
 
 
-  if (innerVars_.has("streamfunction") && innerVars_.has("velocity_potential")) {
+  if (innerVars_.has("air_horizontal_streamfunction") &&
+      innerVars_.has("air_horizontal_velocity_potential")) {
     const int N = specFunctionSpace_.truncation();
     applyNtimesNplus1SpectralScaling(
-         oops::Variables(std::vector<std::string>{"vorticity", "divergence"}),
-         oops::Variables(std::vector<std::string>{"streamfunction", "velocity_potential"}),
+         oops::Variables(std::vector<std::string>{"air_upward_absolute_vorticity",
+                                                  "air_horizontal_divergence"}),
+         oops::Variables(std::vector<std::string>{"air_horizontal_streamfunction",
+                                                  "air_horizontal_velocity_potential"}),
          specFunctionSpace_, N, spectralWindFieldSet);
   }
 
   outFieldSet.add(spectralWindFieldSet[0]);
   outFieldSet.add(spectralWindFieldSet[1]);
+
+  // pass metadata from incoming windFieldSet
+  if (!interpType.empty()) {
+    if (innerVars_.has("air_horizontal_streamfunction") &&
+        innerVars_.has("air_horizontal_velocity_potential")) {
+      outFieldSet["air_horizontal_streamfunction"].metadata().set("interp_type", interpType);
+      outFieldSet["air_horizontal_velocity_potential"].metadata().set("interp_type",
+                                                                             interpType);
+    } else if (innerVars_.has("air_upward_absolute_vorticity") &&
+               innerVars_.has("air_horizontal_divergence")) {
+      outFieldSet["air_upward_absolute_vorticity"].metadata().set("interp_type", interpType);
+      outFieldSet["air_horizontal_divergence"].metadata().set("interp_type", interpType);
+    } else {
+      throw eckit::BadParameter("incorrect combination of wind derivatives");
+    }
+  }
+
   oops::Log::trace() << classname() << "::multiplyVectorFieldsAD done" << std::endl;
 }
 
@@ -380,14 +442,12 @@ void SpectralToGauss::multiplyScalarFields(const atlas::FieldSet & specFieldSet,
         gaussFunctionSpace_.createField<double>(atlas::option::name(fieldname) |
                                    atlas::option::levels(specFieldSet[fieldname].shape(1)));
       atlas::array::make_view<double, 2>(gaussField).assign(0.0);
+      gaussField.metadata() = specFieldSet[fieldname].metadata();
       gaussFieldSet.add(gaussField);
   }
 
   // Transform to Gaussian grid
   trans_.invtrans(specFieldSet, gaussFieldSet);
-  // TODO(Mayeul) Understand why ectrans yield dirty fields marked as clean (on 1 PE).
-  //              Fix this so that next line is not needed.
-  gaussFieldSet.set_dirty();
 
   for (const auto & fieldname : specFieldSet.field_names()) {
     ASSERT(!outFieldSet.has(fieldname));
@@ -407,6 +467,7 @@ void SpectralToGauss::multiplyScalarFieldsAD(const atlas::FieldSet & gaussFieldS
     atlas::Field specField =
       specFunctionSpace_.createField<double>(atlas::option::name(fieldname) |
                                  atlas::option::levels(gaussFieldSet[fieldname].shape(1)));
+    specField.metadata() = gaussFieldSet[fieldname].metadata();
     specFieldSet.add(specField);
   }
 
@@ -431,6 +492,7 @@ void SpectralToGauss::invertMultiplyScalarFields(const atlas::FieldSet & gaussFi
     auto spectralField = specFunctionSpace_.createField<double>(fieldConfig);
     trans_.dirtrans(gaussField, spectralField);
     ASSERT(!outFieldSet.has(spectralField.name()));
+    spectralField.metadata() = gaussField.metadata();
     outFieldSet.add(spectralField);
   }
 
@@ -444,8 +506,19 @@ void SpectralToGauss::invertMultiplyVectorFields(const atlas::FieldSet & gaussFi
   oops::Log::trace() << classname() << "::invertMultiplyVectorFields starting" << std::endl;
 
   ASSERT(gaussFieldSet.has("eastward_wind") && gaussFieldSet.has("northward_wind"));
-  ASSERT(!outFieldSet.has("vorticity") && !outFieldSet.has("divergence"));
-  ASSERT(!outFieldSet.has("streamfunction") && !outFieldSet.has("velocity_potential"));
+  ASSERT(!outFieldSet.has("air_upward_absolute_vorticity") &&
+         !outFieldSet.has("air_horizontal_divergence"));
+  ASSERT(!outFieldSet.has("air_horizontal_streamfunction") &&
+         !outFieldSet.has("air_horizontal_velocity_potential"));
+
+  std::string interpType;
+  if (gaussFieldSet["eastward_wind"].metadata().has("interp_type")) {
+    interpType = gaussFieldSet["eastward_wind"].metadata().get<std::string>("interp_type");
+    // partner winds field should have same metadata
+    ASSERT(gaussFieldSet["northward_wind"].metadata().has("interp_type"));
+    ASSERT(gaussFieldSet["northward_wind"].metadata().get<std::string>("interp_type")
+                         == interpType);
+  }
 
   atlas::Field uvgp = convertFieldSetToUV(gaussFieldSet);
 
@@ -453,20 +526,39 @@ void SpectralToGauss::invertMultiplyVectorFields(const atlas::FieldSet & gaussFi
                                                                  innerVars_);
 
   trans_.dirtrans_wind2vordiv(uvgp,
-                              spectralWindFieldSet["vorticity"],
-                              spectralWindFieldSet["divergence"]);
+                              spectralWindFieldSet["air_upward_absolute_vorticity"],
+                              spectralWindFieldSet["air_horizontal_divergence"]);
 
-  if (innerVars_.has("streamfunction") && innerVars_.has("velocity_potential")) {
+  if (innerVars_.has("air_horizontal_streamfunction") &&
+      innerVars_.has("air_horizontal_velocity_potential")) {
     const int N = specFunctionSpace_.truncation();
     const bool inverse = true;
     applyNtimesNplus1SpectralScaling(
-         oops::Variables(std::vector<std::string>{"vorticity", "divergence"}),
-         oops::Variables(std::vector<std::string>{"streamfunction", "velocity_potential"}),
+         oops::Variables(std::vector<std::string>{"air_upward_absolute_vorticity",
+                                                  "air_horizontal_divergence"}),
+         oops::Variables(std::vector<std::string>{"air_horizontal_streamfunction",
+                                                  "air_horizontal_velocity_potential"}),
          specFunctionSpace_, N, spectralWindFieldSet, inverse);
   }
 
   outFieldSet.add(spectralWindFieldSet[0]);
   outFieldSet.add(spectralWindFieldSet[1]);
+
+  // pass metadata from incoming gaussFieldSet
+  if (!interpType.empty()) {
+    if (innerVars_.has("air_horizontal_streamfunction") &&
+        innerVars_.has("air_horizontal_velocity_potential")) {
+      outFieldSet["air_horizontal_streamfunction"].metadata().set("interp_type", interpType);
+      outFieldSet["air_horizontal_velocity_potential"].metadata().set("interp_type",
+                                                                             interpType);
+    } else if (innerVars_.has("air_upward_absolute_vorticity") &&
+               innerVars_.has("air_horizontal_divergence")) {
+      outFieldSet["air_upward_absolute_vorticity"].metadata().set("interp_type", interpType);
+      outFieldSet["air_horizontal_divergence"].metadata().set("interp_type", interpType);
+    } else {
+      throw eckit::BadParameter("incorrect combination of wind derivatives");
+    }
+  }
 
   oops::Log::trace() << classname() << "::invertMultiplyVectorFields done" << std::endl;
 }
@@ -485,10 +577,10 @@ void SpectralToGauss::multiply(oops::FieldSet3D & fieldSet) const {
   for (const auto & fieldname : fieldSet.field_names()) {
     if (!activeVars_.has(fieldname)) {  // Passive variables
       newFields.add(fieldSet[fieldname]);
-    } else if (useWindTransform_ && (fieldname == "vorticity" ||
-                                    fieldname == "divergence" ||
-                                    fieldname == "streamfunction" ||
-                                    fieldname == "velocity_potential")) {
+    } else if (useWindTransform_ && (fieldname == "air_upward_absolute_vorticity" ||
+                                    fieldname == "air_horizontal_divergence" ||
+                                    fieldname == "air_horizontal_streamfunction" ||
+                                    fieldname == "air_horizontal_velocity_potential")) {
         // Active variables to be converted to vector wind
         spectralWindFieldSet.add(fieldSet[fieldname]);
     } else if (fieldname != "eastward_wind" && fieldname != "northward_wind") {
@@ -526,10 +618,10 @@ void SpectralToGauss::multiplyAD(oops::FieldSet3D & fieldSet) const {
     } else if (fieldname == "eastward_wind" || fieldname == "northward_wind") {
       // Active vector wind variables
       windFieldSet.add(fieldSet[fieldname]);
-    } else if (!useWindTransform_ || (fieldname != "vorticity" &&
-                                     fieldname != "divergence" &&
-                                     fieldname != "streamfunction" &&
-                                     fieldname != "velocity_potential")) {
+    } else if (!useWindTransform_ || (fieldname != "air_upward_absolute_vorticity" &&
+                                     fieldname != "air_horizontal_divergence" &&
+                                     fieldname != "air_horizontal_streamfunction" &&
+                                     fieldname != "air_horizontal_velocity_potential")) {
       // Active scalar variables
       gaussFieldSet.add(fieldSet[fieldname]);
     }  // end if active variables
@@ -559,10 +651,10 @@ void SpectralToGauss::leftInverseMultiply(oops::FieldSet3D & fieldSet) const {
         outFieldSet.add(fieldSet[fieldName]);
     } else if (fieldName == "eastward_wind" || fieldName == "northward_wind") {
         windFieldSet.add(fieldSet[fieldName]);
-    } else if (!useWindTransform_ || (fieldName != "vorticity" &&
-                                     fieldName != "divergence" &&
-                                     fieldName != "streamfunction" &&
-                                     fieldName != "velocity_potential")) {
+    } else if (!useWindTransform_ || (fieldName != "air_upward_absolute_vorticity" &&
+                                     fieldName != "air_horizontal_divergence" &&
+                                     fieldName != "air_horizontal_streamfunction" &&
+                                     fieldName != "air_horizontal_velocity_potential")) {
         scalarFieldSet.add(fieldSet[fieldName]);
     }
   }
@@ -578,6 +670,9 @@ void SpectralToGauss::leftInverseMultiply(oops::FieldSet3D & fieldSet) const {
 
 // -----------------------------------------------------------------------------
 void SpectralToGauss::directCalibration(const oops::FieldSets & fsetEns) {
+  oops::Log::trace() << classname() << "::directCalibration starting" << std::endl;
+
+  oops::Log::trace() << classname() << "::directCalibration end" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

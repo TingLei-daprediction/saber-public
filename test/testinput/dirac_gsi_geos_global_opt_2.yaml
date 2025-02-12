@@ -10,6 +10,16 @@ background error:
       gsi berror namelist file: testdata/dirac_gsi_geos_global_opt_2.nml
       gsi akbk: /dev/null
       debugging mode: false
+  saber outer blocks:
+  # The quench geometry used in this test has the same gridpoints as the GSI grid, but in atlas's
+  # ordering (north-to-south) instead of GSI's ordering (south-to-north). We use an interpolation
+  # block to reorder the grid points to match GSI order. This is not very efficient, but is fine
+  # for a ctest.
+  - saber block name: gsi interpolation to model grid
+    gsi error covariance file: testdata/gsi-coeffs-gmao-global-l72x72y46_opt2.nc4
+    gsi berror namelist file: testdata/dirac_gsi_geos_global_opt_2.nml
+    gsi akbk: /dev/null
+    debugging mode: false
 dirac:
   lon:
   - 0.0
@@ -30,11 +40,11 @@ dirac:
   - 55
   - 72
   variable:
-  - stream_function
-  - stream_function
-  - stream_function
-  - stream_function
-  - stream_function
+  - air_horizontal_streamfunction
+  - air_horizontal_streamfunction
+  - air_horizontal_streamfunction
+  - air_horizontal_streamfunction
+  - air_horizontal_streamfunction
 geometry:
   function space: StructuredColumns
   grid:
@@ -43,18 +53,18 @@ geometry:
     ny: 46
   groups:
   - variables:
-    - stream_function
-    - velocity_potential
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
     levels: 72
   - variables:
-    - surface_pressure
+    - air_pressure_at_surface
     levels: 1
 background:
-  date: '2010-01-01T12:00:00Z'
+  date: 2010-01-01T12:00:00Z
   state variables:
-  - stream_function
-  - velocity_potential
-  - surface_pressure
+  - air_horizontal_streamfunction
+  - air_horizontal_velocity_potential
+  - air_pressure_at_surface
 output dirac:
   mpi pattern: '%MPI%'
   filepath: testdata/dirac_gsi_geos_global_opt_2/%MPI%_dirac_%id%

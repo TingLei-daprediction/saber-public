@@ -5,14 +5,14 @@ geometry: &geom
     N: 10
   groups:
   - variables: &vars
-    - stream_function
-    - velocity_potential
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
     levels: 2
   halo: 1
 
 background:
   states:
-  - date: '2010-01-01T12:00:00Z'
+  - date: 2010-01-01T12:00:00Z
     state variables: *vars
 
 background error:
@@ -57,7 +57,7 @@ dirac: &dirac
   level:
   - 1
   variable:
-  - stream_function
+  - air_horizontal_streamfunction
 
 diagnostic points: *dirac
 

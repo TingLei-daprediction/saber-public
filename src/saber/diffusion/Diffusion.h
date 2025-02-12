@@ -47,11 +47,14 @@ class Diffusion : public saber::SaberCentralBlockBase {
   void setReadFields(const std::vector<oops::FieldSet3D> &) override;
   void directCalibration(const oops::FieldSets &) override;
 
+  size_t ctlVecSize() const override {return ctlVecSize_;}
+
  private:
   void print(std::ostream &) const override {}
 
   const oops::GeometryData & geom_;
   const std::shared_ptr<oops::Diffusion::DerivedGeom> diffusionGeom_;
+  size_t ctlVecSize_;
   Parameters_ params_;
   oops::Variables vars_;
   std::queue<atlas::Field> calibrateReadFields_;

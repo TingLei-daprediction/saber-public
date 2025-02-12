@@ -15,12 +15,12 @@ geometry:
   partitioner: checkerboard
   groups:
   - variables:
-    - stream_function
+    - air_horizontal_streamfunction
     levels: 2
 background:
-  date: '2010-01-01T12:00:00Z'
+  date: 2010-01-01T12:00:00Z
   state variables:
-  - stream_function
+  - air_horizontal_streamfunction
 background error:
   covariance model: SABER
   saber central block:
@@ -28,10 +28,10 @@ background error:
     calibration:
       multivariate strategy: univariate
       horizontal length-scale:
-      - group: stream_function
+      - group: air_horizontal_streamfunction
         value: 20.0e3
       vertical length-scale:
-      - group: stream_function
+      - group: air_horizontal_streamfunction
         value: 3.0
       number of layers: 1
       resolution: 5

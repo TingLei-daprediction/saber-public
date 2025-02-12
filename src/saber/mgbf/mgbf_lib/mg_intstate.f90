@@ -49,6 +49,7 @@ real(r_kind), allocatable,dimension(:,:,:):: a_diff_f
 real(r_kind), allocatable,dimension(:,:,:):: a_diff_h
 real(r_kind), allocatable,dimension(:,:,:):: b_diff_f
 real(r_kind), allocatable,dimension(:,:,:):: b_diff_h
+real(r_kind), allocatable, dimension(:,:,:,:):: weig_var ! 3D weights in each sub domain 
 
 !
 ! Localization weights
@@ -161,6 +162,7 @@ contains
 !from mg_generation.f90
   procedure:: upsending_all,downsending_all,weighting_all
   procedure:: upsending,downsending
+  procedure:: upsending_normalized
   procedure:: upsending_highest,downsending_highest
   procedure:: upsending2,downsending2
   procedure:: upsending_ens,downsending_ens
@@ -174,6 +176,7 @@ contains
   generic :: weighting_loc => weighting_loc_g3,weighting_loc_g4
   procedure:: weighting_loc_g3,weighting_loc_g4
   procedure:: adjoint,direct1
+  procedure:: adjoint_normalized
   procedure:: adjoint2,direct2
   procedure:: adjoint_nearest,direct_nearest
   procedure:: adjoint_highest,direct_highest
@@ -647,6 +650,15 @@ interface
      real(r_kind),dimension(this%km,-1:this%imL+2,-1:this%jmL+2):: V_INT
      real(r_kind),dimension(this%km,-1:this%imL+2,-1:this%jmL+2):: H_INT
    end subroutine
+   module subroutine upsending_normalized &
+        (this,V,H)
+     implicit none
+     class (mg_intstate_type),target:: this
+     real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(in):: V
+     real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(out):: H
+     real(r_kind),dimension(this%km,-1:this%imL+2,-1:this%jmL+2):: V_INT
+     real(r_kind),dimension(this%km,-1:this%imL+2,-1:this%jmL+2):: H_INT
+   end subroutine
    module subroutine downsending &
         (this,H,V)
      implicit none
@@ -816,6 +828,15 @@ interface
      real(r_kind),dimension(km_64_in,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: H64
    end subroutine
    module subroutine adjoint &
+        (this,F,W,km_in,g)
+     implicit none
+     class (mg_intstate_type),target:: this
+     integer(i_kind),intent(in):: g
+     integer(i_kind),intent(in):: km_in
+     real(r_kind), dimension(km_in,1:this%im,1:this%jm), intent(in):: F
+     real(r_kind), dimension(km_in,-1:this%imL+2,-1:this%jmL+2), intent(out):: W
+   end subroutine
+   module subroutine adjoint_normalized &
         (this,F,W,km_in,g)
      implicit none
      class (mg_intstate_type),target:: this
@@ -1089,6 +1110,9 @@ if(this%l_loc) then
    allocate(this%w4_loc(this%km_all/64,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this%w4_loc=0.
 endif
 
+
+allocate(this%weig_var(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,this%gm))        ; this%weig_var=0.
+
 allocate(this%V(1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,this%lm))        ; this%V=0.
 allocate(this%VALL(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this%VALL=0.
 allocate(this%HALL(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this%HALL=0.
@@ -1216,9 +1240,94 @@ subroutine def_mg_weights(this)
 implicit none
 class (mg_intstate_type),target::this
 !***********************************************************************
-integer(i_kind):: i,j,L
+integer(i_kind):: i,j,k,L
+
 real(r_kind):: gen_fac
+real(r_kind),allocatable, dimension(:,:,:,:):: weig_g
+real(r_kind),allocatable, dimension(:,:,:,:):: loc_a 
+real(r_kind),allocatable, dimension(:,:,:):: weigh_tmp 
+real(r_kind),allocatable, dimension(:):: par_weig_g 
+integer :: rank, size, ierr, comm2d
+integer,allocatable,dimension(:) :: sendcounts, displs
+integer :: dims(2), periods(2), coords(2)
+integer(i_kind):: nxloc,nyloc,nz,nt,start_idx,end_idx
+integer(i_kind):: ig
 !-----------------------------------------------------------------------
+start_idx=Lbound(this%weig_var,4)
+end_idx=Lbound(this%weig_var,4)
+if(start_idx /=1 ) then
+ write(6,*)'the expected begin index of weig_var is 1, stop'
+ stop
+endif
+allocate(sendcounts(this%nxpe*this%nype), displs(this%nxpe*this%nype))
+!clt first transform/upsend original mg_weigh_var to their correct locations
+if(this%l_mg_weig_readin) then
+ dims=(/this%nxpe,this%nype/)
+ periods=(/0,0/)
+ nxloc=this%im
+ nyloc=this%jm
+ nz=this%km
+ nt=this%gm
+ allocate(loc_a(nxloc,nyloc,nz,nt))
+ call MPI_CART_CREATE(MPI_COMM_WORLD, 2, dims, periods, .false., comm2d, ierr)
+ call MPI_COMM_RANK(comm2d, rank, ierr)
+ call MPI_CART_COORDS(comm2d, rank, 2, coords, ierr)
+ allocate(loc_a(nxloc,nyloc,nz,nt))
+ if (rank == 0) then
+    allocate(weig_g(this%km,this%nm,this%mm,this%gm))
+  !cltclt  read in global_weight(nx,ny,km,ng)
+ endif
+     do j = 0, this%nype - 1
+      do i = 0, this%nxpe - 1
+        sendcounts(i + j * this%nxpe) = nxloc * nyloc * this%km * nt
+        displs(i + j * this%nxpe) = ((i * nxloc) + (j * nyloc) * nxloc) * nz * nt
+      end do
+    end do
+ 
+ call MPI_Scatterv(weig_g, sendcounts, displs, MPI_INTEGER, loc_a, nxloc * nyloc * nz * nt, MPI_INTEGER, 0, comm2d, ierr)
+ call MPI_COMM_FREE(comm2d, ierr)
+ do ig=1,this%gm
+   do k=1,this%km
+    this%weig_var(k,1:nxloc,1:nyloc,ig)=loc_a(:,:,k,ig)
+   enddo
+ enddo
+!clt the following would have different results in corners when run on different order
+!cltthink to be investigated further
+   do i=1-this%hx, 0
+    this%weig_var(:,i,:,:)=this%weig_var(:,1,:,:)
+   enddo
+   do i=nxloc+1,nxloc+this%hx
+!clt    this%weig_var(:,nxloc+1:nxloc+this%hx,:,:)=this%weig_var(:,nxloc,:,:)
+    this%weig_var(:,i,:,:)=this%weig_var(:,nxloc,:,:)
+   enddo
+   do j=1-this%hy,0
+!cltorg    this%weig_var(:,:,1-this%hy:0,:)=this%weig_var(:,:,1,:)
+    this%weig_var(:,:,j,:)=this%weig_var(:,:,1,:)
+   enddo
+   do j=nyloc+1,nyloc+this%hy 
+!clt    this%weig_var(:,:,ny+1:ny+this%hy,:)=this%weig_var(:,:,ny,:)
+    this%weig_var(:,:,j,:)=this%weig_var(:,:,nyloc,:)
+   enddo
+!clttothink  
+   allocate(weigh_tmp(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy))        ; this%weig_var=0.
+!clt to convert data in weigt_var to their correct locations
+   do ig=start_idx,end_idx
+     weigh_tmp=this%weig_var(:,:,:,ig)
+     call this%upsending_normalized(weigh_tmp,this%weig_var(:,:,:,ig))
+   enddo 
+
+    deallocate(weig_g,weigh_tmp)
+else
+ allocate(par_weig_g(4))
+ par_weig_g=(/this%mg_weig1,this%mg_weig2,this%mg_weig3,this%mg_weig4/)
+ do ig=start_idx,end_idx
+ weigh_tmp=par_weig_g(ig)
+ call this%upsending_normalized(weigh_tmp,this%weig_var(:,:,:,ig))
+ enddo 
+
+ deallocate(par_weig_g)
+endif
+deallocate(sendcounts, displs)
 
 this%p_eps(:,:)=0.0
 this%p_del(:,:)=0.0
@@ -1237,19 +1346,24 @@ if(this%l_loc) then
 endif
 !--------------------------------------------------------
 gen_fac=1.
-this%a_diff_f(:,:,:)=this%mg_weig1 
-this%a_diff_h(:,:,:)=this%mg_weig1 
+!cltorg this%a_diff_f(:,:,:)=this%mg_weig1 
+this%a_diff_f(:,:,:)=this%weig_var(:,:,:,1) 
+!cltorg this%a_diff_h(:,:,:)=this%mg_weig1 
+this%a_diff_h(:,:,:)=this%weig_var(:,:,:,1) 
 
 this%b_diff_f(:,:,:)=0.
 this%b_diff_h(:,:,:)=0.
 
 select case(this%my_hgen)
 case(2) 
-   this%a_diff_h(:,:,:)=this%mg_weig2
+!cltorg   this%a_diff_h(:,:,:)=this%mg_weig2
+   this%a_diff_h(:,:,:)=this%weig_var(:,:,:,2)
 case(3) 
-   this%a_diff_h(:,:,:)=this%mg_weig3 
+!cltorg   this%a_diff_h(:,:,:)=this%mg_weig3 
+   this%a_diff_h(:,:,:)=this%weig_var(:,:,:,3)
 case default 
-   this%a_diff_h(:,:,:)=this%mg_weig4
+!cltorg   this%a_diff_h(:,:,:)=this%mg_weig4
+   this%a_diff_h(:,:,:)=this%weig_var(:,:,:,4)
 end select
 
 do L=1,this%lm

@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2024 Meteorlogisk Institutt
+ * (C) Copyright 2024 Meteorologisk Institutt
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -19,7 +19,6 @@
 #include "eckit/exception/Exceptions.h"
 
 #include "oops/util/ConfigFunctions.h"
-#include "oops/util/FloatCompare.h"
 #include "oops/util/Logger.h"
 #include "oops/util/missingValues.h"
 #include "oops/util/RandomField.h"
@@ -42,7 +41,6 @@ FastLAM::FastLAM(const oops::GeometryData & gdata,
                  const oops::FieldSet3D & xb,
                  const oops::FieldSet3D & fg) :
     SaberCentralBlockBase(params, xb.validTime()),
-    validTime_(xb.validTime()),
     gdata_(gdata),
     comm_(gdata_.comm()),
     activeVars_(activeVars),
@@ -151,10 +149,10 @@ void FastLAM::randomize(oops::FieldSet3D & fset) const {
   for (const auto ctlVecSize : sendcounts) {
     ctlVecSizeGlb += ctlVecSize;
   }
-  std::vector<int> displs;
-  displs.push_back(0);
+  std::vector<int> displs(comm_.size());
+  displs[0] = 0;
   for (size_t jt = 0; jt < comm_.size()-1; ++jt) {
-    displs.push_back(displs[jt]+sendcounts[jt]);
+    displs[jt+1] = displs[jt]+sendcounts[jt];
   }
 
   // Generate global random vector
@@ -946,7 +944,7 @@ void FastLAM::write() const {
   if (comm_.rank() == 0 && (params_.dataFile.value() != boost::none)) {
     // NetCDF ids
     int retval, ncid, grpGrpId, layerGrpId;
-    std::vector<std::vector<int>> grpIdsVec;
+    std::vector<std::array<int, 8>> grpIdsVec;
 
     // NetCDF file path
     std::string ncfilepath = *params_.dataFile.value();
@@ -968,7 +966,7 @@ void FastLAM::write() const {
         // Create layer group
         std::string layerGrpName = "layer_" + std::to_string(jBin);
         if ((retval = nc_def_grp(grpGrpId, layerGrpName.c_str(), &layerGrpId))) ERR(retval);
-        std::vector<int> grpIds = data_[jg][jBin]->writeDef(layerGrpId);
+        std::array<int, 8> grpIds = data_[jg][jBin]->writeDef(layerGrpId);
         grpIdsVec.push_back(grpIds);
       }
     }

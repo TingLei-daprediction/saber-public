@@ -5,56 +5,56 @@
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
-          Norm of stream_function:  0.37870111E+02
-          Norm of velocity_potential:  0.35347471E+02
-          Norm of stream_function:  0.38096372E+02
-          Norm of velocity_potential:  0.38896022E+02
-          Norm of stream_function:  0.36129537E+02
-          Norm of velocity_potential:  0.37116972E+02
-          Norm of stream_function:  0.39632880E+02
-          Norm of velocity_potential:  0.38294662E+02
-          Norm of stream_function:  0.38058989E+02
-          Norm of velocity_potential:  0.36435009E+02
-          Norm of stream_function:  0.41448773E+02
-          Norm of velocity_potential:  0.41298459E+02
-          Norm of stream_function:  0.37671290E+02
-          Norm of velocity_potential:  0.37829515E+02
-          Norm of stream_function:  0.40491255E+02
-          Norm of velocity_potential:  0.39079139E+02
-          Norm of stream_function:  0.40315731E+02
-          Norm of velocity_potential:  0.43770342E+02
-          Norm of stream_function:  0.36519376E+02
-          Norm of velocity_potential:  0.37933685E+02
-          Norm of stream_function:  0.40150699E+02
-          Norm of velocity_potential:  0.38193798E+02
-          Norm of stream_function:  0.38959471E+02
-          Norm of velocity_potential:  0.43305709E+02
-          Norm of stream_function:  0.38542723E+02
-          Norm of velocity_potential:  0.42712978E+02
-          Norm of stream_function:  0.43801617E+02
-          Norm of velocity_potential:  0.35549421E+02
-          Norm of stream_function:  0.40283757E+02
-          Norm of velocity_potential:  0.39889277E+02
-          Norm of stream_function:  0.40713553E+02
-          Norm of velocity_potential:  0.38514214E+02
-          Norm of stream_function:  0.41665986E+02
-          Norm of velocity_potential:  0.40447974E+02
-          Norm of stream_function:  0.39824303E+02
-          Norm of velocity_potential:  0.38298281E+02
-          Norm of stream_function:  0.36355664E+02
-          Norm of velocity_potential:  0.34542186E+02
-          Norm of stream_function:  0.38317322E+02
-          Norm of velocity_potential:  0.34609840E+02
-          Norm of stream_function:  0.33238330E+02
-          Norm of velocity_potential:  0.38274471E+02
-          Norm of stream_function:  0.39879333E+02
-          Norm of velocity_potential:  0.39713275E+02
-          Norm of stream_function:  0.40311087E+02
-          Norm of velocity_potential:  0.40438474E+02
-          Norm of stream_function:  0.40428101E+02
-          Norm of velocity_potential:  0.37085850E+02
-          Norm of stream_function:  0.38913594E+02
-          Norm of velocity_potential:  0.37288515E+02
+          Norm of air_horizontal_streamfunction:  0.37870111E+02
+          Norm of air_horizontal_velocity_potential:  0.35347471E+02
+          Norm of air_horizontal_streamfunction:  0.38096372E+02
+          Norm of air_horizontal_velocity_potential:  0.38896022E+02
+          Norm of air_horizontal_streamfunction:  0.36129537E+02
+          Norm of air_horizontal_velocity_potential:  0.37116972E+02
+          Norm of air_horizontal_streamfunction:  0.39632880E+02
+          Norm of air_horizontal_velocity_potential:  0.38294662E+02
+          Norm of air_horizontal_streamfunction:  0.38058989E+02
+          Norm of air_horizontal_velocity_potential:  0.36435009E+02
+          Norm of air_horizontal_streamfunction:  0.41448773E+02
+          Norm of air_horizontal_velocity_potential:  0.41298459E+02
+          Norm of air_horizontal_streamfunction:  0.37671290E+02
+          Norm of air_horizontal_velocity_potential:  0.37829515E+02
+          Norm of air_horizontal_streamfunction:  0.40491255E+02
+          Norm of air_horizontal_velocity_potential:  0.39079139E+02
+          Norm of air_horizontal_streamfunction:  0.40315731E+02
+          Norm of air_horizontal_velocity_potential:  0.43770342E+02
+          Norm of air_horizontal_streamfunction:  0.36519376E+02
+          Norm of air_horizontal_velocity_potential:  0.37933685E+02
+          Norm of air_horizontal_streamfunction:  0.40150699E+02
+          Norm of air_horizontal_velocity_potential:  0.38193798E+02
+          Norm of air_horizontal_streamfunction:  0.38959471E+02
+          Norm of air_horizontal_velocity_potential:  0.43305709E+02
+          Norm of air_horizontal_streamfunction:  0.38542723E+02
+          Norm of air_horizontal_velocity_potential:  0.42712978E+02
+          Norm of air_horizontal_streamfunction:  0.43801617E+02
+          Norm of air_horizontal_velocity_potential:  0.35549421E+02
+          Norm of air_horizontal_streamfunction:  0.40283757E+02
+          Norm of air_horizontal_velocity_potential:  0.39889277E+02
+          Norm of air_horizontal_streamfunction:  0.40713553E+02
+          Norm of air_horizontal_velocity_potential:  0.38514214E+02
+          Norm of air_horizontal_streamfunction:  0.41665986E+02
+          Norm of air_horizontal_velocity_potential:  0.40447974E+02
+          Norm of air_horizontal_streamfunction:  0.39824303E+02
+          Norm of air_horizontal_velocity_potential:  0.38298281E+02
+          Norm of air_horizontal_streamfunction:  0.36355664E+02
+          Norm of air_horizontal_velocity_potential:  0.34542186E+02
+          Norm of air_horizontal_streamfunction:  0.38317322E+02
+          Norm of air_horizontal_velocity_potential:  0.34609840E+02
+          Norm of air_horizontal_streamfunction:  0.33238330E+02
+          Norm of air_horizontal_velocity_potential:  0.38274471E+02
+          Norm of air_horizontal_streamfunction:  0.39879333E+02
+          Norm of air_horizontal_velocity_potential:  0.39713275E+02
+          Norm of air_horizontal_streamfunction:  0.40311087E+02
+          Norm of air_horizontal_velocity_potential:  0.40438474E+02
+          Norm of air_horizontal_streamfunction:  0.40428101E+02
+          Norm of air_horizontal_velocity_potential:  0.37085850E+02
+          Norm of air_horizontal_streamfunction:  0.38913594E+02
+          Norm of air_horizontal_velocity_potential:  0.37288515E+02
           Level   1 ~> 100.0%
           Level   2 ~> 100.0%
           Decimate full grid, at least      500 points required,     762 valid points found
@@ -113,8 +113,8 @@
                 Level:   2 ~> cov. at class zero:  0.10E+01
                 Level:   1 ~> cov. at class zero:  0.98E+00
                 Level:   2 ~> cov. at class zero:  0.10E+01
-             Block stream_function:  0.18448584E+00 for      160 diagnostic points
-             Block velocity_potential:  0.20026693E+00 for      160 diagnostic points
+             Block air_horizontal_streamfunction:  0.18448584E+00 for      160 diagnostic points
+             Block air_horizontal_velocity_potential:  0.20026693E+00 for      160 diagnostic points
                    Level:   1 ~> amplitude:        0.72
                                  cor. hor. support:      4127.47 km
                                  cor. ver. support:         4.94 vertical units

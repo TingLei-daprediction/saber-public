@@ -1,5 +1,5 @@
 /*
- * (C) Crown Copyright 2022 Met Office
+ * (C) Crown Copyright 2022-2024 Met Office
  * 
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0. 
@@ -14,6 +14,8 @@
 
 #include "atlas/field.h"
 #include "atlas/functionspace.h"
+
+#include "eckit/config/Configuration.h"
 
 #include "oops/base/Variables.h"
 
@@ -31,7 +33,6 @@ std::vector<double> interpWeights(std::vector<std::vector<double>> &,
                                   double);
 
 atlas::Field createGpRegressionWeights(const atlas::FunctionSpace &,
-                                       const atlas::FieldSet &,
                                        const std::string &,
                                        const std::size_t,
                                        const std::size_t);
@@ -43,8 +44,8 @@ void populateMuA(atlas::FieldSet &,
                  const atlas::Field &);
 
 atlas::FieldSet createGpRegressionStats(const atlas::FunctionSpace &,
-                                        const atlas::FieldSet &,
                                         const oops::Variables &,
-                                        const GpToHpCovarianceParameters &);
+                                        const eckit::Configuration &);
+
 }  // namespace vader
 }  // namespace saber

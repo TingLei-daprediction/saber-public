@@ -5,17 +5,17 @@ geometry:
     N: 12
   groups:
   - variables:
-    - stream_function
+    - air_horizontal_streamfunction
     levels: 2
   - variables:
-    - surface_pressure
+    - air_pressure_at_surface
     levels: 1
   halo: 1
 background:
-  date: '2010-01-01T12:00:00Z'
+  date: 2010-01-01T12:00:00Z
   state variables:
-  - stream_function
-  - surface_pressure
+  - air_horizontal_streamfunction
+  - air_pressure_at_surface
 background error:
   covariance model: SABER
   saber central block:
@@ -34,20 +34,20 @@ background error:
         explicit length-scales: true
         horizontal length-scale:
         - groups:
-          - stream_function
-          - surface_pressure
+          - air_horizontal_streamfunction
+          - air_pressure_at_surface
           value: 4.0e6
         vertical length-scale:
         - groups:
-          - stream_function
+          - air_horizontal_streamfunction
           value: 3.0
       grids:
       - model:
           variables:
-          - stream_function
+          - air_horizontal_streamfunction
       - model:
           variables:
-          - surface_pressure
+          - air_pressure_at_surface
   randomization size: 25
 output states:
   filepath: testdata/randomization_bump_nicas_L12L2/_MPI_-_OMP__member

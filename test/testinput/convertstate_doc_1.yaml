@@ -5,7 +5,7 @@ input geometry:
     N: 50
   groups:
   - variables:
-    - stream_function
+    - air_horizontal_streamfunction
     levels: 1
   halo: 1
 output geometry:
@@ -15,47 +15,47 @@ output geometry:
     N: 50
   groups:
   - variables:
-    - stream_function
+    - air_horizontal_streamfunction
     levels: 1
 states:
 - input:
-    date: '2010-01-01T12:00:00Z'
+    date: 2010-01-01T12:00:00Z
     state variables:
-    - stream_function
+    - air_horizontal_streamfunction
     constant value: 4000.0e3
   output:
     filepath: testdata/convertstate_doc_1/rh1_avg
 - input:
-    date: '2010-01-01T12:00:00Z'
+    date: 2010-01-01T12:00:00Z
     state variables:
-    - stream_function
+    - air_horizontal_streamfunction
     constant value: -1500.0e3
   output:
     filepath: testdata/convertstate_doc_1/rh1_pert
 - input:
-    date: '2010-01-01T12:00:00Z'
+    date: 2010-01-01T12:00:00Z
     state variables:
-    - stream_function
+    - air_horizontal_streamfunction
     constant value: 4000.0e3
   output:
     filepath: testdata/convertstate_doc_1/rh2_avg
 - input:
-    date: '2010-01-01T12:00:00Z'
+    date: 2010-01-01T12:00:00Z
     state variables:
-    - stream_function
+    - air_horizontal_streamfunction
     constant value: 1500.0e3
   output:
     filepath: testdata/convertstate_doc_1/rh2_pert
 - input:
-    date: '2010-01-01T12:00:00Z'
+    date: 2010-01-01T12:00:00Z
     state variables:
-    - stream_function
+    - air_horizontal_streamfunction
     constant value: 0.2
   output:
     filepath: testdata/convertstate_doc_1/rhc_pert
 - input:
-    date: '2010-01-01T12:00:00Z'
+    date: 2010-01-01T12:00:00Z
     state variables:
-    - stream_function
+    - air_horizontal_streamfunction
   output:
     filepath: testdata/convertstate_doc_1/rv

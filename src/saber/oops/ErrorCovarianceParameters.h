@@ -11,7 +11,6 @@
 #include <string>
 #include <vector>
 
-#include "oops/base/ModelSpaceCovarianceParametersBase.h"
 #include "oops/util/parameters/OptionalParameter.h"
 #include "oops/util/parameters/Parameter.h"
 #include "oops/util/parameters/Parameters.h"
@@ -41,9 +40,23 @@ class DualResCalibrationParameters : public oops::Parameters {
 // -------------------------------------------------------------------------------------------------
 
 template <typename MODEL>
-class ErrorCovarianceParameters : public oops::ModelSpaceCovarianceParametersBase<MODEL> {
+class ModelSpaceCovarianceParametersBase : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(ModelSpaceCovarianceParametersBase, oops::Parameters)
+ public:
+  oops::OptionalParameter<std::string> covarianceModel{"covariance model", this};
+  oops::OptionalParameter<size_t> randomizationSize{"randomization size", this};
+  oops::Parameter<bool> fullInverse{"full inverse", false, this};
+  oops::Parameter<int> fullInverseIterations{"full inverse iterations", 10, this};
+  oops::Parameter<double> fullInverseAccuracy{"full inverse accuracy", 1.0e-3, this};
+  oops::OptionalParameter<eckit::LocalConfiguration> variableChange{"linear variable change", this};
+};
+
+// -------------------------------------------------------------------------------------------------
+
+template <typename MODEL>
+class ErrorCovarianceParameters : public ModelSpaceCovarianceParametersBase<MODEL> {
   OOPS_CONCRETE_PARAMETERS(ErrorCovarianceParameters,
-                           oops::ModelSpaceCovarianceParametersBase<MODEL>)
+                           ModelSpaceCovarianceParametersBase<MODEL>)
 
  public:
   // Central and outer blocks
@@ -56,6 +69,10 @@ class ErrorCovarianceParameters : public oops::ModelSpaceCovarianceParametersBas
   // Options: univariate, duplicated multivariate.
   oops::Parameter<std::string> timeCovariance{"time covariance", "multivariate duplicated",
                                               this};
+
+  // Option to change resolution of the background to the increment geometry
+  oops::Parameter<bool> changeBackgroundResolution{"change background resolution",
+                        false, this};
 
   // Ensemble
   oops::Parameter<bool> iterativeEnsembleLoading{"iterative ensemble loading", false, this};

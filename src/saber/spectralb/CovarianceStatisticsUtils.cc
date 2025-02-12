@@ -1,5 +1,5 @@
 /*
- * (C) Crown Copyright 2017-2024 Met Office
+ * (C) Crown Copyright 2017-2025 Met Office
  * 
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0. 
@@ -21,6 +21,7 @@
 #include "atlas/functionspace.h"
 
 #include "eckit/exception/Exceptions.h"
+#include "eckit/mpi/Comm.h"
 
 #include "oops/base/FieldSet3D.h"
 #include "oops/base/Variables.h"
@@ -240,7 +241,7 @@ void createUMatrixFromSpectralCovarianceFile(const std::string & var,
   auto spectralVertCov = atlas::Field(var, atlas::array::make_datatype<double>(),
     atlas::array::make_shape(umatrix.shape(0), umatrix.shape(1), umatrix.shape(2)));
 
-  readSpectralCovarianceFromFile(var, readparams, spectralVertCov);
+  readSpectralCovarianceFromFile(var, var, readparams, spectralVertCov);
 
   const int sizeVec = umatrix.shape(1) * umatrix.shape(2);
   std::vector<double> spectralUMatrix1D(static_cast<std::size_t>(sizeVec), 0.0);
@@ -280,10 +281,10 @@ atlas::FieldSet createSpectralCovariances(const oops::Variables & activeVars,
   for (std::size_t ivar = 0; ivar < activeVars.size(); ++ivar) {
     const std::string var = activeVars[ivar].name();
     const int modelLevels = activeVars[ivar].getLevels();
-    ASSERT(static_cast<std::size_t>(nSpectralBins) <= nSpectralBinsFull[ivar]);
+    const std::size_t nSpectralBinsUse = std::min(nSpectralBins, nSpectralBinsFull[ivar]);
 
     auto spectralVertCov = atlas::Field(var, atlas::array::make_datatype<double>(),
-      atlas::array::make_shape(nSpectralBins, modelLevels, modelLevels));
+      atlas::array::make_shape(nSpectralBinsUse, modelLevels, modelLevels));
 
     auto spectralVertCovView =
       make_view<double, 3>(spectralVertCov);
@@ -297,7 +298,8 @@ atlas::FieldSet createSpectralCovariances(const oops::Variables & activeVars,
           for (idx_t k3 = 0; k3 < uMatrixView.shape(2); ++k3) {
             val += uMatrixView(bin, k1, k3) * uMatrixView(bin, k2, k3);
           }
-          // There is a loss of variance there, as we only keep nSpectralBins out of
+          // There is a loss of variance here when nSpectralBins is less than nSpectralBinsFull,
+          // as we only keep nSpectralBins out of
           // nSpectralBinsFull[ivar].A crude renormalization is applied, assuming
           // the variance is equally distributed across bins:
           spectralVertCovView(bin, k1, k2) = val * nSpectralBins / (nSpectralBinsFull[ivar]);
@@ -396,17 +398,6 @@ atlas::FieldSet createVerticalSD(const oops::Variables & activeVars,
   return verticalSDs;
 }
 
-
-void gatherSumSpectralFieldSet(const eckit::mpi::Comm & comm,
-                               const std::size_t root,
-                               atlas::FieldSet & fset)  {
-  for (atlas::Field & field : fset) {
-    auto view = make_view<double, 3>(field);
-    util::gatherSum(comm, root, view);
-  }
-}
-
-
 std::vector<std::size_t> getNSpectralBinsFull(const spectralbReadParameters & params,
                                               const oops::Variables & activeVars) {
   const auto & umatrixNetCDFParams = params.umatrixNetCDFNames.value();
@@ -438,7 +429,7 @@ std::vector<std::size_t> getNSpectralBinsFull(const spectralbReadParameters & pa
                             netcdfDimVarIDs);
 
     // TODO(Marek) - extend so that multiple horizontal wavenumbers possible
-    std::string hwaveno("total wavenumber");
+    std::string hwaveno("binning_index");
     auto ind = std::find(dimNames.begin(),  dimNames.end(), hwaveno);
     if (ind != dimNames.end()) {
       for (std::size_t ivar = 0; ivar < activeVars.size(); ++ivar) {
@@ -466,7 +457,8 @@ std::vector<std::size_t> getNSpectralBinsFull(const spectralbReadParameters & pa
 }
 
 
-void readSpectralCovarianceFromFile(const std::string & var,
+void readSpectralCovarianceFromFile(const std::string & varname1,
+                                    const std::string & varname2,
                                     const spectralbReadParameters & readparams,
                                     atlas::Field & spectralVertCov) {
   std::string ncfilepath = readparams.covarianceFile;
@@ -475,35 +467,43 @@ void readSpectralCovarianceFromFile(const std::string & var,
   oops::Variables vars;
   std::vector<std::vector<std::string>> dimNamesForEveryVar;
   std::vector<int> netcdfGeneralIDs;
-  eckit::LocalConfiguration netcdfMetaData;
+  eckit::LocalConfiguration netCDFConf;
   std::vector<int> netcdfDimIDs;
   std::vector<int> netcdfVarIDs;
   std::vector<std::vector<int>> netcdfDimVarIDs;
 
   // read from header file on root PE.
-  std::size_t root = 0;
+  const std::size_t root = 0;
+  std::string filevarname("");
   if (eckit::mpi::comm().rank() == root) {
      util::atlasArrayInquire(ncfilepath,
                              dimNames,
                              dimSizes,
                              vars,
                              dimNamesForEveryVar,
-                             netcdfMetaData,
+                             netCDFConf,
                              netcdfGeneralIDs,
                              netcdfDimIDs,
                              netcdfVarIDs,
                              netcdfDimVarIDs);
+    for (const oops::Variable & var : vars) {
+      const std::string var1 =
+        util::getAttributeValue<std::string>(netCDFConf, var.name(),
+                                             "variable_name_1");
+      const std::string var2 =
+        util::getAttributeValue<std::string>(netCDFConf, var.name(),
+                                             "variable_name_2");
+      if ((var1 == varname1) && (var2 == varname2)) {
+        filevarname = var.name();
+      }
+    }
   }
-  // read file
-  const std::string filevar = var;
-
-  // TO DO(Marek) ASSERT THAT FILE HAS SPECTRAL VERTICAL COVARIANCES
 
   auto specvertview = make_view<double, 3>(spectralVertCov);
   specvertview.assign(0.0);
 
   if (eckit::mpi::comm().rank() == root) {
-    const std::size_t i = vars.find(filevar);
+    const std::size_t i = vars.find(filevarname);
 
     std::vector<idx_t> dimSizesForVar;
     for (const auto & dimName : dimNamesForEveryVar[i]) {
@@ -518,9 +518,9 @@ void readSpectralCovarianceFromFile(const std::string & var,
          (dimSizesForVar[2] != specvertview.shape(2)) ) {
       oops::Log::error() <<
         "Dimensions of spectral vertical covariances in file is inconsistent with" <<
-        " yaml setup for variable " <<  filevar << std::endl;
+        " yaml setup for variable " <<  filevarname << std::endl;
       throw eckit::UserError(
-        "Inconsistency in dimension sizes of spectral vertical covariance "
+        "Inconsistency in dimension sizes of spectral vertical covariance"
         " between file and assumed array shape", Here());
     }
 
@@ -551,34 +551,74 @@ void spectralVerticalConvolution(const oops::Variables & activeVars,
   for (const auto & var : activeVars) {
     idx_t i = 0;
     idx_t levels(fieldSet[var.name()].shape(1));
-    auto vertCovView = make_view<const double, 3>(spectralVerticalStats[var.name()]);
     auto spfView = make_view<double, 2>(fieldSet[var.name()]);
+    auto vertCovView = make_view<const double, 3>(spectralVerticalStats[var.name()]);
+    const size_t Ncov = vertCovView.shape()[0] - 1;
 
     std::vector<double> col(levels), col2(levels);
-    // For each total wavenumber n1, perform a 1D convolution with vertical covariances.
-    for (idx_t jm = 0; jm < nb_zonal_wavenumbers; ++jm) {
-      const idx_t m1 = zonal_wavenumbers(jm);
-      for (std::size_t n1 = m1; n1 <= N; ++n1) {
-        // Note that img stands for imaginary component and are the
-        // odd indices in the first index of the spectral fields.
-        for (std::size_t img = 0; img < 2; ++img) {
-          // Pre-fill vertical column to be convolved.
-          for (idx_t jl = 0; jl < levels; ++jl) {
-            col[jl] = spfView(i, jl);
-          }
-          // The 2*n1+1 factor is there to equally distribute the covariance across
-          // the spectral coefficients associated to this total wavenumber.
-          const double norm = static_cast<double>((2 * n1 + 1) * vertCovView.shape(0));
-          for (idx_t r = 0; r < levels; ++r) {
-            col2[r] = 0;
-            for (idx_t c = 0; c < levels; ++c) {
-              col2[r] += vertCovView(n1, r, c) * col[c] / norm;
+
+    if (N > Ncov) {
+      // For each total wavenumber n1, perform a 1D convolution with vertical covariances.
+      for (idx_t jm = 0; jm < nb_zonal_wavenumbers; ++jm) {
+        const idx_t m1 = zonal_wavenumbers(jm);
+        for (std::size_t n1 = m1; n1 <= N; ++n1) {
+          // Note that img stands for imaginary component and are the
+          // odd indices in the first index of the spectral fields.
+          for (std::size_t img = 0; img < 2; ++img) {
+            // Pre-fill vertical column to be convolved.
+            if (n1 <= Ncov) {
+              for (idx_t jl = 0; jl < levels; ++jl) {
+                col[jl] = spfView(i, jl);
+              }
+              // The 2*n1+1 factor is there to equally distribute the covariance across
+              // the spectral coefficients associated to this total wavenumber.
+              const double norm = static_cast<double>((2 * n1 + 1) * vertCovView.shape(0));
+              for (idx_t r = 0; r < levels; ++r) {
+                col2[r] = 0;
+                for (idx_t c = 0; c < levels; ++c) {
+                  col2[r] += vertCovView(n1, r, c) * col[c] / norm;
+                }
+              }
+              for  (idx_t jl = 0; jl < levels; ++jl) {
+                spfView(i, jl) = col2[jl];
+              }
+            } else {
+              // we are outside specified statistics so we truncate.
+              // we may want to do something different later here
+              for (idx_t jl = 0; jl < levels; ++jl) {
+                spfView(i, jl) = 0.0;
+              }
             }
+            ++i;
           }
-          for  (idx_t jl = 0; jl < levels; ++jl) {
-            spfView(i, jl) = col2[jl];
+        }
+      }
+    } else {
+      // For each total wavenumber n1, perform a 1D convolution with vertical covariances.
+      for (idx_t jm = 0; jm < nb_zonal_wavenumbers; ++jm) {
+        const idx_t m1 = zonal_wavenumbers(jm);
+        for (std::size_t n1 = m1; n1 <= N; ++n1) {
+          // Note that img stands for imaginary component and are the
+          // odd indices in the first index of the spectral fields.
+          for (std::size_t img = 0; img < 2; ++img) {
+            // Pre-fill vertical column to be convolved.
+            for (idx_t jl = 0; jl < levels; ++jl) {
+              col[jl] = spfView(i, jl);
+            }
+            // The 2*n1+1 factor is there to equally distribute the covariance across
+            // the spectral coefficients associated to this total wavenumber.
+            const double norm = static_cast<double>((2 * n1 + 1) * vertCovView.shape(0));
+            for (idx_t r = 0; r < levels; ++r) {
+              col2[r] = 0;
+              for (idx_t c = 0; c < levels; ++c) {
+                col2[r] += vertCovView(n1, r, c) * col[c] / norm;
+              }
+            }
+            for  (idx_t jl = 0; jl < levels; ++jl) {
+              spfView(i, jl) = col2[jl];
+            }
+            ++i;
           }
-          ++i;
         }
       }
     }
@@ -706,9 +746,9 @@ void spectralHorizontalFilter(const oops::Variables & activeVars,
 
 
 
-void updateSpectralVerticalCovariances(
+std::size_t updateSpectralVerticalCovariances(
     const oops::FieldSets & ensFieldSet,
-    int & priorSampleSize,
+    const std::size_t priorSampleSize,
     atlas::FieldSet & spectralVerticalCovariances) {
 
   // assuming that the fields in each fieldset are consistent across the
@@ -784,9 +824,9 @@ void updateSpectralVerticalCovariances(
     }
   }
 
-  priorSampleSize += ensFieldSet.size();
+  const std::size_t updatedSampleSize = priorSampleSize + ensFieldSet.size();
 
-  const double recipPriorSampleSize = 1.0/static_cast<double>(priorSampleSize);
+  const double recipPriorSampleSize = 1.0/static_cast<double>(updatedSampleSize);
   for (atlas::Field & vertcov : spectralVerticalCovariances) {
     auto vertCovView = make_view<double, 3>(vertcov);
     for (idx_t i = 0; i < vertcov.shape()[0]; ++i) {
@@ -797,6 +837,7 @@ void updateSpectralVerticalCovariances(
       }
     }
   }
+  return  updatedSampleSize;
 }
 
 }  // namespace specutils

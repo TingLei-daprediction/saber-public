@@ -144,20 +144,20 @@ atlas::FieldSet populateFields(const atlas::FieldSet & geomfields,
   const std::vector<std::string> requiredStateVariables{
     "air_pressure_levels_minus_one",
     "dry_air_density_levels_minus_one",
-    "height",
-    "height_levels",
-    "m_ci",
-    "m_cl",
-    "m_r",
-    "m_v",
-    "m_t",
-    "potential_temperature",
-    "specific_humidity",
-    "mass_content_of_cloud_liquid_water_in_atmosphere_layer",
-    "mass_content_of_cloud_ice_in_atmosphere_layer"};
+    "height_above_mean_sea_level",
+    "height_above_mean_sea_level_levels",
+    "cloud_ice_mixing_ratio_wrt_dry_air",
+    "cloud_liquid_water_mixing_ratio_wrt_dry_air",
+    "rain_mixing_ratio_wrt_dry_air",
+    "water_vapor_mixing_ratio_wrt_dry_air",
+    "total_water_mixing_ratio_wrt_dry_air",
+    "air_potential_temperature",
+    "water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water",
+    "cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water",
+    "cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water"};
 
-  const std::vector<std::string> requiredGeometryVariables{"height_levels",
-                                                           "height"};
+  const std::vector<std::string> requiredGeometryVariables{"height_above_mean_sea_level_levels",
+                                                           "height_above_mean_sea_level"};
 
   const std::string outputVariable{"dry_air_density_levels_minus_one"};
 
@@ -399,9 +399,9 @@ atlas::FieldSet allocateSpectralVortDiv(
     const std::size_t & levels) {
   atlas::FieldSet specfset;
   atlas::Field specvort = specfs.createField<double>(
-    atlas::option::name("vorticity") | atlas::option::levels(levels));
+    atlas::option::name("air_upward_absolute_vorticity") | atlas::option::levels(levels));
   atlas::Field specdiv = specfs.createField<double>(
-    atlas::option::name("divergence") | atlas::option::levels(levels));
+    atlas::option::name("air_horizontal_divergence") | atlas::option::levels(levels));
 
   specfset.add(specvort);
   specfset.add(specdiv);
@@ -517,18 +517,19 @@ void GaussUVToGP::multiply(oops::FieldSet3D & fset) const {
                  augmentedState_["coriolis"], fset.fieldSet(), rhsvec);
 
   atlas::FieldSet specfset = allocateSpectralVortDiv(specFunctionSpace_, rhsvec.shape(1));
-  // calculate dir vorticity and divergence spectrally
-  trans_.dirtrans_wind2vordiv(rhsvec, specfset["vorticity"], specfset["divergence"]);
+  // calculate dir air_upward_absolute_vorticity and air_horizontal_divergence spectrally
+  trans_.dirtrans_wind2vordiv(rhsvec, specfset["air_upward_absolute_vorticity"],
+                              specfset["air_horizontal_divergence"]);
 
-  // apply inverse laplacian spectral scaling to spectral divergence
+  // apply inverse laplacian spectral scaling to spectral air_horizontal_divergence
   const int N = specFunctionSpace_.truncation();
   applyRecipNtimesNplus1SpectralScaling(
-      oops::Variables(std::vector<std::string>({"divergence"})),
-      oops::Variables(std::vector<std::string>({"divergence"})),
+      oops::Variables(std::vector<std::string>({"air_horizontal_divergence"})),
+      oops::Variables(std::vector<std::string>({"air_horizontal_divergence"})),
       specFunctionSpace_, N, specfset);
 
   // apply inverse spectral transform to
-  trans_.invtrans(specfset["divergence"], gp);
+  trans_.invtrans(specfset["air_horizontal_divergence"], gp);
 
   gp.set_dirty();
 
@@ -551,22 +552,25 @@ void GaussUVToGP::multiplyAD(oops::FieldSet3D & fset) const {
                               fset["geostrophic_pressure_levels_minus_one"].shape(1));
 
   // apply inverse spectral transform to
-  trans_.invtrans_adj(fset["geostrophic_pressure_levels_minus_one"], specfset["divergence"]);
+  trans_.invtrans_adj(fset["geostrophic_pressure_levels_minus_one"],
+                      specfset["air_horizontal_divergence"]);
 
-  // apply inverse laplacian spectral scaling to spectral divergence
+  // apply inverse laplacian spectral scaling to spectral air_horizontal_divergence
   const int N = specFunctionSpace_.truncation();
   applyRecipNtimesNplus1SpectralScaling(
-      oops::Variables(std::vector<std::string>({"divergence"})),
-      oops::Variables(std::vector<std::string>({"divergence"})),
+      oops::Variables(std::vector<std::string>({"air_horizontal_divergence"})),
+      oops::Variables(std::vector<std::string>({"air_horizontal_divergence"})),
       specFunctionSpace_, N, specfset);
 
-  auto vortView = atlas::array::make_view<double, 2>(specfset["vorticity"]);
+  auto vortView = atlas::array::make_view<double, 2>
+                  (specfset["air_upward_absolute_vorticity"]);
   vortView.assign(0.0);
 
   atlas::Field rhsvec = allocateRHSVec(gaussFunctionSpace_,
                                        fset["geostrophic_pressure_levels_minus_one"].shape(1));
 
-  trans_->dirtrans_wind2vordiv_adj(specfset["vorticity"], specfset["divergence"], rhsvec);
+  trans_->dirtrans_wind2vordiv_adj(specfset["air_upward_absolute_vorticity"],
+                                   specfset["air_horizontal_divergence"], rhsvec);
 
   populateRHSVecAdj(augmentedState_["dry_air_density_levels_minus_one"],
                     augmentedState_["coriolis"],

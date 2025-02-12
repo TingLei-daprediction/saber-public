@@ -1,5 +1,6 @@
 /*
- * (C) Copyright 2017-2021 UCAR.
+ * (C) Copyright 2024-     UCAR.
+ * (C) Copyright 2023-2024 Meteorologisk Institutt
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -7,6 +8,7 @@
 
 #pragma once
 
+#include <memory>
 #include <ostream>
 #include <string>
 
@@ -18,25 +20,33 @@
 #include "src/State.h"
 
 namespace quench {
-  class State;
 
 // -----------------------------------------------------------------------------
 
 class VariableChange : public util::Printable {
  public:
-  static const std::string classname() {return "quench::VariableChange";}
+  static const std::string classname()
+    {return "quench::VariableChange";}
 
-  VariableChange(const eckit::Configuration &, const Geometry &) {}
-  ~VariableChange() {}
+  // Constructor/destructor
+  VariableChange(const eckit::Configuration &,
+                 const Geometry &);
+  ~VariableChange()
+    {}
 
-/// Perform transforms
-  void changeVar(State &, const oops::Variables &) const
-    {throw eckit::NotImplemented(Here());}
-  void changeVarInverse(State &, const oops::Variables &) const
-    {throw eckit::NotImplemented(Here());}
+  // Variable changes: direct and inverse
+  void changeVar(State &,
+                 const oops::Variables &) const;
+  void changeVarInverse(State &,
+                        const oops::Variables &) const;
 
  private:
-  void print(std::ostream & os) const override {os << "VariableChange";};
+  // Print
+  void print(std::ostream & os) const override
+    {os << "VariableChange";};
+
+  // Geometry reference
+  const Geometry & geom_;
 };
 
 // -----------------------------------------------------------------------------
