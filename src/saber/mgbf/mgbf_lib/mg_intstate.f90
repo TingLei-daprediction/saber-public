@@ -162,6 +162,7 @@ contains
 !from mg_generation.f90
   procedure:: upsending_all,downsending_all,weighting_all
   procedure:: upsending,downsending
+  procedure:: upsending_normalized
   procedure:: upsending_highest,downsending_highest
   procedure:: upsending2,downsending2
   procedure:: upsending_ens,downsending_ens
@@ -175,6 +176,7 @@ contains
   generic :: weighting_loc => weighting_loc_g3,weighting_loc_g4
   procedure:: weighting_loc_g3,weighting_loc_g4
   procedure:: adjoint,direct1
+  procedure:: adjoint_normalized
   procedure:: adjoint2,direct2
   procedure:: adjoint_nearest,direct_nearest
   procedure:: adjoint_highest,direct_highest
@@ -648,6 +650,15 @@ interface
      real(r_kind),dimension(this%km,-1:this%imL+2,-1:this%jmL+2):: V_INT
      real(r_kind),dimension(this%km,-1:this%imL+2,-1:this%jmL+2):: H_INT
    end subroutine
+   module subroutine upsending_normalized &
+        (this,V,H)
+     implicit none
+     class (mg_intstate_type),target:: this
+     real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(in):: V
+     real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(out):: H
+     real(r_kind),dimension(this%km,-1:this%imL+2,-1:this%jmL+2):: V_INT
+     real(r_kind),dimension(this%km,-1:this%imL+2,-1:this%jmL+2):: H_INT
+   end subroutine
    module subroutine downsending &
         (this,H,V)
      implicit none
@@ -817,6 +828,15 @@ interface
      real(r_kind),dimension(km_64_in,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: H64
    end subroutine
    module subroutine adjoint &
+        (this,F,W,km_in,g)
+     implicit none
+     class (mg_intstate_type),target:: this
+     integer(i_kind),intent(in):: g
+     integer(i_kind),intent(in):: km_in
+     real(r_kind), dimension(km_in,1:this%im,1:this%jm), intent(in):: F
+     real(r_kind), dimension(km_in,-1:this%imL+2,-1:this%jmL+2), intent(out):: W
+   end subroutine
+   module subroutine adjoint_normalized &
         (this,F,W,km_in,g)
      implicit none
      class (mg_intstate_type),target:: this
@@ -1234,12 +1254,13 @@ integer(i_kind):: nxloc,nyloc,nz,nt,start_idx,end_idx
 integer(i_kind):: ig
 !-----------------------------------------------------------------------
 start_idx=Lbound(this%weig_var,4)
-end_idx=Lbound(this%weig_var,4)
+end_idx=Ubound(this%weig_var,4)
 if(start_idx /=1 ) then
  write(6,*)'the expected begin index of weig_var is 1, stop'
  stop
 endif
 allocate(sendcounts(this%nxpe*this%nype), displs(this%nxpe*this%nype))
+allocate(weigh_tmp(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy))        ; this%weig_var=0.
 !clt first transform/upsend original mg_weigh_var to their correct locations
 if(this%l_mg_weig_readin) then
  dims=(/this%nxpe,this%nype/)
@@ -1256,6 +1277,8 @@ if(this%l_mg_weig_readin) then
  if (rank == 0) then
     allocate(weig_g(this%km,this%nm,this%mm,this%gm))
   !cltclt  read in global_weight(nx,ny,km,ng)
+else
+    allocate(weig_g(1,1,1,1))
  endif
      do j = 0, this%nype - 1
       do i = 0, this%nxpe - 1
@@ -1264,7 +1287,7 @@ if(this%l_mg_weig_readin) then
       end do
     end do
  
- call MPI_Scatterv(weig_g, sendcounts, displs, MPI_INTEGER, loc_a, nxloc * nyloc * nz * nt, MPI_INTEGER, 0, comm2d, ierr)
+ call MPI_Scatterv(weig_g, sendcounts, displs, MPI_REAL, loc_a, nxloc * nyloc * nz * nt, MPI_REAL, 0, comm2d, ierr)
  call MPI_COMM_FREE(comm2d, ierr)
  do ig=1,this%gm
    do k=1,this%km
@@ -1289,11 +1312,10 @@ if(this%l_mg_weig_readin) then
     this%weig_var(:,:,j,:)=this%weig_var(:,:,nyloc,:)
    enddo
 !clttothink  
-   allocate(weigh_tmp(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy))        ; this%weig_var=0.
 !clt to convert data in weigt_var to their correct locations
    do ig=start_idx,end_idx
      weigh_tmp=this%weig_var(:,:,:,ig)
-     call this%upsending(weigh_tmp,this%weig_var(:,:,:,ig))
+     call this%upsending_normalized(weigh_tmp,this%weig_var(:,:,:,ig))
    enddo 
 
     deallocate(weig_g,weigh_tmp)
@@ -1301,7 +1323,9 @@ else
  allocate(par_weig_g(4))
  par_weig_g=(/this%mg_weig1,this%mg_weig2,this%mg_weig3,this%mg_weig4/)
  do ig=start_idx,end_idx
+ write(6,*)'thinkdeb255 par_weig_g(ig) ',par_weig_g(ig)
  weigh_tmp=par_weig_g(ig)
+!cltorg call this%upsending_normalized(weigh_tmp,this%weig_var(:,:,:,ig))
  call this%upsending(weigh_tmp,this%weig_var(:,:,:,ig))
  enddo 
 
