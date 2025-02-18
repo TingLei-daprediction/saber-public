@@ -1325,8 +1325,8 @@ else
  do ig=start_idx,end_idx
  write(6,*)'thinkdeb255 par_weig_g(ig) ',par_weig_g(ig)
  weigh_tmp=par_weig_g(ig)
-!cltorg call this%upsending_normalized(weigh_tmp,this%weig_var(:,:,:,ig))
- call this%upsending(weigh_tmp,this%weig_var(:,:,:,ig))
+ call this%upsending_normalized(weigh_tmp,this%weig_var(:,:,:,ig))
+!clto call this%upsending(weigh_tmp,this%weig_var(:,:,:,ig))
  enddo 
 
  deallocate(par_weig_g)
@@ -1351,6 +1351,7 @@ endif
 !--------------------------------------------------------
 gen_fac=1.
 !cltorg this%a_diff_f(:,:,:)=this%mg_weig1 
+write(6,*)'thinkdeb256 weigh1 ',this%mg_weig1,maxval(this%weig_var(:,:,:,1)),maxval(this%weig_var(:,:,:,1))
 this%a_diff_f(:,:,:)=this%weig_var(:,:,:,1) 
 !cltorg this%a_diff_h(:,:,:)=this%mg_weig1 
 this%a_diff_h(:,:,:)=this%weig_var(:,:,:,1) 
@@ -1361,11 +1362,14 @@ this%b_diff_h(:,:,:)=0.
 select case(this%my_hgen)
 case(2) 
 !cltorg   this%a_diff_h(:,:,:)=this%mg_weig2
+write(6,*)'thinkdeb256 weigh2 ',this%mg_weig2,maxval(this%weig_var(:,:,:,2)),maxval(this%weig_var(:,:,:,2))
    this%a_diff_h(:,:,:)=this%weig_var(:,:,:,2)
 case(3) 
 !cltorg   this%a_diff_h(:,:,:)=this%mg_weig3 
+write(6,*)'thinkdeb256 weigh3 ',this%mg_weig3,maxval(this%weig_var(:,:,:,3)),maxval(this%weig_var(:,:,:,3))
    this%a_diff_h(:,:,:)=this%weig_var(:,:,:,3)
 case default 
+write(6,*)'thinkdeb256 weigh4 ',this%mg_weig1,maxval(this%weig_var(:,:,:,4)),maxval(this%weig_var(:,:,:,4))
 !cltorg   this%a_diff_h(:,:,:)=this%mg_weig4
    this%a_diff_h(:,:,:)=this%weig_var(:,:,:,4)
 end select

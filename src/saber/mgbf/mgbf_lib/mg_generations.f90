@@ -965,6 +965,7 @@ integer(i_kind):: iL,jL,i,j,ind,k_low,k_hgh
      enddo
           H(:,:,:)=0.
 
+
         call this%boco_2d(V_INT,km_in,this%imL,this%jmL,2,2)
         call this%direct1(V_INT,V_PROX,km_in,1)
 
@@ -1387,11 +1388,14 @@ real(r_kind), dimension(km_in,-1:this%imL+2,-1:this%jmL+2), intent(out):: W
 real(r_kind), dimension(km_in,1:this%im,-1:this%jmL+2):: W_AUX
 real(r_kind), dimension(km_in,1:this%im,-1:this%jmL+2):: WEIG_AUX
 real(r_kind), dimension(km_in,-1:this%imL+2,-1:this%jmL+2) :: Wnorm
+real(r_kind), dimension(km_in,-1:this%imL+2,-1:this%jmL+2) :: W_tmp
 integer(i_kind):: i,j,iL,jL
+integer(i_kind):: k 
+real(r_kind), parameter :: eps = 1.0e-10_r_kind  ! Add epsilon for safety check
 !-----------------------------------------------------------------------
 !
 ! 3)
-!
+     write(6,*)'thinkdeb253 f is ',minval(F),' ',maxval(F)!
      W_AUX(:,:,:)= 0.
      WEIG_AUX(:,:,:)= 0.
 
@@ -1409,6 +1413,8 @@ integer(i_kind):: i,j,iL,jL
       WEIG_AUX(:,i,jL-1)=WEIG_AUX(:,i,jL-1)+this%p_coef(1)
     enddo
   enddo
+     write(6,*)'thinkdeb253 1 W_AUX is ',minval(W_AUX),' ',maxval(W_AUX)!
+     write(6,*)'thinkdeb253 1 WEIG_AUX is ',minval(WEIG_AUX),' ',maxval(WEIG_AUX)!
 !
 ! 2)
 !
@@ -1428,6 +1434,8 @@ integer(i_kind):: i,j,iL,jL
 
     enddo
   enddo
+     write(6,*)'thinkdeb253 2 W_AUX is ',minval(W_AUX),' ',maxval(W_AUX)!
+     write(6,*)'thinkdeb253 2 WEIG_AUX is ',minval(WEIG_AUX),' ',maxval(WEIG_AUX)!
 
     W(:,:,:)=0.
 !
@@ -1459,27 +1467,76 @@ integer(i_kind):: i,j,iL,jL
       Wnorm(:,iL-1,jL)=Wnorm(:,iL-1,jL)+this%p_coef(1)*WEIG_AUX(:,i,jL)
      enddo
    enddo
+     write(6,*)'thinkdeb253 3 W is ',minval(W),' ',maxval(W)!
+     write(6,*)'thinkdeb253 3 Wnorm is ',minval(Wnorm),' ',maxval(Wnorm)!
+  W_tmp=W
 !clt normalization
 !
+if (1.gt.0) then
   do jL=this%jmL+2,-1,-1
     do i=this%im-1+mod(this%im,2),1,-2
     iL = i/2
-      W(:,iL+2,jL)=W(:,iL+2,jL)/Wnorm(:,iL+2,jL)
-      W(:,iL+1,jL)=W(:,iL+1,jL)/Wnorm(:,iL+1,jL)
-      W(:,iL  ,jL)=W(:,iL  ,jL)/Wnorm(:,iL,jL)
-      W(:,iL-1,jL)=W(:,iL-1,jL)/Wnorm(:,iL-1,jL)
+     do k=1,km_in 
+      if(abs(Wnorm(k,iL+2,jL)) > eps) then
+        W(k,iL+2,jL)=W(k,iL+2,jL)/Wnorm(k,iL+2,jL)
+      else
+        W(k,iL+2,jL)=0.0_r_kind
+      endif 
+     if(abs(W(k,iL+2,jL)) .gt. 1000) then 
+       write(6,*)"thinkdeb254 large w/old ",k,iL+2,jL,' ',W_tmp(k,iL+2,jL),W(k,iL+2,jL),' ',Wnorm(k,iL+2,jL)
+      endif
+      if (abs(Wnorm(k,iL+1,jL)) > eps) then
+        W(k,iL+1,jL)=W(k,iL+1,jL)/Wnorm(k,iL+1,jL)
+      else
+        W(k,iL+1,jL)=0.0_r_kind
+      endif
 
+      if (abs(Wnorm(k,iL,jL)) > eps) then
+        W(k,iL  ,jL)=W(k,iL  ,jL)/Wnorm(k,iL,jL)
+      else
+        W(k,iL  ,jL)=0.0_r_kind
+      endif 
+
+      if (abs(Wnorm(k,iL-1,jL)) > eps) then
+        W(k,iL-1,jL)=W(k,iL-1,jL)/Wnorm(k,iL-1,jL)
+      else
+        W(k,iL-1,jL)=0.0_r_kind
+      endif 
+     enddo !for k 
     enddo
     do i=this%im-mod(this%im,2),2,-2
     iL=i/2
-      W(:,iL+2,jL)=W(:,iL+2,jL)/Wnorm(:,iL+2,jL)
-      W(:,iL+1,jL)=W(:,iL+1,jL)/Wnorm(:,iL+1,jL)
-      W(:,iL  ,jL)=W(:,iL  ,jL)/Wnorm(:,iL,jL)
-      W(:,iL-1 ,jL)=W(:,iL-1  ,jL)/Wnorm(:,iL-1,jL)
+     do k=1,km_in
+      if(abs(Wnorm(k,iL+2,jL)) > eps) then
+        W(k,iL+2,jL)=W(k,iL+2,jL)/Wnorm(k,iL+2,jL)
+      else
+        W(k,iL+2,jL)=0.0_r_kind
+      endif 
 
+      if(abs(Wnorm(k,iL+1,jL)) > eps) then
+        W(k,iL+1,jL)=W(k,iL+1,jL)/Wnorm(k,iL+1,jL)
+      else
+        W(k,iL+1,jL)=0.0_r_kind
+      endif
+
+      if (abs(Wnorm(k,iL,jL)) > eps) then
+        W(k,iL  ,jL)=W(k,iL  ,jL)/Wnorm(k,iL,jL)
+      else
+        W(k,iL  ,jL)=0.0_r_kind
+      endif
+
+      if (abs(Wnorm(k,iL-1,jL)) > eps) then
+        W(k,iL-1,jL)=W(k,iL-1,jL)/Wnorm(k,iL-1,jL)
+      else
+        W(k,iL-1,jL)=0.0_r_kind
+      endif
+     enddo !for k
      enddo
    enddo
+     write(6,*)'thinkdeb253 4 W is ',minval(W),' ',maxval(W)!
+     write(6,*)'thinkdeb253 4 Wnorm is ',minval(Wnorm),' ',maxval(Wnorm)!
 
+endif
 !-----------------------------------------------------------------------
 endsubroutine adjoint_normalized
 
