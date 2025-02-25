@@ -234,6 +234,7 @@ integer(i_kind):: g,L
         call this%adjoint_normalized(V(1:this%km,1:this%im,1:this%jm),V_INT,this%km,1) 
 
         call this%bocoT_2d(V_INT,this%km,this%imL,this%jmL,2,2)
+!clttothink
 
         call this%upsend_all(V_INT(1:this%km,1:this%imL,1:this%jmL),H,this%km)
 !
@@ -1473,65 +1474,16 @@ real(r_kind), parameter :: eps = 1.0e-10_r_kind  ! Add epsilon for safety check
 !clt normalization
 !
 if (1.gt.0) then
-  do jL=this%jmL+2,-1,-1
-    do i=this%im-1+mod(this%im,2),1,-2
-    iL = i/2
+  do j=this%jmL+2,-1,-1
+    do i=this%imL+2,-1,-1
      do k=1,km_in 
-      if(abs(Wnorm(k,iL+2,jL)) > eps) then
-        W(k,iL+2,jL)=W(k,iL+2,jL)/Wnorm(k,iL+2,jL)
+      if(abs(Wnorm(k,i,j)) > eps) then
+        W(k,i,j)=W_tmp(k,i,j)/Wnorm(k,i,j)
       else
-        W(k,iL+2,jL)=0.0_r_kind
-      endif 
-     if(abs(W(k,iL+2,jL)) .gt. 1000) then 
-       write(6,*)"thinkdeb254 large w/old ",k,iL+2,jL,' ',W_tmp(k,iL+2,jL),W(k,iL+2,jL),' ',Wnorm(k,iL+2,jL)
-      endif
-      if (abs(Wnorm(k,iL+1,jL)) > eps) then
-        W(k,iL+1,jL)=W(k,iL+1,jL)/Wnorm(k,iL+1,jL)
-      else
-        W(k,iL+1,jL)=0.0_r_kind
-      endif
-
-      if (abs(Wnorm(k,iL,jL)) > eps) then
-        W(k,iL  ,jL)=W(k,iL  ,jL)/Wnorm(k,iL,jL)
-      else
-        W(k,iL  ,jL)=0.0_r_kind
-      endif 
-
-      if (abs(Wnorm(k,iL-1,jL)) > eps) then
-        W(k,iL-1,jL)=W(k,iL-1,jL)/Wnorm(k,iL-1,jL)
-      else
-        W(k,iL-1,jL)=0.0_r_kind
+        W(k,i,j)=0.0_r_kind
       endif 
      enddo !for k 
     enddo
-    do i=this%im-mod(this%im,2),2,-2
-    iL=i/2
-     do k=1,km_in
-      if(abs(Wnorm(k,iL+2,jL)) > eps) then
-        W(k,iL+2,jL)=W(k,iL+2,jL)/Wnorm(k,iL+2,jL)
-      else
-        W(k,iL+2,jL)=0.0_r_kind
-      endif 
-
-      if(abs(Wnorm(k,iL+1,jL)) > eps) then
-        W(k,iL+1,jL)=W(k,iL+1,jL)/Wnorm(k,iL+1,jL)
-      else
-        W(k,iL+1,jL)=0.0_r_kind
-      endif
-
-      if (abs(Wnorm(k,iL,jL)) > eps) then
-        W(k,iL  ,jL)=W(k,iL  ,jL)/Wnorm(k,iL,jL)
-      else
-        W(k,iL  ,jL)=0.0_r_kind
-      endif
-
-      if (abs(Wnorm(k,iL-1,jL)) > eps) then
-        W(k,iL-1,jL)=W(k,iL-1,jL)/Wnorm(k,iL-1,jL)
-      else
-        W(k,iL-1,jL)=0.0_r_kind
-      endif
-     enddo !for k
-     enddo
    enddo
      write(6,*)'thinkdeb253 4 W is ',minval(W),' ',maxval(W)!
      write(6,*)'thinkdeb253 4 Wnorm is ',minval(Wnorm),' ',maxval(Wnorm)!
