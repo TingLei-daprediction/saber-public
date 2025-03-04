@@ -35,6 +35,7 @@ Interpolation::Interpolation(const oops::GeometryData & outerGeometryData,
 
   // Set up GeometryData
   Geometry geom(params.innerGeom, outerGeometryData.comm());
+  oops::Log::trace() << classname() << "::Interpolation after geom ctor" << std::endl;
   innerGeomData_.reset(new oops::GeometryData(geom.functionSpace(), geom.fields(),
                                               true, outerGeometryData.comm()));
 
@@ -57,6 +58,7 @@ Interpolation::Interpolation(const oops::GeometryData & outerGeometryData,
 
 void Interpolation::multiply(oops::FieldSet3D & fieldSet) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
+  util::Timer timer(classname(), "multiply");
 
   // Temporary FieldSet of active variables for interpolation source
   atlas::FieldSet sourceFieldSet;
@@ -99,6 +101,7 @@ void Interpolation::multiply(oops::FieldSet3D & fieldSet) const {
 
 void Interpolation::multiplyAD(oops::FieldSet3D & fieldSet) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
+  util::Timer timer(classname(), "multiplyAD");
 
   // Temporary FieldSet of active variables for interpolation target
   atlas::FieldSet targetFieldSet;

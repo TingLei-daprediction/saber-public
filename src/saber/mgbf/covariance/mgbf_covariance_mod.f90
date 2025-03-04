@@ -235,6 +235,7 @@ character(len=4) :: str_rank
           allocate(work_mgbf(self%intstate%km_a_all,self%intstate%nm,self%intstate%mm))
           allocate(work_mgbf2(self%intstate%km_a_all,self%intstate%nm,self%intstate%mm))
           allocate(work2d_mgbf(self%intstate%km_a_all,self%intstate%nm*self%intstate%mm))
+           write(6,*)"thinkdeb 2551 in covariance km_all is ",self%intstate%km_a_all
           allocate(rnormalization(self%intstate%km_a_all))
           work2d_mgbf=0.0         
           rnormalization=1.0
@@ -374,11 +375,13 @@ character(len=4) :: str_rank
                nz=afield%levels()
                lev1=varvlev_index(isize,1)
                if(nz.gt.1) then 
+                  write(6,*)'thinkdeb2552 dimension of ptr_2d are ',size(ptr_2d,1), ' ',size(ptr_2d,2)
                   ptr_2d(1:nz,:)=work2d_mgbf(lev1:lev1+nz-1,:)!if nz=1, only the first level is used (like for surface pressure) 
                else
                   if(self%intstate%l_for_localization) then 
                     if( self%l_2dvar_last_vertical_level) then !when used for localization,2dvars are put on the last vertical level
 
+                       write(6,*)'thinkdeb2553 dimension of 2 dimensio of  ptr_2d,work2d are ',size(ptr_2d,2), ' ',size(work2d_mgbf,2)
                        ptr_2d(1,:)=work2d_mgbf(lev1+nz3d-1,:)!if nz=1, only the first level is used (like for surface pressure) 
                     else
                         ptr_2d(1,:)=work2d_mgbf(lev1,:)!if nz=1, only the first level is used (like for surface pressure) 

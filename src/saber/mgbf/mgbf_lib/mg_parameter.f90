@@ -40,6 +40,7 @@ type::  mg_parameter_type
 !-----------------------------------------------------------------------
 !*** 
 logical:: l_for_localization=.false.  !used for localizaiton while multiple variates need additional treeatment
+logical:: l_mgbf_inhomogeneous=.false.  !used inhomogeneous mgbf
 !*** Namelist parameters
 !***
 real(r_kind):: mg_ampl01,mg_ampl02,mg_ampl03
@@ -493,6 +494,7 @@ integer(i_kind):: nxPE,nyPE,im_filt,jm_filt
 logical:: lquart=.false.,lhelm=.false. !clt what should be the default
 logical:: ldelta=.false.
 logical:: l_for_localization=.false.
+logical:: l_mgbf_inhomogeneous=.false.  
 
 integer(i_kind):: lm_a          ! number of vertical layers in analysis fields
 integer(i_kind):: lm            ! number of vertical layers in filter grids
@@ -536,6 +538,7 @@ logical:: l_mg_weig_readin=.false.
                               ,l_vertical_filter                        &
                               ,l_anal_sub_of_filt                       &
                               ,l_for_localization,ldelta,lquart,lhelm   &
+                              , l_mgbf_inhomogeneous                    &
                               ,gm_max                                   &
                               ,nm0,mm0                                  &
                               ,nxPE,nyPE,im_filt,jm_filt ,              &               
@@ -579,6 +582,7 @@ logical:: l_mg_weig_readin=.false.
   this%l_vertical_filter=l_vertical_filter
   this%l_anal_sub_of_filt=l_anal_sub_of_filt
   this%l_for_localization=l_for_localization
+  this%l_mgbf_inhomogeneous = l_mgbf_inhomogeneous
   this%ldelta=ldelta
   this%lquart=lquart
   this%lhelm=lhelm 
@@ -662,9 +666,12 @@ logical:: l_mg_weig_readin=.false.
 !
 
   this%km_a = this%km2+this%lm_a*this%km3
+  write(6,*)'thinkdeb255 lm_a,km3,km2 ',this%km2,this%lm_a,this%km3
+  write(6,*)'thinkdeb255 km_a ',this%km_a
   this%km   = this%km2+this%lm  *this%km3
 
   this%km_a_all = this%km_a * this%n_ens
+  write(6,*)'thinkdeb255 km_a_all ',this%km_a_all
   this%km_all   = this%km   * this%n_ens
 
   this%km2_all = this%km2 * this%n_ens

@@ -32,6 +32,7 @@ Geometry::Geometry(const eckit::Configuration & config,
                    const eckit::mpi::Comm & comm)
   : comm_(comm), halo_(1)
 {
+  oops::Log::trace() <<"interpolation::Geometry ctor start" << std::endl;
   atlas::Mesh mesh;
   util::setupFunctionSpace(comm_, config, grid_, partitioner_, mesh, functionSpace_, fieldSet_);
 

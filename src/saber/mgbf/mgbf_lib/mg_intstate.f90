@@ -842,7 +842,7 @@ interface
      class (mg_intstate_type),target:: this
      integer(i_kind),intent(in):: g
      integer(i_kind),intent(in):: km_in
-     real(r_kind), dimension(km_in,1:this%im,1:this%jm), intent(in):: F
+     real(r_kind), dimension(km_in,0:this%im+1,0:this%jm+1), intent(in):: F
      real(r_kind), dimension(km_in,-1:this%imL+2,-1:this%jmL+2), intent(out):: W
    end subroutine
    module subroutine direct1 &
@@ -1352,6 +1352,7 @@ endif
 gen_fac=1.
 !cltorg this%a_diff_f(:,:,:)=this%mg_weig1 
 write(6,*)'thinkdeb256 weigh1 ',this%mg_weig1,maxval(this%weig_var(:,:,:,1)),maxval(this%weig_var(:,:,:,1))
+if(this%l_mgbf_inhomogeneous ) then
 this%a_diff_f(:,:,:)=this%weig_var(:,:,:,1) 
 !cltorg this%a_diff_h(:,:,:)=this%mg_weig1 
 this%a_diff_h(:,:,:)=this%weig_var(:,:,:,1) 
@@ -1362,17 +1363,34 @@ this%b_diff_h(:,:,:)=0.
 select case(this%my_hgen)
 case(2) 
 !cltorg   this%a_diff_h(:,:,:)=this%mg_weig2
-write(6,*)'thinkdeb256 weigh2 ',this%mg_weig2,maxval(this%weig_var(:,:,:,2)),maxval(this%weig_var(:,:,:,2))
+write(6,*)'thinkdeb256 weigh2 ',this%mg_weig2,minval(this%weig_var(:,:,:,2)),maxval(this%weig_var(:,:,:,2))
    this%a_diff_h(:,:,:)=this%weig_var(:,:,:,2)
 case(3) 
 !cltorg   this%a_diff_h(:,:,:)=this%mg_weig3 
-write(6,*)'thinkdeb256 weigh3 ',this%mg_weig3,maxval(this%weig_var(:,:,:,3)),maxval(this%weig_var(:,:,:,3))
+write(6,*)'thinkdeb256 weigh3 ',this%mg_weig3,minval(this%weig_var(:,:,:,3)),maxval(this%weig_var(:,:,:,3))
    this%a_diff_h(:,:,:)=this%weig_var(:,:,:,3)
+write(6,*)'thinkdeb256 weigh3 1 ',this%weig_var(:,:,:,3)
 case default 
-write(6,*)'thinkdeb256 weigh4 ',this%mg_weig1,maxval(this%weig_var(:,:,:,4)),maxval(this%weig_var(:,:,:,4))
+write(6,*)'thinkdeb256 weigh4 ',this%mg_weig1,minval(this%weig_var(:,:,:,4)),maxval(this%weig_var(:,:,:,4))
 !cltorg   this%a_diff_h(:,:,:)=this%mg_weig4
    this%a_diff_h(:,:,:)=this%weig_var(:,:,:,4)
 end select
+else
+this%a_diff_h(:,:,:)=this%mg_weig1 
+
+this%b_diff_f(:,:,:)=0.
+this%b_diff_h(:,:,:)=0.
+
+select case(this%my_hgen)
+case(2) 
+  this%a_diff_h(:,:,:)=this%mg_weig2
+case(3) 
+ this%a_diff_h(:,:,:)=this%mg_weig3 
+case default 
+  this%a_diff_h(:,:,:)=this%mg_weig4
+end select
+
+endif
 
 do L=1,this%lm
    this%pasp1(1,1,L)=this%pasp01

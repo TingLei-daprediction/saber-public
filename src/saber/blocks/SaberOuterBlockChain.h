@@ -193,7 +193,7 @@ SaberOuterBlockChain::SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
                        const eckit::LocalConfiguration & covarConf,
                        const std::vector<saber::SaberOuterBlockParametersWrapper> & params) {
   oops::Log::trace() << "SaberOuterBlockChain ctor starting" << std::endl;
-  oops::Log::info() << "Info     : Creating outer blocks" << std::endl;
+  oops::Log::info() << "Info xx    : Creating outer blocks" << std::endl;
 
   // In addition to other configuration option pass model data information for vader
   // TODO(AS): check whether covarConf needs to be passed to the blocks (ideally not)
@@ -211,6 +211,7 @@ SaberOuterBlockChain::SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
                                        geom.generic() : outerBlocks_.back()->innerGeometryData();
 
     // Initialize outer block
+    oops::Log::trace() << "SaberOuterBlockChain before initBlock" << std::endl;
     const auto[saberOuterBlockParams,
                currentOuterVars,
                activeVars]
@@ -220,9 +221,12 @@ SaberOuterBlockChain::SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
                           outerVars,
                           fset4dXb,
                           fset4dFg);
+  oops::Log::trace() << "SaberOuterBlockChain after initBlock" << std::endl;
 
+  oops::Log::trace() << "SaberOuterBlockChain before read " << std::endl;
     // Read and add model fields
     outerBlocks_.back()->read(geom, currentOuterVars);
+  oops::Log::trace() << "SaberOuterBlockChain after read " << std::endl;
 
     if (saberOuterBlockParams.doCalibration()) {
       // Block calibration

@@ -230,25 +230,32 @@ integer(i_kind):: g,L
 !
 ! From generation 1 to generation 2
 !
-
-        call this%adjoint_normalized(V(1:this%km,1:this%im,1:this%jm),V_INT,this%km,1) 
+        write(6,*)'thinkdeb144 before adjoint_nral min/max input ', minval(V),maxval(V)
+        call this%adjoint_normalized(V(1:this%km,0:this%im+1,0:this%jm+1),V_INT,this%km,1) 
+        write(6,*)'thinkdeb144 after adjoint_nral min/max output ', minval(V_INT),maxval(V_INT)
 
         call this%bocoT_2d(V_INT,this%km,this%imL,this%jmL,2,2)
+        write(6,*)'thinkdeb144 after 2  min/max output ', minval(V_INT),maxval(V_INT)
 !clttothink
 
         call this%upsend_all(V_INT(1:this%km,1:this%imL,1:this%jmL),H,this%km)
+        write(6,*)'thinkdeb144 after 2  min/max output ', minval(H),maxval(H)
 !
 ! From generation 2 sequentially to higher generations
 !
   do g=2,this%gm-1 
 
     if(g==this%my_hgen) then
-        call this%adjoint_normalized(H(1:this%km,1:this%im,1:this%jm),H_INT,this%km,g) 
+        write(6,*)'thinkdeb144 before second adjoint  min/max input ', minval(H),maxval(H)
+        call this%adjoint_normalized(H(1:this%km,0:this%im+1,0:this%jm+1),H_INT,this%km,g) 
+        write(6,*)'thinkdeb144 after second adjoint  min/max input ', minval(H_INT),maxval(H_INT)
     endif
 
         call this%bocoT_2d(H_INT,this%km,this%imL,this%jmL,2,2,this%FimaxL,this%FjmaxL,g,g)
 
+        write(6,*)'thinkdeb144 before final upsend_all  min/max input ', minval(H_INT),maxval(H_INT)
         call this%upsend_all(H_INT(1:this%km,1:this%imL,1:this%jmL),H,this%km,g,g+1)
+        write(6,*)'thinkdeb144 after final upsend_all  min/max input ', minval(H_INT),maxval(H_INT)
 
   end do    
 
@@ -1371,12 +1378,10 @@ integer(i_kind):: i,j,iL,jL
 endsubroutine adjoint
 module subroutine adjoint_normalized &
 !***********************************************************************
-!clt normalized adjoint , more efficient way to be explored later
-!                                                                      !
-!   Mapping from the high to low resolution grid                       !
-!   using linearly squared interpolations                              !
 !                         - offset version -                           ! 
 !                                                                      !
+!modified from Misha's adjoint_bilin_norm.f90 
+!except for the addtional normalization step, let holo points of W equal to inner points
 !***********************************************************************
 (this,F,W,km_in,g)
 !-----------------------------------------------------------------------
@@ -1384,107 +1389,72 @@ implicit none
 class (mg_intstate_type),target:: this
 integer(i_kind),intent(in):: g 
 integer(i_kind),intent(in):: km_in
-real(r_kind), dimension(km_in,1:this%im,1:this%jm), intent(in):: F
+real(r_kind), dimension(km_in,0:this%im+1,0:this%jm+1), intent(in):: F
 real(r_kind), dimension(km_in,-1:this%imL+2,-1:this%jmL+2), intent(out):: W
-real(r_kind), dimension(km_in,1:this%im,-1:this%jmL+2):: W_AUX
-real(r_kind), dimension(km_in,1:this%im,-1:this%jmL+2):: WEIG_AUX
 real(r_kind), dimension(km_in,-1:this%imL+2,-1:this%jmL+2) :: Wnorm
-real(r_kind), dimension(km_in,-1:this%imL+2,-1:this%jmL+2) :: W_tmp
 integer(i_kind):: i,j,iL,jL
+real(r_kind):: r1_16,r3_16,r9_16
 integer(i_kind):: k 
 real(r_kind), parameter :: eps = 1.0e-10_r_kind  ! Add epsilon for safety check
 !-----------------------------------------------------------------------
 !
 ! 3)
      write(6,*)'thinkdeb253 f is ',minval(F),' ',maxval(F)!
-     W_AUX(:,:,:)= 0.
-     WEIG_AUX(:,:,:)= 0.
-
-  do j=this%jm-mod(this%jm,2),2,-2
-    jL = j/2
-    do i=this%im,1,-1
-      W_AUX(:,i,jL+2)=W_AUX(:,i,jL+2)+this%p_coef(4)*F(:,i,j)
-      W_AUX(:,i,jL+1)=W_AUX(:,i,jL+1)+this%p_coef(3)*F(:,i,j)
-      W_AUX(:,i,jL  )=W_AUX(:,i,jL  )+this%p_coef(2)*F(:,i,j)
-      W_AUX(:,i,jL-1)=W_AUX(:,i,jL-1)+this%p_coef(1)*F(:,i,j)
-
-      WEIG_AUX(:,i,jL+2)=WEIG_AUX(:,i,jL+2)+this%p_coef(4)
-      WEIG_AUX(:,i,jL+1)=WEIG_AUX(:,i,jL+1)+this%p_coef(3)
-      WEIG_AUX(:,i,jL  )=WEIG_AUX(:,i,jL  )+this%p_coef(2)
-      WEIG_AUX(:,i,jL-1)=WEIG_AUX(:,i,jL-1)+this%p_coef(1)
-    enddo
-  enddo
-     write(6,*)'thinkdeb253 1 W_AUX is ',minval(W_AUX),' ',maxval(W_AUX)!
-     write(6,*)'thinkdeb253 1 WEIG_AUX is ',minval(WEIG_AUX),' ',maxval(WEIG_AUX)!
-!
-! 2)
-!
-  do j=this%jm-1+mod(this%jm,2),1,-2
-    jL=j/2
-    do i=this%im,1,-1
-      W_AUX(:,i,jL+2)=W_AUX(:,i,jL+2)+this%q_coef(4)*F(:,i,j)
-      W_AUX(:,i,jL+1)=W_AUX(:,i,jL+1)+this%q_coef(3)*F(:,i,j)
-      W_AUX(:,i,jL  )=W_AUX(:,i,jL  )+this%q_coef(2)*F(:,i,j)
-      W_AUX(:,i,jL-1)=W_AUX(:,i,jL-1)+this%q_coef(1)*F(:,i,j)
-
-      WEIG_AUX(:,i,jL+2)=WEIG_AUX(:,i,jL+2)+this%q_coef(4)
-      WEIG_AUX(:,i,jL+1)=WEIG_AUX(:,i,jL+1)+this%q_coef(3)
-      WEIG_AUX(:,i,jL  )=WEIG_AUX(:,i,jL  )+this%q_coef(2)
-      WEIG_AUX(:,i,jL-1)=WEIG_AUX(:,i,jL-1)+this%q_coef(1)
-
-
-    enddo
-  enddo
-     write(6,*)'thinkdeb253 2 W_AUX is ',minval(W_AUX),' ',maxval(W_AUX)!
-     write(6,*)'thinkdeb253 2 WEIG_AUX is ',minval(WEIG_AUX),' ',maxval(WEIG_AUX)!
-
     W(:,:,:)=0.
-!
-! 1)
    Wnorm=0.!
-  do jL=this%jmL+2,-1,-1
-    do i=this%im-1+mod(this%im,2),1,-2
-    iL = i/2
-      W(:,iL+2,jL)=W(:,iL+2,jL)+this%q_coef(4)*W_AUX(:,i,jL)
-      W(:,iL+1,jL)=W(:,iL+1,jL)+this%q_coef(3)*W_AUX(:,i,jL)
-      W(:,iL  ,jL)=W(:,iL  ,jL)+this%q_coef(2)*W_AUX(:,i,jL)
-      W(:,iL-1,jL)=W(:,iL-1,jL)+this%q_coef(1)*W_AUX(:,i,jL)
 
-      Wnorm(:,iL+2,jL)=Wnorm(:,iL+2,jL)+this%q_coef(4)*WEIG_AUX(:,i,jL)
-      Wnorm(:,iL+1,jL)=Wnorm(:,iL+1,jL)+this%q_coef(3)*WEIG_AUX(:,i,jL)
-      Wnorm(:,iL  ,jL)=Wnorm(:,iL  ,jL)+this%q_coef(2)*WEIG_AUX(:,i,jL)
-      Wnorm(:,iL-1,jL)=Wnorm(:,iL-1,jL)+this%q_coef(1)*WEIG_AUX(:,i,jL)
-    enddo
-    do i=this%im-mod(this%im,2),2,-2
-    iL=i/2
-      W(:,iL+2,jL)=W(:,iL+2,jL)+this%p_coef(4)*W_AUX(:,i,jL)
-      W(:,iL+1,jL)=W(:,iL+1,jL)+this%p_coef(3)*W_AUX(:,i,jL)
-      W(:,iL  ,jL)=W(:,iL  ,jL)+this%p_coef(2)*W_AUX(:,i,jL)
-      W(:,iL-1,jL)=W(:,iL-1,jL)+this%p_coef(1)*W_AUX(:,i,jL)
+!-----------------------------------------------------------------------
+r1_16 = 1./16.
+r3_16 = 3.*r1_16
+r9_16 = 9.*r1_16
 
-      Wnorm(:,iL+2,jL)=Wnorm(:,iL+2,jL)+this%p_coef(4)*WEIG_AUX(:,i,jL)
-      Wnorm(:,iL+1,jL)=Wnorm(:,iL+1,jL)+this%p_coef(3)*WEIG_AUX(:,i,jL)
-      Wnorm(:,iL  ,jL)=Wnorm(:,iL  ,jL)+this%p_coef(2)*WEIG_AUX(:,i,jL)
-      Wnorm(:,iL-1,jL)=Wnorm(:,iL-1,jL)+this%p_coef(1)*WEIG_AUX(:,i,jL)
-     enddo
-   enddo
-     write(6,*)'thinkdeb253 3 W is ',minval(W),' ',maxval(W)!
-     write(6,*)'thinkdeb253 3 Wnorm is ',minval(Wnorm),' ',maxval(Wnorm)!
-  W_tmp=W
-!clt normalization
+
+ 
+  do jL=1,this%jmL
+    j = 2*jL - 1
+  do iL=1,this%imL
+    i = 2*iL - 1
+    W(:,iL,jL) = r1_16*(F(:,i-1,j-1)+F(:,i+2,j-1)+F(:,i-1,j+2)+F(:,i+2,j+2))+ &
+               + r3_16*(F(:,i,j-1)+F(:,i+1,j-1)                               &
+               +        F(:,i-1,j)+F(:,i-1,j+1)                               &
+               +        F(:,i+2,j)+F(:,i+2,j+1)                               &
+               +        F(:,i,j+2)+F(:,i+1,j+2))                              &
+               + r9_16*(F(:,i,j)+F(:,i+1,j)+F(:,i,j+1)+F(:,i+1,j+1))  
+    wnorm(:,iL,jL) =wnorm(:,iL,jL)+ r1_16*4+ &
+               + r3_16*8                                                      &
+               + r9_16*4  
+  enddo
+  enddo
+   
 !
 if (1.gt.0) then
-  do j=this%jmL+2,-1,-1
-    do i=this%imL+2,-1,-1
+  do jL=1,this%jmL
+    do iL=1,this%imL
      do k=1,km_in 
-      if(abs(Wnorm(k,i,j)) > eps) then
-        W(k,i,j)=W_tmp(k,i,j)/Wnorm(k,i,j)
+      if(abs(Wnorm(k,iL,jL)) > eps) then
+        W(k,iL,jL)=W(k,iL,jL)/Wnorm(k,iL,jL)
       else
-        W(k,i,j)=0.0_r_kind
+        W(k,iL,jL)=0.0_r_kind
       endif 
      enddo !for k 
     enddo
    enddo
+!clt the following procedure would cause values on the corner change 
+!if the order of the following assignment change
+!an assumption is that those boundary points (including corner points) 
+!would be specified through mpi exchanges of halo points later
+if (1.gt.2) then
+    W(:,-1:0,:)=spread(W(:,1,:),dim=2,ncopies=2)
+    W(:,this%imL+1:this%imL+2,:)=spread(W(:,this%imL,:),dim=2,ncopies=2)
+    W(:,:,-1:0)=spread(W(:,:,1),dim=3,ncopies=2)
+    W(:,:,this%jmL+1:this%jmL+2)=spread(W(:,:,this%jmL),dim=3,ncopies=2)
+else 
+    W(:,-1:0,:)=0
+    W(:,this%imL+1:this%imL+2,:)=0
+    W(:,:,-1:0)=0
+    W(:,:,this%jmL+1:this%jmL+2)=0
+endif
+
      write(6,*)'thinkdeb253 4 W is ',minval(W),' ',maxval(W)!
      write(6,*)'thinkdeb253 4 Wnorm is ',minval(Wnorm),' ',maxval(Wnorm)!
 
