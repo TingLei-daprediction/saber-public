@@ -11,6 +11,8 @@
 
 #include "oops/util/FieldSetOperations.h"
 #include "oops/util/Logger.h"
+#include "mpi.h"  //cltthinkdeb todo
+#include <fstream> //cltthink
 
 namespace saber {
 namespace interpolation {
@@ -32,7 +34,7 @@ Interpolation::Interpolation(const oops::GeometryData & outerGeometryData,
     activeVars_(params.activeVars.value().get_value_or(outerVars)),
     invVars_(params.inverseVars.value())
 {
-  oops::Log::trace() << classname() << "::Interpolation starting" << std::endl;
+  oops::Log::trace() << classname() << "::Interpolationthinkdeb555 starting" << std::endl;
 
   // Set up GeometryData
   Geometry geom(params.innerGeom, outerGeometryData.comm());
@@ -44,10 +46,24 @@ Interpolation::Interpolation(const oops::GeometryData & outerGeometryData,
     globalInterp_.reset(new oops::GlobalInterpolator(
       params.forwardInterpConf.value(), *innerGeomData_,
       outerGeometryData.functionSpace(), outerGeometryData.comm()));
+        int mpirank;
+       MPI_Comm_rank(MPI_COMM_WORLD, &mpirank);
+       std::ofstream file("mgbf_filtering_grid_latlon_"+std::to_string(mpirank)+".txt");
+       innerGeomData_->functionSpace().lonlat().dump(file);
+       std::ofstream file2("model_native_grid_latlon_"+std::to_string(mpirank)+".txt");
+       outerGeomData_.functionSpace().lonlat().dump(file2);
   } else if (params.interpType.value() == "regional") {
     regionalInterp_.reset(new atlas::Interpolation(
+
        atlas::util::Config("type", "regional-linear-2d"),
        innerGeomData_->functionSpace(), outerGeomData_.functionSpace()));
+        int mpirank;
+       MPI_Comm_rank(MPI_COMM_WORLD, &mpirank);
+       std::ofstream file("mgbf_filtering_grid_latlon_"+std::to_string(mpirank)+".txt");
+       innerGeomData_->functionSpace().lonlat().dump(file);
+       std::ofstream file2("model_native_grid_latlon_"+std::to_string(mpirank)+".txt");
+       outerGeomData_.functionSpace().lonlat().dump(file2);
+
   } else {
     throw eckit::UserError("wrong interpolator type: " + params.interpType.value(), Here());
   }

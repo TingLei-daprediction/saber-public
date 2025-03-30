@@ -68,7 +68,6 @@ mgbf_Interpolation::mgbf_Interpolation(const oops::GeometryData & outerGeometryD
                                                     params.toConfiguration(),
                                                     innerGeometryData_->functionSpace(),
                                                     outerGeometryData.functionSpace(),
-                                                    activeVariableSizes,
                                                     activeVars));
   oops::Log::trace() << classname() << "mgbf::Interpolator constructor  done" << std::endl;
 }

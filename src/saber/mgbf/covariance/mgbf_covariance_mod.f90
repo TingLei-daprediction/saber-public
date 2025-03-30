@@ -362,7 +362,6 @@ real(kind=8) :: val
                stop
              endif 
           enddo
-          return  !cltthinkdeb
        do k=1,nzloc
           work2d_mgbf(k,:)=work2d_mgbf(k,:)/rnormalization(k)
           work_mgbf(k,:,:) =reshape(work2d_mgbf(k,:),[dim3d(2),dim3d(3)])
