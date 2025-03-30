@@ -1252,6 +1252,7 @@ integer,allocatable,dimension(:) :: sendcounts, displs
 integer :: dims(2), periods(2), coords(2)
 integer(i_kind):: nxloc,nyloc,nz,nt,start_idx,end_idx
 integer(i_kind):: ig
+character*72  tmpfilename
 !-----------------------------------------------------------------------
 start_idx=Lbound(this%weig_var,4)
 end_idx=Ubound(this%weig_var,4)
@@ -1353,7 +1354,8 @@ endif
 !--------------------------------------------------------
 gen_fac=1.
 !cltorg this%a_diff_f(:,:,:)=this%mg_weig1 
-write(6,*)'thinkdeb256 weigh1 ',this%mg_weig1,maxval(this%weig_var(:,:,:,1)),maxval(this%weig_var(:,:,:,1))
+write(tmpfilename, '("mgbf_tmpfile_", I0, ".txt")') this%mype
+open(12,file=trim(tmpfilename),form="formatted")
 if(this%l_mgbf_inhomogeneous ) then
 this%a_diff_f(:,:,:)=this%weig_var(:,:,:,1) 
 !cltorg this%a_diff_h(:,:,:)=this%mg_weig1 
@@ -1365,18 +1367,19 @@ this%b_diff_h(:,:,:)=0.
 select case(this%my_hgen)
 case(2) 
 !cltorg   this%a_diff_h(:,:,:)=this%mg_weig2
-write(6,*)'thinkdeb256 weigh2 ',this%mg_weig2,minval(this%weig_var(:,:,:,2)),maxval(this%weig_var(:,:,:,2))
+write(12,*)'thinkdeb256 weigh2 ',this%mg_weig2,minval(this%weig_var(:,:,:,2)),(this%weig_var(:,:,:,2))
    this%a_diff_h(:,:,:)=this%weig_var(:,:,:,2)
 case(3) 
 !cltorg   this%a_diff_h(:,:,:)=this%mg_weig3 
-write(6,*)'thinkdeb256 weigh3 ',this%mg_weig3,minval(this%weig_var(:,:,:,3)),maxval(this%weig_var(:,:,:,3))
+write(12,*)'thinkdeb256 weigh3 ',this%mg_weig3,minval(this%weig_var(:,:,:,3)),(this%weig_var(:,:,:,3))
    this%a_diff_h(:,:,:)=this%weig_var(:,:,:,3)
 write(6,*)'thinkdeb256 weigh3 1 ',this%weig_var(:,:,:,3)
 case default 
-write(6,*)'thinkdeb256 weigh4 ',this%mg_weig1,minval(this%weig_var(:,:,:,4)),maxval(this%weig_var(:,:,:,4))
+write(12,*)'thinkdeb256 weigh4 ',this%mg_weig1,minval(this%weig_var(:,:,:,4)),(this%weig_var(:,:,:,4))
 !cltorg   this%a_diff_h(:,:,:)=this%mg_weig4
    this%a_diff_h(:,:,:)=this%weig_var(:,:,:,4)
 end select
+close (12)
 else
 this%a_diff_h(:,:,:)=this%mg_weig1 
 
