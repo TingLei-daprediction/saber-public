@@ -25,6 +25,7 @@ use mg_intstate , only:            mg_intstate_type
 use mg_timers
 
 use mpi
+use, intrinsic :: ieee_arithmetic
 implicit none
 private
 public mgbf_covariance
@@ -211,7 +212,7 @@ integer, pointer :: ghost(:)
 !clttype(atlas_FunctionSpace) :: fs
 type(atlas_functionspace_StructuredColumns) :: fs
 integer :: ierr
-
+real(kind=8) :: val
 
 !clt now noly consider t
 !  afield = fields%field('air_temperature')
@@ -265,6 +266,28 @@ integer :: ierr
              if(afield%rank() == 2)  then
                nz=afield%levels()
                call afield%data(ptr_2d)
+               do k=1,nz
+                 do i=1,n_owned_size
+                    val=ptr_2d(k,i)
+                    if (ieee_is_nan(val)) then
+                      print *, '[Fortran] ❗ NaN detected in value'
+                    elseif (ieee_is_finite(val) .eqv. .false.) then
+                      print *, '[Fortran] ❗ Inf detected in value'
+                    elseif (abs(val) > 1.0e20) then
+                      print *, '[Fortran] ⚠️ Suspicious large value:', val
+                    endif
+                 enddo
+                 do i=n_owned_size+1,size(ptr_2d,2)
+                    val=ptr_2d(k,i)
+                    if (ieee_is_nan(val)) then
+                      print *, '[Fortran]2 ❗ NaN detected in value'
+                    elseif (ieee_is_finite(val) .eqv. .false.) then
+                      print *, '[Fortran]2 ❗ Inf detected in value'
+                    elseif (abs(val) > 1.0e20) then
+                      print *, '[Fortran]2 ⚠️ Suspicious large value:', val
+                    endif
+                 enddo
+               enddo
                if(nz == 1) then 
                   if(self%intstate%l_for_localization) then 
                     if( self%l_2dvar_last_vertical_level) then  !when used for localization,2dvars are put on the last vertical level
@@ -339,6 +362,7 @@ integer :: ierr
                stop
              endif 
           enddo
+          return  !cltthinkdeb
        do k=1,nzloc
           work2d_mgbf(k,:)=work2d_mgbf(k,:)/rnormalization(k)
           work_mgbf(k,:,:) =reshape(work2d_mgbf(k,:),[dim3d(2),dim3d(3)])
@@ -347,7 +371,6 @@ integer :: ierr
              write(6,*)'The numbers of 2d variables is different from  mgbf-expected ,stop'
              stop   ! a better exception handling is to be added
           endif
-          
           if(test_once.and..1.gt.2) then
           open(iounit,file=trim(fileoutput), status='replace',form="formatted") 
           write(iounit,*) work_mgbf
@@ -413,7 +436,6 @@ integer :: ierr
 !                 endif
                        write(6,*)'thinkdeb2553 dimension of 2 dimensio of  ptr_2d,work2d are ',size(ptr_2d,2), ' ',size(work2d_mgbf,2)
                   write(6,*)'thinkdeb2552 n_owned_size ',n_owned_size,' ','total size is  ' ,size(ptr_2d,2) 
-                      call mpi_barrier(MPI_COMM_WORLD,ierr)  !cltthinkdeb
                  if(n_owned_size >0 ) then 
                      ptr_2d(1:nz,1:n_owned_size)=work2d_mgbf(lev1:lev1+nz-1,:)!if nz=1, only the first level is used (like for surface pressure) 
                   else 
