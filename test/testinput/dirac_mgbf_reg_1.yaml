@@ -1,0 +1,79 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type : "regional"
+    nx : 16 
+    ny : 16 
+    dx : 30.0e3
+    dy : 30.0e3
+    lonlat(centre) : [261,40]
+    projection :
+      type       : lambert_conformal_conic
+      latitude0  : 40
+      longitude0 : 261
+      units: "degrees"
+    y_numbering : 1
+  partitioner: checkerboard
+  groups:
+  - variables:
+    - air_horizontal_streamfunction
+    levels: 8 
+
+  halo: 1
+
+background:
+  date: '2010-01-01T12:00:00Z'
+  state variables:
+  - air_horizontal_streamfunction
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: ID
+    saber central block:
+        saber block name: MGBF_covariance
+        mgbf namelist file: dirac_mgbf_reg_1.nml 
+
+  saber outer blocks:
+  - saber block name: interpolation
+    inner geometry:
+      function space: StructuredColumns
+      grid:
+        type : "regional"
+        nx : 24 
+        ny : 24 
+        dx : 30.0e3
+        dy : 30.0e3
+        lonlat(centre) : [261,40]
+        projection :
+          type       : lambert_conformal_conic
+          latitude0  : 40
+          longitude0 : 261
+          units: "degrees"
+        y_numbering : 1
+      partitioner: checkerboard
+      groups:
+      - variables:
+        - air_horizontal_streamfunction
+        levels: 8 
+      halo: 1
+
+    forward interpolator:
+      local interpolator type: oops unstructured grid interpolator
+    inverse interpolator:
+      local interpolator type: oops unstructured grid interpolator
+    active variables:
+    - air_horizontal_streamfunction
+dirac:
+  lon:
+  - 261.0
+  lat:
+  - 40.0
+  level:
+  - 5 
+  variable:
+  - air_horizontal_streamfunction
+output dirac:
+  mpi pattern: '%MPI%'
+  filepath: testdata/dirac_mgbf_1/dirac_%id%_%MPI%
+test:
+  reference filename: testref/dirac_mgbf_1.ref
