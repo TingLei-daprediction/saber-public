@@ -666,12 +666,12 @@ logical:: l_mg_weig_readin=.false.
 !
 
   this%km_a = this%km2+this%lm_a*this%km3
-  write(6,*)'thinkdeb255 lm_a,km3,km2 ',this%km2,this%lm_a,this%km3
-  write(6,*)'thinkdeb255 km_a ',this%km_a
+!  write(6,*)'thinkdeb255 lm_a,km3,km2 ',this%km2,this%lm_a,this%km3
+!  write(6,*)'thinkdeb255 km_a ',this%km_a
   this%km   = this%km2+this%lm  *this%km3
 
   this%km_a_all = this%km_a * this%n_ens
-  write(6,*)'thinkdeb255 km_a_all ',this%km_a_all
+!  write(6,*)'thinkdeb255 km_a_all ',this%km_a_all
   this%km_all   = this%km   * this%n_ens
 
   this%km2_all = this%km2 * this%n_ens

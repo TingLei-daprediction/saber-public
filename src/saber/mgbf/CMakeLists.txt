@@ -25,12 +25,12 @@ if( build_saber_mgbf )
     covariance/MGBF_Covariance.interface.h
     covariance/mgbf_covariance_mod.f90
 
-    # Grid
-     covariance/mgbf_Grid.h
-     covariance/mgbf_Grid.cc
+#clth    # Grid
+#     covariance/mgbf_Grid.h
+#     covariance/mgbf_Grid.cc
     # Interpolation block
-     covariance/mgbf_Interpolation.h
-     covariance/mgbf_Interpolation.cc
+#     covariance/mgbf_Interpolation.h
+#     covariance/mgbf_Interpolation.cc
 #    interpolation/MGBF_Interpolation.h
 
     # Unstructured interpolation code ported from oops (until new interp code can be used)

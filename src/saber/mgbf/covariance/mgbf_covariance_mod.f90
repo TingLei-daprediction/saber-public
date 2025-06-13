@@ -242,7 +242,6 @@ real(kind=8) :: val
           allocate(work_mgbf(self%intstate%km_a_all,self%intstate%nm,self%intstate%mm))
           allocate(work_mgbf2(self%intstate%km_a_all,self%intstate%nm,self%intstate%mm))
           allocate(work2d_mgbf(self%intstate%km_a_all,self%intstate%nm*self%intstate%mm))
-           write(6,*)"thinkdeb 2551 in covariance km_all is ",self%intstate%km_a_all
           allocate(rnormalization(self%intstate%km_a_all))
           work2d_mgbf=0.0         
           rnormalization=1.0
@@ -266,28 +265,29 @@ real(kind=8) :: val
              if(afield%rank() == 2)  then
                nz=afield%levels()
                call afield%data(ptr_2d)
-               do k=1,nz
-                 do i=1,n_owned_size
-                    val=ptr_2d(k,i)
-                    if (ieee_is_nan(val)) then
-                      print *, '[Fortran] ❗ NaN detected in value'
-                    elseif (ieee_is_finite(val) .eqv. .false.) then
-                      print *, '[Fortran] ❗ Inf detected in value'
-                    elseif (abs(val) > 1.0e20) then
-                      print *, '[Fortran] ⚠️ Suspicious large value:', val
-                    endif
-                 enddo
-                 do i=n_owned_size+1,size(ptr_2d,2)
-                    val=ptr_2d(k,i)
-                    if (ieee_is_nan(val)) then
-                      print *, '[Fortran]2 ❗ NaN detected in value'
-                    elseif (ieee_is_finite(val) .eqv. .false.) then
-                      print *, '[Fortran]2 ❗ Inf detected in value'
-                    elseif (abs(val) > 1.0e20) then
-                      print *, '[Fortran]2 ⚠️ Suspicious large value:', val
-                    endif
-                 enddo
-               enddo
+!clt               do k=1,nz
+!clt                 do i=1,n_owned_size
+ !clt                   val=ptr_2d(k,i)
+!clt                    if (ieee_is_nan(val)) then
+ !clt                     print *, '[Fortran] ❗ NaN detected in value'
+ !clt                   elseif (ieee_is_finite(val) .eqv. .false.) then
+ !clt                     print *, '[Fortran] ❗ Inf detected in value'
+ !clt                   elseif (abs(val) > 1.0e20) then
+ !clt                     print *, '[Fortran] ⚠️ Suspicious large value:', val
+ !clt                   endif
+!clt                 enddo
+!clt                 do i=n_owned_size+1,size(ptr_2d,2)
+ !clt                   val=ptr_2d(k,i)
+!                    if (ieee_is_nan(val)) then
+!                      print *, '[Fortran]2 ❗ NaN detected in value'
+!j                    elseif (ieee_is_finite(val) .eqv. .false.) then
+!                      print *, '[Fortran]2 ❗ Inf detected in value'
+!                    elseif (abs(val) > 1.0e20) then
+!                      print *, '[Fortran]2 ⚠️ Suspicious large value:', val
+!                    endif
+!                 enddo
+!                 enddo
+
                if(nz == 1) then 
                   if(self%intstate%l_for_localization) then 
                     if( self%l_2dvar_last_vertical_level) then  !when used for localization,2dvars are put on the last vertical level
@@ -433,8 +433,7 @@ real(kind=8) :: val
 !                   end do
 !!                  write(6,*)'thinkdeb2552 dimension of ptr_2d are ',size(ptr_2d,1), ' ',size(ptr_2d,2)
 !                 endif
-                       write(6,*)'thinkdeb2553 dimension of 2 dimensio of  ptr_2d,work2d are ',size(ptr_2d,2), ' ',size(work2d_mgbf,2)
-                  write(6,*)'thinkdeb2552 n_owned_size ',n_owned_size,' ','total size is  ' ,size(ptr_2d,2) 
+!clt                  write(6,*)'thinkdeb2552 n_owned_size ',n_owned_size,' ','total size is  ' ,size(ptr_2d,2) 
                  if(n_owned_size >0 ) then 
                      ptr_2d(1:nz,1:n_owned_size)=work2d_mgbf(lev1:lev1+nz-1,:)!if nz=1, only the first level is used (like for surface pressure) 
                   else 
@@ -445,7 +444,6 @@ real(kind=8) :: val
                   if(self%intstate%l_for_localization) then 
                     if( self%l_2dvar_last_vertical_level) then !when used for localization,2dvars are put on the last vertical level
 
-                       write(6,*)'thinkdeb2553 dimension of 2 dimensio of  ptr_2d,work2d are ',size(ptr_2d,2), ' ',size(work2d_mgbf,2)
                       call mpi_barrier(MPI_COMM_WORLD,ierr)  !cltthinkdeb
                         if(n_owned_size >0 ) then 
                          ptr_2d(1,1:n_owned_size)=work2d_mgbf(lev1+nz3d-1,:)!if nz=1, only the first level is used (like for surface pressure) 

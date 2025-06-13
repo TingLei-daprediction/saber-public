@@ -87,7 +87,7 @@ include "type_intstat_locpointer.inc"
 include "type_parameter_point2this.inc"
 include "type_intstat_point2this.inc"
 !----------------------------------------------------------------------
-write(6,*)'filt_toanal_allmap ',km_a_all,' ',km_all,' ',nm,' ',im,' ',mm,' ',jm
+!write(6,*)'filt_toanal_allmap ',km_a_all,' ',km_all,' ',nm,' ',im,' ',mm,' ',jm
 !cltothink if(km_a_all==km_all.and.nm==im.and.mm==jm) then
 !clttothink    WORKA=VALL(1:km_all,1:im,1:jm)
 !clttothink   VALL=0.
@@ -505,8 +505,10 @@ include "type_intstat_point2this.inc"
 !***
 !***  Apply adjoint lateral bc on PKF and WKF
 !***
-
+!cltthinkdeb555
+!clt     if(.not.this%l_anal_sub_of_filt) then
          call this%bocoT_2d(VALL(1:km_all,1-ibm:im+ibm,1-jbm:jm+jbm),km_all,im,jm,ibm,jbm)
+ !clt    endif 
 
 !----------------------------------------------------------------------
 endsubroutine anal_to_filt
@@ -542,8 +544,10 @@ include "type_intstat_point2this.inc"
 !***
 !***  Supply boundary conditions for VALL
 !***
-
+!cltthinkdeb255
+!   if(.not.this%l_anal_sub_of_filt) then
          call this%boco_2d(VALL(1:km_all,1-ibm:im+ibm,1-jbm:jm+jbm),km_all,im,jm,ibm,jbm)
+!   endif
    if(this%l_anal_sub_of_filt) then
        WORK(:,:,:)=VALL(:,1:im,1:jm)
 !cltorg       call this%lin_direct_offset_add(VALL(1:km_all,1-ibm:im+ibm,1-jbm:jm+jbm),WORK,km_all,ibm,jbm)

@@ -66,11 +66,9 @@ include "type_intstat_locpointer.inc"
 include "type_parameter_point2this.inc"
 include "type_intstat_point2this.inc"
 !-----------------------------------------------------------------------
-      write(6,*)'thinkdeb filtering_procedure nxm,nym ',this%nxm,' ',this%nym 
 if(this%nxm*this%nym>1) then
    select case(mg_filt)
    case(1)
-      write(6,*)'thinkdeb filtering_rad3 is used'
       call this%filtering_rad3
    case(2)
       call this%filtering_lin3
@@ -514,7 +512,7 @@ allocate(HM2D(km2,i0-hx:im+hx,j0-hy:jm+hy   ))                  ; HM2D=0.
 !fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 
 
-        write(6,*)'thinkdeb33 2 ', km,im,jm,hx,hy 
+!        write(6,*)'thinkdeb33 2 ', km,im,jm,hx,hy 
         call this%bocoT_2d(VALL,km,im,jm,hx,hy)
         call this%bocoT_2d(HALL,km,im,jm,hx,hy,Fimax,Fjmax,2,gm)
 
@@ -742,7 +740,7 @@ allocate(HM2D(km2,i0-hx:im+hx,j0-hy:jm+hy   ))                 ; HM2D=0.
          call dibetat(km,i0-hx,i0,im,im+hx, j0-hy,j0,jm,jm+hy, nfil,  &
                       dixs(:,:,icol),diys(:,:,icol),hss2(:,:,icol), HALL, ff, iout,jout)
        endif
-        write(6,*)'thinkdeb33 5 ', km,im,jm,hx,hy 
+!        write(6,*)'thinkdeb33 5 ', km,im,jm,hx,hy 
          call this%bocoT_2d(HALL,km,im,jm,hx,hy,Fimax,Fjmax,2,gm)
      enddo
 !
@@ -759,7 +757,7 @@ allocate(HM2D(km2,i0-hx:im+hx,j0-hy:jm+hy   ))                 ; HM2D=0.
       call this%composite_to_stack(HM2D,HM3D,HALL)
     endif
 
-        write(6,*)'thinkdeb33 6 ', km,im,jm,hx,hy 
+!        write(6,*)'thinkdeb33 6 ', km,im,jm,hx,hy 
         call this%bocoT_2d(VALL,km,im,jm,hx,hy)
         call this%bocoT_2d(HALL,km,im,jm,hx,hy,Fimax,Fjmax,2,gm)
 
@@ -805,7 +803,7 @@ allocate(HM2D(km2,i0-hx:im+hx,j0-hy:jm+hy   ))                 ; HM2D=0.
 !
 ! Vertical
 !
-      write(6,*)'thinkdeb888 '
+!      write(6,*)'thinkdeb888 '
       call this%boco_2d(VALL,km,im,jm,hx,hy)
       call this%boco_2d(HALL,km,im,jm,hx,hy,Fimax,Fjmax,2,gm)
 
@@ -1078,7 +1076,7 @@ include "type_intstat_point2this.inc"
 !***
 !*** Apply beta filter in vertical direction
 !***
-  write(6,*)'thinkdeb l_vertical_filter is ',l_vertical_filter
+!  write(6,*)'thinkdeb l_vertical_filter is ',l_vertical_filter
   if(l_vertical_filter) then
                                                  call btim(vfilt_tim)
      call this%sup_vrbeta1_bkg(km,km3,hx,hy,hz,im,jm,lm,pasp1,ss1,VALL)
