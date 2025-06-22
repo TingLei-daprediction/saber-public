@@ -696,7 +696,7 @@ logical:: l_mg_weig_readin=.false.
   if(this%nxm*this%nym<=1) then
     this%gm=gm_max
   endif
-  write(6,*)"thindkeb888 gm is ",this%gm
+!  write(6,*)"thindkeb888 gm is ",this%gm
 
 !***
 !***     Analysis grid
