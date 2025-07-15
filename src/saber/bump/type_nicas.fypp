@@ -46,6 +46,7 @@ type nicas_type
    integer,allocatable :: bens_id(:)                !< bens ID
    real(kind_real),allocatable :: dirac(:,:,:)      !< Dirac field
    real(kind_real),allocatable :: dirac_bens(:,:,:) !< Dirac field for localized ensemble application
+   integer :: igref                                 !< Reference group index for the "crossed" multivariate strategy
 contains
    procedure :: alloc => nicas_alloc
    procedure :: partial_dealloc => nicas_partial_dealloc
@@ -319,6 +320,55 @@ do ig=1,nam%ng
       end do
    end do
 end do
+
+if (nam%strategy=='crossed') then
+   ! Define reference group
+   nicas%igref = 1
+   do ig=1,nam%ng
+      if (.not.geom%grp2d(ig)) then
+         nicas%igref = ig
+         exit
+      end if
+   end do
+
+   do ig=1,nam%ng
+      do icmp=1,nicas%blk(ig)%ncmp
+         ! Control variable size
+         nicas%blk(ig)%cmp(icmp)%ncv = nicas%blk(nicas%igref)%cmp(icmp)%nsa
+
+         ! Control variable section starting and end indices
+         if (geom%grp2d(ig)) then
+            if (geom%nl2d==1) then
+               ! First level only
+               nicas%blk(ig)%cmp(icmp)%ias = 1
+               nicas%blk(ig)%cmp(icmp)%iae = nicas%blk(ig)%cmp(icmp)%nsa
+            else
+               ! Last level only
+               nicas%blk(ig)%cmp(icmp)%ias = nicas%blk(ig)%cmp(icmp)%ncv-nicas%blk(ig)%cmp(icmp)%nsa+1
+               nicas%blk(ig)%cmp(icmp)%iae = nicas%blk(ig)%cmp(icmp)%ncv
+            end if
+         else
+            ! 
+            nicas%blk(ig)%cmp(icmp)%ias = 1
+            nicas%blk(ig)%cmp(icmp)%iae = nicas%blk(ig)%cmp(icmp)%nsa
+         end if
+      end do
+   end do
+else
+   ! Missing value
+   nicas%igref = mpl%msv%vali
+
+   do ig=1,nam%ng
+      do icmp=1,nicas%blk(ig)%ncmp
+         ! Control variable size
+         nicas%blk(ig)%cmp(icmp)%ncv = nicas%blk(ig)%cmp(icmp)%nsa
+
+         ! Control variable section starting and end indices
+         nicas%blk(ig)%cmp(icmp)%ias = 1
+         nicas%blk(ig)%cmp(icmp)%iae = nicas%blk(ig)%cmp(icmp)%nsa
+      end do
+   end do
+end if
 
 ! Probe out
 @:probe_out()
@@ -836,6 +886,9 @@ if (nam%load_nicas_global) then
                  if (geom%gmask_c0a(ic0a,il0)) nicas%blk(ig)%cmp(icmp)%rhs(ic0a,il0) = cmat%blk(ig)%rhs(ic0a,il0,icmp)
                end do
             end do
+
+            ! Copy C matrix scaling
+            nicas%blk(ig)%cmp(icmp)%scaling = cmat%blk(ig)%scaling
          end if
       end do
    end do
@@ -864,6 +917,54 @@ do ig=1,nam%ng
    call nicas%blk(ig)%compute_parameters(mpl,rng,nam,geom)
 end do
 
+if (nam%strategy=='crossed') then
+   ! Define reference group
+   nicas%igref = 1
+   do ig=1,nam%ng
+      if (.not.geom%grp2d(ig)) then
+         nicas%igref = ig
+         exit
+      end if
+   end do
+
+   do ig=1,nam%ng
+      do icmp=1,nicas%blk(ig)%ncmp
+         ! Control variable size
+         nicas%blk(ig)%cmp(icmp)%ncv = nicas%blk(nicas%igref)%cmp(icmp)%nsa
+
+         ! Control variable section starting and end indices
+         if (geom%grp2d(ig)) then
+            if (geom%nl2d==1) then
+               ! First level only
+               nicas%blk(ig)%cmp(icmp)%ias = 1
+               nicas%blk(ig)%cmp(icmp)%iae = nicas%blk(ig)%cmp(icmp)%nsa
+            else
+               ! Last level only
+               nicas%blk(ig)%cmp(icmp)%ias = nicas%blk(ig)%cmp(icmp)%ncv-nicas%blk(ig)%cmp(icmp)%nsa+1
+               nicas%blk(ig)%cmp(icmp)%iae = nicas%blk(ig)%cmp(icmp)%ncv
+            end if
+         else
+            ! 
+            nicas%blk(ig)%cmp(icmp)%ias = 1
+            nicas%blk(ig)%cmp(icmp)%iae = nicas%blk(ig)%cmp(icmp)%nsa
+         end if
+      end do
+   end do
+else
+   ! Missing value
+   nicas%igref = mpl%msv%vali
+
+   do ig=1,nam%ng
+      do icmp=1,nicas%blk(ig)%ncmp
+         ! Control variable size
+         nicas%blk(ig)%cmp(icmp)%ncv = nicas%blk(ig)%cmp(icmp)%nsa
+
+         ! Control variable section starting and end indices
+         nicas%blk(ig)%cmp(icmp)%ias = 1
+         nicas%blk(ig)%cmp(icmp)%iae = nicas%blk(ig)%cmp(icmp)%nsa
+      end do
+   end do
+end if
 
 if (nam%write_nicas_local.or.nam%write_nicas_global.or.nam%write_nicas_grids) then
    ! Write NICAS parameters
@@ -1056,11 +1157,17 @@ case ('duplicated')
       cv%b_to_g(ig) = ig
    end do
 case ('crossed')
-   cv%b_to_g(1) = 1
-   do ig=2,nam%ng
-      if (nicas%blk(ig)%ncmp/=nicas%blk(1)%ncmp) call mpl%abort('${subr}$','wrong number of components')
+   cv%b_to_g(1) = nicas%igref
+   do ig=1,nam%ng
+      if (nicas%blk(ig)%ncmp/=nicas%blk(nicas%igref)%ncmp) call mpl%abort('${subr}$','wrong number of components')
       do icmp=1,nicas%blk(ig)%ncmp
-         if (nicas%blk(ig)%cmp(icmp)%nsa/=nicas%blk(1)%cmp(icmp)%nsa) call mpl%abort('${subr}$','wrong subgrid size')
+         if (nicas%blk(ig)%cmp(icmp)%nsa/=nicas%blk(nicas%igref)%cmp(icmp)%nsa) then
+            if (geom%grp2d(ig)) then
+               if (geom%grp2d(nicas%igref)) call mpl%abort('${subr}$','different 2D subgrid size')
+            else
+               call mpl%abort('${subr}$','different 3D subgrid size')
+            end if
+         end if
       end do
    end do
 end select

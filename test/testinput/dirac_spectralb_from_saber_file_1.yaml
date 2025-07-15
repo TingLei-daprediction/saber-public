@@ -5,19 +5,19 @@ geometry:
     N: 12
   groups:
   - variables:
-    - streamfunction
-    - velocity_potential
-    - unbalanced_pressure_levels_minus_one
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
     - mu
+    - unbalanced_pressure_levels_minus_one
     levels: 70
   partitioner: ectrans
 background:
-  date: '2010-01-01T12:00:00Z'
+  date: 2010-01-01T12:00:00Z
   state variables:
-  - streamfunction
-  - velocity_potential
-  - unbalanced_pressure_levels_minus_one
+  - air_horizontal_streamfunction
+  - air_horizontal_velocity_potential
   - mu
+  - unbalanced_pressure_levels_minus_one
 background error:
   covariance model: SABER
   adjoint test: true
@@ -25,7 +25,7 @@ background error:
   saber central block:
     saber block name: spectral covariance
     read:
-      covariance_file: testdata/error_covariance_training_spectralb_1/spectralsabercov1.nc
+      covariance_file: testdata/error_covariance_training_spectralb_1/spectralsabercov_1.nc
   saber outer blocks:
   - saber block name: spectral to gauss
 dirac:
@@ -45,10 +45,10 @@ dirac:
   - 1
   - 1
   variable:
-  - streamfunction
-  - velocity_potential
-  - unbalanced_pressure_levels_minus_one
+  - air_horizontal_streamfunction
+  - air_horizontal_velocity_potential
   - mu
+  - unbalanced_pressure_levels_minus_one
 diagnostic points:
   lon:
   - 20.0
@@ -66,10 +66,10 @@ diagnostic points:
   - 2
   - 2
   variable:
-  - streamfunction
-  - velocity_potential
-  - unbalanced_pressure_levels_minus_one
+  - air_horizontal_streamfunction
+  - air_horizontal_velocity_potential
   - mu
+  - unbalanced_pressure_levels_minus_one
 output dirac:
   mpi pattern: '%MPI%'
   filepath: testdata/dirac_spectralb_from_saber_file_1/%MPI%_dirac_%id%

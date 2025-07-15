@@ -16,18 +16,7 @@
 
 #include "eckit/exception/Exceptions.h"
 
-#include "mo/common_varchange.h"
-#include "mo/control2analysis_varchange.h"
-#include "mo/eval_air_temperature.h"
-#include "mo/eval_cloud_ice_mixing_ratio.h"
-#include "mo/eval_cloud_liquid_mixing_ratio.h"
-#include "mo/eval_moisture_control.h"
-#include "mo/eval_moisture_incrementing_operator.h"
-#include "mo/eval_rain_mixing_ratio.h"
-#include "mo/eval_sat_vapour_pressure.h"
-#include "mo/eval_total_mixing_ratio.h"
-#include "mo/eval_total_relative_humidity.h"
-#include "mo/eval_water_vapor_mixing_ratio.h"
+#include "mo/constants.h"
 
 #include "oops/base/FieldSet3D.h"
 #include "oops/base/Variables.h"
@@ -40,6 +29,163 @@
 
 namespace saber {
 namespace vader {
+
+namespace {
+
+using atlas::array::make_view;
+using atlas::idx_t;
+
+void eval_moisture_control_inv_tl(atlas::FieldSet & incFlds,
+                                  const atlas::FieldSet & augStateFlds) {
+  // Using Cramer's rule to calculate inverse.
+  auto muRecipDeterView = make_view<const double, 2>(augStateFlds["muRecipDeterminant"]);
+  auto muRow1Column1View = make_view<const double, 2>(augStateFlds["muRow1Column1"]);
+  auto muRow1Column2View = make_view<const double, 2>(augStateFlds["muRow1Column2"]);
+  auto muRow2Column1View = make_view<const double, 2>(augStateFlds["muRow2Column1"]);
+  auto muRow2Column2View  = make_view<const double, 2>(augStateFlds["muRow2Column2"]);
+  auto muIncView = make_view<const double, 2>(incFlds["mu"]);
+  auto thetavIncView = make_view<const double, 2>(incFlds["virtual_potential_temperature"]);
+  auto qtIncView = make_view<double, 2>(incFlds["qt"]);
+  auto thetaIncView = make_view<double, 2>(incFlds["air_potential_temperature"]);
+
+  const atlas::idx_t n_levels(incFlds["mu"].shape(1));
+  const idx_t sizeOwned =
+        util::getSizeOwned(incFlds["mu"].functionspace());
+  atlas_omp_parallel_for(idx_t ih = 0; ih < sizeOwned; ++ih) {
+    for (idx_t ilev = 0; ilev < n_levels; ++ilev) {
+      // VAR equivalent in Var_UpPFtheta_qT.f90 for thetaIncView
+      // (beta2 * muA * theta_v' +   beta1 * mu') /
+      // (alpha1 * beta2 * muA - alpha2 * muA * beta1)
+      thetaIncView(ih, ilev) = muRecipDeterView(ih, ilev) * (
+                             muRow1Column1View(ih, ilev) * thetavIncView(ih, ilev)
+                           - muRow2Column1View(ih, ilev) * muIncView(ih, ilev) );
+
+      // VAR equivalent in Var_UpPFtheta_qT.f90 for qtIncView
+      // (alpha1 * mu_v' -   alpha2 * muA * thetav') /
+      // (alpha1 * beta2 * muA - alpha2 * muA * beta1)
+      qtIncView(ih, ilev) = muRecipDeterView(ih, ilev) * (
+                           muRow2Column2View(ih, ilev) * muIncView(ih, ilev) -
+                           muRow1Column2View(ih, ilev) * thetavIncView(ih, ilev) );
+    }
+  }
+  incFlds["air_potential_temperature"].set_dirty();
+  incFlds["qt"].set_dirty();
+}
+
+void eval_moisture_control_inv_ad(atlas::FieldSet & hatFlds,
+                                  const atlas::FieldSet & augStateFlds) {
+  auto muRecipDeterView = make_view<const double, 2>(augStateFlds["muRecipDeterminant"]);
+  auto muRow1Column1View = make_view<const double, 2>(augStateFlds["muRow1Column1"]);
+  auto muRow1Column2View = make_view<const double, 2>(augStateFlds["muRow1Column2"]);
+  auto muRow2Column1View = make_view<const double, 2>(augStateFlds["muRow2Column1"]);
+  auto muRow2Column2View  = make_view<const double, 2>(augStateFlds["muRow2Column2"]);
+  auto qtHatView = make_view<double, 2>(hatFlds["qt"]);
+  auto muHatView = make_view<double, 2>(hatFlds["mu"]);
+  auto thetavHatView = make_view<double, 2>(hatFlds["virtual_potential_temperature"]);
+  auto thetaHatView = make_view<double, 2>(hatFlds["air_potential_temperature"]);
+
+  const atlas::idx_t n_levels(hatFlds["mu"].shape(1));
+  const idx_t sizeOwned =
+        util::getSizeOwned(hatFlds["mu"].functionspace());
+  atlas_omp_parallel_for(idx_t ih = 0; ih < sizeOwned; ++ih) {
+    for (idx_t ilev = 0; ilev < n_levels; ++ilev) {
+      thetavHatView(ih, ilev) += muRecipDeterView(ih, ilev) *
+                                 muRow1Column1View(ih, ilev) * thetaHatView(ih, ilev);
+      muHatView(ih, ilev) -= muRecipDeterView(ih, ilev) *
+                             muRow2Column1View(ih, ilev) * thetaHatView(ih, ilev);
+      thetavHatView(ih, ilev) -= muRecipDeterView(ih, ilev) *
+                                 muRow1Column2View(ih, ilev) * qtHatView(ih, ilev);
+      muHatView(ih, ilev) += muRecipDeterView(ih, ilev) *
+                             muRow2Column2View(ih, ilev) * qtHatView(ih, ilev);
+      thetaHatView(ih, ilev) = 0.0;
+      qtHatView(ih, ilev) = 0.0;
+    }
+  }
+  hatFlds["air_potential_temperature"].set_dirty();
+  hatFlds["qt"].set_dirty();
+  hatFlds["mu"].set_dirty();
+  hatFlds["virtual_potential_temperature"].set_dirty();
+}
+
+
+void eval_moisture_control_tl(atlas::FieldSet & incFlds,
+                              const atlas::FieldSet & augStateFlds) {
+  auto muRow1Column1View = make_view<const double, 2>(augStateFlds["muRow1Column1"]);
+  auto muRow1Column2View = make_view<const double, 2>(augStateFlds["muRow1Column2"]);
+  auto muRow2Column1View = make_view<const double, 2>(augStateFlds["muRow2Column1"]);
+  auto muRow2Column2View = make_view<const double, 2>(augStateFlds["muRow2Column2"]);
+  auto thetaIncView = make_view<const double, 2>(incFlds["air_potential_temperature"]);
+  auto qtIncView = make_view<const double, 2>(incFlds["qt"]);
+  auto muIncView = make_view<double, 2>(incFlds["mu"]);
+  auto thetavIncView = make_view<double, 2>(incFlds["virtual_potential_temperature"]);
+
+  const idx_t n_levels(incFlds["mu"].shape(1));
+  const idx_t sizeOwned =
+        util::getSizeOwned(incFlds["mu"].functionspace());
+  atlas_omp_parallel_for(idx_t ih = 0; ih < sizeOwned; ++ih) {
+    for (idx_t ilev = 0; ilev < n_levels; ++ilev) {
+      muIncView(ih, ilev) = muRow1Column1View(ih, ilev) * qtIncView(ih, ilev)
+                          + muRow1Column2View(ih, ilev) * thetaIncView(ih, ilev);
+      thetavIncView(ih, ilev) = muRow2Column1View(ih, ilev) * qtIncView(ih, ilev)
+                            + muRow2Column2View(ih, ilev) * thetaIncView(ih, ilev);
+    }
+  }
+  incFlds["mu"].set_dirty();
+  incFlds["virtual_potential_temperature"].set_dirty();
+}
+
+void eval_moisture_control_traj(atlas::FieldSet & fields) {
+  auto qtView = make_view<const double, 2>(fields["qt"]);
+  auto qView = make_view<const double, 2>(
+                              fields["water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water"]);
+  auto thetaView = make_view<const double, 2>(fields["air_potential_temperature"]);
+  auto exnerView = make_view<const double, 2>(fields["dimensionless_exner_function"]);
+  auto dlsvpdTView = make_view<const double, 2>(fields["dlsvpdT"]);
+  auto qsatView = make_view<const double, 2>(fields["qsat"]);
+  auto muAView = make_view<const double, 2>(fields["muA"]);
+  auto muH1View = make_view<const double, 2>(fields["muH1"]);
+
+  // muRow1Column1, muRow1Column2, muRow2Column1, muRow2Column2
+  // are coefficients of a (2x2) matrix = A
+  //  (mu')       = A (qt')     where A is
+  //  (theta_v')      (theta')
+  //
+  //  ( muA/qsat    - (muA/qsat) muH1 qT exner_bar dlsvpdT )
+  //  (                                                    )
+  //  (c_v theta     (1 + cv q)                            )
+  //
+  auto muRow1Column1View = make_view<double, 2>(fields["muRow1Column1"]);
+  auto muRow1Column2View = make_view<double, 2>(fields["muRow1Column2"]);
+  auto muRow2Column1View = make_view<double, 2>(fields["muRow2Column1"]);
+  auto muRow2Column2View = make_view<double, 2>(fields["muRow2Column2"]);
+  auto muRecipDeterminantView = make_view<double, 2>(fields["muRecipDeterminant"]);
+
+  // the comments below are there to allow checking with the VAR code.
+  const idx_t n_levels(fields["air_potential_temperature"].shape(1));
+  const idx_t sizeOwned =
+        util::getSizeOwned(fields["air_potential_temperature"].functionspace());
+  atlas_omp_parallel_for(idx_t ih = 0; ih < sizeOwned; ++ih) {
+    for (idx_t ilev = 0; ilev < n_levels; ++ilev) {
+      muRow1Column1View(ih, ilev) = muAView(ih, ilev) / qsatView(ih, ilev);  // beta2 * muA
+      muRow1Column2View(ih, ilev) = - qtView(ih, ilev)  * muH1View(ih, ilev)
+        * exnerView(ih, ilev) * dlsvpdTView(ih, ilev) * muRow1Column1View(ih, ilev);
+      // alpha2 * muA
+      muRow2Column1View(ih, ilev) = ::mo::constants::c_virtual * thetaView(ih, ilev);   // beta1
+      muRow2Column2View(ih, ilev) = 1.0 + ::mo::constants::c_virtual * qView(ih, ilev);  // alpha1
+      muRecipDeterminantView(ih, ilev) = 1.0 /(
+        muRow2Column2View(ih, ilev) * muRow1Column1View(ih, ilev)
+        - muRow1Column2View(ih, ilev) * muRow2Column1View(ih, ilev));
+           // 1/( alpha1 * beta2 * muA - alpha2 * muA * beta1)
+    }
+  }
+  fields["muRow1Column1"].set_dirty();
+  fields["muRow1Column2"].set_dirty();
+  fields["muRow2Column1"].set_dirty();
+  fields["muRow2Column2"].set_dirty();
+  fields["muRecipDeterminant"].set_dirty();
+}
+
+}  // namespace
 
 // -----------------------------------------------------------------------------
 
@@ -58,76 +204,19 @@ MoistureControl::MoistureControl(const oops::GeometryData & outerGeometryData,
     innerVars_(getUnionOfInnerActiveAndOuterVars(params, outerVars)),
     activeOuterVars_(params.activeOuterVars(outerVars)),
     innerOnlyVars_(getInnerOnlyVars(params, outerVars)),
+    nlevs_(xb["air_temperature"].levels()),
+    params_(params),
+    covFieldSet_(),
     augmentedStateFieldSet_()
 {
   oops::Log::trace() << classname() << "::MoistureControl starting" << std::endl;
 
-  // Covariance FieldSet
-  covFieldSet_ = createMuStats(xb["air_temperature"].levels(),
-                               outerGeometryData.fieldSet(),
-                               params.moistureControlParams.value());
-
-  std::vector<std::string> requiredStateVariables{
-    "air_temperature",
-    "air_pressure",
-    "potential_temperature",   // from file
-    "exner",  // from file on theta levels ("exner_levels_minus_one" is on rho levels)
-    "m_v", "m_ci", "m_cl", "m_r",  // mixing ratios from file
-    "m_t",  //  to be populated in eval_total_mixing_ratio_nl
-    "svp",  //  to be populated in eval_sat_vapour_pressure_nl
-    "dlsvpdT",  //  to be populated in eval_derivative_ln_svp_wrt_temperature_nl
-    "qsat",  // to be populated in evalSatSpecificHumidity
-    "specific_humidity",
-      //  to be populated in eval_water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water_nl
-    "mass_content_of_cloud_liquid_water_in_atmosphere_layer",
-      // to be populated in
-      // eval_cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water_nl
-    "mass_content_of_cloud_ice_in_atmosphere_layer",
-      // to be populated in eval_cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water_nl
-    "qrain",  // to be populated in eval_rain_mixing_ratio_wrt_moist_air_and_condensed_water_nl
-    "qt",  // to be populated in eval_total_water
-    "rht",  // to be populated in eval_total_relative_humidity_nl
-    "muA", "muH1",  // to be populated in function call from CovarianceStatisticsUtils.h
-    "muRow1Column1", "muRow1Column2",  // to be populated in eval_moisture_control_traj
-    "muRow2Column1", "muRow2Column2",  //   ""
-    "muRecipDeterminant"  //   ""
-  };
-
-  // Check that they are allocated (i.e. exist in the state fieldset)
-  // Use meta data to see if they are populated with actual data.
-  for (auto & s : requiredStateVariables) {
-    if (!xb.fieldSet().has(s)) {
-      oops::Log::info() << "MoistureControl variable " << s <<
-                           " is not part of state object." << std::endl;
-    }
-  }
-
+  // copy all required variables from the background fieldset
+  const oops::Variables mandatoryStateVariables = params.mandatoryStateVars();
   augmentedStateFieldSet_.clear();
-  for (const auto & s : requiredStateVariables) {
+  for (const auto & s : mandatoryStateVariables.variables()) {
     augmentedStateFieldSet_.add(xb.fieldSet()[s]);
   }
-
-  mo::eval_air_temperature_nl(augmentedStateFieldSet_);
-  mo::eval_total_mixing_ratio_nl(augmentedStateFieldSet_);
-  mo::eval_sat_vapour_pressure_nl(augmentedStateFieldSet_);
-  mo::eval_derivative_ln_svp_wrt_temperature_nl(augmentedStateFieldSet_);
-  mo::evalSatSpecificHumidity(augmentedStateFieldSet_);
-  mo::eval_water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water_nl(
-              augmentedStateFieldSet_);
-  mo::eval_cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water_nl(
-              augmentedStateFieldSet_);
-  mo::eval_cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water_nl(
-              augmentedStateFieldSet_);
-  mo::eval_rain_mixing_ratio_wrt_moist_air_and_condensed_water_nl(augmentedStateFieldSet_);
-  mo::eval_total_water(augmentedStateFieldSet_);
-  mo::eval_total_relative_humidity_nl(augmentedStateFieldSet_);
-
-  // populate "muA" and "muH1"
-  interpMuStats(augmentedStateFieldSet_, covFieldSet_["muH1Stats"]);
-  populateMuA(augmentedStateFieldSet_, covFieldSet_["muAStats"]);
-
-  // populate "specific moisture control dependencies"
-  mo::eval_moisture_control_traj(augmentedStateFieldSet_);
 
   oops::Log::trace() << classname() << "::MoistureControl done" << std::endl;
 }
@@ -149,7 +238,7 @@ void MoistureControl::multiply(oops::FieldSet3D & fset) const {
                         innerGeometryData_.functionSpace());
 
   // Populate output fields.
-  mo::eval_moisture_control_inv_tl(fset.fieldSet(), augmentedStateFieldSet_);
+  eval_moisture_control_inv_tl(fset.fieldSet(), augmentedStateFieldSet_);
 
   // Remove inner-only variables
   fset.removeFields(innerOnlyVars_);
@@ -165,7 +254,7 @@ void MoistureControl::multiplyAD(oops::FieldSet3D & fset) const {
   allocateMissingFields(fset, innerOnlyVars_, innerOnlyVars_,
                         innerGeometryData_.functionSpace());
 
-  mo::eval_moisture_control_inv_ad(fset.fieldSet(), augmentedStateFieldSet_);
+  eval_moisture_control_inv_ad(fset.fieldSet(), augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 
@@ -178,9 +267,74 @@ void MoistureControl::leftInverseMultiply(oops::FieldSet3D & fset) const {
   allocateMissingFields(fset, innerOnlyVars_, innerOnlyVars_,
                         innerGeometryData_.functionSpace());
 
-  mo::eval_moisture_control_tl(fset.fieldSet(), augmentedStateFieldSet_);
+  eval_moisture_control_tl(fset.fieldSet(), augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
 }
+
+// -----------------------------------------------------------------------------
+
+void MoistureControl::read() {
+  oops::Log::trace() << classname() << "::read start " <<  std::endl;
+  MoistureControlReadParameters mparams;
+  const auto & calibparams = params_.calibrationParams.value();
+  if (calibparams != boost::none) {
+    const auto & calibrationReadParams = calibparams->calibrationReadParams.value();
+    if (calibrationReadParams != boost::none) {
+       mparams = calibrationReadParams.value();
+    }
+  } else {
+    mparams = *params_.readParams.value();
+  }
+
+  // Covariance FieldSet
+  covFieldSet_ = createMuStats(nlevs_,
+                               innerGeometryData_.fieldSet(),
+                               mparams);
+
+  std::vector<std::string> additionalStateVariables{
+    "muA", "muH1",  // to be populated in function call from CovarianceStatisticsUtils.h
+    "muRow1Column1", "muRow1Column2",  // to be populated in eval_moisture_control_traj
+    "muRow2Column1", "muRow2Column2",  //   ""
+    "muRecipDeterminant"  //   ""
+  };
+
+  // create fields for temporary variables required here
+  for (const auto & s : additionalStateVariables) {
+    atlas::Field field = innerGeometryData_.functionSpace()->createField<double>(
+        atlas::option::name(s) | atlas::option::levels(nlevs_));
+    augmentedStateFieldSet_.add(field);
+  }
+
+  // populate "muA" and "muH1"
+  interpMuStats(augmentedStateFieldSet_, covFieldSet_["muH1Stats"]);
+  populateMuA(augmentedStateFieldSet_, covFieldSet_["muAStats"]);
+  // populate "specific moisture control dependencies"
+  eval_moisture_control_traj(augmentedStateFieldSet_);
+
+  oops::Log::trace() << classname() << "::read done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void MoistureControl::directCalibration(const oops::FieldSets & fset) {
+  oops::Log::trace() << classname() << "::directCalibration start" << std::endl;
+  const auto & calibparams = params_.calibrationParams.value();
+  ASSERT(calibparams != boost::none);
+  const auto & calibrationReadParams = calibparams->calibrationReadParams.value();
+  if (calibrationReadParams != boost::none) {
+    MoistureControl::read();
+  }
+  oops::Log::trace() << classname() << "::directCalibration end" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void MoistureControl::write() const {
+  oops::Log::trace() << classname() << "::write start" << std::endl;
+
+  oops::Log::trace() << classname() << "::write end" << std::endl;
+}
+
 
 // -----------------------------------------------------------------------------
 
@@ -192,14 +346,14 @@ void MoistureControl::print(std::ostream & os) const {
 
 atlas::FieldSet createMuStats(const size_t & modelLevelsDefault,
                               const atlas::FieldSet & fields,
-                              const MoistureControlCovarianceParameters & params) {
+                              const MoistureControlReadParameters & params) {
   // Get necessary parameters
   // path to covariance file with gp covariance parameters.
   std::string covFileName(params.covariance_file_path);
   // number of model levels
   std::size_t modelLevels;
-  if (fields.has("height")) {
-    modelLevels = fields["height"].shape(1);
+  if (fields.has("height_above_mean_sea_level")) {
+    modelLevels = fields["height_above_mean_sea_level"].shape(1);
   } else {
     modelLevels = modelLevelsDefault;
   }

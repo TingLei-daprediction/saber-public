@@ -471,8 +471,11 @@ include "type_parameter_point2this.inc"
        nx_up=(nx-1)/2   !+1
        my_up=(my-1)/2   !+1
 
-
+    if(this%gm >= 2) then
        Fitarg_up(1)=maxpe_fgen(1)+my_up*ixm(2)+nx_up
+    else
+       Fitarg_up(1)=-1   !cltthinkdebtodo
+    endif
 
 
     if(l_hgen.and.my_hgen < gm) then

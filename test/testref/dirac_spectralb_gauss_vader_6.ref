@@ -1,0 +1,51 @@
+Input Dirac increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: F12 [1152]
+  Fields:
+    air_potential_temperature: 0.0000000000000000e+00
+    cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water: 0.0000000000000000e+00
+    cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water: 0.0000000000000000e+00
+    dimensionless_exner_function_levels_minus_one: 0.0000000000000000e+00
+    dry_air_density_levels_minus_one: 1.0000000000000000e+00
+    eastward_wind: 0.0000000000000000e+00
+    northward_wind: 0.0000000000000000e+00
+    water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water: 0.0000000000000000e+00
+Adjoint test for block mo_dry_air_density_from_exnerm1 passed
+skipping inverse test for block mo_dry_air_density_from_exnerm1
+Adjoint test for block mo_super_mio passed
+Inner inverse test for block mo_super_mio passed: U Uinv (U x) == (U x)
+Outer inverse test for block mo_super_mio passed: Uinv U (Uinv x) == (Uinv x)
+Adjoint test for block mo_moisture_control passed
+Inner inverse test for block mo_moisture_control passed: U Uinv (U x) == (U x)
+Outer inverse test for block mo_moisture_control passed: Uinv U (Uinv x) == (Uinv x)
+Adjoint test for block mo_hydro_bal2 passed
+Inner inverse test for block mo_hydro_bal2 passed: U Uinv (U x) == (U x)
+Outer inverse test for block mo_hydro_bal2 passed: Uinv U (Uinv x) == (Uinv x)
+Adjoint test for block mo_hp_lvlsm1_to_hexner_lvls passed
+Inner inverse test for block mo_hp_lvlsm1_to_hexner_lvls passed: U Uinv (U x) == (U x)
+Outer inverse test for block mo_hp_lvlsm1_to_hexner_lvls passed: Uinv U (Uinv x) == (Uinv x)
+Adjoint test for block mo_hydrostatic_pressure_levels_minus_one passed
+Inner inverse test for block mo_hydrostatic_pressure_levels_minus_one passed: U Uinv (U x) == (U x)
+Outer inverse test for block mo_hydrostatic_pressure_levels_minus_one passed: Uinv U (Uinv x) == (Uinv x)
+Adjoint test for block spectral to gauss passed
+skipping inverse test for block spectral to gauss
+Adjoint test for block spectral covariance passed
+Covariance(SABER) diagnostics:
+- Variances at Dirac points:
+  + Value for variable dry_air_density_levels_minus_one, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 3.67270, 1): 2.2031232623154622e-06
+- Covariances at diagnostic points:
+  + Value for variable dry_air_density_levels_minus_one, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 84.37646, 1): 7.0437460947721079e-09
+  + Value for variable dry_air_density_levels_minus_one, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 3.67270, 70): -9.7257297010023930e-14
+  + Value for variable dry_air_density_levels_minus_one, subwindow 0, at (longitude, latitude, vertical index) point (180.00000, 3.67270, 1): -2.4808505278052645e-08
+Covariance(SABER) * Increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: F12 [1152]
+  Fields:
+    air_potential_temperature: 2.9219542481583069e-03
+    cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water: 2.0050580233624656e-09
+    cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water: 8.7112046097584880e-09
+    dimensionless_exner_function_levels_minus_one: 2.2642912754460217e-07
+    dry_air_density_levels_minus_one: 8.5624612986958721e-06
+    eastward_wind: 1.6070029931910829e-04
+    northward_wind: 1.4447783451829519e-04
+    water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water: 4.8219870591109350e-07

@@ -5,18 +5,18 @@ geometry:
     N: 10
   groups:
   - variables:
-    - stream_function_alias
-    - velocity_potential
+    - air_horizontal_streamfunction_alias
+    - air_horizontal_velocity_potential
     levels: 2
   halo: 1
   alias:
-  - in code: stream_function_alias
-    in file: stream_function
+  - in code: air_horizontal_streamfunction_alias
+    in file: air_horizontal_streamfunction
 background:
-  date: '2010-01-01T12:00:00Z'
+  date: 2010-01-01T12:00:00Z
   state variables:
-  - stream_function_alias
-  - velocity_potential
+  - air_horizontal_streamfunction_alias
+  - air_horizontal_velocity_potential
 background error:
   covariance model: SABER
   adjoint test: true
@@ -35,11 +35,11 @@ dirac: &dirac
   level:
   - 1
   variable:
-  - stream_function_alias
+  - air_horizontal_streamfunction_alias
 diagnostic points: *dirac
 output dirac:
   mpi pattern: '%MPI%'
   filepath: testdata/dirac_stddev_2/%MPI%_stddev_%id%
 test:
-  reference filename: testref/dirac_stddev_1.ref
+  reference filename: testref/dirac_stddev_2.ref
 

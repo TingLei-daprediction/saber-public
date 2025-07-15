@@ -5,14 +5,14 @@ geometry:
     N: 10
   groups:
   - variables:
-    - stream_function
-    - velocity_potential
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
     - eastward_wind
     - northward_wind
     levels: 2
   halo: 1
 background:
-  date: '2010-01-01T12:00:00Z'
+  date: 2010-01-01T12:00:00Z
   state variables:
   - eastward_wind
   - northward_wind
@@ -31,7 +31,7 @@ background error:
               testing: true
             io:
               data directory: testdata
-              files prefix: dirac_bump_2/_MPI_-_OMP_
+              files prefix: dirac_bump_4/_MPI_-_OMP_
               io tasks: 1
               overriding universe radius file: error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__universe_radius
               overriding nicas file: error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__nicas
@@ -41,16 +41,16 @@ background error:
               read local nicas: true
       weight:
         file:
-          filepath: testdata/error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__cor_rv_2 # Does not make sense scientifically, just for technical testing
+          filepath: testdata/convertstate_constant/static_weight
     - covariance:
         ensemble:
           members from template:
             template:
-              date: '2010-01-01T12:00:00Z'
+              date: 2010-01-01T12:00:00Z
               filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_%mem%
               state variables:
-              - stream_function
-              - velocity_potential
+              - air_horizontal_streamfunction
+              - air_horizontal_velocity_potential
             pattern: '%mem%'
             nmembers: 25
             zero padding: 6
@@ -68,14 +68,14 @@ background error:
                   files prefix: dirac_bump_4/_MPI_-_OMP_
                   alias:
                   - in code: common
-                    in file: stream_function
+                    in file: air_horizontal_streamfunction
                   overriding nicas file: error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__nicas
                 drivers:
                   multivariate strategy: duplicated
                   read local nicas: true
       weight:
         file:
-          filepath: testdata/error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__cor_rv_1 # Does not make sense scientifically, just for technical testing
+          filepath: testdata/convertstate_constant/ensemble_weight
   saber outer blocks:
   - saber block name: StdDev
     read:
@@ -95,8 +95,8 @@ background error:
         read vertical balance: true
       vertical balance:
         vbal:
-        - balanced variable: velocity_potential
-          unbalanced variable: stream_function
+        - balanced variable: air_horizontal_velocity_potential
+          unbalanced variable: air_horizontal_streamfunction
   - saber block name: BUMP_PsiChiToUV
     read:
       general:
@@ -105,7 +105,7 @@ background error:
         data directory: testdata
         files prefix: dirac_bump_4/_MPI_-_OMP_
         io tasks: 1
-        overriding psichitouv file: error_covariance_training_bump_wind/_MPI_-_OMP__wind
+        overriding psichitouv file: error_covariance_training_bump_wind_1/_MPI_-_OMP__wind
       drivers:
         read local psichitouv: true
 dirac:

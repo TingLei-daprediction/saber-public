@@ -7,13 +7,13 @@ geometry:
 #    N: 12
   groups:
   - variables:
-    - stream_function
+    - air_horizontal_streamfunction
     levels: 2
   halo: 1
 background:
-  date: '2010-01-01T12:00:00Z'
+  date: 2010-01-01T12:00:00Z
   state variables:
-  - stream_function
+  - air_horizontal_streamfunction
 background error:
   covariance model: SABER
   adjoint test: true
@@ -22,12 +22,12 @@ background error:
   ensemble:
     members from template:
       template:
-        date: '2010-01-01T12:00:00Z'
+        date: 2010-01-01T12:00:00Z
         filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_%mem%
 # TODO(Nate): switch to 12 when interpolator inverse is fixed
 #        filepath: testdata/randomization_bump_nicas_L12L2/_MPI_-_OMP__member_%mem%
         state variables:
-        - stream_function
+        - air_horizontal_streamfunction
       pattern: '%mem%'
       nmembers: 25
       zero padding: 6
@@ -44,7 +44,7 @@ background error:
             files prefix: dirac_bump_5/_MPI_-_OMP_
             alias:
             - in code: common
-              in file: stream_function
+              in file: air_horizontal_streamfunction
             overriding nicas file: error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__nicas
           drivers:
             multivariate strategy: duplicated
@@ -74,7 +74,7 @@ dirac:
   level:
   - 1
   variable:
-  - stream_function
+  - air_horizontal_streamfunction
 output dirac:
   mpi pattern: '%MPI%'
   filepath: testdata/dirac_bump_5/%MPI%_dirac_%id%

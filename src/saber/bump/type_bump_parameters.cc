@@ -154,8 +154,12 @@ void bump_config_init_f90(eckit::LocalConfiguration * config) {
   param(driversDef.new_wind, driversConf);
   // Read local wind transform
   param(driversDef.load_wind_local, driversConf);
+  // Read global wind transform
+  param(driversDef.load_wind_global, driversConf);
   // Write local wind transform
   param(driversDef.write_wind_local, driversConf);
+  // Write global wind transform
+  param(driversDef.write_wind_global, driversConf);
   // Test vertical balance inverse
   param(driversDef.check_vbal, driversConf);
   // Test adjoints
@@ -233,8 +237,9 @@ void bump_config_init_f90(eckit::LocalConfiguration * config) {
   param(diagnosticsDef.ne_lr, diagnosticsConf);
   // Gaussian approximation for asymptotic quantities
   param(diagnosticsDef.gau_approx, diagnosticsConf);
-  // Compute localization from correlation
-  param(diagnosticsDef.loc_from_cor, diagnosticsConf);
+  // Localization option ('default', 'from_squared_correlation', 'nice_with_table' and
+  // 'nice_without_table')
+  param(diagnosticsDef.loc_option, diagnosticsConf);
   // Threshold on generalized kurtosis (3.0 = Gaussian distribution)
   param(diagnosticsDef.gen_kurt_th, diagnosticsConf);
   // Number of bins for averaged statistics histograms
@@ -309,6 +314,8 @@ void bump_config_init_f90(eckit::LocalConfiguration * config) {
   param(nicasDef.nicas_draw_type, nicasConf);
   // Force specific support radii
   param(nicasDef.forced_radii, nicasConf);
+  // Factor to get interpolation radius from convolution radius if nicas_interp_type = 'si'
+  param(nicasDef.nicas_si_factor, nicasConf);
   // Normalization randomization size
   param(nicasDef.norm_rand_size, nicasConf);
   // Positive-definiteness test
@@ -327,14 +334,8 @@ void bump_config_init_f90(eckit::LocalConfiguration * config) {
   // Psichitouv section
   PsichitouvDef psichitouvDef;
   eckit::LocalConfiguration psichitouvConf;
-  // Number of longitudes for the regular grid
-  param(psichitouvDef.wind_nlon, psichitouvConf);
-  // Number of latitudes for the regular grid
-  param(psichitouvDef.wind_nlat, psichitouvConf);
-  // Half-width of the Savitzky-Golay to compute derivatives
-  param(psichitouvDef.wind_nsg, psichitouvConf);
-  // Wind inflation to compensate the Savitzky-Golay smoothing
-  param(psichitouvDef.wind_inflation, psichitouvConf);
+  // Dipole test (bypass the adjoint)
+  param(psichitouvDef.wind_dipole_test, psichitouvConf);
 
   // External section
   ExternalDef externalDef;

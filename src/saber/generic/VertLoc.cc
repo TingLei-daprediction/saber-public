@@ -440,7 +440,6 @@ void VertLoc::readLocMat(const std::string & filepath,
       + std::to_string(nlevs_) + " levels", Here());
 
     util::atlasArrayReadData(netcdfGeneralIDs,
-                             dimFldSizes,
                              netcdfVarID,
                              fview);
 
@@ -500,7 +499,6 @@ void VertLoc::readPressVec(const std::string & filepath,
         std::to_string(nlevs_+1) + " levels", Here());
 
         util::atlasArrayReadData(netcdfGeneralIDs,
-                                 dimFldSizes,
                                  netcdfVarID,
                                  fview);
       }
@@ -591,7 +589,7 @@ void VertLoc::writeLocalization(
   eckit::LocalConfiguration netcdfMetaData;
   for (const oops::Variable & var : vars) {
     util::setAttribute<std::string>(
-      netcdfMetaData, var.name(), "statistics type", "string", "vertical localization");
+      netcdfMetaData, var.name(), "statistics_type", "string", "vertical localization");
   }
 
   // Write Header

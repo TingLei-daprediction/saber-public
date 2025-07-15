@@ -5,30 +5,30 @@ geometry:
     N: 10
   groups:
   - variables:
-    - stream_function
+    - air_horizontal_streamfunction
     levels: 2
   halo: 1
 background:
   states:
-  - date: '2010-01-01T12:00:00Z'
+  - date: 2010-01-01T12:00:00Z
     state variables:
-    - stream_function
-  - date: '2010-01-01T18:00:00Z'
+    - air_horizontal_streamfunction
+  - date: 2010-01-01T18:00:00Z
     state variables:
-    - stream_function
+    - air_horizontal_streamfunction
 background error:
   covariance model: ensemble
   members from template:
     template:
       states:
-      - date: '2010-01-01T12:00:00Z'
+      - date: 2010-01-01T12:00:00Z
         filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_%mem%
         state variables:
-        - stream_function
-      - date: '2010-01-01T18:00:00Z'
+        - air_horizontal_streamfunction
+      - date: 2010-01-01T18:00:00Z
         filepath: testdata/randomization_bump_nicas_L10L2T18/_MPI_-_OMP__member_%mem%
         state variables:
-        - stream_function
+        - air_horizontal_streamfunction
     pattern: '%mem%'
     nmembers: 25
     zero padding: 6
@@ -40,7 +40,7 @@ dirac:
     level:
     - 1
     variable:
-    - stream_function
+    - air_horizontal_streamfunction
   - {}
 diagnostic points:
   - lon:
@@ -50,7 +50,7 @@ diagnostic points:
     level:
     - 1
     variable:
-    - stream_function
+    - air_horizontal_streamfunction
   - lon:
     - 0.0
     - 10.0
@@ -61,8 +61,8 @@ diagnostic points:
     - 1
     - 1
     variable:
-    - stream_function
-    - stream_function
+    - air_horizontal_streamfunction
+    - air_horizontal_streamfunction
 output dirac:
   mpi pattern: '%MPI%'
   filepath: testdata/dirac_oops_ens_noloc_4d/%MPI%_dirac_%id%

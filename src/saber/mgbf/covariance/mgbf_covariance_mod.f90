@@ -9,6 +9,7 @@ module mgbf_covariance_mod
 ! atlas
 use atlas_module,                   only: atlas_fieldset, atlas_field
 use atlas_module,    only: atlas_functionspace
+use atlas_module,    only: atlas_functionspace_StructuredColumns 
 
 ! fckit
 use fckit_mpi_module,               only: fckit_mpi_comm
@@ -23,6 +24,8 @@ use random_mod
 use mg_intstate , only:            mg_intstate_type
 use mg_timers
 
+use mpi
+use, intrinsic :: ieee_arithmetic
 implicit none
 private
 public mgbf_covariance
@@ -204,8 +207,12 @@ logical :: test_once=.false.
 integer(kind=i_kind)::itest=0
 character(len=32) :: fileoutput
 character(len=4) :: str_rank
-
-
+integer :: n_owned_size
+integer, pointer :: ghost(:)
+!clttype(atlas_FunctionSpace) :: fs
+type(atlas_functionspace_StructuredColumns) :: fs
+integer :: ierr
+real(kind=8) :: val
 
 !clt now noly consider t
 !  afield = fields%field('air_temperature')
@@ -253,23 +260,64 @@ character(len=4) :: str_rank
           do isize=1,fields%size()
              
              afield= fields%field(isize)  !clttodo
+             fs= afield%functionspace()  !cltthinkfore debug
+             n_owned_size= fs%size_owned() !clt for debug
              if(afield%rank() == 2)  then
                nz=afield%levels()
                call afield%data(ptr_2d)
+!clt               do k=1,nz
+!clt                 do i=1,n_owned_size
+ !clt                   val=ptr_2d(k,i)
+!clt                    if (ieee_is_nan(val)) then
+ !clt                     print *, '[Fortran] ❗ NaN detected in value'
+ !clt                   elseif (ieee_is_finite(val) .eqv. .false.) then
+ !clt                     print *, '[Fortran] ❗ Inf detected in value'
+ !clt                   elseif (abs(val) > 1.0e20) then
+ !clt                     print *, '[Fortran] ⚠️ Suspicious large value:', val
+ !clt                   endif
+!clt                 enddo
+!clt                 do i=n_owned_size+1,size(ptr_2d,2)
+ !clt                   val=ptr_2d(k,i)
+!                    if (ieee_is_nan(val)) then
+!                      print *, '[Fortran]2 ❗ NaN detected in value'
+!j                    elseif (ieee_is_finite(val) .eqv. .false.) then
+!                      print *, '[Fortran]2 ❗ Inf detected in value'
+!                    elseif (abs(val) > 1.0e20) then
+!                      print *, '[Fortran]2 ⚠️ Suspicious large value:', val
+!                    endif
+!                 enddo
+!                 enddo
+
                if(nz == 1) then 
                   if(self%intstate%l_for_localization) then 
                     if( self%l_2dvar_last_vertical_level) then  !when used for localization,2dvars are put on the last vertical level
-                      work2d_mgbf(ilev+nz3d-1:ilev+nz3d-1,:)=ptr_2d 
+                      if(n_owned_size >0 ) then 
+                         work2d_mgbf(ilev+nz3d-1:ilev+nz3d-1,:)=ptr_2d(:,1:n_owned_size)
+                      else
+                         work2d_mgbf(ilev+nz3d-1:ilev+nz3d-1,:)=ptr_2d 
+                      endif
                     else
-                      work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d 
+                      if(n_owned_size >0 ) then 
+                        work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d (:,1:n_owned_size)
+                      else
+                        work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d 
+                      endif
                     endif
                        
                    
                   else
-                    work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d 
+                    if(n_owned_size >0 ) then 
+                       work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d(:,1:n_owned_size) 
+                    else
+                       work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d 
+                    endif
                   endif
                else
-                  work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d 
+                 if(n_owned_size >0 ) then 
+                  work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d(:,1:n_owned_size)
+                 else
+                  work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d
+                 endif
                endif
                 
                if(nz >  1) l3d_encountered=.true.
@@ -322,7 +370,6 @@ character(len=4) :: str_rank
              write(6,*)'The numbers of 2d variables is different from  mgbf-expected ,stop'
              stop   ! a better exception handling is to be added
           endif
-          
           if(test_once.and..1.gt.2) then
           open(iounit,file=trim(fileoutput), status='replace',form="formatted") 
           write(iounit,*) work_mgbf
@@ -366,25 +413,59 @@ character(len=4) :: str_rank
           work2d_mgbf(k,:)=reshape(work_mgbf(k,:,:),[dim2d(2)])
         enddo
              ilev=1
+                  n_owned_size=0
           do isize=1,fields%size()
   
              afield=fields%field(isize)  !clttodo
+             fs= afield%functionspace()  !cltthinkfore debug
+             n_owned_size= fs%size_owned() !clt for debug
              if(afield%rank() == 2) then 
                call afield%data(ptr_2d)
                nz=afield%levels()
                lev1=varvlev_index(isize,1)
                if(nz.gt.1) then 
-                  ptr_2d(1:nz,:)=work2d_mgbf(lev1:lev1+nz-1,:)!if nz=1, only the first level is used (like for surface pressure) 
+!                  if(n_owned_size == 0) then
+!                  do i = 1, size(ghost)
+!                      if (ghost(i) == 0) then
+    ! This point is owned (not a halo point)
+!                       n_owned_size=n_owned_size+1
+!                       endif
+!                   end do
+!!                  write(6,*)'thinkdeb2552 dimension of ptr_2d are ',size(ptr_2d,1), ' ',size(ptr_2d,2)
+!                 endif
+!clt                  write(6,*)'thinkdeb2552 n_owned_size ',n_owned_size,' ','total size is  ' ,size(ptr_2d,2) 
+                 if(n_owned_size >0 ) then 
+                     ptr_2d(1:nz,1:n_owned_size)=work2d_mgbf(lev1:lev1+nz-1,:)!if nz=1, only the first level is used (like for surface pressure) 
+                  else 
+                  !cltthinkdebto now, the n_owned_size can't be got rightly for mgbf_grid using PointCloud function space
+                     ptr_2d(1:nz,:)=work2d_mgbf(lev1:lev1+nz-1,:)!if nz=1, only the first level is used (like for surface pressure) 
+                 endif
                else
                   if(self%intstate%l_for_localization) then 
                     if( self%l_2dvar_last_vertical_level) then !when used for localization,2dvars are put on the last vertical level
 
-                       ptr_2d(1,:)=work2d_mgbf(lev1+nz3d-1,:)!if nz=1, only the first level is used (like for surface pressure) 
+                      call mpi_barrier(MPI_COMM_WORLD,ierr)  !cltthinkdeb
+                        if(n_owned_size >0 ) then 
+                         ptr_2d(1,1:n_owned_size)=work2d_mgbf(lev1+nz3d-1,:)!if nz=1, only the first level is used (like for surface pressure) 
+                       else 
+                         !cltthinkdebto now, the n_owned_size can't be got rightly for mgbf_grid using PointCloud function space
+                         ptr_2d(1,:)=work2d_mgbf(lev1+nz3d-1,:)!if nz=1, only the first level is used (like for surface pressure) 
+                       endif
                     else
-                        ptr_2d(1,:)=work2d_mgbf(lev1,:)!if nz=1, only the first level is used (like for surface pressure) 
+                      if(n_owned_size >0 ) then 
+                          ptr_2d(1,1:n_owned_size)=work2d_mgbf(lev1,:)!if nz=1, only the first level is used (like for surface pressure) 
+                      else 
+                       !cltthinkdebto now, the n_owned_size can't be got rightly for mgbf_grid using PointCloud function space
+                          ptr_2d(1,:)=work2d_mgbf(lev1,:)!if nz=1, only the first level is used (like for surface pressure) 
+                     endif
                     endif
                   else
-                    ptr_2d(1,:)=work2d_mgbf(lev1,:)!if nz=1, only the first level is used (like for surface pressure) 
+                    if(n_owned_size >0 ) then 
+                       ptr_2d(1,1:n_owned_size)=work2d_mgbf(lev1,:)!if nz=1, only the first level is used (like for surface pressure) 
+                    else 
+                    !cltthinkdebto now, the n_owned_size can't be got rightly for mgbf_grid using PointCloud function space
+                       ptr_2d(1,:)=work2d_mgbf(lev1,:)!if nz=1, only the first level is used (like for surface pressure) 
+                   endif
                     
                   endif
                endif

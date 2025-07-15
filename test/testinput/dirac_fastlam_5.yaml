@@ -15,18 +15,18 @@ geometry:
   partitioner: checkerboard
   groups:
   - variables:
-    - stream_function
-    - velocity_potential
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
     levels: 10
   - variables:
-    - surface_pressure
+    - air_pressure_at_surface
     levels: 1
 background:
-  date: '2010-01-01T12:00:00Z'
+  date: 2010-01-01T12:00:00Z
   state variables:
-  - stream_function
-  - velocity_potential
-  - surface_pressure
+  - air_horizontal_streamfunction
+  - air_horizontal_velocity_potential
+  - air_pressure_at_surface
 background error:
   covariance model: SABER
   adjoint test: true
@@ -37,21 +37,21 @@ background error:
       multivariate strategy: duplicated
       groups:
       - group name: var3d
-        variable in model file: stream_function
+        variable in model file: air_horizontal_streamfunction
         variables:
-        - stream_function
-        - velocity_potential
-        - surface_pressure
+        - air_horizontal_streamfunction
+        - air_horizontal_velocity_potential
+        - air_pressure_at_surface
       input model files:
       - parameter: weight
         number of components: 3
         file:
-          filepath: testdata/dirac_fastlam_3/_MPI__weight_%component%
+          filepath: testdata/dirac_fastlam_3/_MPI_-_OMP__weight_%component%
       - parameter: normalization
         number of components: 3
         file:
-          filepath: testdata/dirac_fastlam_3/_MPI__norm_%component%
-      data file: testdata/dirac_fastlam_3/_MPI__data
+          filepath: testdata/dirac_fastlam_3/_MPI_-_OMP__norm_%component%
+      data file: testdata/dirac_fastlam_3/_MPI_-_OMP__data
 dirac:
   lon:
   - 10.04
@@ -84,15 +84,15 @@ dirac:
   - 1
   - 1
   variable:
-  - stream_function
-  - stream_function
-  - stream_function
-  - stream_function
-  - stream_function
-  - stream_function
-  - stream_function
-  - stream_function
-  - stream_function
+  - air_horizontal_streamfunction
+  - air_horizontal_streamfunction
+  - air_horizontal_streamfunction
+  - air_horizontal_streamfunction
+  - air_horizontal_streamfunction
+  - air_horizontal_streamfunction
+  - air_horizontal_streamfunction
+  - air_horizontal_streamfunction
+  - air_horizontal_streamfunction
 output dirac:
   mpi pattern: '%MPI%'
   filepath: testdata/dirac_fastlam_5/%MPI%_dirac_%id%

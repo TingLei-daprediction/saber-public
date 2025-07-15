@@ -1,0 +1,17 @@
+Input Dirac increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: structured [14805]
+  Fields:
+    air_horizontal_streamfunction: 3.0000000000000000e+00
+Adjoint test for block interpolation passed
+    FastLAM interpolation accuracy test passed
+    FastLAM interpolation adjoint test passed
+    FastLAM redToRows test passed
+    FastLAM rowsToCols test passed
+Adjoint test for block FastLAM passed
+Square-root test for block FastLAM passed
+Covariance(SABER) * Increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: structured [14805]
+  Fields:
+    air_horizontal_streamfunction: 2.9109113568372120e+01

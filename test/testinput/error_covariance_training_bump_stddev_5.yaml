@@ -5,13 +5,13 @@ geometry:
     N: 10
   groups:
   - variables:
-    - stream_function
+    - air_horizontal_streamfunction
     levels: 2
   halo: 1
 background:
-  date: '2010-01-01T12:00:00Z'
+  date: 2010-01-01T12:00:00Z
   state variables:
-  - stream_function
+  - air_horizontal_streamfunction
 background error:
   covariance model: SABER
   saber central block:
@@ -31,7 +31,7 @@ background error:
         filtering iterations: 4
         initial length-scale:
         - variables:
-          - stream_function
+          - air_horizontal_streamfunction
           value: 5000.0e3
       input model files:
       - parameter: var

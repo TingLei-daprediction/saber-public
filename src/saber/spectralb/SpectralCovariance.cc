@@ -1,5 +1,5 @@
 /*
- * (C) Crown Copyright 2022-2024 Met Office
+ * (C) Crown Copyright 2022-2025 Met Office
  * (C) Copyright 2022- UCAR
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
@@ -7,6 +7,8 @@
  */
 
 #include "saber/spectralb/SpectralCovariance.h"
+
+#include <algorithm>
 
 #include "atlas/array/MakeView.h"
 #include "atlas/field/Field.h"
@@ -22,11 +24,32 @@
 
 #include "saber/oops/Utilities.h"
 #include "saber/spectralb/CovarianceStatisticsUtils.h"
+#include "saber/util/BinnedFieldSetHelpers.h"
+#include "saber/util/Calibration.h"
 
 // -----------------------------------------------------------------------------
 
 namespace saber {
 namespace spectralb {
+
+namespace {
+
+eckit::LocalConfiguration createNetCDFHeaderInput(
+    const SpectralCovarianceParameters & params,
+    const oops::Variables & activeVars) {
+  const std::string statsType = "spectral vertical covariance";
+  const std::string binType = "total wavenumber";
+  bool doingCalibration(params.calibrationParams.value() != boost::none);
+  const eckit::LocalConfiguration conf = params.toConfiguration();
+  eckit::LocalConfiguration netCDFConf;
+
+  util::createCalibrationNetCDFHeaderInput(conf, statsType, binType,
+                                           activeVars, doingCalibration,
+                                           netCDFConf);
+  return netCDFConf;
+}
+
+}  // namespace
 
 // -----------------------------------------------------------------------------
 
@@ -41,9 +64,12 @@ SpectralCovariance::SpectralCovariance(const oops::GeometryData & geometryData,
                                        const oops::FieldSet3D & fg)
   : SaberCentralBlockBase(params, xb.validTime()), params_(params),
     activeVars_(getActiveVars(params, centralVars)),
+    netCDFConf_(createNetCDFHeaderInput(params, activeVars_)),
     spectralVerticalCovariances_(),
     geometryData_(geometryData),
-    specFunctionSpace_(geometryData_.functionSpace())
+    specFunctionSpace_(geometryData_.functionSpace()),
+    datetime_(xb.validTime()),
+    sample_size_(0)
 {
   oops::Log::trace() << classname() << "::SpectralCovariance starting " << std::endl;
 
@@ -104,8 +130,19 @@ void SpectralCovariance::read() {
   }
 
   const auto & umatrixNetCDFParams = sparams.umatrixNetCDFNames.value();
+  const std::size_t nSpectralBins = specFunctionSpace_.truncation() + 1;  // 2N
+  // Get file spectral bins
+  const std::vector<std::size_t> nFileSpectralBinsVec =
+    specutils::getNSpectralBinsFull(sparams, activeVars_);
+  const std::size_t nFileSpectralBins =
+    *(std::max_element(nFileSpectralBinsVec.begin(), nFileSpectralBinsVec.end()));
+  // We are asserting that the spectral resolution of all variables in the file
+  // are the same.
+  ASSERT(nFileSpectralBins ==
+         *(std::min_element(nFileSpectralBinsVec.begin(), nFileSpectralBinsVec.end())));
 
-  const int nSpectralBins = specFunctionSpace_.truncation() + 1;  // 2N
+  const int nSpectralBinsUse = std::min(nSpectralBins, nFileSpectralBins);
+
   spectralVerticalCovariances_.clear();
 
   for (std::size_t i = 0; i < activeVars_.size(); ++i) {
@@ -113,17 +150,22 @@ void SpectralCovariance::read() {
     auto spectralVertCov =
       atlas::Field(activeVars_[i].name(),
                    atlas::array::make_datatype<double>(),
-                   atlas::array::make_shape(nSpectralBins,
+                   atlas::array::make_shape(nSpectralBinsUse,
                                             activeVars_[i].getLevels(),
                                             activeVars_[i].getLevels()));
     if (umatrixNetCDFParams != boost::none) {
       const oops::Variables netCDFVars(umatrixNetCDFParams.value());
+      // Note that in this variant nSpectralBinsUse can be smaller than the
+      // spectral resolution in file. This is done for pragmatic reasons.
       specutils::createSpectralCovarianceFromUMatrixFile(activeVars_[i].name(),
                                                          netCDFVars[i].name(),
                                                          sparams,
                                                          spectralVertCov);
     } else {
+      // Note that in this variant nSpectralBinsUse is always the same spectral
+      // resolution as what is in the file.
       specutils::readSpectralCovarianceFromFile(activeVars_[i].name(),
+                                                activeVars_[i].name(),
                                                 sparams,
                                                 spectralVertCov);
     }
@@ -162,11 +204,8 @@ void SpectralCovariance::directCalibration(const oops::FieldSets &
   }
 
   if (MOSpectralCovariancesEns.ens_size() > 0) {
-    // TODO(Marek) When reading existing files we will need to somehow get priorSampleSize
-    // from that file.
-    int priorSampleSize(0);
-    specutils::updateSpectralVerticalCovariances(MOSpectralCovariancesEns, priorSampleSize,
-                                                 spectralVerticalCovariances_);
+    sample_size_ = specutils::updateSpectralVerticalCovariances(
+      MOSpectralCovariancesEns, sample_size_, spectralVerticalCovariances_);
   }
 
   oops::Log::trace() << classname() << "::directCalibration done" << std::endl;
@@ -175,7 +214,7 @@ void SpectralCovariance::directCalibration(const oops::FieldSets &
 void SpectralCovariance::write() const {
   oops::Log::trace() << classname() << "::write starting" << std::endl;
 
-  spectralbCalibrationWriteParameters writeParams =
+  util::calibrationWriteParameters writeParams =
     (params_.calibrationParams.value())->writeParams.value();
   eckit::LocalConfiguration writeConfig;
   writeParams.serialize(writeConfig);
@@ -191,33 +230,39 @@ void SpectralCovariance::write() const {
 
   // The spectralVerticalCovariances that we write should be a gathered version of
   // the one in memory  ... it should not affect the internal version.
-  atlas::FieldSet spectralVertCovToWrite;
-  specutils::copySpectralFieldSet(spectralVerticalCovariances_,
-                                  spectralVertCovToWrite);
-
   // gather and sum on pe 0
   const std::size_t root(0);
-  specutils::gatherSumSpectralFieldSet(geometryData_.comm(),
-                                       root,
-                                       spectralVertCovToWrite);
-
-  const std::vector<std::string> dim_names{"total wavenumber",
-                                           "model levels 1",
-                                           "model levels 2"};
+  atlas::FieldSet spectralVertCovToWrite = util::gatherSumFieldSet(geometryData_.comm(),
+                                                                   root,
+                                                                   spectralVerticalCovariances_);
+  const std::vector<std::string> dim_names{"binning_index",
+                                           "levels_index_1",
+                                           "levels_index_2"};
   const std::vector<atlas::idx_t> dim_sizes{spectralVertCovToWrite[0].shape()[0],
                                             spectralVertCovToWrite[0].shape()[1],
                                             spectralVertCovToWrite[0].shape()[2]};
-  oops::Variables fsetVars(activeVars_);
+  oops::Variables fsetVars;
   std::vector<std::vector<std::string>> dim_names_for_every_var;
-
-  eckit::LocalConfiguration netcdfMetaData;
-  util::setAttribute<std::string>(
-    netcdfMetaData, "global metadata", "covariance name", "string", writeParams.covName);
-  for (const oops::Variable & var : fsetVars) {
+  for (const std::string & name : netCDFConf_.keys()) {
+    const auto varname1 =
+      util::getAttributeValue<std::string>(netCDFConf_, name, "variable_name_1");
+    const auto varname2 =
+      util::getAttributeValue<std::string>(netCDFConf_, name, "variable_name_2");
+    ASSERT(varname1 == varname2);
+    fsetVars.push_back(oops::Variable{name, oops::VariableMetaData(),
+                                      activeVars_[varname1].getLevels()});
+    spectralVertCovToWrite[varname1].rename(name);
     dim_names_for_every_var.push_back(dim_names);
-    util::setAttribute<std::string>(
-      netcdfMetaData, var.name(), "statistics type", "string", "spectral vertical covariance");
   }
+
+  eckit::LocalConfiguration netCDFConf = netCDFConf_;
+  util::setAttribute<std::string>(
+    netCDFConf, "global metadata", "covariance_name", "string", writeParams.covName);
+  util::setAttribute<std::string>(
+    netCDFConf, "global metadata", "date_time", "string", datetime_.toString());
+  util::setAttribute<std::int32_t>(
+    netCDFConf, "global metadata", "no_of_samples", "int32",
+    static_cast<std::int32_t>(sample_size_));
 
   std::vector<int> netcdf_general_ids;
   std::vector<int> netcdf_dim_ids;
@@ -230,7 +275,7 @@ void SpectralCovariance::write() const {
                                   dim_sizes,
                                   fsetVars,
                                   dim_names_for_every_var,
-                                  netcdfMetaData,
+                                  netCDFConf,
                                   netcdf_general_ids,
                                   netcdf_dim_ids,
                                   netcdf_var_ids,

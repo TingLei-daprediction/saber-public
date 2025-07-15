@@ -1,0 +1,45 @@
+Input Dirac increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+    eastward_wind: 1.0000000000000000e+00
+    northward_wind: 0.0000000000000000e+00
+- Valid time: 2010-01-01T18:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+    eastward_wind: 0.0000000000000000e+00
+    northward_wind: 0.0000000000000000e+00
+       Independent levels:  1[2]
+          Subset Sc0 size:              762
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
+       Accuracy tests:
+          Wavenumber:  1
+             - psi/chi to u:  89.76376%
+             - psi/chi to v:  89.76376%
+          Wavenumber:  2
+             - psi/chi to u:  75.59054%
+             - psi/chi to v:  75.59054%
+          Wavenumber:  3
+             - psi/chi to u:  89.76377%
+             - psi/chi to v:  89.76377%
+          Wavenumber:  4
+             - psi/chi to u:  67.19160%
+             - psi/chi to v:  83.98950%
+          Wavenumber:  5
+             - psi/chi to u:  39.37007%
+             - psi/chi to v:  39.37007%
+Covariance(SABER) * Increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+    eastward_wind: 1.1090895070752702e-06
+    northward_wind: 1.1135691197637208e-06
+- Valid time: 2010-01-01T18:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+    eastward_wind: 1.1090895070752702e-06
+    northward_wind: 1.1135691197637208e-06

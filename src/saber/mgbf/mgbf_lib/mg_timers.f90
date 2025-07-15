@@ -164,7 +164,7 @@ contains
 !clt    buffer = ' '
        buffer1=' '; buffer2=' ';buffer3=' ';buffer4=' '
 !cltj#    if ( print_type == print_clock ) then
-    write(6,*)'thinkdebxxx icound is ',mg_interface_multiply_time%icount
+!    write(6,*)'thinkdebxxx icound is ',mg_interface_multiply_time%icount
     write(buffer1,"(I6,25(',',F10.4),',',I10)") mype,                            &
                                        init_tim%time_clock,             &
                                        upsend_tim%time_clock,           &
@@ -262,7 +262,7 @@ contains
       stop
     endif
     disp = 0
-    write(6,*)'thinkdebxxx bufsize 1/2 num_ranks is ',bufsize1, ' ',bufsize2,' ',num_ranks
+!    write(6,*)'thinkdebxxx bufsize 1/2 num_ranks is ',bufsize1, ' ',bufsize2,' ',num_ranks
  if(mype==0)    call MPI_File_write_at(fh, disp, header1, bufsize1, MPI_BYTE, stat, ierr)
     disp =disp+ bufsize1
     disp = disp+(mype)*bufsize1

@@ -23,10 +23,10 @@
 #
 
 background:
-  date: &date '2010-01-01T12:00:00Z'
+  date: &date 2010-01-01T12:00:00Z
   state variables: &vars
-  - streamfunction
-  - velocity_potential
+  - air_horizontal_streamfunction
+  - air_horizontal_velocity_potential
 
 geometry:
   function space: NodeColumns
@@ -79,13 +79,13 @@ background error:
 
 dirac: &dirac
   lon:
-  - 180.0
+  - 176.786
   lat:
-  - 3.672
+  - 3.20924
   level:
   - 1
   variable:
-  - streamfunction
+  - air_horizontal_streamfunction
 
 diagnostic points: *dirac
 
@@ -96,5 +96,5 @@ output dirac:
   filepath: testdata/dirac_ens_other_geom_1/dirac_%id%_%MPI%
 
 test:
-  float relative tolerance: 8e-5  # Due to process_perts_from_csdual_states_2 outputs differing on 1/2 MPI tasks
+  float relative tolerance: 2e-4  # Due to process_perts_from_csdual_states_2 outputs differing on 1/2 MPI tasks
   reference filename: testref/dirac_ens_other_geom_1.ref

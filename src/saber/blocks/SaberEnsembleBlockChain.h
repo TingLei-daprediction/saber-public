@@ -211,7 +211,7 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
   covarConfUpdated.set("adjoint test", false);
   const auto & ensTransConf = saberCentralBlockParams.ensembleTransform.value();
   if (ensTransConf != boost::none) {
-    oops::Log::info() << "found ens transform: " << *ensTransConf << std::endl;
+    oops::Log::info() << "Info     : Found ensemble transform: " << *ensTransConf << std::endl;
     // Initialize ensemble transform blockchain
     std::vector<SaberOuterBlockParametersWrapper> ensTransOuterBlocksParams;
     for (const auto & ensTransOuterBlockConf :

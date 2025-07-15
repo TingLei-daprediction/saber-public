@@ -5,15 +5,15 @@ geometry:
     N: 10
   groups:
   - variables:
-    - stream_function
-    - velocity_potential
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
     levels: 2
   halo: 1
 background:
-  date: '2010-01-01T12:00:00Z'
+  date: 2010-01-01T12:00:00Z
   state variables:
-  - stream_function
-  - velocity_potential
+  - air_horizontal_streamfunction
+  - air_horizontal_velocity_potential
 background error:
   covariance model: SABER
   saber central block:

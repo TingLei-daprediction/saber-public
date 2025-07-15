@@ -5,19 +5,19 @@ geometry:
     N: 10
   groups:
   - variables:
-    - stream_function
-    - velocity_potential
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
     levels: 2
 background:
   states:
-  - date: '2010-01-01T12:00:00Z'
+  - date: 2010-01-01T12:00:00Z
     state variables:
-    - stream_function
-    - velocity_potential
-  - date: '2010-01-01T18:00:00Z'
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
+  - date: 2010-01-01T18:00:00Z
     state variables:
-    - stream_function
-    - velocity_potential
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
 background error:
   covariance model: SABER
   randomization size: 50
@@ -32,7 +32,7 @@ dirac:
     level:
     - 1
     variable:
-    - stream_function
+    - air_horizontal_streamfunction
   - {}
 diagnostic points:
   - lon:
@@ -42,7 +42,7 @@ diagnostic points:
     level:
     - 1
     variable:
-    - stream_function
+    - air_horizontal_streamfunction
   - lon:
     - 0.0
     - 10.0
@@ -53,8 +53,8 @@ diagnostic points:
     - 1
     - 1
     variable:
-    - stream_function
-    - stream_function
+    - air_horizontal_streamfunction
+    - air_horizontal_streamfunction
 output dirac:
   mpi pattern: '%MPI%'
   filepath: testdata/dirac_id_4d/%MPI%_dirac_%id%

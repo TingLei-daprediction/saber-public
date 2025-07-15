@@ -108,7 +108,6 @@ template <typename MODEL> class OutputWriteParameters :
   OOPS_CONCRETE_PARAMETERS(OutputWriteParameters, oops::Parameters)
 
  public:
-  typedef typename oops::Increment<MODEL>::WriteParameters_  IncrementWriteParameters_;
   typedef ErrorCovarianceParameters<MODEL>                   ErrorCovarianceParameters_;
 
   // This is there to get ErrorCovarianceParameters and in particular
@@ -121,7 +120,7 @@ template <typename MODEL> class OutputWriteParameters :
     genericWrite{"generic write", this};
 
   /// Write parameters using model increment writer
-  oops::OptionalParameter<IncrementWriteParameters_>
+  oops::OptionalParameter<eckit::LocalConfiguration>
     modelWrite{"model write", this};
 };
 
@@ -147,13 +146,10 @@ template <typename MODEL> class ProcessPertsParameters :
   OOPS_CONCRETE_PARAMETERS(ProcessPertsParameters, oops::ApplicationParameters)
 
  public:
-  typedef oops::ModelSpaceCovarianceParametersWrapper<MODEL> CovarianceParameters_;
-
-  typedef typename oops::Geometry<MODEL>::Parameters_    GeometryParameters_;
   typedef BandParameters<MODEL>                          BandParameters_;
 
   /// Geometry parameters.
-  oops::RequiredParameter<GeometryParameters_> geometry{"geometry", this};
+  oops::RequiredParameter<eckit::LocalConfiguration> geometry{"geometry", this};
 
   /// Background parameters.
   oops::RequiredParameter<eckit::LocalConfiguration> background{"background", this};
@@ -172,12 +168,10 @@ template <typename MODEL> class ProcessPertsParameters :
 template <typename MODEL> class ProcessPerts : public oops::Application {
   typedef oops::ModelSpaceCovarianceBase<MODEL>             CovarianceBase_;
   typedef oops::CovarianceFactory<MODEL>                    CovarianceFactory_;
-  typedef oops::ModelSpaceCovarianceParametersBase<MODEL>   CovarianceParametersBase_;
   typedef oops::Geometry<MODEL>                             Geometry_;
   typedef oops::Increment<MODEL>                            Increment_;
   typedef oops::State<MODEL>                                State_;
   typedef oops::State4D<MODEL>                              State4D_;
-  typedef typename oops::Increment<MODEL>::WriteParameters_ IncrementWriteParameters_;
   typedef ProcessPertsParameters<MODEL>                     ProcessPertsParameters_;
 
  public:
@@ -190,10 +184,9 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
   virtual ~ProcessPerts() {}
 // -----------------------------------------------------------------------------
 
-  int execute(const eckit::Configuration & fullConfig, bool validate) const override {
+  int execute(const eckit::Configuration & fullConfig) const override {
     // Deserialize parameters
     ProcessPertsParameters_ params;
-    if (validate) params.validate(fullConfig);
     params.deserialize(fullConfig);
 
     // Define space and time communicators
@@ -388,25 +381,13 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
           pert.zero();
           pert.fromFieldSet(fset4dDx[0].fieldSet());
 
-          IncrementWriteParameters_ writeParams;
-          writeParams.deserialize(mconf);
-          writeParams.setMember(jm+1);
-          pert.write(writeParams);
+          util::setMember(mconf, jm+1);
+          pert.write(mconf);
         }
       }
     }
 
     return 0;
-  }
-// -----------------------------------------------------------------------------
-  void outputSchema(const std::string & outputPath) const override {
-    ProcessPertsParameters_ params;
-    params.outputSchema(outputPath);
-  }
-// -----------------------------------------------------------------------------
-  void validateConfig(const eckit::Configuration & fullConfig) const override {
-    ProcessPertsParameters_ params;
-    params.validate(fullConfig);
   }
 // -----------------------------------------------------------------------------
  private:

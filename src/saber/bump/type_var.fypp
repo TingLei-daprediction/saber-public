@@ -608,6 +608,7 @@ else
             m2 = m2_ini
 
             ! Set smoother parameters
+            nicas_blk%ig = iv
             call nicas_blk%compute_parameters(mpl,rng,nam,geom,rhflt)
 
             ! Apply smoother
@@ -695,6 +696,7 @@ else
 
          ! Set unique smoother parameters
          rhflt = nam%var_rhflt(1:geom%nl0,iv)
+         nicas_blk%ig = iv
          call nicas_blk%compute_parameters(mpl,rng,nam,geom,rhflt)
 
          ! Apply smoother

@@ -35,8 +35,8 @@ class PsiChiToUVParameters : public SaberBlockParametersBase {
   oops::OptionalParameter<BUMPParameters> calibrationParams{"calibration", this};
 
   oops::Variables mandatoryActiveVars() const override {return oops::Variables({
-    "stream_function",
-    "velocity_potential",
+    "air_horizontal_streamfunction",
+    "air_horizontal_velocity_potential",
     "eastward_wind",
     "northward_wind"});}
 };

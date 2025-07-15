@@ -7,6 +7,7 @@
 
 #include "saber/generic/StdDev.h"
 
+#include <algorithm>
 #include <cmath>
 #include <memory>
 #include <string>
@@ -47,7 +48,8 @@ StdDev::StdDev(const oops::GeometryData & outerGeometryData,
     params_(params),
     readFromAtlas_(false),
     readFromModel_(false),
-    stdDevFset_(new oops::FieldSet3D(xb.validTime(), innerGeometryData_.comm())),
+    scaleFactor_(params_.scaleFactorParam.value()),
+    stdDevFset_(),
     writeToAtlas_(false),
     writeToModel_(false)
 {
@@ -70,6 +72,7 @@ StdDev::StdDev(const oops::GeometryData & outerGeometryData,
     if (readFromModel_) {
       readConf_ = *modelFileConf;
     }
+    stdDevFset_.reset(new oops::FieldSet3D(xb.validTime(), innerGeometryData_.comm()));
   }
 
   // Prepare write parameters
@@ -91,6 +94,13 @@ StdDev::StdDev(const oops::GeometryData & outerGeometryData,
     }
   }
 
+  const eckit::LocalConfiguration & scaling = params_.scaling.value();
+  std::vector<eckit::LocalConfiguration> scales = scaling.getSubConfigurations();
+  for (const eckit::LocalConfiguration & scale : scales) {
+    const std::string var = scale.getString("variable");
+    scaling_[var] = scale.getDouble("stddev");
+  }
+
   oops::Log::trace() << classname() << "::StdDev done" << std::endl;
 }
 
@@ -98,7 +108,22 @@ StdDev::StdDev(const oops::GeometryData & outerGeometryData,
 
 void StdDev::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
-  fset *= *stdDevFset_;
+  if (stdDevFset_) {
+    fset *= *stdDevFset_;
+  } else {
+    for (auto & field : fset) {
+      const std::string var = field.name();
+      if (scaling_.find(var) != scaling_.end()) {
+        const double fact = scaling_.at(var);
+        auto view = atlas::array::make_view<double, 2>(field);
+        for (int jnode = 0; jnode < field.shape(0); ++jnode) {
+          for (int jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+            view(jnode, jlevel) *= fact;
+          }
+        }
+      }
+    }
+  }
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
@@ -106,7 +131,22 @@ void StdDev::multiply(oops::FieldSet3D & fset) const {
 
 void StdDev::multiplyAD(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
-  fset *= *stdDevFset_;
+  if (stdDevFset_) {
+    fset *= *stdDevFset_;
+  } else {
+    for (auto & field : fset) {
+      const std::string var = field.name();
+      if (scaling_.find(var) != scaling_.end()) {
+        const double fact = scaling_.at(var);
+        auto view = atlas::array::make_view<double, 2>(field);
+        for (int jnode = 0; jnode < field.shape(0); ++jnode) {
+          for (int jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+            view(jnode, jlevel) *= fact;
+          }
+        }
+      }
+    }
+  }
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 
@@ -114,7 +154,22 @@ void StdDev::multiplyAD(oops::FieldSet3D & fset) const {
 
 void StdDev::leftInverseMultiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::leftInverseMultiply starting" << std::endl;
-  fset /= *stdDevFset_;
+  if (stdDevFset_) {
+    fset /= *stdDevFset_;
+  } else {
+    for (auto & field : fset) {
+      const std::string var = field.name();
+      if (scaling_.find(var) != scaling_.end()) {
+        const double fact = 1.0 / scaling_.at(var);
+        auto view = atlas::array::make_view<double, 2>(field);
+        for (int jnode = 0; jnode < field.shape(0); ++jnode) {
+          for (int jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+            view(jnode, jlevel) *= fact;
+          }
+        }
+      }
+    }
+  }
   oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
 }
 
@@ -140,6 +195,9 @@ void StdDev::setReadFields(const std::vector<oops::FieldSet3D> & fsetVec) {
   if (readFromModel_) {
     ASSERT(fsetVec.size() == 1);
     stdDevFset_->deepCopy(fsetVec[0]);
+
+    // apply scale factor (default = 1.0)
+    *stdDevFset_ *= this->scaleFactor_;
   }
 
   oops::Log::trace() << classname() << "::setReadFields done" << std::endl;
@@ -155,6 +213,9 @@ void StdDev::read() {
     stdDevFset_->read(innerGeometryData_.functionSpace(),
                       innerVars_,
                       readConf_);
+
+    // apply scale factor (default = 1.0)
+    *stdDevFset_ *= this->scaleFactor_;
 
     // Set name
     stdDevFset_->name() = "StdDev";

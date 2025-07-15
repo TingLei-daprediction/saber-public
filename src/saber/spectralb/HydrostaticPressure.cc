@@ -1,5 +1,5 @@
 /*
- * (C) Crown Copyright 2023 Met Office
+ * (C) Crown Copyright 2023-2024 Met Office
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -47,15 +47,16 @@ HydrostaticPressure::HydrostaticPressure(const oops::GeometryData & outerGeometr
     innerVars_(getUnionOfInnerActiveAndOuterVars(params, outerVars)),
     intermediateTempVars_(params.intermediateTempVars(outerVars)),
     gaussFunctionSpace_(outerGeometryData.functionSpace()),
+    params_(params),
     gptohp_(std::make_unique<saber::vader::GpToHp>(outerGeometryData,
                                                    outerVars,
                                                    covarConf,
-                                                   params.gpToHp,
+                                                   params_.gpToHp,
                                                    xb, fg)),
     gaussuvtogp_(std::make_unique<GaussUVToGP>(outerGeometryData,
                                                gptohp_->innerVars(),
                                                covarConf,
-                                               params.gaussUVToGp, xb, fg))
+                                               params_.gaussUVToGp, xb, fg))
 {
   oops::Log::trace() << classname() << "::HydrostaticPressure starting" << std::endl;
   oops::Log::trace() << classname() << "::HydrostaticPressure done" << std::endl;
@@ -112,6 +113,37 @@ void HydrostaticPressure::leftInverseMultiply(oops::FieldSet3D & fset) const {
   // active variable but a temporary one.
   fset.removeFields(intermediateTempVars_);
   oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void HydrostaticPressure::read() {
+  oops::Log::trace() << classname() << "::read starting" << std::endl;
+
+  gptohp_->read();
+
+  oops::Log::trace() << classname() << "::read done" << std::endl;
+}
+
+
+// -----------------------------------------------------------------------------
+
+void HydrostaticPressure::directCalibration(const oops::FieldSets & fset) {
+  oops::Log::trace() << classname() << "::directCalibration starting" << std::endl;
+
+  gptohp_->directCalibration(fset);
+
+  oops::Log::trace() << classname() << "::directCalibration done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void HydrostaticPressure::write() const {
+  oops::Log::trace() << classname() << "::write starting" << std::endl;
+
+  gptohp_->write();
+
+  oops::Log::trace() << classname() << "::write done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

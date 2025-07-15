@@ -5,40 +5,42 @@ geometry:
     N: 10
   groups:
   - variables:
-    - stream_function
+    - air_horizontal_streamfunction
     levels: 2
     mask type: sea
+    mask path: ../quench/data/landsea.nc
   - variables:
-    - surface_pressure
+    - air_pressure_at_surface
     levels: 1
     lev2d: last
     mask type: sea
+    mask path: ../quench/data/landsea.nc
   halo: 1
 background:
-  date: '2010-01-01T12:00:00Z'
+  date: 2010-01-01T12:00:00Z
   state variables:
-  - stream_function
-  - surface_pressure
+  - air_horizontal_streamfunction
+  - air_pressure_at_surface
 background error:
   covariance model: SABER
   iterative ensemble loading: true
   ensemble:
     members from template:
       template:
-        date: '2010-01-01T12:00:00Z'
+        date: 2010-01-01T12:00:00Z
         filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_%mem%
         state variables:
-        - stream_function
-        - surface_pressure
+        - air_horizontal_streamfunction
+        - air_pressure_at_surface
       pattern: '%mem%'
       nmembers: 25
       zero padding: 6
   saber central block:
     saber block name: BUMP_NICAS
     fields metadata:
-      stream_function:
+      air_horizontal_streamfunction:
         gmask: gmask_0
-      surface_pressure:
+      air_pressure_at_surface:
         gmask: gmask_1
     calibration:
       general:
@@ -75,7 +77,7 @@ background error:
       - longitude: 0.0
         latitude: 0.0
         level: 1
-        variable: stream_function
+        variable: air_horizontal_streamfunction
       output model files:
       - parameter: dirac_mom
         file:

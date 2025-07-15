@@ -79,7 +79,7 @@ contains
 
 ! --------------------------------------------------------------------------------------------------
 
-subroutine create(self, comm, config, ntimes, background, firstguess, valid_times)
+subroutine create(self, comm, config, ntimes, background, firstguess, valid_times, nchecks, checks)
 
 ! Arguments
 class(gsi_covariance),     intent(inout) :: self
@@ -89,6 +89,8 @@ integer,                   intent(in)    :: ntimes
 type(atlas_fieldset), dimension(ntimes), intent(in)    :: background
 type(atlas_fieldset), dimension(ntimes), intent(in)    :: firstguess
 type(datetime), dimension(ntimes),       intent(in)    :: valid_times
+integer,                   intent(in)    :: nchecks
+real(kind=kind_real), dimension(nchecks), intent(in) :: checks
 
 ! Locals
 character(len=*), parameter :: myname_=myname//'*create'
@@ -102,6 +104,9 @@ character(len=20),allocatable :: gsivars(:)
 character(len=20),allocatable :: usrvars(:)
 character(len=30),allocatable :: tbdvars(:)
 character(len=20) :: valid_time_string
+logical :: gsi_jedi_grid_error
+integer :: ix, iy, gsi_nx, gsi_ny, jedi_nx, jedi_ny
+real(kind=kind_real) :: gsi_lon, gsi_lat, jedi_lon, jedi_lat
 
 ! Hold communicator
 ! -----------------
@@ -119,6 +124,48 @@ enddo
 ! ---------------
 call self%grid%create(config, comm)
 self%rank = comm%rank()
+
+! Sanity-check the GSI grid (specified from gsibec namelists) matches SABER grid (from JEDI yaml)
+! -----------------------------------------------------------------------------------------------
+
+if (nchecks .gt. 0) then  ! only run checks if data was passed in from JEDI
+  gsi_jedi_grid_error = .false.
+  gsi_nx = self%grid%iec - self%grid%isc + 1
+  jedi_nx = nint(checks(1))
+  if (gsi_nx .ne. jedi_nx) then
+    write (*,*) 'ERROR connecting GSI-block to JEDI -- inconsistent nx with gsi, atlas = ', gsi_nx, jedi_nx
+    gsi_jedi_grid_error = .true.
+  endif
+
+  gsi_ny = self%grid%jec - self%grid%jsc + 1
+  jedi_ny = nint(checks(2))
+  if (gsi_ny .ne. jedi_ny) then
+    write (*,*) 'ERROR connecting GSI-block to JEDI -- inconsistent ny with gsi, atlas = ', gsi_ny, jedi_ny
+    gsi_jedi_grid_error = .true.
+  endif
+
+  do ix = 1, gsi_nx
+    gsi_lon = self%grid%lons(self%grid%isc-1 + ix)
+    jedi_lon = checks(2+ix)
+    if (abs(gsi_lon - jedi_lon) > 1e-8) then
+      write (*,*) 'ERROR connecting GSI-block to JEDI -- inconsistent lon with gsi, atlas = ', gsi_lon, jedi_lon
+      gsi_jedi_grid_error = .true.
+    endif
+  enddo
+
+  do iy = 1, gsi_ny
+    gsi_lat = self%grid%lats(self%grid%jsc-1 + iy)
+    jedi_lat = checks(2+gsi_nx+iy)
+    if (abs(gsi_lat - jedi_lat) > 1e-8) then
+      write (*,*) 'ERROR connecting GSI-block to JEDI -- inconsistent lat with gsi, atlas = ', gsi_lat, jedi_lat
+      gsi_jedi_grid_error = .true.
+    endif
+  enddo
+
+  if (gsi_jedi_grid_error) then
+    call abor1_ftn(myname_ // ': GSI and JEDI grids are inconsistent!')
+  endif
+endif
 
 if (.not. self%grid%noGSI) then
   call config%get_or_die("debugging deep bypass gsi B error", self%bypassGSIbe)
@@ -291,10 +338,11 @@ real(kind=kind_real), pointer :: ps(:,:)
 integer, parameter :: rseed = 3
 
 ! Get Atlas field
-if (fields%has('stream_function').and.fields%has('velocity_potential')) then
-  afield = fields%field('stream_function')
+if (fields%has('air_horizontal_streamfunction').and. &
+    fields%has('air_horizontal_velocity_potential')) then
+  afield = fields%field('air_horizontal_streamfunction')
   call afield%data(psi)
-  afield = fields%field('velocity_potential')
+  afield = fields%field('air_horizontal_velocity_potential')
   call afield%data(chi)
 elseif (fields%has('eastward_wind').and.fields%has('northward_wind')) then
   afield = fields%field('eastward_wind')
@@ -308,13 +356,13 @@ if (fields%has('air_temperature')) then
   call afield%data(t)
 endif
 
-if (fields%has('surface_pressure')) then
-  afield = fields%field('surface_pressure')
+if (fields%has('air_pressure_at_surface')) then
+  afield = fields%field('air_pressure_at_surface')
   call afield%data(ps)
 endif
 
-if (fields%has('specific_humidity')) then
-  afield = fields%field('specific_humidity')
+if (fields%has('water_vapor_mixing_ratio_wrt_moist_air')) then
+  afield = fields%field('water_vapor_mixing_ratio_wrt_moist_air')
   call afield%data(q)
 endif
 
@@ -371,7 +419,7 @@ integer :: iv,k,ier,itbd,ii
 character(len=32),allocatable :: gvars2d(:),gvars3d(:)
 character(len=30),allocatable :: tbdvars(:),needvrs(:)
 
-! afield = fields%field('surface_pressure')
+! afield = fields%field('air_pressure_at_surface')
 ! call afield%data(rank2)
 ! rank2 = 0.0_kind_real
 ! rank2(1,int(size(rank1)/2)) = 1.0_kind_real
@@ -576,23 +624,25 @@ end subroutine multiply
    real(kind=kind_real), pointer :: rank2(:,:)
    type(atlas_field) :: afield
    integer,intent(out):: ier
+   integer,save :: icount = 0
    ier=-1
    if (trim(vname) == 'ps') then
-      if (.not.fields%has('surface_pressure')) return
-      afield = fields%field('surface_pressure')
+      if (.not.fields%has('air_pressure_at_surface')) return
+      afield = fields%field('air_pressure_at_surface')
       call afield%data(rank2)
       ier=0
    endif
-   if (trim(vname) == 'air_pressure_thickness') then
-      if (.not.fields%has('air_pressure_thickness')) return
-      afield = fields%field('air_pressure_thickness')
+!  if (trim(vname) == 'air_pressure_thickness') then
+!     if (.not.fields%has('air_pressure_thickness')) return
+!     afield = fields%field('air_pressure_thickness')
+!     call afield%data(rank2)
+!     ier=0
+!  endif
+   if (trim(vname) == 'ts' .or. trim(vname) == 'sst') then !  ts=gsi background name
+      if (.not.fields%has('skin_temperature_at_surface')) return      ! sst=gsi S/CV name
+      afield = fields%field('skin_temperature_at_surface')
       call afield%data(rank2)
-      ier=0
-   endif
-   if (trim(vname) == 'ts' .or. trim(vname) == 'sst') then ! needs to be sorted out
-      if (.not.fields%has('sea_surface_temperature')) return ! should be skin-temperature
-      afield = fields%field('sea_surface_temperature')
-      call afield%data(rank2)
+      icount = icount + 1
       ier=0
    endif
    if (trim(vname) == 'u' .or. trim(vname) == 'ua' ) then
@@ -608,14 +658,14 @@ end subroutine multiply
       ier=0
    endif
    if (trim(vname) == 'sf') then
-      if (.not.fields%has('stream_function')) return
-      afield = fields%field('stream_function')
+      if (.not.fields%has('air_horizontal_streamfunction')) return
+      afield = fields%field('air_horizontal_streamfunction')
       call afield%data(rank2)
       ier=0
    endif
    if (trim(vname) == 'vp') then
-      if (.not.fields%has('velocity_potential')) return
-      afield = fields%field('velocity_potential')
+      if (.not.fields%has('air_horizontal_velocity_potential')) return
+      afield = fields%field('air_horizontal_velocity_potential')
       call afield%data(rank2)
       ier=0
    endif
@@ -632,8 +682,8 @@ end subroutine multiply
       ier=0
    endif
    if (trim(vname) == 'q' .or. trim(vname) == 'sphum' ) then
-      if (.not.fields%has('specific_humidity')) return
-      afield = fields%field('specific_humidity')
+      if (.not.fields%has('water_vapor_mixing_ratio_wrt_moist_air')) return
+      afield = fields%field('water_vapor_mixing_ratio_wrt_moist_air')
       call afield%data(rank2)
       ier=0
    endif
@@ -650,14 +700,26 @@ end subroutine multiply
       ier=0
    endif
    if (trim(vname) == 'qr') then
-      if (.not.fields%has('cloud_liquid_rain')) return
-      afield = fields%field('cloud_liquid_rain')
+      if (.not.fields%has('rain_water')) return
+      afield = fields%field('rain_water')
       call afield%data(rank2)
       ier=0
    endif
    if (trim(vname) == 'qs') then
-      if (.not.fields%has('cloud_liquid_snow')) return
-      afield = fields%field('cloud_liquid_snow')
+      if (.not.fields%has('snow_water')) return
+      afield = fields%field('snow_water')
+      call afield%data(rank2)
+      ier=0
+   endif
+   if (trim(vname) == 'qg') then
+      if (.not.fields%has('graupel')) return
+      afield = fields%field('graupel')
+      call afield%data(rank2)
+      ier=0
+   endif
+   if (trim(vname) == 'qh') then
+      if (.not.fields%has('hail')) return
+      afield = fields%field('hail')
       call afield%data(rank2)
       ier=0
    endif
@@ -680,9 +742,9 @@ end subroutine multiply
       ier=0
    endif
    if (trim(vname) == 'phis' ) then
-      if (.not.fields%has('sfc_geopotential_height_times_grav')) then
-         if (fields%has('surface_geopotential_height')) then
-            afield = fields%field('surface_geopotential_height')
+      if (.not.fields%has('geopotential_height_times_gravity_at_surface')) then
+         if (fields%has('geopotential_height_at_surface')) then
+            afield = fields%field('geopotential_height_at_surface')
             call afield%data(rank2)
             rank2 = grav*rank2
             ier=0
@@ -690,7 +752,7 @@ end subroutine multiply
             return
          endif
       else
-         afield = fields%field('sfc_geopotential_height_times_grav')
+         afield = fields%field('geopotential_height_times_gravity_at_surface')
          call afield%data(rank2)
          ier=0
       end if
@@ -872,6 +934,7 @@ end subroutine multiply
 
    implicit none
 
+   character, parameter :: myname_ = myname//'*svfix_'
    type(gsi_bundle),intent(inout) :: gsisv(:)
    type(atlas_fieldset),intent(inout) :: jedicv(:)
    logical,intent(in) :: vflip
@@ -891,15 +954,9 @@ end subroutine multiply
    if(size(need)<1) return
 
    if (any(need=='prse')) then
-        where(need=='prse')  ! gsi will take care of this
-           need='filled-'//need
-        endwhere
-   endif
-
-   if (any(need=='sst')) then
-        where(need=='sst')   ! unclear way this is needed here
-           need='filled-'//need
-        endwhere
+       where(need=='prse')  ! gsi will take care of this
+          need='filled-'//need
+       endwhere
    endif
 
    if (any(need=='tv')) then

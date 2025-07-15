@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2024 Meteorlogisk Institutt
+ * (C) Copyright 2024 Meteorologisk Institutt
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -81,9 +81,6 @@ class FastLAM : public SaberCentralBlockBase {
     override;
 
  private:
-  // Valid date/time
-  const util::DateTime validTime_;
-
   // Model grid geometry data
   const oops::GeometryData & gdata_;
 
@@ -140,7 +137,7 @@ class FastLAM : public SaberCentralBlockBase {
 
   // Utilities
   size_t getGroupIndex(const std::string &) const;
-  size_t getK0Offset(const std::string &) const;
+  size_t getZ0Offset(const std::string &) const;
   eckit::LocalConfiguration getFileConf(const eckit::mpi::Comm &,
                                         const eckit::Configuration &) const;
   void print(std::ostream &) const override;

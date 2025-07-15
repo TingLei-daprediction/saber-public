@@ -104,9 +104,8 @@ oops::FieldSets readEnsemble(const oops::Geometry<MODEL> & geom,
 
   // Ensemble of states, perturbation using the mean
   oops::IncrementEnsembleFromStatesParameters<MODEL> ensembleParams;
-  eckit::LocalConfiguration ensembleConf;
+  eckit::LocalConfiguration ensembleConf = inputConf.getSubConfiguration("ensemble");
   if (inputConf.has("ensemble")) {
-    ensembleConf = inputConf.getSubConfiguration("ensemble");
     ensembleParams.deserialize(ensembleConf);
     nens = ensembleParams.states.size();
     outputConf.set("ensemble", ensembleConf);
@@ -122,7 +121,7 @@ oops::FieldSets readEnsemble(const oops::Geometry<MODEL> & geom,
     ensemblePertParams.deserialize(ensemblePert);
     nens = ensemblePertParams.size();
     outputConf.set("ensemble pert", ensemblePert);
-    ensemblePertParams.getIncrementParameters(0).serialize(varConf);
+    varConf = ensemblePertParams.getIncrementParameters(0);
     ++ensembleFound;
   }
 
@@ -195,7 +194,7 @@ oops::FieldSets readEnsemble(const oops::Geometry<MODEL> & geom,
     if (!ensembleConf.empty()) {
       oops::Log::info() << "Info     : Ensemble of states, perturbation using the mean"
                         << std::endl;
-      oops::StateSet<MODEL> tmp(geom, ensembleParams.toConfiguration(), xb.commTime());
+      oops::StateSet<MODEL> tmp(geom, ensembleConf, xb.commTime());
       oops::IncrementSet<MODEL> ensemble(geom, vars, tmp, true);
       ensemble -= ensemble.ens_mean();
       oops::FieldSets fsetEns(ensemble);

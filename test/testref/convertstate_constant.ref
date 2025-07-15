@@ -1,0 +1,68 @@
+Input state: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+    air_horizontal_streamfunction: 4.9185363676606798e+01
+    air_horizontal_velocity_potential: 4.9185363676606798e+01
+    eastward_wind: 4.9185363676606798e+01
+    northward_wind: 4.9185363676606798e+01
+Output state: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+    air_horizontal_streamfunction: 4.9185363676606798e+01
+    air_horizontal_velocity_potential: 4.9185363676606798e+01
+    eastward_wind: 4.9185363676606798e+01
+    northward_wind: 4.9185363676606798e+01
+Input state: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+    air_horizontal_streamfunction_transformed: 1.2296340919151518e+02
+    air_horizontal_velocity_potential_transformed: 1.2296340919151518e+02
+    eastward_wind: 1.2296340919151518e+02
+    northward_wind: 1.2296340919151518e+02
+Output state: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+    air_horizontal_streamfunction_transformed: 1.2296340919151518e+02
+    air_horizontal_velocity_potential_transformed: 1.2296340919151518e+02
+    eastward_wind: 1.2296340919151518e+02
+    northward_wind: 1.2296340919151518e+02
+Input state: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+    air_horizontal_streamfunction: 1.0246950765959599e+02
+    air_horizontal_velocity_potential: 1.0246950765959599e+02
+Output state: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+    air_horizontal_streamfunction: 1.0246950765959599e+02
+    air_horizontal_velocity_potential: 1.0246950765959599e+02
+Input state: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+    air_horizontal_streamfunction: 1.2296340919151699e+01
+    air_horizontal_velocity_potential: 1.2296340919151699e+01
+Output state: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+    air_horizontal_streamfunction: 1.2296340919151699e+01
+    air_horizontal_velocity_potential: 1.2296340919151699e+01
+Input state: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+    air_horizontal_streamfunction: 2.8691462144687090e+01
+    air_horizontal_velocity_potential: 2.8691462144687090e+01
+Output state: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+    air_horizontal_streamfunction: 2.8691462144687090e+01
+    air_horizontal_velocity_potential: 2.8691462144687090e+01

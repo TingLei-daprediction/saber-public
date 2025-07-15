@@ -8,6 +8,7 @@
 #include "saber/vader/CovarianceStatisticsUtils.h"
 
 #include <algorithm>
+#include <cmath>
 #include <iostream>
 #include <map>
 #include <numeric>
@@ -21,6 +22,8 @@
 #include "mo/constants.h"
 
 #include "oops/base/Variables.h"
+
+#include "oops/util/FunctionSpaceHelpers.h"
 #include "oops/util/Logger.h"
 
 #include "saber/spectralb/spectralb_covstats_interface.h"
@@ -126,12 +129,16 @@ std::vector<double> interpWeights(std::vector<std::vector<double>> & regWeights,
 // -----------------------------------------------------------------------------
 
 atlas::Field createGpRegressionWeights(const atlas::FunctionSpace & functionSpace,
-                                       const atlas::FieldSet & fields,
                                        const std::string & covFileName,
                                        const std::size_t covGlobalNLats,
                                        const std::size_t gpBins) {
-  // get interpolation weights from file
-  atlas::idx_t horizPts = fields[0].shape(0);
+  // need to look over horiz latitude points to calculate gp regression.
+  // the horizontal points need to be PE decomposed.
+  auto interWgtFld =
+    functionSpace.createField<double>(atlas::option::name("interpolation_weights") |
+                                      atlas::option::levels(gpBins));
+
+  atlas::idx_t horizPts = util::getSizeOwned(functionSpace);
 
   std::vector<float> regresssionWeights1D(covGlobalNLats * gpBins, 0.0);
   std::vector<float> covLatitudesVec(covGlobalNLats);
@@ -171,12 +178,9 @@ atlas::Field createGpRegressionWeights(const atlas::FunctionSpace & functionSpac
 
   // need to look over horiz latitude points to calculate gp regression.
   // the horizontal points need to be PE decomposed.
-  auto interWgtFld =
-    functionSpace.createField<double>(atlas::option::name("interpolation_weights") |
-                                      atlas::option::levels(gpBins));
-
   auto lonlatView = atlas::array::make_view<double, 2>(functionSpace.lonlat());
   auto interWgtFldView = atlas::array::make_view<double, 2>(interWgtFld);
+  interWgtFldView.assign(0.0);
 
   std::vector<double> tempWgt(gpBins);
   for (atlas::idx_t h = 0; h < horizPts; ++h) {
@@ -187,9 +191,11 @@ atlas::Field createGpRegressionWeights(const atlas::FunctionSpace & functionSpac
 
     for (std::size_t b = 0; b < gpBins; ++b) {
       interWgtFldView(h, b) = tempWgt[b] * invWeightTot;
+      if (std::isnan(interWgtFldView(h, b))) {
+        oops::Log::info() << "interWgtFld is *nan* " << h << " " << b << std::endl;
+      }
     }
   }
-
   return interWgtFld;
 }
 
@@ -346,20 +352,21 @@ void populateMuA(atlas::FieldSet & augmentedStateFieldSet,
 /// We ensure that across all bins for a grid point we sum to 1.
 ///
 atlas::FieldSet createGpRegressionStats(const atlas::FunctionSpace & functionSpace,
-                                        const atlas::FieldSet & fields,
                                         const oops::Variables & variables,
-                                        const GpToHpCovarianceParameters & params) {
+                                        const eckit::Configuration & lconf) {
   // Get necessary parameters
   // path to covariance file with gp covariance parameters.
-  const std::string covFileName(params.covariance_file_path);
+  const std::string covFileName = lconf.getString("covariance file path");
   // number of latitudes that existed in the generation of the covariance file
-  const std::size_t covGlobalNLats(static_cast<std::size_t>(params.covariance_nlat));
+  const std::size_t covGlobalNLats(static_cast<std::size_t>(
+    lconf.getInt("number of covariance latitude rings")));
   // number of model levels
   const std::size_t modelLevels = variables["unbalanced_pressure_levels_minus_one"].getLevels();
   // geostrophic pressure vertical regression statistics are grouped
   // into overlapping bins based on latitude;
   // number of bins associated with the gP vertical regression
-  const std::size_t gPBins(static_cast<std::size_t>(params.gp_regression_bins));
+  const std::size_t gPBins(static_cast<std::size_t>(
+    lconf.getInt("gp regression bins")));
 
   oops::Log::info() <<
     "gp regression no of bins = " << gPBins << std::endl;
@@ -372,7 +379,7 @@ atlas::FieldSet createGpRegressionStats(const atlas::FunctionSpace & functionSpa
   if (gPBins > 0) {
     gpStatistics.add(createGpRegressionMatrices(covFileName, gPBins, modelLevels));
 
-    gpStatistics.add(createGpRegressionWeights(functionSpace, fields,
+    gpStatistics.add(createGpRegressionWeights(functionSpace,
                                                covFileName, covGlobalNLats, gPBins));
   }
 

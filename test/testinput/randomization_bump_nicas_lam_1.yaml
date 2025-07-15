@@ -15,18 +15,18 @@ geometry:
   partitioner: checkerboard
   groups:
   - variables:
-    - stream_function
-    - velocity_potential
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
     levels: 10
   - variables:
-    - surface_pressure
+    - air_pressure_at_surface
     levels: 1
 background:
-  date: '2010-01-01T12:00:00Z'
+  date: 2010-01-01T12:00:00Z
   state variables:
-  - stream_function
-  - velocity_potential
-  - surface_pressure
+  - air_horizontal_streamfunction
+  - air_horizontal_velocity_potential
+  - air_pressure_at_surface
   filepath: testdata/convertstate_lam/rh_avg
 background error:
   covariance model: SABER
@@ -35,7 +35,7 @@ background error:
     calibration:
       io:
         data directory: testdata
-        files prefix: randomization_bump_nicas_lam_1/1-1
+        files prefix: randomization_bump_nicas_lam_1/_MPI_-_OMP_
       drivers:
         multivariate strategy: univariate
         compute nicas: true
@@ -44,31 +44,31 @@ background error:
         explicit length-scales: true
         horizontal length-scale:
         - groups:
-          - stream_function
+          - air_horizontal_streamfunction
           value: 150.0e3
         - groups:
-          - surface_pressure
+          - air_pressure_at_surface
           value: 150.0e3
         vertical length-scale:
         - groups:
-          - stream_function
+          - air_horizontal_streamfunction
           value: 5.0
         - groups:
-          - surface_pressure
+          - air_pressure_at_surface
           value: 0.0
       grids:
       - model:
           variables:
-          - stream_function
-          - velocity_potential
+          - air_horizontal_streamfunction
+          - air_horizontal_velocity_potential
           groups:
-          - group name: stream_function
+          - group name: air_horizontal_streamfunction
             variables:
-            - stream_function
-            - velocity_potential
+            - air_horizontal_streamfunction
+            - air_horizontal_velocity_potential
       - model:
           variables:
-          - surface_pressure
+          - air_pressure_at_surface
   saber outer blocks:
   - saber block name: StdDev
     read:
@@ -76,6 +76,6 @@ background error:
         filepath: testdata/convertstate_lam/rh_pert
   randomization size: 1
 output states:
-  filepath: testdata/randomization_bump_nicas_lam_1/rh
+  filepath: testdata/randomization_bump_nicas_lam_1/_MPI_-_OMP__rh
 test:
   reference filename: testref/randomization_bump_nicas_lam_1.ref

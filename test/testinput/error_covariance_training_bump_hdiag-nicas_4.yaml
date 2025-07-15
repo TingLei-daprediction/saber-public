@@ -6,33 +6,33 @@ geometry:
     ny : 46
   groups:
   - variables:
-    - stream_function
-    - velocity_potential
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
     - air_temperature
     levels: 4
     vert_coord: [-1.0,-5.0,-9.0,-11.0]
   - variables:
-    - surface_pressure
+    - air_pressure_at_surface
     levels: 1
 background:
-  date: '2010-01-01T12:00:00Z'
+  date: 2010-01-01T12:00:00Z
   state variables:
-  - stream_function
-  - velocity_potential
+  - air_horizontal_streamfunction
+  - air_horizontal_velocity_potential
   - air_temperature
-  - surface_pressure
+  - air_pressure_at_surface
 background error:
   covariance model: SABER
   saber central block:
     saber block name: BUMP_NICAS
     fields metadata:
-      stream_function:
+      air_horizontal_streamfunction:
         vert_coord: vert_coord_0
-      velocity_potential:
+      air_horizontal_velocity_potential:
         vert_coord: vert_coord_0
       air_temperature:
         vert_coord: vert_coord_0
-      surface_pressure:
+      air_pressure_at_surface:
         vert_coord: vert_coord_1
     calibration:
       general:
@@ -63,16 +63,16 @@ background error:
       - longitude: 0.0
         latitude: 0.0
         level: 4
-        variable: stream_function
+        variable: air_horizontal_streamfunction
       grids:
       - model:
           variables:
-          - stream_function
-          - velocity_potential
+          - air_horizontal_streamfunction
+          - air_horizontal_velocity_potential
           - air_temperature
       - model:
           variables:
-          - surface_pressure
+          - air_pressure_at_surface
       output model files:
       - parameter: dirac_diag_cor
         file:

@@ -5,15 +5,15 @@ geometry:
   partitioner: cubedsphere
   groups:
   - variables: &vars
-    - streamfunction
-    - velocity_potential
-    - unbalanced_pressure_levels_minus_one
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
     - mu
+    - unbalanced_pressure_levels_minus_one
     levels: 70
   halo: 1
 
 background:
-  date: &date '2010-01-01T12:00:00Z'
+  date: &date 2010-01-01T12:00:00Z
   state variables: *vars
 
 bands:

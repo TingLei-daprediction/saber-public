@@ -9,11 +9,24 @@ background error:
       gsi akbk: /dev/null
       debugging mode: false
   saber outer blocks:
-  - saber block name: gsi interpolation to model grid
-    gsi error covariance file: testdata/gsi-coeffs-global-l127x64y32.nc4
-    gsi berror namelist file: testdata/dirac_gsi_gfs_global.nml
-    gsi akbk: /dev/null
-    debugging mode: false
+  - saber block name: interpolation
+    inner geometry:
+      function space: StructuredColumns
+      custom grid matching gsi:
+        type: gaussian
+        lats: 32
+        lons: 64
+      custom partitioner matching gsi:
+        bands: _MPI_  # matches GSI partition for 1 or 2 MPI tasks, but too simplistic in general
+      halo: 1
+    forward interpolator:
+      local interpolator type: oops unstructured grid interpolator
+    inverse interpolator:
+      local interpolator type: oops unstructured grid interpolator
+    state variables to inverse:
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
+    - air_pressure_at_surface
 dirac:
   lon:
   - 0.0
@@ -22,7 +35,7 @@ dirac:
   level:
   - 1
   variable:
-  - stream_function
+  - air_horizontal_streamfunction
 geometry:
   function space: StructuredColumns
   grid:
@@ -30,20 +43,20 @@ geometry:
     N: 15
   groups:
   - variables:
-    - stream_function
-    - velocity_potential
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
     - air_temperature
     levels: 127
   - variables:
-    - surface_pressure
+    - air_pressure_at_surface
     levels: 1
 background:
-  date: '2010-01-01T12:00:00Z'
+  date: 2010-01-01T12:00:00Z
   state variables:
-  - stream_function
-  - velocity_potential
+  - air_horizontal_streamfunction
+  - air_horizontal_velocity_potential
   - air_temperature
-  - surface_pressure
+  - air_pressure_at_surface
 output dirac:
   mpi pattern: '%MPI%'
   filepath: testdata/dirac_gsi_gfs_global/%MPI%_dirac_%id%

@@ -5,30 +5,30 @@ geometry:
     N: 10
   groups:
   - variables:
-    - stream_function
-    - velocity_potential
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
     levels: 2
   - variables:
-    - surface_pressure
+    - air_pressure_at_surface
     levels: 1
   halo: 1
 background:
-  date: '2010-01-01T12:00:00Z'
+  date: 2010-01-01T12:00:00Z
   state variables:
-  - stream_function
-  - velocity_potential
-  - surface_pressure
+  - air_horizontal_streamfunction
+  - air_horizontal_velocity_potential
+  - air_pressure_at_surface
 background error:
   covariance model: SABER
   ensemble:
     members from template:
       template:
-        date: '2010-01-01T12:00:00Z'
+        date: 2010-01-01T12:00:00Z
         filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_%mem%
         state variables:
-        - stream_function
-        - velocity_potential
-        - surface_pressure
+        - air_horizontal_streamfunction
+        - air_horizontal_velocity_potential
+        - air_pressure_at_surface
       pattern: '%mem%'
       nmembers: 25
       zero padding: 6
@@ -51,11 +51,11 @@ background error:
         groups:
         - group name: group 1
           variables:
-          - stream_function
-          - surface_pressure
+          - air_horizontal_streamfunction
+          - air_pressure_at_surface
         - group name: group 2
           variables:
-          - velocity_potential
+          - air_horizontal_velocity_potential
       sampling:
         computation grid size: 500
         diagnostic grid size: 250

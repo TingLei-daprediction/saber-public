@@ -5,15 +5,15 @@ geometry:
     N: 10
   groups:
   - variables:
-    - stream_function
-    - velocity_potential
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
     levels: 2
   halo: 1
 background:
-  date: '2010-01-01T12:00:00Z'
+  date: 2010-01-01T12:00:00Z
   state variables:
-  - stream_function
-  - velocity_potential
+  - air_horizontal_streamfunction
+  - air_horizontal_velocity_potential
 background error:
   covariance model: SABER
   saber central block:
@@ -38,26 +38,26 @@ background error:
         explicit length-scales: true
         horizontal length-scale:
         - groups:
-          - stream_function
+          - air_horizontal_streamfunction
           value: 4000.0e3
         - groups:
-          - velocity_potential
+          - air_horizontal_velocity_potential
           value: 4000.0e3
         vertical length-scale:
         - groups:
-          - stream_function
-          - velocity_potential
+          - air_horizontal_streamfunction
+          - air_horizontal_velocity_potential
           value: 3.0
         interpolation type:
         - groups:
-          - stream_function
+          - air_horizontal_streamfunction
           type: si
         normalization randomization size: 100
       dirac:
       - longitude: 0.0
         latitude: 0.0
         level: 1
-        variable: stream_function
+        variable: air_horizontal_streamfunction
       output model files:
       - parameter: cor_rh
         file:

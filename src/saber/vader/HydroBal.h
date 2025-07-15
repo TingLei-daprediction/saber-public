@@ -1,5 +1,5 @@
 /*
- * (C) Crown Copyright 2022 Met Office
+ * (C) Crown Copyright 2022-2025 Met Office
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -43,6 +43,14 @@ class HydroBalParameters : public SaberBlockParametersBase {
         "virtual_potential_temperature"}});
   }
 
+  const oops::Variables mandatoryStateVars() const override {
+    return oops::Variables({
+        "air_pressure_levels",
+        "hydrostatic_exner_levels",
+        "virtual_potential_temperature",
+        "height_above_mean_sea_level_levels"});
+  }
+
   oops::Variables activeInnerVars(const oops::Variables& outerVars) const override {
     const int modelLevels = outerVars["virtual_potential_temperature"].getLevels();
     eckit::LocalConfiguration conf;
@@ -81,6 +89,7 @@ class HydroBal : public SaberOuterBlockBase {
   void multiply(oops::FieldSet3D &) const override;
   void multiplyAD(oops::FieldSet3D &) const override;
   void leftInverseMultiply(oops::FieldSet3D &) const override;
+  void directCalibration(const oops::FieldSets &) override;
 
  private:
   void print(std::ostream &) const override;
@@ -88,7 +97,7 @@ class HydroBal : public SaberOuterBlockBase {
   const oops::Variables innerVars_;
   const oops::Variables activeOuterVars_;
   const oops::Variables innerOnlyVars_;
-  atlas::FieldSet augmentedStateFieldSet_;
+  oops::FieldSet3D xb_;
 };
 
 // -----------------------------------------------------------------------------

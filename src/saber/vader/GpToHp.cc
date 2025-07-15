@@ -16,16 +16,7 @@
 
 #include "eckit/exception/Exceptions.h"
 
-#include "mo/common_varchange.h"
-#include "mo/control2analysis_varchange.h"
-#include "mo/eval_air_pressure_levels.h"
-#include "mo/eval_air_temperature.h"
-#include "mo/eval_exner.h"
 #include "mo/eval_geostrophic_to_hydrostatic_pressure.h"
-#include "mo/eval_sat_vapour_pressure.h"
-#include "mo/eval_total_mixing_ratio.h"
-#include "mo/eval_virtual_potential_temperature.h"
-#include "mo/eval_water_vapor_mixing_ratio.h"
 
 #include "oops/base/FieldSet3D.h"
 #include "oops/base/Variables.h"
@@ -67,78 +58,15 @@ GpToHp::GpToHp(const oops::GeometryData & outerGeometryData,
     innerVars_(removeOuterOnlyVar(getUnionOfInnerActiveAndOuterVars(params, outerVars))),
     activeOuterVars_(params.activeOuterVars(outerVars)),
     innerOnlyVars_(getInnerOnlyVars(params, outerVars)),
+    params_(params),
+    covFieldSet_(),
     augmentedStateFieldSet_()
 {
   oops::Log::trace() << classname() << "::GpToHp starting" << std::endl;
-  // Covariance FieldSet
-  covFieldSet_ = createGpRegressionStats(outerGeometryData.functionSpace(),
-                                         outerGeometryData.fieldSet(),
-                                         innerVars_,
-                                         params.gptohpcovarianceparams.value());
-  std::vector<std::string> requiredStateVariables{
-    "air_temperature",
-    "air_pressure_levels_minus_one",
-    "exner_levels_minus_one",
-    "exner",
-    "potential_temperature",
-    "air_pressure_levels",
-    "air_pressure",
-    "m_v", "m_ci", "m_cl", "m_r",  // mixing ratios from file
-    "m_t",  //  to be populated in eval_total_mixing_ratio_nl
-    "svp",  //  to be populated in eval_sat_vapour_pressure_nl
-    "dlsvpdT",  //  to be populated in eval_derivative_ln_svp_wrt_temperature_nl
-    "qsat",  // to be populated in evalSatSpecificHumidity
-    "specific_humidity",
-      //  to be populated in eval_water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water_nl
-    "virtual_potential_temperature",
-    "hydrostatic_exner_levels", "hydrostatic_pressure_levels"
-     };
-
-  // Check that they are allocated (i.e. exist in the state fieldset)
-  // Use meta data to see if they are populated with actual data.
-  for (auto & s : requiredStateVariables) {
-    if (!xb.fieldSet().has(s)) {
-      oops::Log::info() << "HydrostaticExner variable " << s <<
-                           " is not part of state object." << std::endl;
-    }
-  }
-
+  const oops::Variables stateVariables = params.mandatoryStateVars();
   augmentedStateFieldSet_.clear();
-  for (const auto & s : requiredStateVariables) {
-    augmentedStateFieldSet_.add(xb.fieldSet()[s]);
-  }
-
-
-  std::vector<std::string> requiredGeometryVariables{"height_levels"};
-  for (const auto & s : requiredGeometryVariables) {
-    if (outerGeometryData.fieldSet().has(s)) {
-      augmentedStateFieldSet_.add(outerGeometryData.fieldSet()[s]);
-    } else {
-      augmentedStateFieldSet_.add(xb.fieldSet()[s]);
-    }
-  }
-
-  // we will need geometry here for height variables.
-  mo::eval_air_pressure_levels_nl(augmentedStateFieldSet_);
-  mo::eval_air_temperature_nl(augmentedStateFieldSet_);
-  mo::eval_total_mixing_ratio_nl(augmentedStateFieldSet_);
-  mo::eval_sat_vapour_pressure_nl(augmentedStateFieldSet_);
-  mo::eval_derivative_ln_svp_wrt_temperature_nl(augmentedStateFieldSet_);
-  mo::evalSatSpecificHumidity(augmentedStateFieldSet_);
-  mo::eval_water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water_nl(
-              augmentedStateFieldSet_);
-  mo::eval_virtual_potential_temperature_nl(augmentedStateFieldSet_);
-  mo::evalHydrostaticExnerLevels(augmentedStateFieldSet_);
-  mo::evalHydrostaticPressureLevels(augmentedStateFieldSet_);
-  // Need to setup derived state fields that we need.
-  std::vector<std::string> requiredCovarianceVariables;
-  if (covFieldSet_.has("interpolation_weights")) {
-    requiredCovarianceVariables.push_back("vertical_regression_matrices");
-    requiredCovarianceVariables.push_back("interpolation_weights");
-  }
-
-  for (const auto & s : requiredCovarianceVariables) {
-    augmentedStateFieldSet_.add(covFieldSet_[s]);
+  for (const auto & s : stateVariables) {
+    augmentedStateFieldSet_.add(xb.fieldSet()[s.name()]);
   }
 
   oops::Log::trace() << classname() << "::GpToHp done" << std::endl;
@@ -172,6 +100,7 @@ void GpToHp::multiply(oops::FieldSet3D & fset) const {
 
 void GpToHp::multiplyAD(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
+
   // Allocate inner-only variables
   checkFieldsAreNotAllocated(fset, innerOnlyVars_);
   allocateMissingFields(fset, innerOnlyVars_, innerOnlyVars_,
@@ -203,6 +132,53 @@ void GpToHp::leftInverseMultiply(oops::FieldSet3D & fset) const {
   // Retrieve unbalanced pressure from hydrostatic pressure and geostrophic pressure.
   mo::eval_hydrostatic_pressure_levels_tl_inv(fset.fieldSet(), augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
+}
+
+void GpToHp::read() {
+  oops::Log::trace() << classname() << "::read start " << params_ <<  std::endl;
+  const auto & readParams = params_.readParams.value();
+  if (readParams != boost::none) {
+    eckit::LocalConfiguration lconf;
+    readParams.value().serialize(lconf);
+    const eckit::Configuration & conf = lconf;
+    // Covariance FieldSet
+    covFieldSet_ = createGpRegressionStats(innerGeometryData_.functionSpace(),
+                                           innerVars_,
+                                           conf);
+    // also copy variables from covariance fieldset if required
+    if (covFieldSet_.has("interpolation_weights")) {
+      augmentedStateFieldSet_.add(covFieldSet_["vertical_regression_matrices"]);
+      augmentedStateFieldSet_.add(covFieldSet_["interpolation_weights"]);
+    }
+  }
+  oops::Log::trace() << classname() << "::read done" << std::endl;
+}
+
+void GpToHp::directCalibration(const oops::FieldSets & fset) {
+  oops::Log::info() << classname() << "::directCalibration start" << std::endl;
+  const auto & calibrationReadParams = params_.calibrationReadParams.value();
+  if (calibrationReadParams != boost::none) {
+    eckit::LocalConfiguration lconf;
+    calibrationReadParams.value().serialize(lconf);
+    const eckit::Configuration & conf = lconf;
+    // Covariance FieldSet
+    covFieldSet_ = createGpRegressionStats(innerGeometryData_.functionSpace(),
+                                           innerVars_,
+                                           conf);
+
+    // also copy variables from covariance fieldset if required
+    if (covFieldSet_.has("interpolation_weights")) {
+      augmentedStateFieldSet_.add(covFieldSet_["vertical_regression_matrices"]);
+      augmentedStateFieldSet_.add(covFieldSet_["interpolation_weights"]);
+    }
+  }
+  oops::Log::info() << classname() << "::directCalibration end" << std::endl;
+}
+
+void GpToHp::write() const {
+  oops::Log::trace() << classname() << "::write start" << std::endl;
+  // write regression matrix to file.
+  oops::Log::trace() << classname() << "::write end" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

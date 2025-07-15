@@ -7,8 +7,12 @@
 
 #include "saber/interpolation/Interpolation.h"
 
+#include "atlas/util/Config.h"
+
 #include "oops/util/FieldSetOperations.h"
 #include "oops/util/Logger.h"
+#include "mpi.h"  //cltthinkdeb todo
+#include <fstream> //cltthink
 
 namespace saber {
 namespace interpolation {
@@ -27,18 +31,42 @@ Interpolation::Interpolation(const oops::GeometryData & outerGeometryData,
                              const oops::FieldSet3D & fg)
   : SaberOuterBlockBase(params, xb.validTime()),
     params_(params), outerGeomData_(outerGeometryData), innerVars_(outerVars),
-    activeVars_(params.activeVars.value().get_value_or(outerVars))
+    activeVars_(params.activeVars.value().get_value_or(outerVars)),
+    invVars_(params.inverseVars.value())
 {
-  oops::Log::trace() << classname() << "::Interpolation starting" << std::endl;
+  oops::Log::trace() << classname() << "::Interpolationthinkdeb555 starting" << std::endl;
 
   // Set up GeometryData
   Geometry geom(params.innerGeom, outerGeometryData.comm());
+  oops::Log::trace() << classname() << "::Interpolation after geom ctor" << std::endl;
   innerGeomData_.reset(new oops::GeometryData(geom.functionSpace(), geom.fields(),
                                               true, outerGeometryData.comm()));
 
-  interp_.reset(new oops::GlobalInterpolator(
-          params.forwardInterpConf.value(), *innerGeomData_,
-          outerGeometryData.functionSpace(), outerGeometryData.comm()));
+  if (params.interpType.value() == "global") {
+    globalInterp_.reset(new oops::GlobalInterpolator(
+      params.forwardInterpConf.value(), *innerGeomData_,
+      outerGeometryData.functionSpace(), outerGeometryData.comm()));
+        int mpirank;
+       MPI_Comm_rank(MPI_COMM_WORLD, &mpirank);
+       std::ofstream file("mgbf_filtering_grid_latlon_"+std::to_string(mpirank)+".txt");
+       innerGeomData_->functionSpace().lonlat().dump(file);
+       std::ofstream file2("model_native_grid_latlon_"+std::to_string(mpirank)+".txt");
+       outerGeomData_.functionSpace().lonlat().dump(file2);
+  } else if (params.interpType.value() == "regional") {
+    regionalInterp_.reset(new atlas::Interpolation(
+
+       atlas::util::Config("type", "regional-linear-2d"),
+       innerGeomData_->functionSpace(), outerGeomData_.functionSpace()));
+        int mpirank;
+       MPI_Comm_rank(MPI_COMM_WORLD, &mpirank);
+       std::ofstream file("mgbf_filtering_grid_latlon_"+std::to_string(mpirank)+".txt");
+       innerGeomData_->functionSpace().lonlat().dump(file);
+       std::ofstream file2("model_native_grid_latlon_"+std::to_string(mpirank)+".txt");
+       outerGeomData_.functionSpace().lonlat().dump(file2);
+
+  } else {
+    throw eckit::UserError("wrong interpolator type: " + params.interpType.value(), Here());
+  }
 
   oops::Log::trace() << classname() << "::Interpolation done" << std::endl;
 }
@@ -47,17 +75,7 @@ Interpolation::Interpolation(const oops::GeometryData & outerGeometryData,
 
 void Interpolation::multiply(oops::FieldSet3D & fieldSet) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
-
-  // Temporary FieldSet of active variables for interpolation target
-  atlas::FieldSet targetFieldSet;
-  for (const auto & var : activeVars_) {
-    const auto & f = fieldSet[var.name()];
-    const size_t nlev = f.shape(1);
-    atlas::Field field = outerGeomData_.functionSpace()->createField<double>(
-        atlas::option::name(var.name()) | atlas::option::levels(nlev));
-    field.metadata() = f.metadata();
-    targetFieldSet.add(field);
-  }
+  util::Timer timer(classname(), "multiply");
 
   // Temporary FieldSet of active variables for interpolation source
   atlas::FieldSet sourceFieldSet;
@@ -66,7 +84,22 @@ void Interpolation::multiply(oops::FieldSet3D & fieldSet) const {
   }
 
   // Interpolate to target/outer grid
-  interp_->apply(sourceFieldSet, targetFieldSet);
+  atlas::FieldSet targetFieldSet;
+  if (globalInterp_) {
+    globalInterp_->apply(sourceFieldSet, targetFieldSet);
+  }
+  if (regionalInterp_) {
+    for (const auto & var : activeVars_) {
+      const atlas::Field sourceField = sourceFieldSet[var.name()];
+      atlas::Field targetField = outerGeomData_.functionSpace().createField<double>(
+          atlas::option::name(var.name()) | atlas::option::levels(sourceField.levels()));
+      targetField.metadata() = sourceField.metadata();
+      auto targetView = atlas::array::make_view<double, 2>(targetField);
+      targetView.assign(0.0);
+      targetFieldSet.add(targetField);
+    }
+    regionalInterp_->execute(sourceFieldSet, targetFieldSet);
+  }
 
   // Add passive variables
   for (const auto & f : fieldSet) {
@@ -85,17 +118,7 @@ void Interpolation::multiply(oops::FieldSet3D & fieldSet) const {
 
 void Interpolation::multiplyAD(oops::FieldSet3D & fieldSet) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
-
-  // Temporary FieldSet of active variables for interpolation source
-  atlas::FieldSet sourceFieldSet;
-  for (const auto & var : activeVars_) {
-    const auto & f = fieldSet[var.name()];
-    const size_t nlev = f.shape(1);
-    atlas::Field field = innerGeomData_->functionSpace()->createField<double>(
-        atlas::option::name(var.name()) | atlas::option::levels(nlev));
-    field.metadata() = f.metadata();
-    sourceFieldSet.add(field);
-  }
+  util::Timer timer(classname(), "multiplyAD");
 
   // Temporary FieldSet of active variables for interpolation target
   atlas::FieldSet targetFieldSet;
@@ -103,11 +126,23 @@ void Interpolation::multiplyAD(oops::FieldSet3D & fieldSet) const {
     targetFieldSet.add(fieldSet[var.name()]);
   }
 
-  // Zero field
-  util::zeroFieldSet(sourceFieldSet);
-
   // (Adjoint of:) Interpolate to target/outer grid
-  interp_->applyAD(sourceFieldSet, targetFieldSet);
+  atlas::FieldSet sourceFieldSet;
+  if (globalInterp_) {
+    globalInterp_->applyAD(sourceFieldSet, targetFieldSet);
+  }
+  if (regionalInterp_) {
+    for (const auto & var : activeVars_) {
+      const atlas::Field targetField = targetFieldSet[var.name()];
+      atlas::Field sourceField = innerGeomData_->functionSpace().createField<double>(
+          atlas::option::name(var.name()) | atlas::option::levels(targetField.levels()));
+      sourceField.metadata() = targetField.metadata();
+      auto sourceView = atlas::array::make_view<double, 2>(sourceField);
+      sourceView.assign(0.0);
+      sourceFieldSet.add(sourceField);
+    }
+    regionalInterp_->execute_adjoint(sourceFieldSet, targetFieldSet);
+  }
 
   // Copy passive variables
   for (const auto & f : fieldSet) {
@@ -124,37 +159,48 @@ void Interpolation::multiplyAD(oops::FieldSet3D & fieldSet) const {
 // -----------------------------------------------------------------------------
 
 void Interpolation::leftInverseMultiply(oops::FieldSet3D & fieldSet) const {
-  if (!inverseInterp_) {
-    inverseInterp_.reset(new oops::GlobalInterpolator(
-          params_.inverseInterpConf.value(), outerGeomData_,
-          innerGeomData_->functionSpace(), innerGeomData_->comm()));
-  }
+  // If specific `state variables to inverse` were requested in the yaml, apply the (inverse)
+  // interpolator to those variables only. Otherwise, apply the (inverse) interpolator to the
+  // whole fieldset.
+  // NOTE that in a SaberOuterBlockChain, the logic to call Interpolation::leftInverseMultiply
+  // includes checking for the existence of the `state variables to inverse` key. Thus, omitting
+  // the yaml key is likely to skip the leftInverseMultiply completely.
+  const oops::Variables invVars = (invVars_.size() > 0 ? invVars_ : fieldSet.variables());
 
-  // Temporary FieldSet of active variables for interpolation target
-  atlas::FieldSet targetFieldSet;
-  for (const auto & var : activeVars_) {
-    const auto & f = fieldSet[var.name()];
-    const size_t nlev = f.shape(1);
-    atlas::Field field = innerGeomData_->functionSpace()->createField<double>(
-        atlas::option::name(var.name()) | atlas::option::levels(nlev));
-    field.metadata() = f.metadata();
-    targetFieldSet.add(field);
+  // Prepare inverse interpolator
+  if (!inverseGlobalInterp_ && globalInterp_) {
+    inverseGlobalInterp_.reset(new oops::GlobalInterpolator(
+      params_.inverseInterpConf.value(), outerGeomData_,
+      innerGeomData_->functionSpace(), innerGeomData_->comm()));
+  }
+  if (!inverseRegionalInterp_ && regionalInterp_) {
+    inverseRegionalInterp_.reset(new atlas::Interpolation(
+       atlas::util::Config("type", "regional-linear-2d"),
+       outerGeomData_.functionSpace(), innerGeomData_->functionSpace()));
   }
 
   // Temporary FieldSet of active variables for interpolation source
   atlas::FieldSet sourceFieldSet;
-  for (const auto & var : activeVars_) {
+  for (const auto & var : invVars) {
     sourceFieldSet.add(fieldSet[var.name()]);
   }
 
   // Interpolate to target/inner grid
-  inverseInterp_->apply(sourceFieldSet, targetFieldSet);
-
-  // Add passive variables
-  for (const auto & f : fieldSet) {
-    if (!activeVars_.has(f.name())) {
-      targetFieldSet.add(f);
+  atlas::FieldSet targetFieldSet;
+  if (inverseGlobalInterp_) {
+    inverseGlobalInterp_->apply(sourceFieldSet, targetFieldSet);
+  }
+  if (inverseRegionalInterp_) {
+    for (const auto & var : invVars) {
+      const atlas::Field sourceField = sourceFieldSet[var.name()];
+      atlas::Field targetField = outerGeomData_.functionSpace().createField<double>(
+          atlas::option::name(var.name()) | atlas::option::levels(sourceField.levels()));
+      targetField.metadata() = sourceField.metadata();
+      auto targetView = atlas::array::make_view<double, 2>(targetField);
+      targetView.assign(0.0);
+      targetFieldSet.add(targetField);
     }
+    inverseRegionalInterp_->execute(sourceFieldSet, targetFieldSet);
   }
 
   // Reset

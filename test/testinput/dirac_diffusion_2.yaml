@@ -5,14 +5,14 @@ geometry:
     N: 10
   groups:
   - variables: &vars
-    - stream_function
-    - velocity_potential
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
     levels: &levels 10
   halo: 1
 
 background:
   states:
-  - date: '2010-01-01T12:00:00Z'
+  - date: 2010-01-01T12:00:00Z
     state variables: *vars
 
 background error:
@@ -38,7 +38,7 @@ dirac:
   level:
   - 1
   - 1
-  variable: [stream_function, velocity_potential]
+  variable: [air_horizontal_streamfunction, air_horizontal_velocity_potential]
 output dirac:
   mpi pattern: '%MPI%'
   filepath: testdata/dirac_diffusion_2/%MPI%_dirac_%id%

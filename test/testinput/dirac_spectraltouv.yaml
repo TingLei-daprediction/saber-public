@@ -5,15 +5,15 @@ geometry:
     N: 15
   groups:
   - variables:
-    - streamfunction
-    - velocity_potential
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
     - eastward_wind
     - northward_wind
     levels: 70
   partitioner: ectrans
   halo: 1
 background:
-  date: '2010-01-01T12:00:00Z'
+  date: 2010-01-01T12:00:00Z
   state variables:
   - eastward_wind
   - northward_wind
@@ -23,8 +23,8 @@ background error:
   saber central block:
     saber block name: spectral covariance
     active variables:
-    - streamfunction
-    - velocity_potential
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
     read:
       covariance_file: testdata/spectralcov.nc
       umatrix_netcdf_names:
@@ -33,8 +33,8 @@ background error:
   saber outer blocks:
   - saber block name: spectral to gauss
     active variables:
-    - streamfunction
-    - velocity_potential
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
     - eastward_wind
     - northward_wind
 dirac:

@@ -5,13 +5,13 @@ geometry:
   partitioner: cubedsphere
   groups:
   - variables:
-    - stream_function
+    - air_horizontal_streamfunction
     levels: 1
   halo: 1
 background:
   date: '2010-01-01T12:00:00Z'
   state variables:
-  - stream_function
+  - air_horizontal_streamfunction
 background error:
   covariance model: SABER
   adjoint test: true
@@ -32,7 +32,7 @@ background error:
     inverse interpolator:
       local interpolator type: oops unstructured grid interpolator
     active variables:
-    - stream_function
+    - air_horizontal_streamfunction
 dirac:
   lon:
   - 0.0
@@ -41,7 +41,7 @@ dirac:
   level:
   - 1
   variable:
-  - stream_function
+  - air_horizontal_streamfunction
 output dirac:
   mpi pattern: '%MPI%'
   filepath: testdata/dirac_interpolation_4/dirac_%id%_%MPI%

@@ -203,6 +203,13 @@ void MGBF_Covariance::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   util::Timer timer(classname(), "multiply");
   mgbf_covariance_multiply_f90(keySelf_, fset.get());
+    // Mark all fields as having dirty halos after modification
+    for (const auto & fieldname : fset.field_names()) {
+        atlas::Field field = fset[fieldname];
+        field.set_dirty();  // Mark field as having dirty halos that need to be synchronized
+    }
+       // Perform the actual halo exchange
+    fset.fieldSet().haloExchange();
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 

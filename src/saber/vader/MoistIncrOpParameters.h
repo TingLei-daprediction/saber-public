@@ -29,8 +29,16 @@ class AirTemperatureParameters : public SaberBlockParametersBase {
   oops::Variables mandatoryActiveVars() const override {
     return oops::Variables({std::vector<std::string>{
        "air_temperature",
-       "exner_levels_minus_one",
-       "potential_temperature"}});
+       "dimensionless_exner_function_levels_minus_one",
+       "air_potential_temperature"}});
+  }
+
+  const oops::Variables mandatoryStateVars() const override {
+    return oops::Variables({
+       "height_above_mean_sea_level",
+       "height_above_mean_sea_level_levels",
+       "dimensionless_exner_function_levels_minus_one",
+       "air_potential_temperature"});
   }
 
   oops::Variables activeInnerVars(const oops::Variables& outerVars) const override {
@@ -38,8 +46,8 @@ class AirTemperatureParameters : public SaberBlockParametersBase {
     eckit::LocalConfiguration conf;
     conf.set("levels", modelLevels);
     oops::Variables vars;
-    vars.push_back({"potential_temperature", conf});
-    vars.push_back({"exner_levels_minus_one", conf});
+    vars.push_back({"air_potential_temperature", conf});
+    vars.push_back({"dimensionless_exner_function_levels_minus_one", conf});
     return vars;
   }
 
@@ -59,13 +67,19 @@ class MoistIncrOpParameters : public SaberBlockParametersBase {
   oops::Variables mandatoryActiveVars() const override {return oops::Variables({
     std::vector<std::string>{
     "air_temperature",
-    "mass_content_of_cloud_ice_in_atmosphere_layer",
-    "mass_content_of_cloud_liquid_water_in_atmosphere_layer",
+    "cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water",
+    "cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water",
     "qt",
-    "specific_humidity"}});}
+    "water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water"}});}
+
+  const oops::Variables mandatoryStateVars() const override {return oops::Variables({
+    "liquid_cloud_volume_fraction_in_atmosphere_layer",
+    "ice_cloud_volume_fraction_in_atmosphere_layer",
+    "qsat", "dlsvpdT", "rht"});}
 
   oops::Variables activeInnerVars(const oops::Variables& outerVars) const override {
-    const int modelLevels = outerVars["specific_humidity"].getLevels();
+    const int modelLevels =
+              outerVars["water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water"].getLevels();
     eckit::LocalConfiguration conf;
     conf.set("levels", modelLevels);
     oops::Variables vars;
@@ -75,9 +89,10 @@ class MoistIncrOpParameters : public SaberBlockParametersBase {
   }
 
   oops::Variables activeOuterVars(const oops::Variables& outerVars) const override {
-    oops::Variables vars({outerVars["mass_content_of_cloud_ice_in_atmosphere_layer"],
-                          outerVars["mass_content_of_cloud_liquid_water_in_atmosphere_layer"],
-                          outerVars["specific_humidity"]});
+    oops::Variables vars(
+      {outerVars["cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water"],
+       outerVars["cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water"],
+       outerVars["water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water"]});
     return vars;
   }
 };
@@ -92,27 +107,40 @@ class SuperMoistIncrOpParameters : public SaberBlockParametersBase {
   MoistIncrOpParameters moistIncrOp{this};
   oops::Variables mandatoryActiveVars() const override {return oops::Variables({
     std::vector<std::string>{
-    "exner_levels_minus_one",
-    "potential_temperature",
-    "mass_content_of_cloud_ice_in_atmosphere_layer",
-    "mass_content_of_cloud_liquid_water_in_atmosphere_layer",
+    "dimensionless_exner_function_levels_minus_one",
+    "air_potential_temperature",
+    "cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water",
+    "cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water",
     "qt",
-    "specific_humidity"}});}
+    "water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water"}});}
+
+  // combined variables for AirTemperature and MoistIncrOp
+  const oops::Variables mandatoryStateVars() const override {
+    return oops::Variables({
+       "height_above_mean_sea_level",
+       "height_above_mean_sea_level_levels",
+       "dimensionless_exner_function_levels_minus_one",
+       "air_potential_temperature",
+       "liquid_cloud_volume_fraction_in_atmosphere_layer",
+       "ice_cloud_volume_fraction_in_atmosphere_layer",
+       "qsat", "dlsvpdT", "rht"});}
 
   oops::Variables activeInnerVars(const oops::Variables& outerVars) const override {
-    const int modelLevels = outerVars["specific_humidity"].getLevels();
+    const int modelLevels =
+              outerVars["water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water"].getLevels();
     eckit::LocalConfiguration conf;
     conf.set("levels", modelLevels);
     oops::Variables vars;
-    vars.push_back({"exner_levels_minus_one", conf});
-    vars.push_back({"potential_temperature", conf});
+    vars.push_back({"dimensionless_exner_function_levels_minus_one", conf});
+    vars.push_back({"air_potential_temperature", conf});
     vars.push_back({"qt", conf});
     return vars;
   }
 
   // activeOuterVars() not needed in this super block.
-  // It would have contained "mass_content_of_cloud_ice_in_atmosphere_layer",
-  // "mass_content_of_cloud_liquid_water_in_atmosphere_layer" and "specific_humidity".
+  // It would have contained "cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water",
+  // "cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water" and
+  // "water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water" -> AKA "specific_humidity".
 
   oops::Variables intermediateTempVars(const oops::Variables& outerVars) const {
     if (outerVars.has("air_temperature")) {
@@ -120,7 +148,8 @@ class SuperMoistIncrOpParameters : public SaberBlockParametersBase {
                              " and should not be an outer variable of this block.",
                              Here());
     }
-    const int modelLevels = outerVars["specific_humidity"].getLevels();
+    const int modelLevels =
+              outerVars["water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water"].getLevels();
     eckit::LocalConfiguration conf;
     conf.set("levels", modelLevels);
     oops::Variables tempVars;

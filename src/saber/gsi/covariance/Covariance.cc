@@ -28,7 +28,7 @@
 #include "oops/util/Timer.h"
 
 #include "saber/gsi/covariance/Covariance.interface.h"
-#include "saber/gsi/grid/Grid.h"
+#include "saber/gsi/utils/GridCheckHelper.h"
 
 namespace saber {
 namespace gsi {
@@ -49,9 +49,12 @@ StaticCovariance::StaticCovariance(const oops::GeometryData & geometryData,
   : SaberCentralBlockBase(params, xb.validTime()),
     params_(params), variables_(params.activeVars.value().get_value_or(centralVars)),
     gsiGridFuncSpace_(geometryData.functionSpace()), comm_(&geometryData.comm()),
-    xb_(xb), fg_(fg), validTime_(xb.validTime())
+    xb_(xb.validTime(), xb.commGeom()), fg_(fg.validTime(), fg.commGeom()),
+    validTime_(xb.validTime())
 {
   oops::Log::trace() << classname() << "::StaticCovariance starting" << std::endl;
+  xb_.shallowCopy(xb);
+  fg_.shallowCopy(fg);
   oops::Log::trace() << classname() << "::StaticCovariance done" << std::endl;
 }
 
@@ -117,9 +120,13 @@ void StaticCovariance::read() {
   fsetXbptrs[0] = xb_.get();
   fsetFgptrs[0] = fg_.get();
   timesptrs[0]  = &validTime_;
+
+  const std::vector<double> gridChecks = functionspaceToGridChecks(gsiGridFuncSpace_);
+
   gsi_covariance_create_f90(keySelf_, *comm_, params_.readParams.value()->toConfiguration(),
                             fsetXbptrs.size(), fsetXbptrs.data(), fsetFgptrs.data(),
-                            timesptrs.data());
+                            timesptrs.data(), gridChecks.size(), gridChecks.data());
+
   oops::Log::trace() << classname() << "::read done" << std::endl;
 }
 

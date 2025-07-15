@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <map>
 #include <memory>
 #include <string>
 #include <utility>
@@ -60,7 +61,16 @@ class StdDevParameters : public SaberBlockParametersBase {
   // Calibration of block parameters
   oops::OptionalParameter<StdDevWriteParameters> calibrationParams{"calibration", this};
 
+  // Scaling parameter
+  oops::Parameter<double> scaleFactorParam{"stddev scale factor",
+                                           "multiplicative factor applied to StdDev block",
+                                           1.0, this,
+                                          {oops::exclusiveMinConstraint(0.)}};
+
   oops::Variables mandatoryActiveVars() const override {return oops::Variables();}
+
+  oops::Parameter<eckit::LocalConfiguration> scaling{"standard deviations",
+                                                     eckit::LocalConfiguration(), this};
 };
 
 // -----------------------------------------------------------------------------
@@ -109,11 +119,13 @@ class StdDev : public SaberOuterBlockBase {
   Parameters_ params_;
   bool readFromAtlas_;
   bool readFromModel_;
+  double scaleFactor_;
   eckit::LocalConfiguration readConf_;
   std::unique_ptr<oops::FieldSet3D> stdDevFset_;
   bool writeToAtlas_;
   bool writeToModel_;
   eckit::LocalConfiguration writeConf_;
+  std::map<std::string, double> scaling_;
 
   // Interative mean
   std::unique_ptr<oops::FieldSet3D> iterativeMean_;

@@ -1,0 +1,31 @@
+Input Dirac increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: F15 [1800]
+  Fields:
+    air_horizontal_streamfunction: 1.0000000000000000e+00
+    air_horizontal_velocity_potential: 1.0000000000000000e+00
+    unbalanced_pressure_levels_minus_one: 1.0000000000000000e+00
+    mu: 1.0000000000000000e+00
+Adjoint test for block spectral to gauss passed
+Inner inverse test for block spectral to gauss passed: U Uinv (U x) == (U x)
+Outer inverse test for block spectral to gauss passed: Uinv U (Uinv x) == (Uinv x)
+Adjoint test for block spectral covariance passed
+Covariance(SABER) diagnostics:
+- Variances at Dirac points:
+  + Value for variable air_horizontal_streamfunction, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, -2.95042, 1): 3.8864245999168976e+10
+  + Value for variable air_horizontal_velocity_potential, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, -2.95042, 1): 4.0471358165996567e+10
+  + Value for variable unbalanced_pressure_levels_minus_one, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, -2.95042, 1): 4.7870081526585398e+02
+  + Value for variable mu, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, -2.95042, 1): 1.5138305151450943e-01
+- Covariances at diagnostic points:
+  + Value for variable air_horizontal_streamfunction, subwindow 0, at (longitude, latitude, vertical index) point (18.00000, 20.65284, 2): 1.0238082632187469e+10
+  + Value for variable air_horizontal_velocity_potential, subwindow 0, at (longitude, latitude, vertical index) point (18.00000, 20.65284, 2): 1.1885452348609774e+10
+  + Value for variable unbalanced_pressure_levels_minus_one, subwindow 0, at (longitude, latitude, vertical index) point (18.00000, 20.65284, 2): 5.2508736740731948e+01
+  + Value for variable mu, subwindow 0, at (longitude, latitude, vertical index) point (18.00000, 20.65284, 2): 1.3818763433446678e-03
+Covariance(SABER) * Increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: F15 [1800]
+  Fields:
+    air_horizontal_streamfunction: 1.0130440092175687e+12
+    air_horizontal_velocity_potential: 1.1868000937809998e+12
+    unbalanced_pressure_levels_minus_one: 5.4605232610221592e+03
+    mu: 7.7222226932695326e-01

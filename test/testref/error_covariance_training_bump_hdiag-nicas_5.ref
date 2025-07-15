@@ -5,31 +5,31 @@
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
-          Norm of stream_function:  0.19409091E+02
-          Norm of stream_function:  0.17279190E+02
-          Norm of stream_function:  0.18487635E+02
-          Norm of stream_function:  0.18760230E+02
-          Norm of stream_function:  0.18957922E+02
-          Norm of stream_function:  0.19838408E+02
-          Norm of stream_function:  0.19982855E+02
-          Norm of stream_function:  0.18948965E+02
-          Norm of stream_function:  0.18752763E+02
-          Norm of stream_function:  0.18785222E+02
-          Norm of stream_function:  0.18961091E+02
-          Norm of stream_function:  0.17123303E+02
-          Norm of stream_function:  0.16553431E+02
-          Norm of stream_function:  0.20843991E+02
-          Norm of stream_function:  0.19208116E+02
-          Norm of stream_function:  0.18954059E+02
-          Norm of stream_function:  0.17648702E+02
-          Norm of stream_function:  0.16810909E+02
-          Norm of stream_function:  0.15210781E+02
-          Norm of stream_function:  0.18522532E+02
-          Norm of stream_function:  0.18768681E+02
-          Norm of stream_function:  0.17925961E+02
-          Norm of stream_function:  0.17021250E+02
-          Norm of stream_function:  0.17660929E+02
-          Norm of stream_function:  0.17078781E+02
+          Norm of air_horizontal_streamfunction:  0.19409091E+02
+          Norm of air_horizontal_streamfunction:  0.17279190E+02
+          Norm of air_horizontal_streamfunction:  0.18487635E+02
+          Norm of air_horizontal_streamfunction:  0.18760230E+02
+          Norm of air_horizontal_streamfunction:  0.18957922E+02
+          Norm of air_horizontal_streamfunction:  0.19838408E+02
+          Norm of air_horizontal_streamfunction:  0.19982855E+02
+          Norm of air_horizontal_streamfunction:  0.18948965E+02
+          Norm of air_horizontal_streamfunction:  0.18752763E+02
+          Norm of air_horizontal_streamfunction:  0.18785222E+02
+          Norm of air_horizontal_streamfunction:  0.18961091E+02
+          Norm of air_horizontal_streamfunction:  0.17123303E+02
+          Norm of air_horizontal_streamfunction:  0.16553431E+02
+          Norm of air_horizontal_streamfunction:  0.20843991E+02
+          Norm of air_horizontal_streamfunction:  0.19208116E+02
+          Norm of air_horizontal_streamfunction:  0.18954059E+02
+          Norm of air_horizontal_streamfunction:  0.17648702E+02
+          Norm of air_horizontal_streamfunction:  0.16810909E+02
+          Norm of air_horizontal_streamfunction:  0.15210781E+02
+          Norm of air_horizontal_streamfunction:  0.18522532E+02
+          Norm of air_horizontal_streamfunction:  0.18768681E+02
+          Norm of air_horizontal_streamfunction:  0.17925961E+02
+          Norm of air_horizontal_streamfunction:  0.17021250E+02
+          Norm of air_horizontal_streamfunction:  0.17660929E+02
+          Norm of air_horizontal_streamfunction:  0.17078781E+02
           Level   1 ~> 100.0%
           Level   2 ~> 100.0%
           Decimate full grid, at least      173 points required,     173 valid points found
@@ -86,7 +86,7 @@
           Independent levels for angular sector   4 / class  10:  1[2]
                 Level:   1 ~> cov. at class zero:  0.97E+00
                 Level:   2 ~> cov. at class zero:  0.96E+00
-             Block stream_function:  0.19261743E+00 for      144 diagnostic points
+             Block air_horizontal_streamfunction:  0.19261743E+00 for      144 diagnostic points
                    Level:   1 ~> amplitude:        0.58
                                  cor. hor. support:      4827.95 km
                                  cor. ver. support:         8.17 vertical units
