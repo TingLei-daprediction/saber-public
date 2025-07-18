@@ -20,8 +20,8 @@
 !=============================================================================
 module phint
 !=============================================================================
-use pkind, only: spi,dp
-use pietc, only: u0,u1,u2,o2
+use mgbf_kinds, only: i_kind,r_kind
+use jp_pietc, only: u0,u1,u2,o2
 implicit none
 private
 public:: hint,whint,wint3
@@ -43,11 +43,11 @@ subroutine hint(x,as,a)!                                                [hint]
 ! to a point located a fraction, x, into the central interval. The result is a.
 !=============================================================================
 implicit none
-real(dp),                intent(in ):: x
-real(dp),dimension(-1:2),intent(in ):: as
-real(dp),                intent(out):: a
+real(r_kind),                intent(in ):: x
+real(r_kind),dimension(-1:2),intent(in ):: as
+real(r_kind),                intent(out):: a
 !-----------------------------------------------------------------------------
-real(dp):: da0,dda0,da1,dda1,quad0,quad1,xm
+real(r_kind):: da0,dda0,da1,dda1,quad0,quad1,xm
 !=============================================================================
 da0=(as(1)-as(-1))*o2      ; da1=(as(2)-as(0))*o2
 dda0=as(-1)-2*as(0)+as(1); dda1=as(0)-2*as(1)+as(2)
@@ -64,11 +64,11 @@ subroutine hintd(x,as,a,da)!                                            [hint]
 ! interval. The results are a and da.
 !=============================================================================
 implicit none
-real(dp),                intent(in ):: x
-real(dp),dimension(-1:2),intent(in ):: as
-real(dp),                intent(out):: a,da
+real(r_kind),                intent(in ):: x
+real(r_kind),dimension(-1:2),intent(in ):: as
+real(r_kind),                intent(out):: a,da
 !-----------------------------------------------------------------------------
-real(dp):: da0,dda0,da1,dda1,quad0,quad1,dquad0,dquad1,xm
+real(r_kind):: da0,dda0,da1,dda1,quad0,quad1,dquad0,dquad1,xm
 !=============================================================================
 da0=(as(1)-as(-1))*o2     ; da1=(as(2)-as(0))*o2
 dda0=as(-1)-u2*as(0)+as(1); dda1=as(0)-u2*as(1)+as(2)
@@ -87,10 +87,10 @@ subroutine whint(x,wint)!                                              [whint]
 ! of the three intervals defined by the four points.
 !=============================================================================
 implicit none
-real(dp),                intent(in ):: x
-real(dp),dimension(-1:2),intent(out):: wint
+real(r_kind),                intent(in ):: x
+real(r_kind),dimension(-1:2),intent(out):: wint
 !-----------------------------------------------------------------------------
-real(dp):: xm1,xp1,xm2
+real(r_kind):: xm1,xp1,xm2
 !=============================================================================
 xm2=x-u2; xm1=x-u1; xp1=x+u1
 wint=(/-x*xm1*o2, xm1*xp1,   -x*xp1*o2,      u0 /)*xm1+ &
@@ -104,11 +104,11 @@ subroutine whintd(x,wint,dwint)!                                       [whint]
 ! of the three intervals defined by the four points.
 !=============================================================================
 implicit none
-real(dp),                intent(in ):: x
-real(dp),dimension(-1:2),intent(out):: wint,dwint
+real(r_kind),                intent(in ):: x
+real(r_kind),dimension(-1:2),intent(out):: wint,dwint
 !-----------------------------------------------------------------------------
-real(dp)                :: xm1,xp1,xm2
-real(dp),dimension(-1:2):: quad0,quad1,dquad0,dquad1
+real(r_kind)                :: xm1,xp1,xm2
+real(r_kind),dimension(-1:2):: quad0,quad1,dquad0,dquad1
 !=============================================================================
 xm2=x-u2; xm1=x-u1; xp1=x+u1
 quad0=(/-x*xm1*o2,  xm1*xp1, -x*xp1*o2,       u0 /)
@@ -122,14 +122,14 @@ end subroutine whintd
 !=============================================================================
 subroutine whintvar(xs,x,wint)!                                        [whint]
 !=============================================================================
-use pkind, only: dp
-use pietc, only: u0
+use jp_pkind, only: dp
+use jp_pietc, only: u0
 implicit none
-real(dp),dimension(0:3),intent(in ):: xs
-real(dp),               intent(in ):: x
-real(dp),dimension(0:3),intent(out):: wint
+real(r_kind),dimension(0:3),intent(in ):: xs
+real(r_kind),               intent(in ):: x
+real(r_kind),dimension(0:3),intent(out):: wint
 !-----------------------------------------------------------------------------
-real(dp):: x01,x12,x23,x02,x13,x0,x1,x2,x3
+real(r_kind):: x01,x12,x23,x02,x13,x0,x1,x2,x3
 !=============================================================================
 x01=xs(1)-xs(0)
 x12=xs(2)-xs(1)
@@ -147,15 +147,15 @@ end subroutine whintvar
 !=============================================================================
 subroutine whintvard(xs,x,wint,dwint)!                                 [whint]
 !=============================================================================
-use pkind, only: dp
-use pietc, only: u0
+use jp_pkind, only: dp
+use jp_pietc, only: u0
 implicit none
-real(dp),dimension(0:3),intent(in ):: xs
-real(dp),               intent(in ):: x
-real(dp),dimension(0:3),intent(out):: wint,dwint
+real(r_kind),dimension(0:3),intent(in ):: xs
+real(r_kind),               intent(in ):: x
+real(r_kind),dimension(0:3),intent(out):: wint,dwint
 !-----------------------------------------------------------------------------
-real(dp),dimension(0:3):: q1,q2
-real(dp)               :: x01,x12,x23,x02,x13,x0,x1,x2,x3
+real(r_kind),dimension(0:3):: q1,q2
+real(r_kind)               :: x01,x12,x23,x02,x13,x0,x1,x2,x3
 !=============================================================================
 x01=xs(1)-xs(0)
 x12=xs(2)-xs(1)
@@ -180,13 +180,13 @@ subroutine wint3(xs,x,wint)!                                           [wint3]
 ! Get the weights, wint, for Lagrange 3-point interpolation to x from a
 ! variable-spaced grid xs
 !=============================================================================
-use pkind, only: dp
+use jp_pkind, only: dp
 implicit none
-real(dp),dimension(0:2),intent(in ):: xs
-real(dp),               intent(in ):: x
-real(dp),dimension(0:2),intent(out):: wint
+real(r_kind),dimension(0:2),intent(in ):: xs
+real(r_kind),               intent(in ):: x
+real(r_kind),dimension(0:2),intent(out):: wint
 !-----------------------------------------------------------------------------
-real(dp):: x01,x12,x02,x0,x1,x2
+real(r_kind):: x01,x12,x02,x0,x1,x2
 !=============================================================================
 x01=xs(1)-xs(0)
 x12=xs(2)-xs(1)
@@ -203,13 +203,13 @@ subroutine wint3d(xs,x,wint,dwint)!                                    [wint3]
 ! Get the weights, wint, for Lagrange 3-point interpolation to x from a
 ! variable-spaced grid xs and the derivative weights dwint.
 !=============================================================================
-use pkind, only: dp
+use jp_pkind, only: dp
 implicit none
-real(dp),dimension(0:2),intent(in ):: xs
-real(dp),               intent(in ):: x
-real(dp),dimension(0:2),intent(out):: wint,dwint
+real(r_kind),dimension(0:2),intent(in ):: xs
+real(r_kind),               intent(in ):: x
+real(r_kind),dimension(0:2),intent(out):: wint,dwint
 !-----------------------------------------------------------------------------
-real(dp):: x01,x12,x02,x0,x1,x2
+real(r_kind):: x01,x12,x02,x0,x1,x2
 !=============================================================================
 x01=xs(1)-xs(0)
 x12=xs(2)-xs(1)

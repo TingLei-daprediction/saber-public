@@ -14,7 +14,7 @@ ${jbfilenames}
 
 #PARENT_SCOPE
 )
-add_library(mgbf_lib STATIC ${mgbf_lib_src_files})
+add_library(mgbflib STATIC ${mgbf_lib_src_files})
 set_target_properties(mgbf_lib PROPERTIES
     Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules)
 

@@ -33,6 +33,8 @@ module mg_parameter
 
 use mgbf_kinds, only: i_kind,r_kind
 use jp_pietc, only: u1
+use phint1 
+use mpi
 
 implicit none
 integer(i_kind),parameter :: lm_max=200  
@@ -133,6 +135,8 @@ integer, allocatable, dimension(:):: ixm,jym,nxy
 integer, allocatable, dimension(:):: im0,jm0
 integer, allocatable, dimension(:):: Fimax,Fjmax
 integer, allocatable, dimension(:):: FimaxL,FjmaxL
+real(r_kind), allocatable, dimension(:):: zofis  ! index of s(fitering grids) in analysis grids (its index is its coor)
+real(r_kind), allocatable, dimension(:):: isofz  ! index of z of analysis grids in the filtering grids 
 
 integer(i_kind):: npes_filt
 integer(i_kind):: maxpe_filt
@@ -161,6 +165,8 @@ logical :: l_quad_horizontal=.false.    ! logical flag for quadratic interpolati
 logical :: l_new_map            ! logical flag for new mapping between analysis and filter grid
 logical :: l_vertical_filter    ! logical flag for vertical filtering
 logical :: l_anal_sub_of_filt   ! true : analysis grids and filtering grids are the same excpet for later has boundary points 
+logical :: l_vert_stretched_filtgrid  ! true : filtering grids are stretched in tems of analysis grid unit 
+logical :: l_vert_varied_ampl01  ! true, ampl01 is varied over the vertical analysis levels 
 integer(i_kind):: km            ! number of vertically stacked all variables (km=km2+lm*km3)
 integer(i_kind):: km_4
 integer(i_kind):: km_16
@@ -213,6 +219,9 @@ integer(i_kind):: itargdn_sw_loc32,itargdn_se_loc32,itargdn_nw_loc32,itargdn_ne_
 integer(i_kind):: itargdn_sw_loc43,itargdn_se_loc43,itargdn_nw_loc43,itargdn_ne_loc43
 logical:: lsendup_sw_loc,lsendup_se_loc,lsendup_nw_loc,lsendup_ne_loc
 logical:: l_mg_weig_readin=.false.
+!clt for use of resolution-varied vertical filtering grids
+real(r_kind), allocatable,dimension(:):: aspect_vert_profile_angrid ! should be of size (lm)
+real(r_kind), allocatable,dimension(:):: aspect_vert_profile_filtgrid ! should be of size (lm)
 
 contains
   procedure :: init_mg_parameter 
@@ -511,6 +520,8 @@ logical :: l_quad_horizontal=.false.    ! logical flag for quadratic interpolati
 logical :: l_new_map=.false.            ! logical flag for new mapping between analysis and filter grid
 logical :: l_vertical_filter=.true.    ! logical flag for vertical filtering
 logical ::  l_anal_sub_of_filt=.false.
+logical ::  l_vert_stretched_filtgrid=.false.
+logical :: l_vert_varied_ampl01=.false.  ! true, ampl01 is varied over the vertical analysis levels 
 integer(i_kind):: gm_max=4   !clt by defaul
 
 ! Global number of data on Analysis grid
@@ -520,6 +531,7 @@ integer(i_kind):: mm0
 integer(i_kind):: hx,hy,hz
 integer(i_kind):: p
 logical:: l_mg_weig_readin=.false.
+integer(i_kind), parameter       :: nf=20! refinement factor for z grid,used in make_ssgrid
 
   namelist /parameters_mgbeta/ mg_ampl01,mg_ampl02,mg_ampl03            &
                               ,mg_weig1,mg_weig2,mg_weig3,mg_weig4      &
@@ -537,6 +549,8 @@ logical:: l_mg_weig_readin=.false.
                               ,l_new_map                                &
                               ,l_vertical_filter                        &
                               ,l_anal_sub_of_filt                       &
+                              ,l_vert_stretched_filtgrid                     &
+                              ,l_vert_varied_ampl01                     &
                               ,l_for_localization,ldelta,lquart,lhelm   &
                               , l_mgbf_inhomogeneous                    &
                               ,gm_max                                   &
@@ -548,6 +562,15 @@ logical:: l_mg_weig_readin=.false.
   read(10,nml=parameters_mgbeta)
   close(unit=10)
 !
+  allocate(this%aspect_vert_profile_angrid(lm_a),this%aspect_vert_profile_filtgrid(lm))
+  allocate(this%zofis(lm))
+  allocate(this%isofz(lm_a))
+#if 1 
+  if(this%l_vert_varied_ampl01 ) then
+   call convert_vert_varied_aspt 
+!in which the mg_ampl01 will be re-defined
+  endif
+#endif
 !-----------------------------------------------------------------
 !for safety, copy all namelist loc vars to them of this object
   this%mg_ampl01=mg_ampl01
@@ -581,6 +604,8 @@ logical:: l_mg_weig_readin=.false.
   this%l_new_map=l_new_map
   this%l_vertical_filter=l_vertical_filter
   this%l_anal_sub_of_filt=l_anal_sub_of_filt
+  this%l_vert_stretched_filtgrid=l_vert_stretched_filtgrid
+  this%l_vert_varied_ampl01=l_vert_varied_ampl01
   this%l_for_localization=l_for_localization
   this%l_mgbf_inhomogeneous = l_mgbf_inhomogeneous
   this%ldelta=ldelta
@@ -706,8 +731,8 @@ logical:: l_mg_weig_readin=.false.
 ! Number of grid intervals on GSI grid for the reduced RTMA domain
 ! before padding 
 !
-  this%nA_max0 = 1792
-  this%mA_max0 = 1056
+!clt  this%nA_max0 = 1792
+!clt  this%mA_max0 = 1056
 
 !
 ! Number of grid points on the analysis grid after padding
@@ -896,7 +921,6 @@ logical:: l_mg_weig_readin=.false.
 
   this%imH=this%im0(this%gm)
   this%jmH=this%jm0(this%gm)
-
   this%pasp01 = mg_ampl01
   this%pasp02 = mg_ampl02
   this%pasp03 = mg_ampl03
@@ -909,6 +933,78 @@ logical:: l_mg_weig_readin=.false.
   this%rmom2_2=u1/sqrt(this%pee2+4)
   this%rmom2_3=u1/sqrt(this%pee2+5)
   this%rmom2_4=u1/sqrt(this%pee2+6)
+#if 1 
+
+contains
+
+subroutine convert_vert_varied_aspt
+
+  integer(i_kind) :: myunit,lm_tmp,i,iz,is,mype,ierr
+  real(r_kind)::sstop,dss
+  real (r_kind),allocatable,dimension(:)::sigofz
+  real (r_kind),allocatable,dimension(:)::sigofis
+  
+  allocate(this%aspect_vert_profile_angrid(lm_a),this%aspect_vert_profile_filtgrid(lm))
+  allocate(sigofz(lm_a),sigofis(lm))
+  call MPI_COMM_RANK(MPI_COMM_WORLD,mype,ierr)
+  if(l_vert_stretched_filtgrid) then 
+   if(mype.eq.0) then 
+     open(newunit=myunit,file="mgbf_vert_aspt_profile.txt",status='old')
+     read(myunit,*)lm_tmp 
+     if(lm_tmp.ne.lm_a) then 
+       error stop " the lm_a is not the same as the size in mgbf_vert_aspt_profile.txt, stop"
+     endif
+     do i=1,lm_a
+       read(myunit,*)this%aspect_vert_profile_angrid(i)
+     enddo
+   endif 
+   call MPI_Type_match_size(MPI_TYPECLASS_REAL, kind(this%aspect_vert_profile_angrid), mpi_real, ierr)
+   if (ierr /= MPI_SUCCESS) then
+     write(6,*) "ERROR: No matching MPI type for real kind =", kind(this%aspect_vert_profile_angrid)
+     call MPI_Abort(MPI_COMM_WORLD, 1, ierr)
+   endif
+   call MPI_Bcast(this%aspect_vert_profile_angrid, lm_a, mpi_real, 0, MPI_COMM_WORLD, ierr)
+  
+!   nz=lm_a-1
+!   ns=lm-1
+    
+! calibrate sigscale to make sigofz go to sigbottom at z=0:
+      sigofz=this%aspect_vert_profile_angrid
+   print'('' list the levels and sigofz from the top down:'')'
+   if(mype==0) then
+   do iz=lm_a,1,-1
+      write(6,*)iz,sigofz(iz)
+   enddo
+   endif
+   
+! Make the new grid whose resolution of the correlation scale sigofz
+! is uniform throughout.
+! isofz is the s-index coordinate of each of the original z-grid points.
+! zofis is the z-index coordinate of each of the new s-grid points.
+!cltorg     call make_ssgrid(nz,nf,ns,sigofz, sstop,dss,isofz,zofis)
+    call make_ssgrid(lm_a-1,nf,lm-1,sigofz, sstop,dss,this%isofz,this%zofis)
+
+! Use the new s-grid locations zofis, and the original profile of
+! correlation scales sigofz, to interpolate, smoothly and positively,
+! these scales sig to each of the new s-grid points:
+!clt    call logintgrid(nz,ns,zofis,sigofz,sigofis)
+    call logintgrid(lm_a-1,lm-1,this%zofis,sigofz,sigofis)
+   if(mype==0) then
+    print'('' list the profile coordinates of zofis,sigofis, for each is:'')'
+    do is=1,lm
+      write(6,*)is,this%zofis(is),sigofis(is)
+    enddo
+   endif
+   mg_ampl01=sum(sigofis)/size(sigofis)
+
+  endif 
+
+
+  deallocate(sigofz,sigofis)
+end subroutine convert_vert_varied_aspt
+
+#endif
+  
 
 !----------------------------------------------------------------------
 end subroutine init_mg_parameter
