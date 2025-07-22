@@ -166,7 +166,7 @@ logical :: l_new_map            ! logical flag for new mapping between analysis 
 logical :: l_vertical_filter    ! logical flag for vertical filtering
 logical :: l_anal_sub_of_filt   ! true : analysis grids and filtering grids are the same excpet for later has boundary points 
 logical :: l_vert_stretched_filtgrid  ! true : filtering grids are stretched in tems of analysis grid unit 
-logical :: l_vert_varied_ampl01  ! true, ampl01 is varied over the vertical analysis levels 
+!logical :: l_vert_varied_ampl01  ! true, ampl01 is varied over the vertical analysis levels 
 integer(i_kind):: km            ! number of vertically stacked all variables (km=km2+lm*km3)
 integer(i_kind):: km_4
 integer(i_kind):: km_16
@@ -521,7 +521,7 @@ logical :: l_new_map=.false.            ! logical flag for new mapping between a
 logical :: l_vertical_filter=.true.    ! logical flag for vertical filtering
 logical ::  l_anal_sub_of_filt=.false.
 logical ::  l_vert_stretched_filtgrid=.false.
-logical :: l_vert_varied_ampl01=.false.  ! true, ampl01 is varied over the vertical analysis levels 
+!cltlogical :: l_vert_varied_ampl01=.false.  ! true, ampl01 is varied over the vertical analysis levels 
 integer(i_kind):: gm_max=4   !clt by defaul
 
 ! Global number of data on Analysis grid
@@ -550,7 +550,6 @@ integer(i_kind), parameter       :: nf=20! refinement factor for z grid,used in 
                               ,l_vertical_filter                        &
                               ,l_anal_sub_of_filt                       &
                               ,l_vert_stretched_filtgrid                     &
-                              ,l_vert_varied_ampl01                     &
                               ,l_for_localization,ldelta,lquart,lhelm   &
                               , l_mgbf_inhomogeneous                    &
                               ,gm_max                                   &
@@ -562,11 +561,11 @@ integer(i_kind), parameter       :: nf=20! refinement factor for z grid,used in 
   read(10,nml=parameters_mgbeta)
   close(unit=10)
 !
-  allocate(this%aspect_vert_profile_angrid(lm_a),this%aspect_vert_profile_filtgrid(lm))
   allocate(this%zofis(lm))
   allocate(this%isofz(lm_a))
+  this%l_vert_stretched_filtgrid=l_vert_stretched_filtgrid 
 #if 1 
-  if(this%l_vert_varied_ampl01 ) then
+  if(this%l_vert_stretched_filtgrid ) then
    call convert_vert_varied_aspt 
 !in which the mg_ampl01 will be re-defined
   endif
@@ -605,7 +604,7 @@ integer(i_kind), parameter       :: nf=20! refinement factor for z grid,used in 
   this%l_vertical_filter=l_vertical_filter
   this%l_anal_sub_of_filt=l_anal_sub_of_filt
   this%l_vert_stretched_filtgrid=l_vert_stretched_filtgrid
-  this%l_vert_varied_ampl01=l_vert_varied_ampl01
+!clt  this%l_vert_varied_ampl01=l_vert_varied_ampl01
   this%l_for_localization=l_for_localization
   this%l_mgbf_inhomogeneous = l_mgbf_inhomogeneous
   this%ldelta=ldelta
@@ -943,11 +942,15 @@ subroutine convert_vert_varied_aspt
   real(r_kind)::sstop,dss
   real (r_kind),allocatable,dimension(:)::sigofz
   real (r_kind),allocatable,dimension(:)::sigofis
+  integer(i_kind):: user_mpi_real
   
   allocate(this%aspect_vert_profile_angrid(lm_a),this%aspect_vert_profile_filtgrid(lm))
   allocate(sigofz(lm_a),sigofis(lm))
   call MPI_COMM_RANK(MPI_COMM_WORLD,mype,ierr)
-  if(l_vert_stretched_filtgrid) then 
+  write(6,*)'thinkdeb mype is ',mype, l_vert_stretched_filtgrid
+  write(6,*)'thinkdeb mype is lm_a ',mype, lm_a,lm 
+  call flush(6)
+  if(this%l_vert_stretched_filtgrid) then 
    if(mype.eq.0) then 
      open(newunit=myunit,file="mgbf_vert_aspt_profile.txt",status='old')
      read(myunit,*)lm_tmp 
@@ -957,25 +960,41 @@ subroutine convert_vert_varied_aspt
      do i=1,lm_a
        read(myunit,*)this%aspect_vert_profile_angrid(i)
      enddo
+    close(myunit)
    endif 
-   call MPI_Type_match_size(MPI_TYPECLASS_REAL, kind(this%aspect_vert_profile_angrid), mpi_real, ierr)
+  write(6,*)'thinkdeb mype is 1.1.0 ',mype
+  write(6,*) 'DEBUG: lm_a=', lm_a
+write(6,*) 'DEBUG: allocated=', allocated(this%aspect_vert_profile_angrid)
+if (allocated(this%aspect_vert_profile_angrid)) then
+  write(6,*) 'DEBUG: size=', size(this%aspect_vert_profile_angrid)
+  write(6,*) 'DEBUG: kind1=', kind(this%aspect_vert_profile_angrid(1))
+endif
+   call MPI_Type_match_size(MPI_TYPECLASS_REAL, kind(this%aspect_vert_profile_angrid(1)), user_mpi_real, ierr)
    if (ierr /= MPI_SUCCESS) then
-     write(6,*) "ERROR: No matching MPI type for real kind =", kind(this%aspect_vert_profile_angrid)
+     write(6,*) "ERROR: No matching MPI type for real kind =", kind(this%aspect_vert_profile_angrid(1))
      call MPI_Abort(MPI_COMM_WORLD, 1, ierr)
    endif
-   call MPI_Bcast(this%aspect_vert_profile_angrid, lm_a, mpi_real, 0, MPI_COMM_WORLD, ierr)
+  write(6,*)'thinkdeb mype is 1.2 ',mype
+  call flush(6)
+   call MPI_Bcast(this%aspect_vert_profile_angrid, lm_a, user_mpi_real, 0, MPI_COMM_WORLD, ierr)
   
 !   nz=lm_a-1
 !   ns=lm-1
+  write(6,*)'thinkdeb mype is 1 ',mype
+  call flush(6)
     
 ! calibrate sigscale to make sigofz go to sigbottom at z=0:
       sigofz=this%aspect_vert_profile_angrid
-   print'('' list the levels and sigofz from the top down:'')'
+  print'('' list the levels and sigofz from the top down:'')'
+  write(6,*)'thinkdeb mype is 3 ',mype
+  call flush(6)
    if(mype==0) then
    do iz=lm_a,1,-1
       write(6,*)iz,sigofz(iz)
    enddo
    endif
+  write(6,*)'thinkdeb mype is 3 ',mype
+  call flush(6)
    
 ! Make the new grid whose resolution of the correlation scale sigofz
 ! is uniform throughout.
@@ -983,17 +1002,24 @@ subroutine convert_vert_varied_aspt
 ! zofis is the z-index coordinate of each of the new s-grid points.
 !cltorg     call make_ssgrid(nz,nf,ns,sigofz, sstop,dss,isofz,zofis)
     call make_ssgrid(lm_a-1,nf,lm-1,sigofz, sstop,dss,this%isofz,this%zofis)
+  write(6,*)'thinkdeb mype is after make_ssgrid ',mype
+  call flush(6)
 
 ! Use the new s-grid locations zofis, and the original profile of
 ! correlation scales sigofz, to interpolate, smoothly and positively,
 ! these scales sig to each of the new s-grid points:
 !clt    call logintgrid(nz,ns,zofis,sigofz,sigofis)
     call logintgrid(lm_a-1,lm-1,this%zofis,sigofz,sigofis)
-   if(mype==0) then
     print'('' list the profile coordinates of zofis,sigofis, for each is:'')'
     do is=1,lm
       write(6,*)is,this%zofis(is),sigofis(is)
     enddo
+   if(mype==6) then
+     open(newunit=myunit,file="converted_mgbf_vert_aspt_profile.txt",status='replace')
+    do is=1,lm
+     write(myunit,*)is,this%zofis(is),sigofis(is)
+    enddo
+    close(myunit)
    endif
    mg_ampl01=sum(sigofis)/size(sigofis)
 

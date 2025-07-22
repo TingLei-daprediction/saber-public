@@ -86,6 +86,7 @@ subroutine whint(x,wint)!                                              [whint]
 ! from a uniform grid to a target located a fraction, x, into the central
 ! of the three intervals defined by the four points.
 !=============================================================================
+
 implicit none
 real(r_kind),                intent(in ):: x
 real(r_kind),dimension(-1:2),intent(out):: wint

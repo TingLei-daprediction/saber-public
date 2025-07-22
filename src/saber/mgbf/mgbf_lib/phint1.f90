@@ -17,13 +17,26 @@
 module phint1
 !============================================================================
 use mgbf_kinds, only: i_kind,r_kind
+use phint, only: wint3,whint,v1_wint3,v1_whint
 implicit none
 public
-public:: make_ssgrid, logintgrid
+public:: make_ssf, make_ssgrid, intftos, sstosig, logintgrid, zsigtossig
 
+interface make_ssf
+   module procedure make_ssf
+end interface make_ssf
 interface make_ssgrid
    module procedure make_ssgrid
 end interface make_ssgrid
+interface zsigtossig
+   module procedure zsigtossig
+end interface zsigtossig
+interface intftos
+   module procedure intftos
+end interface intftos
+interface sstosig
+   module procedure sstosig
+end interface sstosig
 interface logintgrid
    module procedure logintgrid
 end interface logintgrid
@@ -47,7 +60,6 @@ subroutine make_ssgrid(nz,nf,ns,sigofz,sstop,dss,isofz,zofis)!  [make_ssgrid]
 ! out new scale-grid. All grids are assumed to go from index 0.
 !============================================================================
 use jp_pietc, only: u1,o2
-use phint, only: wint3,whint
 implicit none
 integer(i_kind),            intent(in ):: nz,nf,ns
 real(r_kind),dimension(0:nz),intent(in ):: sigofz
@@ -64,38 +76,10 @@ real(r_kind)                   :: r,s,z,dzf
 integer(i_kind)               :: iz,izf,izfm,izfp,is,nzf
 !============================================================================  
 ! Interpolate the log of the sigofz distribution to a finer grid:
-do iz=0,nz
-   zs(iz)=iz
-   logsig(iz)=log(sigofz(iz))
-enddo
 dzf=u1/nf
 nzf=nz*nf
-do izf=0,nzf
-   zsf(izf)=izf*dzf
-enddo
-
-do izf=0,nzf
-   z=zsf(izf)
-   iz=min(nz-1,max(0,floor(z)))
-   if(iz==0)then
-      call wint3(zs(0:2),z,w3)
-      logsigf(izf)=dot_product(w3,logsig(0:2))
-   elseif(iz==nz-1)then
-      call wint3(zs(nz-2:nz),z,w3)
-      logsigf(izf)=dot_product(w3,logsig(nz-2:nz))
-   else
-      call whint(zs(iz-1:iz+2),z,w4)
-      logsigf(izf)=dot_product(w4,logsig(iz-1:iz+2))
-   endif
-enddo
-
-ssf(0)=0
-do izf=1,nzf
-   izfm=izf-1
-   ssf(izf)=ssf(izfm)+exp(-(logsigf(izfm)+logsigf(izf))*o2)*dzf
-enddo
-sstop   =ssf(nzf)
-
+call make_ssf(nz,nf,sigofz,ssf)
+sstop=ssf(nzf)
 ! define the new grid of ns spaces that uniformly divides the
 ! range of ss:
 dss=sstop/ns
@@ -123,6 +107,83 @@ do is=1,ns-1
 enddo
 end subroutine make_ssgrid
 
+!===========================================================================
+subroutine zsigtossig(nz,nf,ns,zofs,sigofz,sigofs)!             [zsigtossig]
+!===========================================================================
+! Interpolate the sigma in z-grid units from the z-grid to the
+! equivalent sigma in s-grid unit in the s-grid. The z-grid index
+! coordinates of the each s-grid level is given by zofs. The index
+! range of the z-grid is [0:nz], of the s-grid it is [0:ns] and an
+! intermediate refined version of the z-grid has index range, [0:nz*nf]
+! where nf is a positive integer refinement factor to ensure that the
+! intermediate calculations have only small truncation errors.
+! sigofz is the z-grid sigma, sigofs is the computed s-grid sigma.
+!===========================================================================
+implicit none
+integer(i_kind),            intent(in ):: nz,nf,ns
+real(r_kind),dimension(0:ns),intent(in ):: zofs
+real(r_kind),dimension(0:nz),intent(in ):: sigofz
+real(r_kind),dimension(0:ns),intent(out):: sigofs
+!---------------------------------------------------------------------------
+real(r_kind),dimension(0:nz*nf):: ssf,sss
+!==========================================================================
+call make_ssf(nz,nf,sigofz,ssf)
+call intftos(nz,nf,ns,zofs,ssf,sss)
+call sstosig(ns,sss,sigofs)
+end subroutine zsigtossig
+
+!============================================================================
+subroutine intftos(nz,nf,ns,zofs,ssf,sss)!                          [intftos]
+!============================================================================
+! Linearly interpolate values ssf on the fine grid [0:nz*nf] to the ss grid [0:ns]
+! whose coordinates in fine grid index units are zofs*nf, where nf is the
+! refinement factor that was used to generate the fine grid for the original
+! [0:nz] grid. (zofs are the index coordinate in that original [0:nz] grid.)
+!============================================================================
+implicit none
+integer(i_kind),               intent(in ):: nz,nf,ns
+real(r_kind),dimension(0:ns),   intent(in ):: zofs
+real(r_kind),dimension(0:nz*ns),intent(in ):: ssf
+real(r_kind),dimension(0:ns),   intent(out):: sss
+!----------------------------------------------------------------------------
+real(r_kind)    :: w1,w2,zf
+integer(i_kind):: is,izf,izfp,nzf
+!============================================================================
+nzf=nz*nf
+do is=0,ns
+   zf=zofs(is)*nf
+   izf=min(nzf-1,max(0,floor(zf)))
+   izfp=izf+1
+   w1=izfp-zf
+   w2=zf-izf
+   sss(is)=w1*ssf(izf)+w2*ssf(izfp)! <- linearly interpolate
+enddo
+end subroutine intftos
+
+!===========================================================================
+subroutine sstosig(ns,ss,sig)!                                     [sstosig]
+!===========================================================================
+! Given the effective distance in correlation scale units ss of each grid
+! s-gridpoint in [0:ns], from the datum (usually from gridpoint 0), use
+! simple finite differences to convert the information in ss to the corresponding
+! sigma values, sig, at each grid point, where sig measures the correlation
+! scale at each point in the grid units.
+!===========================================================================
+use jp_pietc, only: u1,u2
+implicit none
+integer(i_kind),            intent(in ):: ns
+real(r_kind),dimension(0:ns),intent(in ):: ss
+real(r_kind),dimension(0:ns),intent(out):: sig
+!----------------------------------------------------------------------------
+integer(i_kind):: is
+!============================================================================
+sig(0)=u1/(ss(1)-ss(0))
+do is=1,ns-1
+   sig(is)=u2/(ss(is+1)-ss(is-1))
+enddo
+sig(ns)=u1/(ss(ns)-ss(ns-1))
+end subroutine sstosig
+
 !============================================================================
 subroutine logintgrid(nz,ns,zofs,az, as)!                        [logintgrid]
 !============================================================================
@@ -131,7 +192,6 @@ subroutine logintgrid(nz,ns,zofs,az, as)!                        [logintgrid]
 ! of target values, as, all remain positive. The array zofs
 ! defines the index z-grid coordinates of each of the s-grid points.
 !============================================================================
-use phint, only: wint3,whint
 implicit none
 integer(i_kind),            intent(in ):: nz,ns
 real(r_kind),dimension(0:ns),intent(in ):: zofs
@@ -164,6 +224,62 @@ do is=0,ns
    as(is)=exp(logas)
 enddo
 end subroutine logintgrid
+subroutine make_ssf(nz,nf,sigofz,ssf)!                             [make_ssf]
+!============================================================================
+! Use the scales, in original [0:nz] "z-grid" units, sigofz, to define an effective
+! integrated distance, ss, in these scale units, for every level of a refined version
+! [0:nz*nf] of that original z grid. This is done by regarding each sigofz as the
+! inverse of the derivative of ss wrt the z-index, and integrating the interpolated
+! inverse of sigofz on a uniformly refined version [0:nz*nf] of the z grid. To avoid
+! small or negative values occurring in the interpolation, it is actually the
+! logarithm of (1/sigofz) (i.e., -log(sigofz) ) that we interpolate. The fine grid
+! of values of ss are returns as the array ssf.
+!============================================================================
+use jp_pietc, only: u1,o2
+implicit none
+integer(i_kind),               intent(in ):: nz,nf
+real(r_kind),dimension(0:nz),   intent(in ):: sigofz
+real(r_kind),dimension(0:nz*nf),intent(out):: ssf
+!-----------------------------------------------------------------------------
+real(r_kind),dimension(0:nz*nf):: zsf,logsigf
+real(r_kind),dimension(0:nz)   :: zs,logsig
+real(r_kind),dimension(3)      :: w3
+real(r_kind),dimension(4)      :: w4
+real(r_kind)                   :: dzf,z
+integer(i_kind)               :: izf,izfm,iz,nzf
+!=============================================================================
+! Interpolate the log of the sigofz distribution to a finer grid:
+do iz=0,nz
+   zs(iz)=iz
+   logsig(iz)=log(sigofz(iz))
+enddo
+dzf=u1/nf
+nzf=nz*nf
+do izf=0,nzf
+   zsf(izf)=izf*dzf
+enddo
+
+do izf=0,nzf
+   z=zsf(izf)
+   iz=min(nz-1,max(0,floor(z)))
+   if(iz==0)then
+      call wint3(zs(0:2),z,w3)
+      logsigf(izf)=dot_product(w3,logsig(0:2))
+   elseif(iz==nz-1)then
+      call wint3(zs(nz-2:nz),z,w3)
+      logsigf(izf)=dot_product(w3,logsig(nz-2:nz))
+   else
+      call whint(zs(iz-1:iz+2),z,w4)
+      logsigf(izf)=dot_product(w4,logsig(iz-1:iz+2))
+   endif
+enddo
+
+ssf(0)=0
+do izf=1,nzf
+   izfm=izf-1
+   ssf(izf)=ssf(izfm)+exp(-(logsigf(izfm)+logsigf(izf))*o2)*dzf
+enddo
+end subroutine make_ssf
 subroutine intgrid(nz,ns,zofs,az, as)!                        [logintgrid]
 !clt modified from logintgrid, but don't do the log transformation
 !============================================================================
@@ -172,7 +288,6 @@ subroutine intgrid(nz,ns,zofs,az, as)!                        [logintgrid]
 ! of target values, as, all remain positive. The array zofs
 ! defines the index z-grid coordinates of each of the s-grid points.
 !============================================================================
-use phint, only: wint3,whint
 implicit none
 integer(i_kind),            intent(in ):: nz,ns
 real(r_kind),dimension(0:ns),intent(in ):: zofs
@@ -207,7 +322,6 @@ subroutine intgrid_ad(nz, ns, zofs, az_ad, as_ad)
 !---------------------------------------------------------------------
 ! Adjoint of intgrid: propagate adjoint variables from as_ad to az_ad
 !---------------------------------------------------------------------
-use phint, only: wint3, whint
 implicit none
 integer(i_kind),             intent(in)  :: nz, ns
 real(r_kind), dimension(0:ns),intent(in)  :: zofs
@@ -259,7 +373,6 @@ subroutine intgrid_f2a(nz, ns, zofs, as, az)
 ! Output:
 !   - az(0:nz)  : interpolated values on full fine grid
 !-------------------------------------------------------------------------------
-use phint, only: wint3, whint
 implicit none
 
 integer(i_kind),             intent(in)  :: nz, ns
@@ -311,7 +424,6 @@ subroutine intgrid_f2a_ad(nz, ns, zofs, az_ad, as_ad)
 ! Output:
 !   - as_ad(0:ns) : adjoint values on coarse grid (to be accumulated)
 !-------------------------------------------------------------------------------
-use phint, only: wint3, whint
 implicit none
 
 integer(i_kind),              intent(in)  :: nz, ns
@@ -354,11 +466,58 @@ subroutine intgrid_f2a_3d(nz, ns, nx, ny, zofs, az,as)
 ! Interpolates in vertical (first) dimension using zofs(0:ns,nx,ny)
 ! Output: az(0:nz, nx, ny)
 !------------------------------------------------------------------------------
-use phint, only: wint3, whint
 implicit none
 
 integer(i_kind),               intent(in)  :: nz, ns, nx, ny
-real(r_kind), dimension(0:ns,nx,ny), intent(in)  :: zofs
+real(r_kind), dimension(0:ns), intent(in)  :: zofs
+real(r_kind), dimension(0:ns,nx,ny), intent(in)  :: as
+real(r_kind), dimension(0:nz,nx,ny), intent(out) :: az
+
+! Local
+real(r_kind), dimension(3) :: w3
+real(r_kind), dimension(4) :: w4
+real(r_kind)               :: z
+integer(i_kind)           :: i, j, k, s
+
+!------------------------------------------------------------------------------
+write(6,*)'thinkdeb10000  zofs in interpolation zofs ',zofs
+do j = 1, ny
+  do i = 1, nx
+    do k = 0, nz
+      z = real(k, r_kind)  ! target vertical level index
+
+      ! Find s such that zofs(s+1,i,j) > z ≥ zofs(s,i,j)
+      s = 0
+      do while (s < ns .and. zofs(s+1) < z)
+        s = s + 1
+      end do
+
+      if (s <= 1) then
+        call wint3(zofs(0:2), z, w3)
+        az(k,i,j) = dot_product(w3, as(0:2,i,j))
+      elseif (s >= ns-1) then
+        call wint3(zofs(ns-2:ns), z, w3)
+        az(k,i,j) = dot_product(w3, as(ns-2:ns,i,j))
+      else
+        call whint(zofs(s-1:s+2), z, w4)
+        az(k,i,j) = dot_product(w4, as(s-1:s+2,i,j))
+      end if
+
+    end do
+  end do
+end do
+
+end subroutine intgrid_f2a_3d
+subroutine intgrid_f2a_3d_top2bot(nz, ns, nx, ny, zofs, az, as)
+!------------------------------------------------------------------------------
+! Interpolates in vertical (first) dimension using zofs(0:ns,nx,ny)
+! Arrays are stored from top (0) to bottom (ns/nz)
+! Output: az(0:nz, nx, ny)
+!------------------------------------------------------------------------------
+implicit none
+
+integer(i_kind),               intent(in)  :: nz, ns, nx, ny
+real(r_kind), dimension(0:ns), intent(in)  :: zofs
 real(r_kind), dimension(0:ns,nx,ny), intent(in)  :: as
 real(r_kind), dimension(0:nz,nx,ny), intent(out) :: az
 
@@ -372,22 +531,22 @@ integer(i_kind)           :: i, j, k, s
 do j = 1, ny
   do i = 1, nx
     do k = 0, nz
-      z = real(k, r_kind)  ! target vertical level index
+      z = real(nz - k, r_kind)  ! Map k (top-to-bottom) to physical z (bottom-to-top)
 
-      ! Find s such that zofs(s+1,i,j) > z ≥ zofs(s,i,j)
+      ! Find s such that zofs(s+1) < z ≤ zofs(s)
       s = 0
-      do while (s < ns .and. zofs(s+1,i,j) < z)
+      do while (s < ns .and. zofs(s+1) < z)
         s = s + 1
       end do
 
       if (s <= 1) then
-        call wint3(zofs(0:2,i,j), z, w3)
+        call v1_wint3(zofs(0:2), z, w3)
         az(k,i,j) = dot_product(w3, as(0:2,i,j))
       elseif (s >= ns-1) then
-        call wint3(zofs(ns-2:ns,i,j), z, w3)
+        call v1_wint3(zofs(ns-2:ns), z, w3)
         az(k,i,j) = dot_product(w3, as(ns-2:ns,i,j))
       else
-        call whint(zofs(s-1:s+2,i,j), z, w4)
+        call v1_whint(zofs(s-1:s+2), z, w4)
         az(k,i,j) = dot_product(w4, as(s-1:s+2,i,j))
       end if
 
@@ -395,17 +554,17 @@ do j = 1, ny
   end do
 end do
 
-end subroutine intgrid_f2a_3d
+end subroutine intgrid_f2a_3d_top2bot
+
 subroutine intgrid_f2a_3d_ad(nz, ns, nx, ny, zofs, az_ad, as_ad)
 !------------------------------------------------------------------------------
 ! Adjoint of intgrid_synthesis_3d
 ! Accumulates az_ad(0:nz,nx,ny) into as_ad(0:ns,nx,ny)
 !------------------------------------------------------------------------------
-use phint, only: wint3, whint
 implicit none
 
 integer(i_kind),               intent(in)    :: nz, ns, nx, ny
-real(r_kind), dimension(0:ns,nx,ny), intent(in)  :: zofs
+real(r_kind), dimension(0:ns), intent(in)  :: zofs
 real(r_kind), dimension(0:nz,nx,ny), intent(in)  :: az_ad
 real(r_kind), dimension(0:ns,nx,ny), intent(inout) :: as_ad  ! inout to accumulate
 
@@ -416,32 +575,94 @@ real(r_kind)               :: z
 integer(i_kind)           :: i, j, k, s
 
 !------------------------------------------------------------------------------
+write(6,*)'intgrid_f2a_3d_ad 1 ',ny,nx,nz
+!clt todo some optimization could be done, when the interpolation coeff is homogeneous
 do j = 1, ny
   do i = 1, nx
     do k = 0, nz
       z = real(k, r_kind)
 
       s = 0
-      do while (s < ns .and. zofs(s+1,i,j) < z)
+      do while (s < ns .and. zofs(s+1) < z)
         s = s + 1
       end do
 
       if (s <= 1) then
-        call wint3(zofs(0:2,i,j), z, w3)
+        call wint3(zofs(0:2), z, w3)
         as_ad(0:2,i,j) = as_ad(0:2,i,j) + az_ad(k,i,j) * w3
       elseif (s >= ns-1) then
-        call wint3(zofs(ns-2:ns,i,j), z, w3)
+        call wint3(zofs(ns-2:ns), z, w3)
         as_ad(ns-2:ns,i,j) = as_ad(ns-2:ns,i,j) + az_ad(k,i,j) * w3
       else
-        call whint(zofs(s-1:s+2,i,j), z, w4)
+        call whint(zofs(s-1:s+2), z, w4)
         as_ad(s-1:s+2,i,j) = as_ad(s-1:s+2,i,j) + az_ad(k,i,j) * w4
       end if
 
     end do
   end do
 end do
+write(6,*)'intgrid_f2a_3d_ad 100'
+call flush(6)
 
 end subroutine intgrid_f2a_3d_ad
+subroutine intgrid_f2a_3d_ad_top2bot(nz, ns, nx, ny, zofs, az, as)
+!------------------------------------------------------------------------------
+! Adjoint of vertical interpolation: accumulates from az (on z) to as (on s)
+! Arrays are stored from top (0) to bottom (ns/nz)
+! Input: az(0:nz, nx, ny)
+! Output: as(0:ns, nx, ny) (accumulated)
+!------------------------------------------------------------------------------
+implicit none
+
+integer(i_kind),               intent(in)  :: nz, ns, nx, ny
+real(r_kind), dimension(0:ns), intent(in)  :: zofs
+real(r_kind), dimension(0:nz,nx,ny), intent(in)  :: az
+real(r_kind), dimension(0:ns,nx,ny), intent(inout) :: as
+
+! Local
+real(r_kind), dimension(3) :: w3
+real(r_kind), dimension(4) :: w4
+real(r_kind)               :: z
+integer(i_kind)           :: i, j, k, s, m
+
+!------------------------------------------------------------------------------
+! Zero out as (if not already done)
+as(:,:,:) = 0.0_r_kind
+
+do j = 1, ny
+  do i = 1, nx
+    do k = 0, nz
+      z = real(nz - k, r_kind)  ! Map k (top-to-bottom) to physical z (bottom-to-top)
+
+      ! Find s such that zofs(s+1) < z ≤ zofs(s)
+      s = 0
+      do while (s < ns .and. zofs(s+1) < z)
+        s = s + 1
+      end do
+
+      if (s <= 1) then
+        call v1_wint3(zofs(0:2), z, w3)
+        do m = 0, 2
+          as(m,i,j) = as(m,i,j) + w3(m+1) * az(k,i,j)
+        end do
+      elseif (s >= ns-1) then
+        call v1_wint3(zofs(ns-2:ns), z, w3)
+        do m = ns-2, ns
+          as(m,i,j) = as(m,i,j) + w3(m-ns+3) * az(k,i,j)
+        end do
+      else
+        call v1_whint(zofs(s-1:s+2), z, w4)
+        do m = s-1, s+2
+          as(m,i,j) = as(m,i,j) + w4(m-s+2) * az(k,i,j)
+        end do
+      end if
+
+    end do
+  end do
+end do
+
+end subroutine intgrid_f2a_3d_ad_top2bot
+
 
 
 
