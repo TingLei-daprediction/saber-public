@@ -22,6 +22,9 @@ implicit none
 public
 public:: make_ssf, make_ssgrid, intftos, sstosig, logintgrid, zsigtossig
 
+   
+!============================================================================
+
 interface make_ssf
    module procedure make_ssf
 end interface make_ssf
@@ -60,6 +63,7 @@ subroutine make_ssgrid(nz,nf,ns,sigofz,sstop,dss,isofz,zofis)!  [make_ssgrid]
 ! out new scale-grid. All grids are assumed to go from index 0.
 !============================================================================
 use jp_pietc, only: u1,o2
+use phint, only: wint3,whint
 implicit none
 integer(i_kind),            intent(in ):: nz,nf,ns
 real(r_kind),dimension(0:nz),intent(in ):: sigofz
@@ -118,15 +122,15 @@ subroutine zsigtossig(nz,nf,ns,zofs,sigofz,sigofs)!             [zsigtossig]
 ! where nf is a positive integer refinement factor to ensure that the
 ! intermediate calculations have only small truncation errors.
 ! sigofz is the z-grid sigma, sigofs is the computed s-grid sigma.
-!===========================================================================
+!============================================================================
 implicit none
 integer(i_kind),            intent(in ):: nz,nf,ns
 real(r_kind),dimension(0:ns),intent(in ):: zofs
 real(r_kind),dimension(0:nz),intent(in ):: sigofz
 real(r_kind),dimension(0:ns),intent(out):: sigofs
-!---------------------------------------------------------------------------
+!----------------------------------------------------------------------------
 real(r_kind),dimension(0:nz*nf):: ssf,sss
-!==========================================================================
+!============================================================================
 call make_ssf(nz,nf,sigofz,ssf)
 call intftos(nz,nf,ns,zofs,ssf,sss)
 call sstosig(ns,sss,sigofs)
@@ -135,15 +139,16 @@ end subroutine zsigtossig
 !============================================================================
 subroutine intftos(nz,nf,ns,zofs,ssf,sss)!                          [intftos]
 !============================================================================
-! Linearly interpolate values ssf on the fine grid [0:nz*nf] to the ss grid [0:ns]
-! whose coordinates in fine grid index units are zofs*nf, where nf is the
-! refinement factor that was used to generate the fine grid for the original
-! [0:nz] grid. (zofs are the index coordinate in that original [0:nz] grid.)
+! Linearly interpolate values ssf on the fine grid [0:nz*nf] to the ss grid
+! [0:ns] whose coordinates in fine grid index units are zofs*nf, where nf
+! is the refinement factor that was used to generate the fine grid for the
+! original [0:nz] grid. (zofs are the index coordinate in that original
+! [0:nz] grid.)
 !============================================================================
 implicit none
 integer(i_kind),               intent(in ):: nz,nf,ns
 real(r_kind),dimension(0:ns),   intent(in ):: zofs
-real(r_kind),dimension(0:nz*ns),intent(in ):: ssf
+real(r_kind),dimension(0:nz*nf),intent(in ):: ssf
 real(r_kind),dimension(0:ns),   intent(out):: sss
 !----------------------------------------------------------------------------
 real(r_kind)    :: w1,w2,zf
@@ -165,9 +170,9 @@ subroutine sstosig(ns,ss,sig)!                                     [sstosig]
 !===========================================================================
 ! Given the effective distance in correlation scale units ss of each grid
 ! s-gridpoint in [0:ns], from the datum (usually from gridpoint 0), use
-! simple finite differences to convert the information in ss to the corresponding
-! sigma values, sig, at each grid point, where sig measures the correlation
-! scale at each point in the grid units.
+! simple finite differences to convert the information in ss to the
+! corresponding sigma values, sig, at each grid point, where sig measures
+! the correlation scale at each point in the grid units.
 !===========================================================================
 use jp_pietc, only: u1,u2
 implicit none
@@ -192,6 +197,7 @@ subroutine logintgrid(nz,ns,zofs,az, as)!                        [logintgrid]
 ! of target values, as, all remain positive. The array zofs
 ! defines the index z-grid coordinates of each of the s-grid points.
 !============================================================================
+use phint, only: wint3,whint
 implicit none
 integer(i_kind),            intent(in ):: nz,ns
 real(r_kind),dimension(0:ns),intent(in ):: zofs
@@ -224,18 +230,22 @@ do is=0,ns
    as(is)=exp(logas)
 enddo
 end subroutine logintgrid
+
+!============================================================================
 subroutine make_ssf(nz,nf,sigofz,ssf)!                             [make_ssf]
 !============================================================================
-! Use the scales, in original [0:nz] "z-grid" units, sigofz, to define an effective
-! integrated distance, ss, in these scale units, for every level of a refined version
-! [0:nz*nf] of that original z grid. This is done by regarding each sigofz as the
-! inverse of the derivative of ss wrt the z-index, and integrating the interpolated
-! inverse of sigofz on a uniformly refined version [0:nz*nf] of the z grid. To avoid
-! small or negative values occurring in the interpolation, it is actually the
-! logarithm of (1/sigofz) (i.e., -log(sigofz) ) that we interpolate. The fine grid
-! of values of ss are returns as the array ssf.
+! Use the scales, in original [0:nz] "z-grid" units, sigofz, to define an
+! effective integrated distance, ss, in these scale units, for every level
+! of a refined version [0:nz*nf] of that original z grid. This is done by
+! regarding each sigofz as the inverse of the derivative of ss wrt the
+! z-index, and integrating the interpolated inverse of sigofz on a uniformly
+! refined version [0:nz*nf] of the z grid. To avoid small or negative values
+! occurring in the interpolation, it is actually the logarithm of (1/sigofz)
+! (i.e., -log(sigofz) ) that we interpolate. The fine grid of values of ss
+! are returned as the array ssf.
 !============================================================================
 use jp_pietc, only: u1,o2
+use phint, only: wint3,whint
 implicit none
 integer(i_kind),               intent(in ):: nz,nf
 real(r_kind),dimension(0:nz),   intent(in ):: sigofz
@@ -248,7 +258,9 @@ real(r_kind),dimension(4)      :: w4
 real(r_kind)                   :: dzf,z
 integer(i_kind)               :: izf,izfm,iz,nzf
 !=============================================================================
-! Interpolate the log of the sigofz distribution to a finer grid:
+! Interpolate the log of the sigofz distribution to logsigf on a finer grid:
+! (interpolating the logarithm avoids the possibility of negative undershoots
+! of the interpolated values).
 do iz=0,nz
    zs(iz)=iz
    logsig(iz)=log(sigofz(iz))
@@ -274,12 +286,17 @@ do izf=0,nzf
    endif
 enddo
 
+! Integrate exp(-logsigf), which approximates 1/sigofz, on the fine grid,
+! to get ssf:
 ssf(0)=0
 do izf=1,nzf
    izfm=izf-1
    ssf(izf)=ssf(izfm)+exp(-(logsigf(izfm)+logsigf(izf))*o2)*dzf
 enddo
 end subroutine make_ssf
+
+
+
 subroutine intgrid(nz,ns,zofs,az, as)!                        [logintgrid]
 !clt modified from logintgrid, but don't do the log transformation
 !============================================================================
@@ -394,7 +411,7 @@ do iz = 0, nz
 
    ! Search for the coarse grid interval that contains z
    is = 0
-   do while (is < ns .and. zofs(is+1) < z)
+   do while (is < ns-1 .and. zofs(is+1) < z)
       is = is + 1
    end do
 
@@ -443,7 +460,7 @@ do iz = 0, nz
 
    ! Find interpolation interval (same logic as in synthesis)
    is = 0
-   do while (is < ns .and. zofs(is+1) < z)
+   do while (is < ns-1 .and. zofs(is+1) < z)
       is = is + 1
    end do
 
@@ -488,7 +505,7 @@ do j = 1, ny
 
       ! Find s such that zofs(s+1,i,j) > z ≥ zofs(s,i,j)
       s = 0
-      do while (s < ns .and. zofs(s+1) < z)
+      do while (s < ns-1 .and. zofs(s+1) < z)
         s = s + 1
       end do
 
@@ -531,11 +548,11 @@ integer(i_kind)           :: i, j, k, s
 do j = 1, ny
   do i = 1, nx
     do k = 0, nz
-      z = real(nz - k, r_kind)  ! Map k (top-to-bottom) to physical z (bottom-to-top)
+      z = real(nz - k+1, r_kind)  ! Map k (top-to-bottom) to physical z (bottom-to-top)
 
       ! Find s such that zofs(s+1) < z ≤ zofs(s)
       s = 0
-      do while (s < ns .and. zofs(s+1) < z)
+      do while (s < ns-1 .and. zofs(s+1) > z)
         s = s + 1
       end do
 
@@ -561,11 +578,12 @@ subroutine intgrid_f2a_3d_top2bot_fast(nz, ns, nx, ny, zofs, az, as)
 ! Optimized vertical interpolation (top-to-bottom storage)
 ! Precomputes mapping and weights, then applies to all horizontal points
 !------------------------------------------------------------------------------
-use phint, only: wint3, whint
+use phint, only: v1_wint3, v1_whint
 implicit none
 
 integer(i_kind),               intent(in)  :: nz, ns, nx, ny
 real(r_kind), dimension(0:ns), intent(in)  :: zofs
+!clt real(r_kind), dimension(0:ns,nx,ny), intent(in)  :: as
 real(r_kind), dimension(0:ns,nx,ny), intent(in)  :: as
 real(r_kind), dimension(0:nz,nx,ny), intent(out) :: az
 
@@ -580,29 +598,32 @@ real(r_kind), dimension(3) :: w3
 real(r_kind), dimension(4) :: w4
 
 !------------------ Precompute indices and weights ----------------------------
+do k=0,nz
+az(k,:,:)=k
+enddo
 do k = 0, nz
-  z = real(nz - k, r_kind)  ! Map k (top-to-bottom) to physical z (bottom-to-top)
+  z = real(nz - k+1, r_kind)  ! Map k (top-to-bottom) to physical z (bottom-to-top)
   s = 0
-  do while (s < ns .and. zofs(s+1) < z)
+  do while (s < ns-1 .and. zofs(s+1) > z)
     s = s + 1
   end do
 
   if (s <= 1) then
-    call wint3(zofs(0:2), z, w3)
+    call v1_wint3(zofs(0:2), z, w3)
     interp_type(k) = wint3_type
     src_inds(1:3,k) = (/0,1,2/)
     weights(1:3,k) = w3
     src_inds(4,k) = -1
     weights(4,k) = 0.0_r_kind
   elseif (s >= ns-1) then
-    call wint3(zofs(ns-2:ns), z, w3)
+    call v1_wint3(zofs(ns-2:ns), z, w3)
     interp_type(k) = wint3_top_type
     src_inds(1:3,k) = (/ns-2, ns-1, ns/)
     weights(1:3,k) = w3
     src_inds(4,k) = -1
     weights(4,k) = 0.0_r_kind
   else
-    call whint(zofs(s-1:s+2), z, w4)
+    call v1_whint(zofs(s-1:s+2), z, w4)
     interp_type(k) = whint_type
     src_inds(1:4,k) = (/s-1, s, s+1, s+2/)
     weights(1:4,k) = w4
@@ -658,28 +679,28 @@ real(r_kind), dimension(4) :: w4
 
 !------------------ Precompute indices and weights ----------------------------
 do k = 0, nz
-  z = real(nz - k, r_kind)  ! Map k (top-to-bottom) to physical z (bottom-to-top)
+  z = real(nz - k+1, r_kind)  ! Map k (top-to-bottom) to physical z (bottom-to-top)
   s = 0
-  do while (s < ns .and. zofs(s+1) < z)
+  do while (s < ns-1 .and. zofs(s+1) > z)
     s = s + 1
   end do
 
   if (s <= 1) then
-    call wint3(zofs(0:2), z, w3)
+    call v1_wint3(zofs(0:2), z, w3)
     interp_type(k) = wint3_type
     src_inds(1:3,k) = (/0,1,2/)
     weights(1:3,k) = w3
     src_inds(4,k) = -1
     weights(4,k) = 0.0_r_kind
   elseif (s >= ns-1) then
-    call wint3(zofs(ns-2:ns), z, w3)
+    call v1_wint3(zofs(ns-2:ns), z, w3)
     interp_type(k) = wint3_top_type
     src_inds(1:3,k) = (/ns-2, ns-1, ns/)
     weights(1:3,k) = w3
     src_inds(4,k) = -1
     weights(4,k) = 0.0_r_kind
   else
-    call whint(zofs(s-1:s+2), z, w4)
+    call v1_whint(zofs(s-1:s+2), z, w4)
     interp_type(k) = whint_type
     src_inds(1:4,k) = (/s-1, s, s+1, s+2/)
     weights(1:4,k) = w4
@@ -742,7 +763,7 @@ do j = 1, ny
       z = real(k, r_kind)
 
       s = 0
-      do while (s < ns .and. zofs(s+1) < z)
+      do while (s < ns-1 .and. zofs(s+1) < z)
         s = s + 1
       end do
 
@@ -791,11 +812,12 @@ as(:,:,:) = 0.0_r_kind
 do j = 1, ny
   do i = 1, nx
     do k = 0, nz
-      z = real(nz - k, r_kind)  ! Map k (top-to-bottom) to physical z (bottom-to-top)
+!clttothink
+      z = real(nz - k+1, r_kind)  ! Map k (top-to-bottom) to physical z (bottom-to-top)
 
       ! Find s such that zofs(s+1) < z ≤ zofs(s)
       s = 0
-      do while (s < ns .and. zofs(s+1) < z)
+      do while (s < ns-1 .and. zofs(s+1) > z)
         s = s + 1
       end do
 

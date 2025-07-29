@@ -160,8 +160,11 @@ endif !2.gt.3
 !clt        call this%lwq_vertical_adjoint(nm_in,km_in,imin,imax,jmin,jmax,c1,c2,c3,c4,kref,w,f)
 !cltorg        call this%lwq_vertical_adjoint(this%lm_a,this%lm,1,nm,1,mm,this%cvf1,this%cvf2,this%cvf3,this%cvf4,this%lref,  &
 !clt             worka(lev1_a:lev2_a,:,:),work(lev1_f:lev2_f,:,:))
+        write(6,*)'thinkdeb999 l_vert_stretched_filtgrid is ',this%l_vert_stretched_filtgrid
         if (this%l_vert_stretched_filtgrid) then
-          call intgrid_f2a_3d_ad(this%lm_a-1,this%lm-1,nm,mm,this%zofis,worka(lev1_a:lev2_a,:,:),work(lev1_f:lev2_f,:,:))
+        write(6,*)'thinkdeb999 l_vert_stretched_filtgrid 2 is ',this%l_vert_stretched_filtgrid
+  
+          call intgrid_f2a_3d_ad_top2bot_fast(this%lm_a-1,this%lm-1,nm,mm,this%zofis,worka(lev1_a:lev2_a,:,:),work(lev1_f:lev2_f,:,:))
         else
           call this%test_vertical_interpolation_adj(this%lm,this%lm_a,1,nm,1,mm, work(lev1_f:lev2_f,:,:), &
              worka(lev1_a:lev2_a,:,:))
@@ -214,7 +217,7 @@ include "type_intstat_point2this.inc"
 !clt        call this%lwq_vertical_direct(this%lm,this%lm_a,1,nm,1,mm,this%cvf1,this%cvf2,this%cvf3,this%cvf4,this%lref,  &
 !clt             work(lev1_f:lev2_f,:,:),worka(lev1_a:lev2_a,:,:))
         if (this%l_vert_stretched_filtgrid) then
-          call intgrid_f2a_3d(this%lm_a-1,this%lm-1,nm,mm,this%zofis,worka(lev1_a:lev2_a,:,:),work(lev1_f:lev2_f,:,:))
+          call intgrid_f2a_3d_top2bot_fast(this%lm_a-1,this%lm-1,nm,mm,this%zofis,worka(lev1_a:lev2_a,:,:),work(lev1_f:lev2_f,:,:))
         else
         call this%test_vertical_interpolation(this%lm,this%lm_a,1,nm,1,mm, work(lev1_f:lev2_f,:,:), &
              worka(lev1_a:lev2_a,:,:))
@@ -224,36 +227,6 @@ include "type_intstat_point2this.inc"
         worka=work
       endif
     deallocate(WORK)
-if (2.gt.3) then ! clt
-allocate(WORK(km_all,1:nm,1:mm))
-allocate(A3D(km3_all,1:nm,1:mm,lm_a))
-allocate(F3D(km3_all,1:nm,1:mm,lm))
-
-                                                 call btim(filt2an_tim)
-    call this%filt_to_anal(WORK)
-
-    call this%S2C_ens(WORK,F3D,1,nm,1,mm,lm,km,km_all)
-
- if(lm_a>lm) then
-   if(l_lin_vertical) then
-     call this%l_vertical_direct_spec(km3_all,lm,lm_a,1,nm,1,mm,F3D,A3D)
-   else
-     call this%lwq_vertical_direct_spec(km3_all,lm,lm_a,1,nm,1,mm,              &
-                                   cvf1,cvf2,cvf3,cvf4,lref,F3D,A3D)
-   endif
- else
-
-   do L=1,lm
-     A3D(:,:,:,L)=F3D(:,:,:,L)
-   enddo
-
- endif
-
-    call this%C2S_ens(A3D,WORKA,1,nm,1,mm,lm_a,km_a,km_a_all)
-                                                 call etim(filt2an_tim)
-
-deallocate(A3D,F3D,WORK)
-endif !2.gt. 3
 !----------------------------------------------------------------------
 endsubroutine filt_to_anal_all
 

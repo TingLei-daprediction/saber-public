@@ -1601,7 +1601,8 @@ deallocate(this%a_coef,this%b_coef)
 if(this%l_loc) then
   deallocate(this%w1_loc,this%w2_loc,this%w3_loc,this%w4_loc)
 endif
-deallocate( this%aspect_vert_profile_angrid ,this%aspect_vert_profile_filtgrid)
+if (allocated(this%aspect_vert_profile_angrid) ) deallocate( this%aspect_vert_profile_angrid)
+if (allocated(this%aspect_vert_profile_filtgrid) ) deallocate( this%aspect_vert_profile_filtgrid)
 
 end subroutine deallocate_mg_intstate
 

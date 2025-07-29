@@ -984,7 +984,7 @@ endif
   call flush(6)
     
 ! calibrate sigscale to make sigofz go to sigbottom at z=0:
-      sigofz=this%aspect_vert_profile_angrid
+      sigofz=sqrt(this%aspect_vert_profile_angrid)
   print'('' list the levels and sigofz from the top down:'')'
   write(6,*)'thinkdeb mype is 3 ',mype
   call flush(6)
@@ -1009,22 +1009,28 @@ endif
 ! correlation scales sigofz, to interpolate, smoothly and positively,
 ! these scales sig to each of the new s-grid points:
 !clt    call logintgrid(nz,ns,zofis,sigofz,sigofis)
-    call logintgrid(lm_a-1,lm-1,this%zofis,sigofz,sigofis)
+    call zsigtossig(lm_a-1,nf,lm-1,this%zofis,sigofz,sigofis)
     print'('' list the profile coordinates of zofis,sigofis, for each is:'')'
     do is=1,lm
-      write(6,*)is,this%zofis(is),sigofis(is)
+      write(6,*)is,this%zofis(is),(sigofis(is))**2
     enddo
    if(mype==6) then
      open(newunit=myunit,file="converted_mgbf_vert_aspt_profile.txt",status='replace')
     do is=1,lm
-     write(myunit,*)is,this%zofis(is),sigofis(is)
+     write(myunit,*)is,this%zofis(is),(sigofis(is))**2
     enddo
     close(myunit)
    endif
-   mg_ampl01=sum(sigofis)/size(sigofis)
+   mg_ampl01=(sum(sigofis**2)/size(sigofis))
+   write(6,*)'thinkdeb999 the converted mg_mapl01 is ',mg_ampl01
+!clt    if(this%l_2dvar_last_vertical_level == .true. ) then !the fieldset passed into mgbf will be top-down,so
+!clttodo need to access this from mgbf lib too     
+     this%zofis=this%zofis(lm:1:-1)
+
+!#   endif 
 
   endif 
-
+  
 
   deallocate(sigofz,sigofis)
 end subroutine convert_vert_varied_aspt
