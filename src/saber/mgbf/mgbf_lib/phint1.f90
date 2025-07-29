@@ -583,7 +583,6 @@ implicit none
 
 integer(i_kind),               intent(in)  :: nz, ns, nx, ny
 real(r_kind), dimension(0:ns), intent(in)  :: zofs
-!clt real(r_kind), dimension(0:ns,nx,ny), intent(in)  :: as
 real(r_kind), dimension(0:ns,nx,ny), intent(in)  :: as
 real(r_kind), dimension(0:nz,nx,ny), intent(out) :: az
 
@@ -598,9 +597,6 @@ real(r_kind), dimension(3) :: w3
 real(r_kind), dimension(4) :: w4
 
 !------------------ Precompute indices and weights ----------------------------
-do k=0,nz
-az(k,:,:)=k
-enddo
 do k = 0, nz
   z = real(nz - k+1, r_kind)  ! Map k (top-to-bottom) to physical z (bottom-to-top)
   s = 0

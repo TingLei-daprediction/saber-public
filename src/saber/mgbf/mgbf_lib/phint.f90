@@ -120,6 +120,7 @@ real(r_kind):: xm1,xp1,xm2
 xm2=x-u2; xm1=x-u1; xp1=x+u1
 wint=(/-x*xm1*o2, xm1*xp1,   -x*xp1*o2,      u0 /)*xm1+ &
      (/      u0, xm1*xm2*o2,   -xm2*x, xm1*x*o2 /)*x
+wint=wint(2:-1:-1)
 end subroutine v1_whint
 !=============================================================================
 subroutine whintd(x,wint,dwint)!                                       [whint]
@@ -165,6 +166,8 @@ dquad0=(/  -x+o2,      u2*x,     -x-o2,       u0 /)
 dquad1=(/     u0,    xm1-o2,   -u2*xm1,   xm1+o2 /)
 wint = quad0*xm1+ quad1*x
 dwint=dquad0*xm1+dquad1*x+quad0+quad1
+wint=wint(2:-1:-1)
+dwint=dwint(2:-1:-1)
 end subroutine v1_whintd
 
 !=============================================================================
@@ -222,6 +225,7 @@ x2=x-xs(1)
 x3=x-xs(0)
 wint=-(/ x1*x2/(x01*x02),-x0*x2/(x01*x12),x0*x1/(x02*x12),u0/)*x2/x12 &
      +(/u0,x2*x3/(x12*x13),-x1*x3/(x12*x23),x1*x2/(x13*x23)/)*x1/x12
+wint=wint(3:0:-1)
 end subroutine v1_whintvar
 
 !=============================================================================
@@ -331,6 +335,7 @@ x0=x-xs(2)
 x1=x-xs(1)
 x2=x-xs(0)
 wint=(/x1*x2/(x01*x02),-x0*x2/(x01*x12),x0*x1/(x02*x12)/)
+wint=wint(2:0:-1)
 end subroutine v1_wint3
   
 !=============================================================================
@@ -379,6 +384,8 @@ x1=x-xs(1)
 x2=x-xs(0)
 wint=(/x1*x2/(x01*x02),-x0*x2/(x01*x12),x0*x1/(x02*x12)/)
 dwint=(/(x1+x2)/(x01*x02),-(x0+x2)/(x01*x12),(x0+x1)/(x02*x12)/)
+wint=wint(2:0:-1)
+dwint=dwint(2:0:-1)
 end subroutine v1_wint3d
   
 end module phint
