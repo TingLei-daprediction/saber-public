@@ -202,8 +202,8 @@ void MGBF_Covariance::randomize(oops::FieldSet3D & fset) const {
 void MGBF_Covariance::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   util::Timer timer(classname(), "multiply");
-  int index_scale=fset.get()->metadata().get<int>("ensemble member index");
-  mgbf_covariance_multiply_f90(keySelf_, fset.get(),index_scale);
+  int index_member=fset.get()->metadata().get<int>("ensemble member index");
+  mgbf_covariance_multiply_f90(keySelf_, fset.get(),index_member);
     // Mark all fields as having dirty halos after modification
     for (const auto & fieldname : fset.field_names()) {
         atlas::Field field = fset[fieldname];
