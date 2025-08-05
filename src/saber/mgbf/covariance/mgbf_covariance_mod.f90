@@ -33,7 +33,7 @@ public mgbf_covariance
 
 ! Fortran class header
 type :: mgbf_covariance
-  type(mg_intstate_type) :: intstate(:,:) 
+  type(mg_intstate_type),allocatable :: intstate(:,:) 
   integer :: nscale=1
   integer :: nvargrp=1
   logical :: noMGBF
@@ -45,7 +45,9 @@ type :: mgbf_covariance
                                           !when the fields in fset are stored from top to bottom  
 !clt  integer :: lat2,lon2 ! these belog to mgbf_grid
   character(len=:), allocatable :: mgbf_nml
-  character(len=:), allocatable :: mgbf_nml_group(:,:)
+  character(len=80), allocatable :: mgbf_nml_group(:,:)
+  real, allocatable :: multigrp_cor(:,:)
+  integer, allocatable :: iscalegroup(:)
   
   contains
     procedure, public :: create
@@ -53,7 +55,7 @@ type :: mgbf_covariance
     procedure, public :: randomize
     procedure, public :: multiply
     procedure, public :: multiply_ad
-    procedure, private :: member2scale
+    procedure, private :: imem2scale
 end type mgbf_covariance
 
 character(len=*), parameter :: myname='mgbf_covariance_mod'
@@ -78,9 +80,15 @@ character(len=*), parameter :: myname_=myname//'*create'
 character(len=:), allocatable :: mgbf_nml,centralblockname
 logical :: central
 integer :: layout(2)
-
+integer :: myunit
+integer :: iscale,ivargrp
+integer :: nscale, nvargrp
 type(atlas_field) :: afield
-namelist /parameters_init_mgbf/ nscale,nvargrp,mgbf_nml_group 
+character(len=80) :: readin_mgbf_nml_group(99)
+real :: readin_multigrp_cor(99)=1.0
+integer :: readin_iscalegroup(99)=999
+integer ::i,j, ii
+namelist /parameters_mgbf_init/ nscale,nvargrp,readin_mgbf_nml_group ,readin_multigrp_cor,readin_iscalegroup
 
 ! Hold communicator
 ! -----------------
@@ -111,13 +119,33 @@ call config%get_or_die("saber block name", centralblockname)
 !clt endif
   open(newunit=myunit,file=trim(mgbf_nml),status='old')
 !#  open(unit=10,file=mgbf_nml,status='old',action='read')
-  read(myunit,nml=parameters_mgbf_initial)
+  read(myunit,nml=parameters_mgbf_init)
   close(unit=myunit)
-  this%nscale=nscale
-  this%nvargrp=nvargrp
+  self%nscale=nscale
+  self%nvargrp=nvargrp
+  allocate(self%mgbf_nml_group(nscale,nvargrp))
+  allocate(self%multigrp_cor(nvargrp,nvargrp)) !clt in the future, it could be used for more cor relationship 
+  allocate(self%iscalegroup(nscale) )
+  ii=1
+  do iscale=1,nscale
+    self%iscalegroup(iscale)=readin_iscalegroup(iscale)
+    do ivargrp=1,nvargrp
+      self%mgbf_nml_group(iscale,ivargrp)=readin_mgbf_nml_group(ii)
+      ii=ii+1
+    enddo
+  enddo
+  ii=1
+  do i=1,nvargrp
+    do j=1,nvargrp
+      self%multigrp_cor(i,j)=readin_multigrp_cor(ii)
+      ii=ii+1
+    enddo
+  enddo
+  
+  
 do iscale=1,nscale
   do ivargrp=1,nvargrp
-   call  self%intstate(iscale,ivargrp)%mg_initialize(mgbf_nml_group(iscale,ivargrp)  !mgbf_nml like mgbeta.nml
+   call  self%intstate(iscale,ivargrp)%mg_initialize(self%mgbf_nml_group(iscale,ivargrp))  !mgbf_nml like mgbeta.nml
   enddo
 enddo
 ! Get background (temporary test of the functionality)
@@ -132,6 +160,7 @@ subroutine delete(self)
 
 ! Arguments
 class(mgbf_covariance) :: self
+integer:: iscale,ivargrp
 
 ! Locals
 
@@ -202,10 +231,11 @@ end subroutine randomize
 
 ! --------------------------------------------------------------------------------------------------
 
-subroutine multiply(self, fields)
+subroutine multiply(self, fields,index_member_in)
 ! Arguments
 class(mgbf_covariance), intent(inout) :: self
 type(atlas_fieldset),  intent(inout) :: fields
+integer ,               intent(in)    :: index_member_in
 type(atlas_fieldset)                 :: fields_tmp
 type(atlas_functionspace) :: afunctionspace
 
@@ -222,7 +252,7 @@ real(kind=r_kind), allocatable :: rnormalization(:)
 integer(kind=i_kind) :: dim2d(2),dim3d(3)
 integer(kind=i_kind):: myrank,nxloc,nyloc,nzloc,nz3d
 integer(kind=i_kind)::nvar
-integer(kind=i_kind):: i,ivar,j,k,ij,lev1,lev2,iounit
+integer(kind=i_kind):: i,ivar,jvar,j,k,ij,lev1,lev2,iounit
 integer(kind=i_kind):: n2d
 integer(kind=i_kind),allocatable :: varvlev_index(:,:)
 logical  ::  l3d_encountered  
@@ -236,13 +266,15 @@ integer, pointer :: ghost(:)
 type(atlas_functionspace_StructuredColumns) :: fs
 integer :: ierr
 real(kind=8) :: val
+integer :: member_index
+integer :: iscale, ivargrp
 
 !clt now noly consider t
 !  afield = fields%field('air_temperature')
 !  call afield%data(t)
 !*** From the analysis to first generation of filter grid
-          member_index=fields%metadata().get("mem_index")
-          iscale=self%mem2scale()
+          member_index=index_member_in
+          iscale=self%imem2scale(member_index)
           call btim(mg_multiply_time)
           call btim(mg_preprocess_time)
           if(self%intstate(1,1)%l_for_localization .and. self%intstate(iscale,ivargrp)%km2 > 0) then 
@@ -261,8 +293,8 @@ real(kind=8) :: val
            
 
          
-         do iscal=1,this%nscale
-           do ivargrp=1,this%nvargrp
+         do iscale=1,self%nscale
+           do ivargrp=1,self%nvargrp
              n2d=0
              l3d_encountered=.false.
              allocate(work_mgbf(self%intstate(iscale,ivargrp)%km_a_all,self%intstate(iscale,ivargrp)%nm,self%intstate(iscale,ivargrp)%mm))
@@ -283,12 +315,9 @@ real(kind=8) :: val
           
              allocate( varvlev_index(nvar,3))
                 ilev=1
-                isize_used=0
              do isize=1,fields%size()
                 
                 afield= fields%field(isize)  !clttodo
-                if(afield.field_name not in this%intstate(iscale,ivargrp)%vargrpnames()) cycle
-                isize_used=isize_used+1
                 fs= afield%functionspace()  !cltthinkfore debug
                 n_owned_size= fs%size_owned() !clt for debug
                 if(afield%rank() == 2)  then
@@ -430,7 +459,7 @@ real(kind=8) :: val
               do ivar=1,nvar
                 lev1=varvlev_index(ivar,1)
                 lev2=varvlev_index(ivar,2)
-                work1var_mgbf=work1var_mgbf+self%multscale_parameter%corvar(jvar,ivar)*work_mgbf2(lev1:lev2,:,:)
+                work1var_mgbf=work1var_mgbf+self%multigrp_cor(jvar,ivar)*work_mgbf2(lev1:lev2,:,:)
               enddo
               lev1=varvlev_index(jvar,1)
               lev2=varvlev_index(jvar,2)
@@ -446,7 +475,6 @@ real(kind=8) :: val
              do isize=1,fields%size()
      
                 afield=fields%field(isize)  !clttodo
-                if(afield.field_name not in this%intstate(iscale,ivargrp)%vargrpnames()) cycle
                 fs= afield%functionspace()  !cltthinkfore debug
                 n_owned_size= fs%size_owned() !clt for debug
                 if(afield%rank() == 2) then 
@@ -471,7 +499,7 @@ real(kind=8) :: val
                         ptr_2d(1:nz,:)=work2d_mgbf(lev1:lev1+nz-1,:)!if nz=1, only the first level is used (like for surface pressure) 
                     endif
                   else
-                     if(self%intstate%l_for_localization) then 
+                     if(self%intstate(iscale,ivargrp)%l_for_localization) then 
                        if( self%l_2dvar_last_vertical_level) then !when used for localization,2dvars are put on the last vertical level
 
                          call mpi_barrier(MPI_COMM_WORLD,ierr)  !cltthinkdeb
@@ -552,11 +580,13 @@ type(atlas_fieldset),  intent(inout) :: fields
 
 end subroutine multiply_ad
 function imem2scale(self,imem) result(iscale)
-  class(mgbf_covariance),intent(in)::this
+  class(mgbf_covariance),intent(in)::self
+  integer, intent(in)::imem
+  integer :: iscale
      iscale=1
-    do 100, while (imem > self%iscalegroup(iscale) )
+    do  while (imem > self%iscalegroup(iscale) )
        iscale=iscale+1      
-       break
+    enddo
         
 end function imem2scale
 
