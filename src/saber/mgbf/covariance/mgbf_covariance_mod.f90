@@ -46,12 +46,14 @@ type :: mgbf_covariance
 !clt  integer :: lat2,lon2 ! these belog to mgbf_grid
   character(len=:), allocatable :: mgbf_nml
   character(len=:), allocatable :: mgbf_nml_group(:,:)
+  
   contains
     procedure, public :: create
     procedure, public :: delete
     procedure, public :: randomize
     procedure, public :: multiply
     procedure, public :: multiply_ad
+    procedure, private :: member2scale
 end type mgbf_covariance
 
 character(len=*), parameter :: myname='mgbf_covariance_mod'
@@ -204,7 +206,7 @@ subroutine multiply(self, fields)
 ! Arguments
 class(mgbf_covariance), intent(inout) :: self
 type(atlas_fieldset),  intent(inout) :: fields
-type(atlas_fieldset),  intent(inout) :: fields_tmp
+type(atlas_fieldset)                 :: fields_tmp
 type(atlas_functionspace) :: afunctionspace
 
 ! Locals
@@ -239,6 +241,8 @@ real(kind=8) :: val
 !  afield = fields%field('air_temperature')
 !  call afield%data(t)
 !*** From the analysis to first generation of filter grid
+          member_index=fields%metadata().get("mem_index")
+          iscale=self%mem2scale()
           call btim(mg_multiply_time)
           call btim(mg_preprocess_time)
           if(self%intstate(1,1)%l_for_localization .and. self%intstate(iscale,ivargrp)%km2 > 0) then 
@@ -254,9 +258,9 @@ real(kind=8) :: val
           else
             fileoutput="mgbftest_static_"//str_rank//".txt"
           endif
+           
 
-
-
+         
          do iscal=1,this%nscale
            do ivargrp=1,this%nvargrp
              n2d=0
@@ -422,14 +426,14 @@ real(kind=8) :: val
            else  !  if in the multivariate localization, all output for 3d or 2d variables are 3d structures 
             allocate(work1var_mgbf(nz3d,nxloc,nyloc))
             work1var_mgbf=0.0
-            do ivar=1,nvar
-              lev1=varvlev_index(ivar,1)
-              lev2=varvlev_index(ivar,2)
-              work1var_mgbf=work1var_mgbf+work_mgbf2(lev1:lev2,:,:)
-             enddo
-            do ivar=1,nvar
-              lev1=varvlev_index(ivar,1)
-              lev2=varvlev_index(ivar,2)
+            do jvar=1,nvar
+              do ivar=1,nvar
+                lev1=varvlev_index(ivar,1)
+                lev2=varvlev_index(ivar,2)
+                work1var_mgbf=work1var_mgbf+self%multscale_parameter%corvar(jvar,ivar)*work_mgbf2(lev1:lev2,:,:)
+              enddo
+              lev1=varvlev_index(jvar,1)
+              lev2=varvlev_index(jvar,2)
              work_mgbf(lev1:lev2,:,:)=work1var_mgbf
             enddo
             deallocate(work1var_mgbf)
@@ -547,6 +551,14 @@ type(atlas_fieldset),  intent(inout) :: fields
 !        var3d=0.0_r_kind
 
 end subroutine multiply_ad
+function imem2scale(self,imem) result(iscale)
+  class(mgbf_covariance),intent(in)::this
+     iscale=1
+    do 100, while (imem > self%iscalegroup(iscale) )
+       iscale=iscale+1      
+       break
+        
+end function imem2scale
 
 ! --------------------------------------------------------------------------------------------------
 
