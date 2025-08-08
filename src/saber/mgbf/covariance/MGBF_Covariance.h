@@ -42,7 +42,8 @@ namespace mgbf {
 class MGBF_CovarianceParameters: public SaberBlockParametersBase  {
   OOPS_CONCRETE_PARAMETERS(MGBF_CovarianceParameters,SaberBlockParametersBase)
   public:
-  oops::RequiredParameter<std::string> MGBFNML{"mgbf namelist file", this};
+  oops::OptionalParameter<std::string> SDL_MGBFNML{"mgbf sdl and vdl init namelist file", this};
+  oops::OptionalParameter<std::string> MGBFNML{"mgbf namelist file", this};
     // Mandatory active variables
   oops::Variables mandatoryActiveVars() const override {return oops::Variables();}
 };
@@ -203,6 +204,7 @@ void MGBF_Covariance::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   util::Timer timer(classname(), "multiply");
   int index_member=fset.get()->metadata().get<int>("ensemble member index");
+  oops::Log::trace()<<"thinkdeb999 sdl multiply index_member "<<index_member<<std::endl;
   mgbf_covariance_multiply_f90(keySelf_, fset.get(),index_member);
     // Mark all fields as having dirty halos after modification
     for (const auto & fieldname : fset.field_names()) {
