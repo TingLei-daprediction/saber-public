@@ -42,7 +42,8 @@ namespace mgbf {
 class MGBF_CovarianceParameters: public SaberBlockParametersBase  {
   OOPS_CONCRETE_PARAMETERS(MGBF_CovarianceParameters,SaberBlockParametersBase)
   public:
-  oops::RequiredParameter<std::string> MGBFNML{"mgbf namelist file", this};
+  oops::OptionalParameter<std::string> SDL_MGBFNML{"mgbf sdl and vdl init namelist file", this};
+  oops::OptionalParameter<std::string> MGBFNML{"mgbf namelist file", this};
     // Mandatory active variables
   oops::Variables mandatoryActiveVars() const override {return oops::Variables();}
 };

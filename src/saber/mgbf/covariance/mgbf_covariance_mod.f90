@@ -48,6 +48,7 @@ type :: mgbf_covariance
   character(len=80), allocatable :: mgbf_nml_group(:,:)
   real, allocatable :: multigrp_cor(:,:)
   integer, allocatable :: iscalegroup(:)
+  integer, allocatable :: ivargroup(:)
   
   contains
     procedure, public :: create
@@ -56,6 +57,7 @@ type :: mgbf_covariance
     procedure, public :: multiply
     procedure, public :: multiply_ad
     procedure, private :: imem2scale
+    procedure, private :: ivar2grp
 end type mgbf_covariance
 
 character(len=*), parameter :: myname='mgbf_covariance_mod'
@@ -82,13 +84,14 @@ logical :: central
 integer :: layout(2)
 integer :: myunit
 integer :: iscale,ivargrp
-integer :: nscale, nvargrp
+integer :: nscale=1, nvargrp=1
 type(atlas_field) :: afield
 character(len=80) :: readin_mgbf_nml_group(99)
 real :: readin_multigrp_cor(99)=1.0
 integer :: readin_iscalegroup(99)=999
+integer :: readin_ivargroup(99)=999
 integer ::i,j, ii
-namelist /parameters_mgbf_init/ nscale,nvargrp,readin_mgbf_nml_group ,readin_multigrp_cor,readin_iscalegroup
+namelist /parameters_mgbf_init/ nscale,nvargrp,readin_mgbf_nml_group ,readin_multigrp_cor,readin_iscalegroup,readin_ivargroup
 
 ! Hold communicator
 ! -----------------
@@ -99,24 +102,10 @@ namelist /parameters_mgbf_init/ nscale,nvargrp,readin_mgbf_nml_group ,readin_mul
 !clt call self%grid%create(config, comm)
 self%rank = comm%rank()
 
-!clt call config%get_or_die("debuggingxx bypass mgbf", self%noMGBF)
-call config%get_or_die("mgbf namelist file ",  mgbf_nml)
-!if (.not. self%noMGBF) then
 call config%get_or_die("saber block name", centralblockname)
-!  if (.not. central) then
-!     call abor1_ftn(myname_//": not ready to handle sqrt(B) case")
-!  endif
-!  call config%get_or_die("debugging deep bypass mgbf B error", self%bypassMGBFbe)
-
-! Get required name of resources for MGBF B error
-! ----------------------------------------------
-!  call config%get_or_die("mgbf berror namelist file",  mgbf_nml)
-!//  call config%get_or_die("mgbf error covariance file", bef)
-
-! Initialize MGBF-Berror components
-! --------------------------------
-! layout=-1
-!clt endif
+!clt call config%get_or_die("debuggingxx bypass mgbf", self%noMGBF)
+if (config%has("mgbf sdl and vdl init namelist file")) then
+     call config%get_or_die("mgbf mgbf sdl and vdl init namelist file",  mgbf_nml)
   open(newunit=myunit,file=trim(mgbf_nml),status='old')
 !#  open(unit=10,file=mgbf_nml,status='old',action='read')
   read(myunit,nml=parameters_mgbf_init)
@@ -126,13 +115,16 @@ call config%get_or_die("saber block name", centralblockname)
   allocate(self%mgbf_nml_group(nscale,nvargrp))
   allocate(self%multigrp_cor(nvargrp,nvargrp)) !clt in the future, it could be used for more cor relationship 
   allocate(self%iscalegroup(nscale) )
+  allocate(self%ivargroup(nvargrp) )
   ii=1
   do iscale=1,nscale
-    self%iscalegroup(iscale)=readin_iscalegroup(iscale)
     do ivargrp=1,nvargrp
       self%mgbf_nml_group(iscale,ivargrp)=readin_mgbf_nml_group(ii)
       ii=ii+1
     enddo
+  enddo
+  do iscale=1,nscale
+    self%iscalegroup(iscale)=readin_iscalegroup(iscale)
   enddo
   ii=1
   do i=1,nvargrp
@@ -141,8 +133,20 @@ call config%get_or_die("saber block name", centralblockname)
       ii=ii+1
     enddo
   enddo
+  do i=1,nvargrp
+    self%ivargroup(i)=readin_ivargroup(iscale)
+  enddo
+else
+call config%get_or_die("mgbf namelist file ",  mgbf_nml)
+endif
   
-  
+if(nscale == 1 .and. nvargrp ==1 ) then 
+  self%mgbf_nml_group(1,1)=mgbf_nml   !the same mgbf namelist file is used 
+                                      !and hence, it would be backward-compatible
+                                      ! the previous namelist files could be still used,correctly,
+                                      ! by the current sdl/vdl enhanced version
+endif
+allocate(self%intstate(nscale,nvargrp))
 do iscale=1,nscale
   do ivargrp=1,nvargrp
    call  self%intstate(iscale,ivargrp)%mg_initialize(self%mgbf_nml_group(iscale,ivargrp))  !mgbf_nml like mgbeta.nml
@@ -246,9 +250,11 @@ real(kind=r_kind), pointer :: ptr_3d(:,:,:)
 integer(kind=i_kind):: nz,ilev,isize
 real(kind=r_kind), allocatable :: work_mgbf(:,:,:)
 real(kind=r_kind), allocatable :: work_mgbf2(:,:,:)
+real(kind=r_kind), allocatable :: vargrp_work_mgbf(:,:,:)
 real(kind=r_kind), allocatable :: work1var_mgbf(:,:,:)
 real(kind=r_kind), allocatable :: work2d_mgbf(:,:)
 real(kind=r_kind), allocatable :: rnormalization(:)
+integer(kind=i_kind), allocatable :: nlev_vargrp(:)
 integer(kind=i_kind) :: dim2d(2),dim3d(3)
 integer(kind=i_kind):: myrank,nxloc,nyloc,nzloc,nz3d
 integer(kind=i_kind)::nvar
@@ -267,17 +273,19 @@ type(atlas_functionspace_StructuredColumns) :: fs
 integer :: ierr
 real(kind=8) :: val
 integer :: member_index
-integer :: iscale, ivargrp
+integer :: iscale,jscale, ivargrp,jvargrp
+integer :: total_km_a_all,ii,nvargrp
 
 !clt now noly consider t
 !  afield = fields%field('air_temperature')
 !  call afield%data(t)
 !*** From the analysis to first generation of filter grid
           member_index=index_member_in
-          iscale=self%imem2scale(member_index)
+          jscale=self%imem2scale(member_index)
+          nvargrp=self%nvargrp
           call btim(mg_multiply_time)
           call btim(mg_preprocess_time)
-          if(self%intstate(1,1)%l_for_localization .and. self%intstate(iscale,ivargrp)%km2 > 0) then 
+          if(self%intstate(jscale,1)%l_for_localization .and. self%intstate(jscale,ivargrp)%km2 > 0) then 
            write(6,*)"when mgbf is used for localizaiton, all 2d variables will be treated as 3d variable",  &
 &        "in which, the first level contains the 2d variables and others zeros "  
                                                                                                         
@@ -285,22 +293,30 @@ integer :: iscale, ivargrp
           endif
           myrank=self%rank
           write(str_rank,"(I4.4)")myrank
-          if(self%intstate(iscale,ivargrp)%l_for_localization) then
+          if(self%intstate(jscale,ivargrp)%l_for_localization) then
             fileoutput="mgbftest_loc_"//str_rank//".txt"
           else
             fileoutput="mgbftest_static_"//str_rank//".txt"
           endif
            
-
-         
-         do iscale=1,self%nscale
+        allocate(nlev_vargrp(nvargrp))
+        total_km_a_all=0 
+!clt         do iscale=1,self%nscale
            do ivargrp=1,self%nvargrp
+            if(self%intstate(jscale,ivargrp)%nm.ne.self%intstate(jscale,1)%nm.or.  &
+               self%intstate(jscale,ivargrp)%mm.ne.self%intstate(jscale,1)%mm) then 
+               error stop "for being now, the filtering grids at the start of MGBF should be the same"
+            endif
+            total_km_a_all=self%intstate(jscale,ivargrp)%km_a_all+total_km_a_all
+           enddo
+              
+         
              n2d=0
              l3d_encountered=.false.
-             allocate(work_mgbf(self%intstate(iscale,ivargrp)%km_a_all,self%intstate(iscale,ivargrp)%nm,self%intstate(iscale,ivargrp)%mm))
-             allocate(work_mgbf2(self%intstate(iscale,ivargrp)%km_a_all,self%intstate(iscale,ivargrp)%nm,self%intstate(iscale,ivargrp)%mm))
-             allocate(work2d_mgbf(self%intstate(iscale,ivargrp)%km_a_all,self%intstate(iscale,ivargrp)%nm*self%intstate(iscale,ivargrp)%mm))
-             allocate(rnormalization(self%intstate(iscale,ivargrp)%km_a_all))
+             allocate(work_mgbf(total_km_a_all,self%intstate(jscale,ivargrp)%nm,self%intstate(jscale,ivargrp)%mm))
+             allocate(work_mgbf2(total_km_a_all,self%intstate(jscale,ivargrp)%nm,self%intstate(jscale,ivargrp)%mm))
+             allocate(work2d_mgbf(total_km_a_all,self%intstate(jscale,ivargrp)%nm*self%intstate(jscale,ivargrp)%mm))
+             allocate(rnormalization(total_km_a_all))
              work2d_mgbf=0.0         
              rnormalization=1.0
         
@@ -310,10 +326,12 @@ integer :: iscale, ivargrp
              nxloc=dim3d(2)
              nyloc=dim3d(3)
              nzloc=dim3d(1)
-             nz3d=self%intstate(iscale,ivargrp)%lm_a 
+             nz3d=self%intstate(jscale,1)%lm_a   !should be the same for different vargrps
              nvar=fields%size() 
           
              allocate( varvlev_index(nvar,3))
+             allocate( nlev_vargrp(nvargrp))
+             nlev_vargrp=0
                 ilev=1
              do isize=1,fields%size()
                 
@@ -347,7 +365,8 @@ integer :: iscale, ivargrp
    !                 enddo
 
                   if(nz == 1) then 
-                     if(self%intstate(iscale,ivargrp)%l_for_localization) then 
+!clttothink                     if(self%intstate(iscale,ivargrp)%l_for_localization) then 
+                     if(self%intstate(jscale,1)%l_for_localization) then 
                        if( self%l_2dvar_last_vertical_level) then  !when used for localization,2dvars are put on the last vertical level
                          if(n_owned_size >0 ) then 
                             work2d_mgbf(ilev+nz3d-1:ilev+nz3d-1,:)=ptr_2d(:,1:n_owned_size)
@@ -388,7 +407,8 @@ integer :: iscale, ivargrp
                   endif
                   if(isize==1) then
                     varvlev_index(isize,1)= 1
-                    if(.not.self%intstate(iscale,ivargrp)%l_for_localization )then 
+  !cltothink                  if(.not.self%intstate(iscale,ivargrp)%l_for_localization )then 
+                    if(.not.self%intstate(jscale,1)%l_for_localization )then 
                       varvlev_index(isize,2)= nz
                     else
                       varvlev_index(isize,2)= nz3d
@@ -397,14 +417,17 @@ integer :: iscale, ivargrp
                   else
    !cltorg                 varvlev_index(isize,1)= varvlev_index(isize-1,1)+nz3d
                     varvlev_index(isize,1)= varvlev_index(isize-1,2)+1
-                    if(.not.self%intstate(iscale,ivargrp)%l_for_localization )then 
+                    if(.not.self%intstate(jscale,ivargrp)%l_for_localization )then 
                       varvlev_index(isize,2)= varvlev_index(isize,1)+nz-1
                     else
                       varvlev_index(isize,2)= varvlev_index(isize,1)+nz3d-1
                     endif
                     varvlev_index(isize,3)= varvlev_index(isize,2) -varvlev_index(isize,1)+1 
                   endif
-                    rnormalization(varvlev_index(isize,1):varvlev_index(isize,2))=self%intstate(iscale,ivargrp)%coef_normalization(1:(varvlev_index(isize,2)-varvlev_index(isize,1)+1))
+                  jvargrp=self%ivargroup(isize)                      
+                  nlev_vargrp(jvargrp)=nlev_vargrp(jvargrp)+varvlev_index(isize,2)
+
+                  rnormalization(varvlev_index(isize,1):varvlev_index(isize,2))=self%intstate(jscale,jvargrp)%coef_normalization(1:(varvlev_index(isize,2)-varvlev_index(isize,1)+1))
                     
                   ilev=varvlev_index(isize,2)+1
                 elseif (afield%rank() == 3) then  
@@ -420,56 +443,69 @@ integer :: iscale, ivargrp
                   stop
                 endif 
              enddo
-          do k=1,nzloc
-             work2d_mgbf(k,:)=work2d_mgbf(k,:)/rnormalization(k)
-             work_mgbf(k,:,:) =reshape(work2d_mgbf(k,:),[dim3d(2),dim3d(3)])
-          enddo
-             if(self%intstate(iscale,ivargrp)%km2.ne.n2d.and. .not.self%intstate(iscale,ivargrp)%l_for_localization ) then 
+             do k=1,nzloc
+   !cltorg             work2d_mgbf(k,:)=work2d_mgbf(k,:)/rnormalization(k) !clttothink should be done after the filtering
+                work_mgbf(k,:,:) =reshape(work2d_mgbf(k,:),[dim3d(2),dim3d(3)])
+             enddo
+             if(self%intstate(jscale,ivargrp)%km2.ne.n2d.and. .not.self%intstate(jscale,ivargrp)%l_for_localization ) then 
                 write(6,*)'The numbers of 2d variables is different from  mgbf-expected ,stop'
                 stop   ! a better exception handling is to be added
              endif
+
              if(test_once.and..1.gt.2) then
              open(iounit,file=trim(fileoutput), status='replace',form="formatted") 
              write(iounit,*) work_mgbf
              test_once=.false. 
              close(iounit)
              endif
-             call etim(mg_preprocess_time)
-
-             call btim(mg_anal_to_filt_time)
-             call self%intstate(iscale,ivargrp)%anal_to_filt_allmap(work_mgbf)
-             call etim(mg_anal_to_filt_time)
-             call btim(mg_filtering_time)
-             call self%intstate(iscale,ivargrp)%filtering_procedure(self%intstate(iscale,ivargrp)%mgbf_proc,1)
-             call etim(mg_filtering_time)
-            
-   !cltorg          call self%intstate%filt_to_anal_allmap(work_mgbf)
-             call btim(mg_filt_to_anal_time)
-             call self%intstate(iscale,ivargrp)%filt_to_anal_allmap(work_mgbf2)
-             call etim(mg_filt_to_anal_time)
-   !clt#        work_mgbf=999.0 !thinkdeb for debug
+             ii=1
+             do ivargrp=1,nvargrp
+                allocate(vargrp_work_mgbf(nlev_vargrp(ivar),nxloc,nyloc))
+                vargrp_work_mgbf(:,:,:)=work_mgbf(ii:ii+nlev_vargrp(ivargrp),:,:)
     
-             call btim(mg_postprocess_time)
-           if(.not. self%intstate(iscale,ivargrp)%l_for_localization ) then   !clthinkdebxxx
-             work_mgbf=work_mgbf2
-           else  !  if in the multivariate localization, all output for 3d or 2d variables are 3d structures 
-            allocate(work1var_mgbf(nz3d,nxloc,nyloc))
-            work1var_mgbf=0.0
-            do jvar=1,nvar
-              do ivar=1,nvar
-                lev1=varvlev_index(ivar,1)
-                lev2=varvlev_index(ivar,2)
-                work1var_mgbf=work1var_mgbf+self%multigrp_cor(jvar,ivar)*work_mgbf2(lev1:lev2,:,:)
-              enddo
-              lev1=varvlev_index(jvar,1)
-              lev2=varvlev_index(jvar,2)
-             work_mgbf(lev1:lev2,:,:)=work1var_mgbf
-            enddo
-            deallocate(work1var_mgbf)
-           endif
-           do k=1,nzloc
-             work2d_mgbf(k,:)=reshape(work_mgbf(k,:,:),[dim2d(2)])
-           enddo
+                call etim(mg_preprocess_time)
+
+                call btim(mg_anal_to_filt_time)
+                call self%intstate(jscale,ivargrp)%anal_to_filt_allmap(vargrp_work_mgbf)
+                call etim(mg_anal_to_filt_time)
+                call btim(mg_filtering_time)
+                call self%intstate(jscale,ivargrp)%filtering_procedure(self%intstate(jscale,ivargrp)%mgbf_proc,1)
+                call etim(mg_filtering_time)
+               
+      !cltorg          call self%intstate%filt_to_anal_allmap(work_mgbf)
+                call btim(mg_filt_to_anal_time)
+                call self%intstate(jscale,ivargrp)%filt_to_anal_allmap(work_mgbf2)
+                call etim(mg_filt_to_anal_time)
+      !clt#        work_mgbf=999.0 !thinkdeb for debug
+       
+                call btim(mg_postprocess_time)
+                work_mgbf(ii:ii+nlev_vargrp(ivargrp),:,:)=vargrp_work_mgbf(:,:,:)
+                deallocate(vargrp_work_mgbf)
+                ii=ii+nlev_vargrp(ivargrp)+1
+             enddo ! ivargrp
+             if(.not. self%intstate(jscale,ivargrp)%l_for_localization ) then   !clthinkdebxxx
+               work_mgbf=work_mgbf2
+             else  !  if in the multivariate localization, all output for 3d or 2d variables are 3d structures 
+               allocate(work1var_mgbf(nz3d,nxloc,nyloc))
+               work1var_mgbf=0.0
+               do jvar=1,nvar
+                 do ivar=1,nvar
+                   lev1=varvlev_index(ivar,1)
+                   lev2=varvlev_index(ivar,2)
+                   work1var_mgbf=work1var_mgbf+self%multigrp_cor(jvar,ivar)*work_mgbf2(lev1:lev2,:,:)
+                 enddo
+                 lev1=varvlev_index(jvar,1)
+                 lev2=varvlev_index(jvar,2)
+                work_mgbf(lev1:lev2,:,:)=work1var_mgbf
+               enddo
+               deallocate(work1var_mgbf)
+             endif
+             do k=1,nzloc
+               work2d_mgbf(k,:)=reshape(work_mgbf(k,:,:),[dim2d(2)])
+             enddo
+             do k=1,nzloc
+                work2d_mgbf(k,:)=work2d_mgbf(k,:)/rnormalization(k) 
+             enddo
                 ilev=1
                      n_owned_size=0
              do isize=1,fields%size()
@@ -499,7 +535,7 @@ integer :: iscale, ivargrp
                         ptr_2d(1:nz,:)=work2d_mgbf(lev1:lev1+nz-1,:)!if nz=1, only the first level is used (like for surface pressure) 
                     endif
                   else
-                     if(self%intstate(iscale,ivargrp)%l_for_localization) then 
+                     if(self%intstate(jscale,ivargrp)%l_for_localization) then 
                        if( self%l_2dvar_last_vertical_level) then !when used for localization,2dvars are put on the last vertical level
 
                          call mpi_barrier(MPI_COMM_WORLD,ierr)  !cltthinkdeb
@@ -551,13 +587,14 @@ integer :: iscale, ivargrp
 
 
              deallocate(work_mgbf)
+             deallocate(vargrp_work_mgbf)
              deallocate(work_mgbf2)
              deallocate(work2d_mgbf)
              deallocate(rnormalization)
              deallocate( varvlev_index)
-          enddo !for ivargrp
-        enddo   !for iscale
+ !clt       enddo   !for iscale
           call etim(mg_multiply_time)
+        deallocate(nlev_vargrp)
 
 end subroutine multiply
 
@@ -589,6 +626,16 @@ function imem2scale(self,imem) result(iscale)
     enddo
         
 end function imem2scale
+function ivar2grp(self,ivar) result(jvargrp)
+  class(mgbf_covariance),intent(in)::self
+  integer, intent(in)::ivar
+  integer :: jvargrp
+     jvargrp=1
+    do  while (ivar > self%ivargroup(jvargrp) )
+       jvargrp=jvargrp+1      
+    enddo
+        
+end function ivar2grp
 
 ! --------------------------------------------------------------------------------------------------
 
