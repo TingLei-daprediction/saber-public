@@ -23,7 +23,7 @@ use random_mod
 !clt use mgbf_grid_mod,                   only: mgbf_grid
 use mg_intstate , only:            mg_intstate_type
 use mg_timers
-
+use iso_c_binding
 use mpi
 use, intrinsic :: ieee_arithmetic
 implicit none
@@ -144,6 +144,11 @@ write(6,*)'thinkdeb999 begin no sdl 2 '
 call config%get_or_die("mgbf namelist file ",  mgbf_nml)
 write(6,*)'thinkdeb999 begin no sdl 3 '
 call flush(6)
+!still need allocate them though nscale=nvargrp=1
+  allocate(self%mgbf_nml_group(nscale,nvargrp))
+  allocate(self%multigrp_cor(nvargrp,nvargrp)) !clt in the future, it could be used for more cor relationship 
+  allocate(self%iscalegroup(nscale) )
+  allocate(self%ivargroup(nvargrp) )
 endif
   
 write(6,*)'thinkdeb999 begin sdl 9 '
@@ -156,7 +161,6 @@ if(nscale == 1 .and. nvargrp ==1 ) then
                                       ! by the current sdl/vdl enhanced version
 endif
 allocate(self%intstate(nscale,nvargrp))
-write(6,*)'thinkdeb999 begin allocate sdl '
 call flush(6)
 do iscale=1,nscale
   do ivargrp=1,nvargrp
@@ -252,7 +256,7 @@ subroutine multiply(self, fields,index_member_in)
 ! Arguments
 class(mgbf_covariance), intent(inout) :: self
 type(atlas_fieldset),  intent(inout) :: fields
-integer ,               intent(in)    :: index_member_in
+integer(c_int) ,               intent(in)    :: index_member_in
 type(atlas_fieldset)                 :: fields_tmp
 type(atlas_functionspace) :: afunctionspace
 
@@ -295,7 +299,7 @@ integer :: total_km_a_all,ii,nvargrp
 !*** From the analysis to first generation of filter grid
 write(6,*)'thinkdeb999 multiply  sdl 1 '
 call flush(6)
-          member_index=index_member_in
+          member_index=int(index_member_in,kind=kind(index_member_in))
           jscale=self%imem2scale(member_index)
           nvargrp=self%nvargrp
           call btim(mg_multiply_time)
@@ -555,7 +559,6 @@ call flush(6)
                      if(self%intstate(jscale,ivargrp)%l_for_localization) then 
                        if( self%l_2dvar_last_vertical_level) then !when used for localization,2dvars are put on the last vertical level
 
-                         call mpi_barrier(MPI_COMM_WORLD,ierr)  !cltthinkdeb
                            if(n_owned_size >0 ) then 
                             ptr_2d(1,1:n_owned_size)=work2d_mgbf(lev1+nz3d-1,:)!if nz=1, only the first level is used (like for surface pressure) 
                           else 
