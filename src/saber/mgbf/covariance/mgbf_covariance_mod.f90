@@ -109,7 +109,6 @@ call config%get_or_die("saber block name", centralblockname)
 if (config%has("mgbf sdl and vdl init namelist file")) then
      call config%get_or_die("mgbf mgbf sdl and vdl init namelist file",  mgbf_nml)
 write(6,*)'thinkdeb999 begin mgbf_nml ',trim(mgbf_nml)
-call flush(6)
   open(newunit=myunit,file=trim(mgbf_nml),status='old')
 !#  open(unit=10,file=mgbf_nml,status='old',action='read')
   read(myunit,nml=parameters_mgbf_init)
@@ -149,6 +148,7 @@ endif
   
 write(6,*)'thinkdeb999 begin sdl 9 '
 call flush(6)
+  
 if(nscale == 1 .and. nvargrp ==1 ) then 
   self%mgbf_nml_group(1,1)=mgbf_nml   !the same mgbf namelist file is used 
                                       !and hence, it would be backward-compatible
