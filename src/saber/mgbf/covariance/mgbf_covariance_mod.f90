@@ -256,7 +256,7 @@ subroutine multiply(self, fields,index_member_in)
 ! Arguments
 class(mgbf_covariance), intent(inout) :: self
 type(atlas_fieldset),  intent(inout) :: fields
-integer(c_int) ,               intent(in)    :: index_member_in
+integer ,               intent(in)    :: index_member_in
 type(atlas_fieldset)                 :: fields_tmp
 type(atlas_functionspace) :: afunctionspace
 
@@ -299,7 +299,7 @@ integer :: total_km_a_all,ii,nvargrp
 !*** From the analysis to first generation of filter grid
 write(6,*)'thinkdeb999 multiply  sdl 1 '
 call flush(6)
-          member_index=int(index_member_in,kind=kind(index_member_in))
+          member_index=index_member_in+1  ! the privous ensemble index starts from 0)
           jscale=self%imem2scale(member_index)
           nvargrp=self%nvargrp
           call btim(mg_multiply_time)

@@ -205,6 +205,7 @@ void MGBF_Covariance::multiply(oops::FieldSet3D & fset) const {
   util::Timer timer(classname(), "multiply");
   int index_member=fset.fieldSet().metadata().get<int>("ensemble member index");
   oops::Log::trace()<<"thinkdeb999 sdl multiply index_member "<<index_member<<std::endl;
+  std::cout<<"thinkdeb999cout sdl multiply index_member "<<index_member<<std::endl;
   mgbf_covariance_multiply_f90(keySelf_, fset.get(),index_member);
     // Mark all fields as having dirty halos after modification
     for (const auto & fieldname : fset.field_names()) {
