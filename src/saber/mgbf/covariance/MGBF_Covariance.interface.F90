@@ -148,7 +148,7 @@ implicit none
 
 !Arguments
 integer(c_int),     intent(in) :: c_self
-integer(c_int),     intent(in) :: c_index_member_in
+integer(c_int),value,    intent(in) :: c_index_member_in
 type(c_ptr), value, intent(in) :: c_afieldset
 
 type(mgbf_covariance), pointer :: f_self
@@ -158,10 +158,6 @@ integer                       :: index_member_in=0
 write(6,*)'thinkdeb 999 in inteface f90 star'
 call flush(6)
 call btim(mg_interface_multiply_time)
-write(6,*) 'c_selfd999:', c_self
-call flush(6)
-write(6,*) 'c_afieldsetd999:', transfer(c_afieldset,0_c_intptr_t)
-call flush(6)
 write(6,*)'thinkdeb 999 in inteface f90 star0.5 c_index_member_in ',c_index_member_in
 call flush(6)
 index_member_in=int(c_index_member_in,kind=kind(index_member_in))

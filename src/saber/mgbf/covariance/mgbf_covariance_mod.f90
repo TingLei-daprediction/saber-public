@@ -107,8 +107,9 @@ call flush(6)
 call config%get_or_die("saber block name", centralblockname)
 !clt call config%get_or_die("debuggingxx bypass mgbf", self%noMGBF)
 if (config%has("mgbf sdl and vdl init namelist file")) then
-     call config%get_or_die("mgbf mgbf sdl and vdl init namelist file",  mgbf_nml)
+     call config%get_or_die("mgbf sdl and vdl init namelist file",  mgbf_nml)
 write(6,*)'thinkdeb999 begin mgbf_nml ',trim(mgbf_nml)
+  call flush(6)
   open(newunit=myunit,file=trim(mgbf_nml),status='old')
 !#  open(unit=10,file=mgbf_nml,status='old',action='read')
   read(myunit,nml=parameters_mgbf_init)
@@ -147,8 +148,11 @@ call flush(6)
 !still need allocate them though nscale=nvargrp=1
   allocate(self%mgbf_nml_group(nscale,nvargrp))
   allocate(self%multigrp_cor(nvargrp,nvargrp)) !clt in the future, it could be used for more cor relationship 
+  self%multigrp_cor=1.0
   allocate(self%iscalegroup(nscale) )
+  self%iscalegroup(nscale) =1
   allocate(self%ivargroup(nvargrp) )
+  self%ivargroup=1
 endif
   
 write(6,*)'thinkdeb999 begin sdl 9 '
@@ -164,6 +168,8 @@ allocate(self%intstate(nscale,nvargrp))
 call flush(6)
 do iscale=1,nscale
   do ivargrp=1,nvargrp
+   write(6,*)'the999 nml is ', trim(self%mgbf_nml_group(iscale,ivargrp))  
+   call flush(6)
    call  self%intstate(iscale,ivargrp)%mg_initialize(self%mgbf_nml_group(iscale,ivargrp))  !mgbf_nml like mgbeta.nml
   enddo
 enddo
@@ -268,6 +274,7 @@ integer(kind=i_kind):: nz,ilev,isize
 real(kind=r_kind), allocatable :: work_mgbf(:,:,:)
 real(kind=r_kind), allocatable :: work_mgbf2(:,:,:)
 real(kind=r_kind), allocatable :: vargrp_work_mgbf(:,:,:)
+real(kind=r_kind), allocatable :: vargrp_work_mgbf2(:,:,:)
 real(kind=r_kind), allocatable :: work1var_mgbf(:,:,:)
 real(kind=r_kind), allocatable :: work2d_mgbf(:,:)
 real(kind=r_kind), allocatable :: rnormalization(:)
@@ -290,8 +297,9 @@ type(atlas_functionspace_StructuredColumns) :: fs
 integer :: ierr
 real(kind=8) :: val
 integer :: member_index
-integer :: iscale,jscale, ivargrp,jvargrp
+integer :: iscale,jscale, ivargrp,ivargrp0,jvargrp
 integer :: total_km_a_all,ii,nvargrp
+integer :: ilev1,ilev2
 
 !clt now noly consider t
 !  afield = fields%field('air_temperature')
@@ -304,7 +312,7 @@ call flush(6)
           nvargrp=self%nvargrp
           call btim(mg_multiply_time)
           call btim(mg_preprocess_time)
-          if(self%intstate(jscale,1)%l_for_localization .and. self%intstate(jscale,ivargrp)%km2 > 0) then 
+          if(self%intstate(jscale,1)%l_for_localization .and. self%intstate(jscale,1)%km2 > 0) then 
            write(6,*)"when mgbf is used for localizaiton, all 2d variables will be treated as 3d variable",  &
 &        "in which, the first level contains the 2d variables and others zeros "  
                                                                                                         
@@ -312,7 +320,7 @@ call flush(6)
           endif
           myrank=self%rank
           write(str_rank,"(I4.4)")myrank
-          if(self%intstate(jscale,ivargrp)%l_for_localization) then
+          if(self%intstate(jscale,1)%l_for_localization) then
             fileoutput="mgbftest_loc_"//str_rank//".txt"
           else
             fileoutput="mgbftest_static_"//str_rank//".txt"
@@ -321,6 +329,7 @@ call flush(6)
 write(6,*)'thinkdeb999 multiply  sdl 2 '
 call flush(6)
         allocate(nlev_vargrp(nvargrp))
+        nlev_vargrp=0
         total_km_a_all=0 
 !clt         do iscale=1,self%nscale
            do ivargrp=1,self%nvargrp
@@ -328,18 +337,32 @@ call flush(6)
                self%intstate(jscale,ivargrp)%mm.ne.self%intstate(jscale,1)%mm) then 
                error stop "for being now, the filtering grids at the start of MGBF should be the same"
             endif
+            write(6,*)'thinkdeb999 1 ivargrp s km_all ',self%intstate(jscale,ivargrp)%km_a_all
             total_km_a_all=self%intstate(jscale,ivargrp)%km_a_all+total_km_a_all
+            write(6,*)'thinkdeb999 1 km_all ',total_km_a_all
+            nlev_vargrp(ivargrp)=self%intstate(jscale,ivargrp)%km_a_all
            enddo
               
+             nz3d=self%intstate(jscale,1)%lm_a   !should be the same for different vargrps
          
              n2d=0
              l3d_encountered=.false.
-             allocate(work_mgbf(total_km_a_all,self%intstate(jscale,ivargrp)%nm,self%intstate(jscale,ivargrp)%mm))
-             allocate(work_mgbf2(total_km_a_all,self%intstate(jscale,ivargrp)%nm,self%intstate(jscale,ivargrp)%mm))
-             allocate(work2d_mgbf(total_km_a_all,self%intstate(jscale,ivargrp)%nm*self%intstate(jscale,ivargrp)%mm))
+             ivargrp0=1
+             allocate(work_mgbf(total_km_a_all,self%intstate(jscale,ivargrp0)%nm,self%intstate(jscale,ivargrp0)%mm))
+             allocate(work_mgbf2(total_km_a_all,self%intstate(jscale,ivargrp0)%nm,self%intstate(jscale,ivargrp0)%mm))
+             allocate(work2d_mgbf(total_km_a_all,self%intstate(jscale,ivargrp0)%nm*self%intstate(jscale,ivargrp0)%mm))
              allocate(rnormalization(total_km_a_all))
              work2d_mgbf=0.0         
              rnormalization=1.0
+             do ivargrp=1,nvargrp
+               ilev1=1
+               ilev2=ilev1+nz3d-1
+               do while (ilev2.le.nlev_vargrp(ivargrp) ) 
+                     rnormalization(ilev1:ilev2)=self%intstate(jscale,ivargrp)%coef_normalization(1:nz3d)
+                     ilev1=ilev1+nz3d
+                     ilev2=ilev2+nz3d
+               enddo
+             enddo
         
              dim2d=shape(work2d_mgbf)
 
@@ -347,12 +370,10 @@ call flush(6)
              nxloc=dim3d(2)
              nyloc=dim3d(3)
              nzloc=dim3d(1)
-             nz3d=self%intstate(jscale,1)%lm_a   !should be the same for different vargrps
              nvar=fields%size() 
-          
              allocate( varvlev_index(nvar,3))
-             allocate( nlev_vargrp(nvargrp))
-             nlev_vargrp=0
+             varvlev_index=0
+          
                 ilev=1
              do isize=1,fields%size()
                 
@@ -438,17 +459,15 @@ call flush(6)
                   else
    !cltorg                 varvlev_index(isize,1)= varvlev_index(isize-1,1)+nz3d
                     varvlev_index(isize,1)= varvlev_index(isize-1,2)+1
-                    if(.not.self%intstate(jscale,ivargrp)%l_for_localization )then 
+                    if(.not.self%intstate(jscale,ivargrp0)%l_for_localization )then 
                       varvlev_index(isize,2)= varvlev_index(isize,1)+nz-1
                     else
                       varvlev_index(isize,2)= varvlev_index(isize,1)+nz3d-1
                     endif
                     varvlev_index(isize,3)= varvlev_index(isize,2) -varvlev_index(isize,1)+1 
                   endif
-                  jvargrp=self%ivargroup(isize)                      
-                  nlev_vargrp(jvargrp)=nlev_vargrp(jvargrp)+varvlev_index(isize,2)
+                  jvargrp=self%ivar2grp(isize)                      
 
-                  rnormalization(varvlev_index(isize,1):varvlev_index(isize,2))=self%intstate(jscale,jvargrp)%coef_normalization(1:(varvlev_index(isize,2)-varvlev_index(isize,1)+1))
                     
                   ilev=varvlev_index(isize,2)+1
                 elseif (afield%rank() == 3) then  
@@ -468,7 +487,7 @@ call flush(6)
    !cltorg             work2d_mgbf(k,:)=work2d_mgbf(k,:)/rnormalization(k) !clttothink should be done after the filtering
                 work_mgbf(k,:,:) =reshape(work2d_mgbf(k,:),[dim3d(2),dim3d(3)])
              enddo
-             if(self%intstate(jscale,ivargrp)%km2.ne.n2d.and. .not.self%intstate(jscale,ivargrp)%l_for_localization ) then 
+             if(self%intstate(jscale,ivargrp0)%km2.ne.n2d.and. .not.self%intstate(jscale,ivargrp0)%l_for_localization ) then 
                 write(6,*)'The numbers of 2d variables is different from  mgbf-expected ,stop'
                 stop   ! a better exception handling is to be added
              endif
@@ -481,8 +500,9 @@ call flush(6)
              endif
              ii=1
              do ivargrp=1,nvargrp
-                allocate(vargrp_work_mgbf(nlev_vargrp(ivar),nxloc,nyloc))
-                vargrp_work_mgbf(:,:,:)=work_mgbf(ii:ii+nlev_vargrp(ivargrp),:,:)
+                allocate(vargrp_work_mgbf(nlev_vargrp(ivargrp),nxloc,nyloc))
+                allocate(vargrp_work_mgbf2(nlev_vargrp(ivargrp),nxloc,nyloc))
+                vargrp_work_mgbf(:,:,:)=work_mgbf(ii:ii+nlev_vargrp(ivargrp)-1,:,:)
     
                 call etim(mg_preprocess_time)
 
@@ -495,25 +515,28 @@ call flush(6)
                
       !cltorg          call self%intstate%filt_to_anal_allmap(work_mgbf)
                 call btim(mg_filt_to_anal_time)
-                call self%intstate(jscale,ivargrp)%filt_to_anal_allmap(work_mgbf2)
+                call self%intstate(jscale,ivargrp)%filt_to_anal_allmap(vargrp_work_mgbf2)
                 call etim(mg_filt_to_anal_time)
       !clt#        work_mgbf=999.0 !thinkdeb for debug
        
                 call btim(mg_postprocess_time)
-                work_mgbf(ii:ii+nlev_vargrp(ivargrp),:,:)=vargrp_work_mgbf(:,:,:)
+                work_mgbf2(ii:ii+nlev_vargrp(ivargrp)-1,:,:)=vargrp_work_mgbf(:,:,:)
+                ii=ii+nlev_vargrp(ivargrp)
                 deallocate(vargrp_work_mgbf)
-                ii=ii+nlev_vargrp(ivargrp)+1
+                deallocate(vargrp_work_mgbf2)
              enddo ! ivargrp
-             if(.not. self%intstate(jscale,ivargrp)%l_for_localization ) then   !clthinkdebxxx
+             if(.not. self%intstate(jscale,ivargrp0)%l_for_localization ) then   !clthinkdebxxx
                work_mgbf=work_mgbf2
              else  !  if in the multivariate localization, all output for 3d or 2d variables are 3d structures 
                allocate(work1var_mgbf(nz3d,nxloc,nyloc))
                work1var_mgbf=0.0
                do jvar=1,nvar
+                 jvargrp=self%ivar2grp(jvar)
                  do ivar=1,nvar
                    lev1=varvlev_index(ivar,1)
                    lev2=varvlev_index(ivar,2)
-                   work1var_mgbf=work1var_mgbf+self%multigrp_cor(jvar,ivar)*work_mgbf2(lev1:lev2,:,:)
+                    ivargrp=self%ivar2grp(ivar)
+                   work1var_mgbf=work1var_mgbf+self%multigrp_cor(jvargrp,ivargrp)*work_mgbf2(lev1:lev2,:,:)
                  enddo
                  lev1=varvlev_index(jvar,1)
                  lev2=varvlev_index(jvar,2)
@@ -607,7 +630,6 @@ call flush(6)
 
 
              deallocate(work_mgbf)
-             deallocate(vargrp_work_mgbf)
              deallocate(work_mgbf2)
              deallocate(work2d_mgbf)
              deallocate(rnormalization)
@@ -641,7 +663,7 @@ function imem2scale(self,imem) result(iscale)
   integer, intent(in)::imem
   integer :: iscale
      iscale=1
-    do  while (imem > self%iscalegroup(iscale) )
+    do  while (iscale.le.self%nscale-1.and.imem > self%iscalegroup(iscale) )
        iscale=iscale+1      
     enddo
         
@@ -651,7 +673,7 @@ function ivar2grp(self,ivar) result(jvargrp)
   integer, intent(in)::ivar
   integer :: jvargrp
      jvargrp=1
-    do  while (ivar > self%ivargroup(jvargrp) )
+    do  while (jvargrp.le.self%nvargrp-1.and.ivar > self%ivargroup(jvargrp) )
        jvargrp=jvargrp+1      
     enddo
         

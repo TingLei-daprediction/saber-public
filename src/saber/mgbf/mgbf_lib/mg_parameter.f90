@@ -556,8 +556,10 @@ integer(i_kind), parameter       :: nf=20! refinement factor for z grid,used in 
                               ,nm0,mm0                                  &
                               ,nxPE,nyPE,im_filt,jm_filt ,              &               
                               l_mg_weig_readin
+  write(6,*)'thinkdeb999 in mg_parameter, inputfile ',trim(inputfilename)
+  call flush(6)
    
-  open(unit=10,file=inputfilename,status='old',action='read')
+  open(unit=10,file=trim(inputfilename),status='old',action='read')
   read(10,nml=parameters_mgbeta)
   close(unit=10)
 !
