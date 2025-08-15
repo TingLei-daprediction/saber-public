@@ -122,6 +122,8 @@ void Interpolation::multiplyAD(oops::FieldSet3D & fieldSet) const {
 
   // Temporary FieldSet of active variables for interpolation target
   atlas::FieldSet targetFieldSet;
+  atlas::FieldSet backup_input_fieldset;
+  backup_input_fieldset.metadata()=fieldSet.fieldSet().metadata();
   for (const auto & var : activeVars_) {
     targetFieldSet.add(fieldSet[var.name()]);
   }
@@ -152,6 +154,14 @@ void Interpolation::multiplyAD(oops::FieldSet3D & fieldSet) const {
   }
 
   fieldSet.fieldSet() = sourceFieldSet;
+  
+  auto & dst_fset = fieldSet.fieldSet();
+   if (backup_input_fieldset.metadata().has("ensemble member index"))  {
+     oops::Log::trace() << classname() << "interpolationmultiplyAD 999 yes" << std::endl;
+     dst_fset.metadata().template set<int>("ensemble member index", backup_input_fieldset.metadata().template get<int>("ensemble member index"));
+   }
+  
+  
 
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }

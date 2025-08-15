@@ -30,7 +30,7 @@ namespace saber {
       void mgbf_covariance_delete_f90(CovarianceKey &);
       void mgbf_covariance_randomize_f90(const CovarianceKey &,
                                         const atlas::field::FieldSetImpl  *);
-      void mgbf_covariance_multiply_f90(const CovarianceKey &, const atlas::field::FieldSetImpl  *);
+      void mgbf_covariance_multiply_f90(const CovarianceKey &, const atlas::field::FieldSetImpl  *,int index_member);
       void mgbf_covariance_multiply_ad_f90(const CovarianceKey &,
                                           const atlas::FieldSet *);
     }

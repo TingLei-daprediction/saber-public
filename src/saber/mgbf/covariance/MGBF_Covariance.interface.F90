@@ -141,19 +141,28 @@ end subroutine mgbf_covariance_randomize_cpp
 
 ! --------------------------------------------------------------------------------------------------
 
-subroutine mgbf_covariance_multiply_cpp(c_self, c_afieldset) &
+subroutine mgbf_covariance_multiply_cpp(c_self, c_afieldset,c_index_member_in) &
            bind(c,name='mgbf_covariance_multiply_f90')
 
 implicit none
 
 !Arguments
 integer(c_int),     intent(in) :: c_self
+integer(c_int),value,    intent(in) :: c_index_member_in
 type(c_ptr), value, intent(in) :: c_afieldset
 
 type(mgbf_covariance), pointer :: f_self
 type(atlas_fieldset)          :: f_fieldset
+integer                       :: index_member_in=0
 !cltthink type(fieldset_type)          :: f_fieldset
+write(6,*)'thinkdeb 999 in inteface f90 star'
+call flush(6)
 call btim(mg_interface_multiply_time)
+write(6,*)'thinkdeb 999 in inteface f90 star0.5 c_index_member_in ',c_index_member_in
+call flush(6)
+index_member_in=int(c_index_member_in,kind=kind(index_member_in))
+write(6,*)'thinkdeb 999 in inteface f90 star1'
+call flush(6)
 ! LinkedList
 ! ----------
 call btim(mg_interface_registry_get_time)
@@ -168,7 +177,9 @@ call etim(mg_interface_fldset_time)
 
 ! Call implementation
 ! -------------------
-call f_self%multiply(f_fieldset)
+write(6,*)'thinkdeb 999 in inteface f90 star2'
+call flush(6)
+call f_self%multiply(f_fieldset,index_member_in)
 call etim(mg_interface_multiply_time)
 
 end subroutine mgbf_covariance_multiply_cpp
