@@ -213,6 +213,7 @@ integer, pointer :: ghost(:)
 type(atlas_functionspace_StructuredColumns) :: fs
 integer :: ierr
 real(kind=8) :: val
+integer :: i_first=9999
 
 !clt now noly consider t
 !  afield = fields%field('air_temperature')
@@ -244,7 +245,7 @@ real(kind=8) :: val
           allocate(work2d_mgbf(self%intstate%km_a_all,self%intstate%nm*self%intstate%mm))
           allocate(rnormalization(self%intstate%km_a_all))
           work2d_mgbf=0.0         
-          rnormalization=1.0
+          rnormalization=0.0
      
           dim2d=shape(work2d_mgbf)
 
@@ -362,8 +363,10 @@ real(kind=8) :: val
                stop
              endif 
           enddo
+       i_first = findloc(rnormalization < 0.5, .true.,dim=1)
+       write(6,*)'thinkdeb i_first is ',i_first
        do k=1,nzloc
-          work2d_mgbf(k,:)=work2d_mgbf(k,:)  !clt/rnormalization(k)
+!clt          work2d_mgbf(k,:)=work2d_mgbf(k,:)  !clt/rnormalization(k)
           work_mgbf(k,:,:) =reshape(work2d_mgbf(k,:),[dim3d(2),dim3d(3)])
        enddo
           if(self%intstate%km2.ne.n2d.and. .not.self%intstate%l_for_localization ) then 
