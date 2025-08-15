@@ -346,7 +346,7 @@ real(kind=8) :: val
                  endif
                  varvlev_index(isize,3)= varvlev_index(isize,2) -varvlev_index(isize,1)+1 
                endif
-                 rnormalization(varvlev_index(isize,1):varvlev_index(isize,2))=self%intstate%coef_normalization(1:(varvlev_index(isize,2)-varvlev_index(isize,1)+1))
+               rnormalization(varvlev_index(isize,1):varvlev_index(isize,2))=self%intstate%coef_normalization(1:(varvlev_index(isize,2)-varvlev_index(isize,1)+1))
                  
                ilev=varvlev_index(isize,2)+1
              elseif (afield%rank() == 3) then  
@@ -363,7 +363,7 @@ real(kind=8) :: val
              endif 
           enddo
        do k=1,nzloc
-          work2d_mgbf(k,:)=work2d_mgbf(k,:)/rnormalization(k)
+          work2d_mgbf(k,:)=work2d_mgbf(k,:)  !clt/rnormalization(k)
           work_mgbf(k,:,:) =reshape(work2d_mgbf(k,:),[dim3d(2),dim3d(3)])
        enddo
           if(self%intstate%km2.ne.n2d.and. .not.self%intstate%l_for_localization ) then 
@@ -393,10 +393,24 @@ real(kind=8) :: val
  
           call btim(mg_postprocess_time)
         if(.not. self%intstate%l_for_localization ) then   !clthinkdebxxx
-          work_mgbf=work_mgbf2
+            
+         do ivar=1,nvar
+           lev1=varvlev_index(ivar,1)
+           lev2=varvlev_index(ivar,2)
+           do k=lev1,lev2
+             work_mgbf(k,:,:)=work_mgbf2(k,:,:)/rnormalization(k)
+           enddo
+         enddo
         else  !  if in the multivariate localization, all output for 3d or 2d variables are 3d structures 
          allocate(work1var_mgbf(nz3d,nxloc,nyloc))
          work1var_mgbf=0.0
+         do ivar=1,nvar
+           lev1=varvlev_index(ivar,1)
+           lev2=varvlev_index(ivar,2)
+           do k=lev1,lev2
+           work_mgbf2(k,:,:)=work_mgbf2(k,:,:)/rnormalization(k)
+           enddo
+         enddo
          do ivar=1,nvar
            lev1=varvlev_index(ivar,1)
            lev2=varvlev_index(ivar,2)
@@ -405,7 +419,7 @@ real(kind=8) :: val
          do ivar=1,nvar
            lev1=varvlev_index(ivar,1)
            lev2=varvlev_index(ivar,2)
-          work_mgbf(lev1:lev2,:,:)=work1var_mgbf
+             work_mgbf(lev1:lev2,:,:)=work1var_mgbf
          enddo
          deallocate(work1var_mgbf)
         endif
