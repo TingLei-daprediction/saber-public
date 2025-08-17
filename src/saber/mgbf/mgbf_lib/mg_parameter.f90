@@ -145,7 +145,8 @@ integer(i_kind):: imL,jmL
 integer(i_kind):: imH,jmH
 integer(i_kind):: lm_a          ! number of vertical layers in analysis fields
 integer(i_kind):: lm            ! number of vertical layers in filter grids
-real(r_kind):: coef_normalization(lm_max)=1.0 !normalizaton coefficients
+!cltreal(r_kind):: coef_normalization(lm_max)=1.0 !normalizaton coefficients
+real(r_kind):: coef_normalization(lm_max)=2.66 !normalizaton coefficients
 real(r_kind):: coef_normalization_const=-9999.0 ! constant, if set, this contant will be 
                                                 ! assigned to all elements of coef_normalization 
 
@@ -507,7 +508,8 @@ logical:: l_mgbf_inhomogeneous=.false.
 
 integer(i_kind):: lm_a          ! number of vertical layers in analysis fields
 integer(i_kind):: lm            ! number of vertical layers in filter grids
-real(r_kind):: coef_normalization(lm_max)=1.0 !normalizaton coefficients
+!clt real(r_kind):: coef_normalization(lm_max)=1.0 !normalizaton coefficients
+real(r_kind):: coef_normalization(lm_max)=2.66 !normalizaton coefficients
 real(r_kind):: coef_normalization_const=-9999.0 ! constant, if set, this contant will be 
 integer(i_kind):: km2           ! number of 2d variables for filtering
 integer(i_kind):: km3           ! number of 3d variables for filtering
