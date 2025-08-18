@@ -146,7 +146,7 @@ integer(i_kind):: imH,jmH
 integer(i_kind):: lm_a          ! number of vertical layers in analysis fields
 integer(i_kind):: lm            ! number of vertical layers in filter grids
 !cltreal(r_kind):: coef_normalization(lm_max)=1.0 !normalizaton coefficients
-real(r_kind):: coef_normalization(lm_max)=2.66 !normalizaton coefficients
+real(r_kind):: coef_normalization(lm_max)=1.0 !normalizaton coefficients
 real(r_kind):: coef_normalization_const=-9999.0 ! constant, if set, this contant will be 
                                                 ! assigned to all elements of coef_normalization 
 
@@ -509,7 +509,7 @@ logical:: l_mgbf_inhomogeneous=.false.
 integer(i_kind):: lm_a          ! number of vertical layers in analysis fields
 integer(i_kind):: lm            ! number of vertical layers in filter grids
 !clt real(r_kind):: coef_normalization(lm_max)=1.0 !normalizaton coefficients
-real(r_kind):: coef_normalization(lm_max)=2.66 !normalizaton coefficients
+real(r_kind):: coef_normalization(lm_max)=1.0 !normalizaton coefficients
 real(r_kind):: coef_normalization_const=-9999.0 ! constant, if set, this contant will be 
 integer(i_kind):: km2           ! number of 2d variables for filtering
 integer(i_kind):: km3           ! number of 3d variables for filtering
@@ -534,12 +534,13 @@ integer(i_kind):: hx,hy,hz
 integer(i_kind):: p
 logical:: l_mg_weig_readin=.false.
 integer(i_kind), parameter       :: nf=20! refinement factor for z grid,used in make_ssgrid
+integer i
 
   namelist /parameters_mgbeta/ mg_ampl01,mg_ampl02,mg_ampl03            &
                               ,mg_weig1,mg_weig2,mg_weig3,mg_weig4      &
                               ,hx,hy,hz,p                               &
                               ,mgbf_line,mgbf_proc                      &
-                              ,lm_a,lm,coef_normalization               & 
+                              ,lm_a,lm               & 
                               ,coef_normalization_const & 
                               ,km2,km3                                  &
                               ,n_ens                                    &
@@ -592,8 +593,27 @@ integer(i_kind), parameter       :: nf=20! refinement factor for z grid,used in 
   
   if (coef_normalization_const >0 ) then  ! constant, if set, this contant will be 
     coef_normalization=coef_normalization_const
+    
+    if (all(abs(coef_normalization - 2.66) < 1.0e-5)) then
+    write(6,*) "deb88in mg_paramter All elements are 2.66"
+    else
+    write(6,*) "deb88in mg_paramter Not all elements are 2.66"
+    endif
   endif
+do i = 1, size(coef_normalization)
+   if (abs(coef_normalization(i) - 2.66) > 1.0e-5) then
+      write(6,*) "xxIndex", i, "has value", coef_normalization(i)
+   endif
+enddo
+
+
+
   this%coef_normalization=coef_normalization
+    if (all(abs(this%coef_normalization - 2.66) < 1.0e-10)) then
+    write(6,*) "deb999in mg_paramter All elements are 2.66"
+else
+    write(6,*) "deb999in mg_paramter Not all elements are 2.66"
+endif
   this%km2=km2
   this%km3=km3
   this%n_ens=n_ens
@@ -949,9 +969,6 @@ subroutine convert_vert_varied_aspt
   allocate(this%aspect_vert_profile_angrid(lm_a),this%aspect_vert_profile_filtgrid(lm))
   allocate(sigofz(lm_a),sigofis(lm))
   call MPI_COMM_RANK(MPI_COMM_WORLD,mype,ierr)
-  write(6,*)'thinkdeb mype is ',mype, l_vert_stretched_filtgrid
-  write(6,*)'thinkdeb mype is lm_a ',mype, lm_a,lm 
-  call flush(6)
   if(this%l_vert_stretched_filtgrid) then 
    if(mype.eq.0) then 
      open(newunit=myunit,file="mgbf_vert_aspt_profile.txt",status='old')
@@ -964,9 +981,6 @@ subroutine convert_vert_varied_aspt
      enddo
     close(myunit)
    endif 
-  write(6,*)'thinkdeb mype is 1.1.0 ',mype
-  write(6,*) 'DEBUG: lm_a=', lm_a
-write(6,*) 'DEBUG: allocated=', allocated(this%aspect_vert_profile_angrid)
 if (allocated(this%aspect_vert_profile_angrid)) then
   write(6,*) 'DEBUG: size=', size(this%aspect_vert_profile_angrid)
   write(6,*) 'DEBUG: kind1=', kind(this%aspect_vert_profile_angrid(1))
@@ -976,27 +990,18 @@ endif
      write(6,*) "ERROR: No matching MPI type for real kind =", kind(this%aspect_vert_profile_angrid(1))
      call MPI_Abort(MPI_COMM_WORLD, 1, ierr)
    endif
-  write(6,*)'thinkdeb mype is 1.2 ',mype
-  call flush(6)
    call MPI_Bcast(this%aspect_vert_profile_angrid, lm_a, user_mpi_real, 0, MPI_COMM_WORLD, ierr)
   
 !   nz=lm_a-1
 !   ns=lm-1
-  write(6,*)'thinkdeb mype is 1 ',mype
-  call flush(6)
     
 ! calibrate sigscale to make sigofz go to sigbottom at z=0:
       sigofz=sqrt(this%aspect_vert_profile_angrid)
-  print'('' list the levels and sigofz from the top down:'')'
-  write(6,*)'thinkdeb mype is 3 ',mype
-  call flush(6)
    if(mype==0) then
    do iz=lm_a,1,-1
       write(6,*)iz,sigofz(iz)
    enddo
    endif
-  write(6,*)'thinkdeb mype is 3 ',mype
-  call flush(6)
    
 ! Make the new grid whose resolution of the correlation scale sigofz
 ! is uniform throughout.
@@ -1004,8 +1009,6 @@ endif
 ! zofis is the z-index coordinate of each of the new s-grid points.
 !cltorg     call make_ssgrid(nz,nf,ns,sigofz, sstop,dss,isofz,zofis)
     call make_ssgrid(lm_a-1,nf,lm-1,sigofz, sstop,dss,this%isofz,this%zofis)
-  write(6,*)'thinkdeb mype is after make_ssgrid ',mype
-  call flush(6)
 
 ! Use the new s-grid locations zofis, and the original profile of
 ! correlation scales sigofz, to interpolate, smoothly and positively,
@@ -1024,7 +1027,6 @@ endif
     close(myunit)
    endif
    mg_ampl01=(sum(sigofis**2)/size(sigofis))
-   write(6,*)'thinkdeb999 the converted mg_mapl01 is ',mg_ampl01
 !clt    if(this%l_2dvar_last_vertical_level == .true. ) then !the fieldset passed into mgbf will be top-down,so
 !clttodo need to access this from mgbf lib too     
      this%zofis=this%zofis(lm:1:-1)

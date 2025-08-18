@@ -213,7 +213,6 @@ integer, pointer :: ghost(:)
 type(atlas_functionspace_StructuredColumns) :: fs
 integer :: ierr
 real(kind=8) :: val
-integer :: i_first=9999
 
 !clt now noly consider t
 !  afield = fields%field('air_temperature')
@@ -244,8 +243,8 @@ integer :: i_first=9999
           allocate(work_mgbf2(self%intstate%km_a_all,self%intstate%nm,self%intstate%mm))
           allocate(work2d_mgbf(self%intstate%km_a_all,self%intstate%nm*self%intstate%mm))
           allocate(rnormalization(self%intstate%km_a_all))
-          work2d_mgbf=0.0         
           rnormalization=0.0
+          work2d_mgbf=0.0         
      
           dim2d=shape(work2d_mgbf)
 
@@ -363,8 +362,6 @@ integer :: i_first=9999
                stop
              endif 
           enddo
-       i_first = findloc(rnormalization < 0.5, .true.,dim=1)
-       write(6,*)'thinkdeb i_first is ',i_first
        do k=1,nzloc
 !clt          work2d_mgbf(k,:)=work2d_mgbf(k,:)  !clt/rnormalization(k)
           work_mgbf(k,:,:) =reshape(work2d_mgbf(k,:),[dim3d(2),dim3d(3)])
@@ -395,25 +392,16 @@ integer :: i_first=9999
 !clt#        work_mgbf=999.0 !thinkdeb for debug
  
           call btim(mg_postprocess_time)
+          do k=1,nzloc
+                work_mgbf2(k,:,:)=work_mgbf2(k,:,:)/rnormalization(k)
+          enddo
+
         if(.not. self%intstate%l_for_localization ) then   !clthinkdebxxx
             
-         do ivar=1,nvar
-           lev1=varvlev_index(ivar,1)
-           lev2=varvlev_index(ivar,2)
-           do k=lev1,lev2
-             work_mgbf(k,:,:)=work_mgbf2(k,:,:)/rnormalization(k)
-           enddo
-         enddo
+             work_mgbf=work_mgbf2
         else  !  if in the multivariate localization, all output for 3d or 2d variables are 3d structures 
          allocate(work1var_mgbf(nz3d,nxloc,nyloc))
          work1var_mgbf=0.0
-         do ivar=1,nvar
-           lev1=varvlev_index(ivar,1)
-           lev2=varvlev_index(ivar,2)
-           do k=lev1,lev2
-           work_mgbf2(k,:,:)=work_mgbf2(k,:,:)/rnormalization(k)
-           enddo
-         enddo
          do ivar=1,nvar
            lev1=varvlev_index(ivar,1)
            lev2=varvlev_index(ivar,2)
