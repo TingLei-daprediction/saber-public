@@ -101,15 +101,11 @@ namelist /parameters_mgbf_init/ nscale,nvargrp,readin_mgbf_nml_group ,readin_mul
 ! ---------------
 !clt call self%grid%create(config, comm)
 self%rank = comm%rank()
-write(6,*)'thinkdeb999 begin sdl 0 '
-call flush(6)
 
 call config%get_or_die("saber block name", centralblockname)
 !clt call config%get_or_die("debuggingxx bypass mgbf", self%noMGBF)
 if (config%has("mgbf sdl and vdl init namelist file")) then
      call config%get_or_die("mgbf sdl and vdl init namelist file",  mgbf_nml)
-write(6,*)'thinkdeb999 begin mgbf_nml ',trim(mgbf_nml)
-  call flush(6)
   open(newunit=myunit,file=trim(mgbf_nml),status='old')
 !#  open(unit=10,file=mgbf_nml,status='old',action='read')
   read(myunit,nml=parameters_mgbf_init)
@@ -141,10 +137,7 @@ write(6,*)'thinkdeb999 begin mgbf_nml ',trim(mgbf_nml)
     self%ivargroup(i)=readin_ivargroup(iscale)
   enddo
 else
-write(6,*)'thinkdeb999 begin no sdl 2 '
 call config%get_or_die("mgbf namelist file ",  mgbf_nml)
-write(6,*)'thinkdeb999 begin no sdl 3 '
-call flush(6)
 !still need allocate them though nscale=nvargrp=1
   allocate(self%mgbf_nml_group(nscale,nvargrp))
   allocate(self%multigrp_cor(nvargrp,nvargrp)) !clt in the future, it could be used for more cor relationship 
@@ -155,8 +148,6 @@ call flush(6)
   self%ivargroup=1
 endif
   
-write(6,*)'thinkdeb999 begin sdl 9 '
-call flush(6)
   
 if(nscale == 1 .and. nvargrp ==1 ) then 
   self%mgbf_nml_group(1,1)=mgbf_nml   !the same mgbf namelist file is used 
@@ -173,8 +164,6 @@ do iscale=1,nscale
    call  self%intstate(iscale,ivargrp)%mg_initialize(self%mgbf_nml_group(iscale,ivargrp))  !mgbf_nml like mgbeta.nml
   enddo
 enddo
-write(6,*)'thinkdeb999 begin allocate sdl end  '
-call flush(6)
 ! Get background (temporary test of the functionality)
 !cltafield = background%field('air_temperature')
 !clt call afield%data(t)
@@ -305,8 +294,6 @@ integer :: ilev1,ilev2
 !  afield = fields%field('air_temperature')
 !  call afield%data(t)
 !*** From the analysis to first generation of filter grid
-write(6,*)'thinkdeb999 multiply  sdl 1 '
-call flush(6)
           member_index=index_member_in+1  ! the privous ensemble index starts from 0)
           jscale=self%imem2scale(member_index)
           nvargrp=self%nvargrp
@@ -326,8 +313,6 @@ call flush(6)
             fileoutput="mgbftest_static_"//str_rank//".txt"
           endif
            
-write(6,*)'thinkdeb999 multiply  sdl 2 '
-call flush(6)
         allocate(nlev_vargrp(nvargrp))
         nlev_vargrp=0
         total_km_a_all=0 
@@ -337,9 +322,7 @@ call flush(6)
                self%intstate(jscale,ivargrp)%mm.ne.self%intstate(jscale,1)%mm) then 
                error stop "for being now, the filtering grids at the start of MGBF should be the same"
             endif
-            write(6,*)'thinkdeb999 1 ivargrp s km_all ',self%intstate(jscale,ivargrp)%km_a_all
             total_km_a_all=self%intstate(jscale,ivargrp)%km_a_all+total_km_a_all
-            write(6,*)'thinkdeb999 1 km_all ',total_km_a_all
             nlev_vargrp(ivargrp)=self%intstate(jscale,ivargrp)%km_a_all
            enddo
               
@@ -353,14 +336,14 @@ call flush(6)
              allocate(work2d_mgbf(total_km_a_all,self%intstate(jscale,ivargrp0)%nm*self%intstate(jscale,ivargrp0)%mm))
              allocate(rnormalization(total_km_a_all))
              work2d_mgbf=0.0         
-             rnormalization=1.0
+             ii=1
              do ivargrp=1,nvargrp
-               ilev1=1
-               ilev2=ilev1+nz3d-1
-               do while (ilev2.le.nlev_vargrp(ivargrp) ) 
-                     rnormalization(ilev1:ilev2)=self%intstate(jscale,ivargrp)%coef_normalization(1:nz3d)
-                     ilev1=ilev1+nz3d
+             ilev1=1
+             ilev2=ilev1+nz3d-1
+               do while (ilev2.le.nlev_vargrp(ivargrp) )   !todo optimization of tihs llop
+                     rnormalization(ii:ii+nz3d-1)=self%intstate(jscale,ivargrp)%coef_normalization(1:nz3d)
                      ilev2=ilev2+nz3d
+                     ii=ii+nz3d
                enddo
              enddo
         
@@ -520,17 +503,20 @@ call flush(6)
       !clt#        work_mgbf=999.0 !thinkdeb for debug
        
                 call btim(mg_postprocess_time)
-                work_mgbf2(ii:ii+nlev_vargrp(ivargrp)-1,:,:)=vargrp_work_mgbf(:,:,:)
+                work_mgbf2(ii:ii+nlev_vargrp(ivargrp)-1,:,:)=vargrp_work_mgbf2(:,:,:)
                 ii=ii+nlev_vargrp(ivargrp)
                 deallocate(vargrp_work_mgbf)
                 deallocate(vargrp_work_mgbf2)
              enddo ! ivargrp
+             do k=1,nzloc
+                work_mgbf2(k,:,:)=work_mgbf2(k,:,:)/rnormalization(k) 
+             enddo
              if(.not. self%intstate(jscale,ivargrp0)%l_for_localization ) then   !clthinkdebxxx
                work_mgbf=work_mgbf2
              else  !  if in the multivariate localization, all output for 3d or 2d variables are 3d structures 
                allocate(work1var_mgbf(nz3d,nxloc,nyloc))
-               work1var_mgbf=0.0
                do jvar=1,nvar
+                 work1var_mgbf=0.0
                  jvargrp=self%ivar2grp(jvar)
                  do ivar=1,nvar
                    lev1=varvlev_index(ivar,1)
@@ -546,9 +532,6 @@ call flush(6)
              endif
              do k=1,nzloc
                work2d_mgbf(k,:)=reshape(work_mgbf(k,:,:),[dim2d(2)])
-             enddo
-             do k=1,nzloc
-                work2d_mgbf(k,:)=work2d_mgbf(k,:)/rnormalization(k) 
              enddo
                 ilev=1
                      n_owned_size=0
