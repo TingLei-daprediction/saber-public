@@ -129,7 +129,7 @@ self%rank = comm%rank()
 ! Sanity-check the GSI grid (specified from gsibec namelists) matches SABER grid (from JEDI yaml)
 ! -----------------------------------------------------------------------------------------------
 
-if (nchecks .gt. 0) then  ! only run checks if data was passed in from JEDI
+if (nchecks .gt. 0 .and. .not. self%grid%regional) then  ! only run checks if data was passed in from JEDI
   gsi_jedi_grid_error = .false.
   gsi_nx = self%grid%iec - self%grid%isc + 1
   jedi_nx = nint(checks(1))
@@ -599,7 +599,6 @@ if (any(needvrs(:)(1:6)/='filled')) then
   enddo
   call abor1_ftn(myname_//": missing fields in cv(tlm) ")
 endif
-
 
 ! Release pointer
 ! ---------------

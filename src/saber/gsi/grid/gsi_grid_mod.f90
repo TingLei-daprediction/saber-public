@@ -42,9 +42,11 @@ type :: gsi_grid
   logical :: vflip                  ! Flip vertical grid (gsi k=1=top)
   logical :: noGSI
   real(kind=kind_real), allocatable :: lats(:), lons(:)
+  real(kind=kind_real), allocatable :: lats2(:,:), lons2(:,:)
   real(kind=kind_real), allocatable :: grid_lats(:,:), grid_lons(:,:)
   integer :: ngrid ! Number of grid points for each processor
   logical :: debug
+  logical :: regional
   contains
     procedure, public :: create
     procedure, public :: delete
@@ -116,12 +118,21 @@ endif
 if(.not.allocated(self%grid_lons)) allocate(self%grid_lons(self%isc:self%iec, self%jsc:self%jec))
 if(.not.allocated(self%grid_lats)) allocate(self%grid_lats(self%isc:self%iec, self%jsc:self%jec))
 
-do i = self%isc, self%iec
-  self%grid_lons(i,:) = self%lons(i)
-enddo
-do j = self%jsc, self%jec
-  self%grid_lats(:,j) = self%lats(j)
-enddo
+if(self%regional) then
+  do i = self%isc, self%iec
+    do j = self%jsc, self%jec
+      self%grid_lons(i,j) = self%lons2(i,j)
+      self%grid_lats(i,j) = self%lats2(i,j)
+    enddo
+  enddo
+else
+  do i = self%isc, self%iec
+    self%grid_lons(i,:) = self%lons(i)
+  enddo
+  do j = self%jsc, self%jec
+    self%grid_lats(:,j) = self%lats(j)
+  enddo
+endif
 
 if ( self%debug ) then
  if(self%comm%rank() == 0) then
@@ -157,6 +168,7 @@ contains
   ! ----------------------------------------------
    call conf%get_or_die("gsi berror namelist file",  nml)
    call conf%get_or_die("gsi akbk",  vgrdfn)
+   if(nml=='gsiparm_regional.anl') self%regional = .true.
 
   ! Initialize GSIbec grid
   ! ----------------------
@@ -167,12 +179,21 @@ contains
 
   ! Allocate the lat/lon arrays
   ! ---------------------------
-  if(.not.allocated(self%lons)) allocate(self%lons(self%npx))
-  if(.not.allocated(self%lats)) allocate(self%lats(self%npy))
+  if(self%regional) then
+    if(.not.allocated(self%lons2)) allocate(self%lons2(self%npx,self%npy))
+    if(.not.allocated(self%lats2)) allocate(self%lats2(self%npx,self%npy))
+  else
+    if(.not.allocated(self%lons)) allocate(self%lons(self%npx))
+    if(.not.allocated(self%lats)) allocate(self%lats(self%npy))
+  endif
 
   ! Read the latitudes and longitudes per GSIbec
   ! --------------------------------------------
-  call gsibec_get_grid (eqspace,'degree',self%lats,self%lons)
+  if(self%regional) then
+    call gsibec_get_grid ('degree',self%lats2,self%lons2)
+  else
+    call gsibec_get_grid (eqspace,'degree',self%lats,self%lons)
+  endif
   call gsibec_set_grid (comm%rank(),vgrdfn)
 
   ! If debugging, read the latitude and longitude from file
