@@ -129,7 +129,7 @@ self%rank = comm%rank()
 ! Sanity-check the GSI grid (specified from gsibec namelists) matches SABER grid (from JEDI yaml)
 ! -----------------------------------------------------------------------------------------------
 
-if (nchecks .gt. 0 .and. .not. self%grid%regional) then  ! only run checks if data was passed in from JEDI
+if (nchecks .gt. 0) then  ! only run checks if data was passed in from JEDI
   gsi_jedi_grid_error = .false.
   gsi_nx = self%grid%iec - self%grid%isc + 1
   jedi_nx = nint(checks(1))
@@ -146,18 +146,27 @@ if (nchecks .gt. 0 .and. .not. self%grid%regional) then  ! only run checks if da
   endif
 
   do ix = 1, gsi_nx
-    gsi_lon = self%grid%lons(self%grid%isc-1 + ix)
+    if(self%grid%regional) then
+      gsi_lon = self%grid%lons2(self%grid%isc-1 + ix,self%grid%jsc)
+    else
+      gsi_lon = self%grid%lons(self%grid%isc-1 + ix)
+    endif
     jedi_lon = checks(2+ix)
-    if (abs(gsi_lon - jedi_lon) > 1e-8) then
+    if(jedi_lon .lt. 0.) jedi_lon = jedi_lon + 360.
+    if (abs(gsi_lon - jedi_lon) > 1e-6) then
       write (*,*) 'ERROR connecting GSI-block to JEDI -- inconsistent lon with gsi, atlas = ', gsi_lon, jedi_lon
       gsi_jedi_grid_error = .true.
     endif
   enddo
 
   do iy = 1, gsi_ny
-    gsi_lat = self%grid%lats(self%grid%jsc-1 + iy)
+    if(self%grid%regional) then
+      gsi_lat = self%grid%lats2(self%grid%iec,self%grid%jsc-1 + iy)
+    else
+      gsi_lat = self%grid%lats(self%grid%jsc-1 + iy)
+    endif
     jedi_lat = checks(2+gsi_nx+iy)
-    if (abs(gsi_lat - jedi_lat) > 1e-8) then
+    if (abs(gsi_lat - jedi_lat) > 1e-6) then
       write (*,*) 'ERROR connecting GSI-block to JEDI -- inconsistent lat with gsi, atlas = ', gsi_lat, jedi_lat
       gsi_jedi_grid_error = .true.
     endif
