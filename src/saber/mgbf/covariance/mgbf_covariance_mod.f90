@@ -515,21 +515,35 @@ integer :: ilev1,ilev2
                work_mgbf=work_mgbf2
              else  !  if in the multivariate localization, all output for 3d or 2d variables are 3d structures 
                allocate(work1var_mgbf(nz3d,nxloc,nyloc))
-               do jvar=1,nvar
+               if(nvargrp == 1 ) then
                  work1var_mgbf=0.0
-                 jvargrp=self%ivar2grp(jvar)
-                 do ivar=1,nvar
-                   lev1=varvlev_index(ivar,1)
-                   lev2=varvlev_index(ivar,2)
-                    ivargrp=self%ivar2grp(ivar)
-                   work1var_mgbf=work1var_mgbf+self%multigrp_cor(jvargrp,ivargrp)*work_mgbf2(lev1:lev2,:,:)
+                   do ivar=1,nvar
+                     lev1=varvlev_index(ivar,1)
+                     lev2=varvlev_index(ivar,2)
+                     work1var_mgbf=work1var_mgbf+work_mgbf2(lev1:lev2,:,:)
+                   enddo
+                 do jvar=1,nvar
+                   lev1=varvlev_index(jvar,1)
+                   lev2=varvlev_index(jvar,2)
+                  work_mgbf(lev1:lev2,:,:)=work1var_mgbf
                  enddo
-                 lev1=varvlev_index(jvar,1)
-                 lev2=varvlev_index(jvar,2)
-                work_mgbf(lev1:lev2,:,:)=work1var_mgbf
-               enddo
-               deallocate(work1var_mgbf)
+               else
+                 do jvar=1,nvar
+                   work1var_mgbf=0.0
+                   jvargrp=self%ivar2grp(jvar)
+                   do ivar=1,nvar
+                     lev1=varvlev_index(ivar,1)
+                     lev2=varvlev_index(ivar,2)
+                      ivargrp=self%ivar2grp(ivar)
+                     work1var_mgbf=work1var_mgbf+self%multigrp_cor(jvargrp,ivargrp)*work_mgbf2(lev1:lev2,:,:)
+                   enddo
+                   lev1=varvlev_index(jvar,1)
+                   lev2=varvlev_index(jvar,2)
+                  work_mgbf(lev1:lev2,:,:)=work1var_mgbf
+                 enddo
+               endif
              endif
+             deallocate(work1var_mgbf)
              do k=1,nzloc
                work2d_mgbf(k,:)=reshape(work_mgbf(k,:,:),[dim2d(2)])
              enddo
