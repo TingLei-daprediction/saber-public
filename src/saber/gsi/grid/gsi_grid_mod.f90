@@ -84,6 +84,13 @@ verbose = comm%rank()==0
 call conf%get_or_die("debugging mode", self%debug)
 call conf%get_or_die("debugging bypass gsi", self%noGSI)
 
+! Regional mode
+! -------------
+self%regional = .false.
+if (conf%has("regional mode")) then
+  call conf%get_or_die("regional mode", self%regional)
+end if
+
 ! Domain decomposition
 ! --------------------
 if (conf%has("processor layout x direction").and.conf%has("processor layout y direction")) then
@@ -168,7 +175,6 @@ contains
   ! ----------------------------------------------
    call conf%get_or_die("gsi berror namelist file",  nml)
    call conf%get_or_die("gsi akbk",  vgrdfn)
-   if(nml=='gsiparm_regional.anl') self%regional = .true.
 
   ! Initialize GSIbec grid
   ! ----------------------
