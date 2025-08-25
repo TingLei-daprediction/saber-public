@@ -203,7 +203,14 @@ void MGBF_Covariance::randomize(oops::FieldSet3D & fset) const {
 void MGBF_Covariance::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   util::Timer timer(classname(), "multiply");
-  int index_member=fset.fieldSet().metadata().get<int>("ensemble member index");
+  int index_member;
+  if (fset.fieldSet().metadata().has("ensemble member index")){
+     index_member=fset.fieldSet().metadata().get<int>("ensemble member index");
+  }
+  else {
+     index_member=9999;
+  }
+  
   oops::Log::trace()<<"thinkdeb999 sdl multiply index_member "<<index_member<<std::endl;
   std::cout<<"thinkdeb999cout sdl multiply index_member "<<index_member<<std::endl;
   mgbf_covariance_multiply_f90(keySelf_, fset.get(),index_member);
