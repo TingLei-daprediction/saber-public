@@ -542,8 +542,8 @@ integer :: ilev1,ilev2
                   work_mgbf(lev1:lev2,:,:)=work1var_mgbf
                  enddo
                endif
+               deallocate(work1var_mgbf)
              endif
-             deallocate(work1var_mgbf)
              do k=1,nzloc
                work2d_mgbf(k,:)=reshape(work_mgbf(k,:,:),[dim2d(2)])
              enddo

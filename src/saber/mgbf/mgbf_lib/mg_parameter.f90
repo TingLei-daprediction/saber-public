@@ -621,8 +621,8 @@ integer(i_kind), parameter       :: nf=20! refinement factor for z grid,used in 
   this%nxm = nxPE
   this%nym = nyPE
 
-  this%im = im_filt
-  this%jm = jm_filt
+   this%im = im_filt
+   this%jm = jm_filt
 
 !-----------------------------------------------------------------
 !
