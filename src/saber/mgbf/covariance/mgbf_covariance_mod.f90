@@ -576,7 +576,7 @@ integer :: ilev1,ilev2
                         ptr_2d(1:nz,:)=work2d_mgbf(lev1:lev1+nz-1,:)!if nz=1, only the first level is used (like for surface pressure) 
                     endif
                   else
-                     if(self%intstate(jscale,ivargrp)%l_for_localization) then 
+                     if(self%intstate(1,1)%l_for_localization) then 
                        if( self%l_2dvar_last_vertical_level) then !when used for localization,2dvars are put on the last vertical level
 
                            if(n_owned_size >0 ) then 
