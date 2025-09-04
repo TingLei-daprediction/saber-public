@@ -363,58 +363,39 @@ integer :: ilev1,ilev2
                 afield= fields%field(isize)  !clttodo
                 fs= afield%functionspace()  !cltthinkfore debug
                 n_owned_size= fs%size_owned() !clt for debug
+                write(6,*)'thinkdeb333 iszie-rank ',isize,' ',afield%name(),' ',afield%rank()
                 if(afield%rank() == 2)  then
+                  write(6,*)'thinkdeb333 iszie ',isize,' ',afield%name()
                   nz=afield%levels()
+                  write(6,*)'thinkdeb333 iszie-nz ',isize,' ',afield%name(),' ',nz
                   call afield%data(ptr_2d)
-   !clt               do k=1,nz
-   !clt                 do i=1,n_owned_size
-    !clt                   val=ptr_2d(k,i)
-   !clt                    if (ieee_is_nan(val)) then
-    !clt                     print *, '[Fortran] ❗ NaN detected in value'
-    !clt                   elseif (ieee_is_finite(val) .eqv. .false.) then
-    !clt                     print *, '[Fortran] ❗ Inf detected in value'
-    !clt                   elseif (abs(val) > 1.0e20) then
-    !clt                     print *, '[Fortran] ⚠️ Suspicious large value:', val
-    !clt                   endif
-   !clt                 enddo
-   !clt                 do i=n_owned_size+1,size(ptr_2d,2)
-    !clt                   val=ptr_2d(k,i)
-   !                    if (ieee_is_nan(val)) then
-   !                      print *, '[Fortran]2 ❗ NaN detected in value'
-   !j                    elseif (ieee_is_finite(val) .eqv. .false.) then
-   !                      print *, '[Fortran]2 ❗ Inf detected in value'
-   !                    elseif (abs(val) > 1.0e20) then
-   !                      print *, '[Fortran]2 ⚠️ Suspicious large value:', val
-   !                    endif
-   !                 enddo
-   !                 enddo
 
                   if(nz == 1) then 
 !clttothink                     if(self%intstate(iscale,ivargrp)%l_for_localization) then 
-                     if(self%intstate(jscale,1)%l_for_localization) then 
-                       if( self%l_2dvar_last_vertical_level) then  !when used for localization,2dvars are put on the last vertical level
-                         if(n_owned_size >0 ) then 
-                            work2d_mgbf(ilev+nz3d-1:ilev+nz3d-1,:)=ptr_2d(:,1:n_owned_size)
-                         else
-                            work2d_mgbf(ilev+nz3d-1:ilev+nz3d-1,:)=ptr_2d 
-                         endif
-                       else
-                         if(n_owned_size >0 ) then 
-                           work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d (:,1:n_owned_size)
-                         else
-                           work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d 
-                         endif
-                       endif
+                       if(self%intstate(jscale,1)%l_for_localization) then 
+                         if( self%l_2dvar_last_vertical_level) then  !when used for localization,2dvars are put on the last vertical level
+                            if(n_owned_size >0 ) then 
+                              work2d_mgbf(ilev+nz3d-1:ilev+nz3d-1,:)=ptr_2d(:,1:n_owned_size)
+                            else
+                              work2d_mgbf(ilev+nz3d-1:ilev+nz3d-1,:)=ptr_2d 
+                            endif
+                          else
+                            if(n_owned_size >0 ) then 
+                              work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d (:,1:n_owned_size)
+                            else
+                              work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d 
+                            endif
+                           endif
                           
                       
-                     else
-                       if(n_owned_size >0 ) then 
-                          work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d(:,1:n_owned_size) 
-                       else
-                          work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d 
-                       endif
-                     endif
-                  else
+                      else
+                          if(n_owned_size >0 ) then 
+                             work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d(:,1:n_owned_size) 
+                          else
+                             work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d 
+                          endif
+                      endif
+                   else
                     if(n_owned_size >0 ) then 
                      work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d(:,1:n_owned_size)
                     else
