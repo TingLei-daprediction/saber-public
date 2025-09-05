@@ -266,7 +266,7 @@ real(kind=r_kind), allocatable :: vargrp_work_mgbf(:,:,:)
 real(kind=r_kind), allocatable :: vargrp_work_mgbf2(:,:,:)
 real(kind=r_kind), allocatable :: work1var_mgbf(:,:,:)
 real(kind=r_kind), allocatable :: work2d_mgbf(:,:)
-real(kind=r_kind), allocatable :: rnormalization(:)
+real(kind=r_kind), allocatable :: rnormalization(:,:)
 integer(kind=i_kind), allocatable :: nlev_vargrp(:)
 integer(kind=i_kind) :: dim2d(2),dim3d(3)
 integer(kind=i_kind):: myrank,nxloc,nyloc,nzloc,nz3d
@@ -334,15 +334,20 @@ integer :: ilev1,ilev2
              allocate(work_mgbf(total_km_a_all,self%intstate(jscale,ivargrp0)%nm,self%intstate(jscale,ivargrp0)%mm))
              allocate(work_mgbf2(total_km_a_all,self%intstate(jscale,ivargrp0)%nm,self%intstate(jscale,ivargrp0)%mm))
              allocate(work2d_mgbf(total_km_a_all,self%intstate(jscale,ivargrp0)%nm*self%intstate(jscale,ivargrp0)%mm))
-             allocate(rnormalization(total_km_a_all))
+             allocate(rnormalization(total_km_a_all,nvargrp))
+             rnormalization=0.0
              work2d_mgbf=0.0         
              ii=1
              do ivargrp=1,nvargrp
-             ilev1=1
-             ilev2=ilev1+nz3d-1
-               do while (ilev2.le.nlev_vargrp(ivargrp) )   !todo optimization of tihs llop
-                     rnormalization(ii:ii+nz3d-1)=self%intstate(jscale,ivargrp)%coef_normalization(1:nz3d)
-                     ilev2=ilev2+nz3d
+               do k=1,self%intstate(jscale,ivargrp)%km2
+!clt if for localization , km2=0  only for 
+!clt only for     l_2dvar_last_vertical_lev
+                 rnormalization(ii,ivargrp)=self%intstate(jscale,ivargrp)%coef_normalization(nz3d)
+                 ii=ii+1
+               enddo
+!clt if for localization , km2=0
+               do k=1,self%intstate(jscale,ivargrp)%km3
+                     rnormalization(ii:ii+nz3d-1,ivargrp)=self%intstate(jscale,ivargrp)%coef_normalization(1:nz3d)
                      ii=ii+nz3d
                enddo
              enddo
@@ -484,14 +489,14 @@ integer :: ilev1,ilev2
       !clt#        work_mgbf=999.0 !thinkdeb for debug
        
                 call btim(mg_postprocess_time)
+                do k=1,nlev_vargrp(ivargrp)
+                   vargrp_work_mgbf2(k,:,:)=vargrp_work_mgbf2(k,:,:)/rnormalization(k,ivargrp)
+                enddo
                 work_mgbf2(ii:ii+nlev_vargrp(ivargrp)-1,:,:)=vargrp_work_mgbf2(:,:,:)
                 ii=ii+nlev_vargrp(ivargrp)
                 deallocate(vargrp_work_mgbf)
                 deallocate(vargrp_work_mgbf2)
              enddo ! ivargrp
-             do k=1,nzloc
-                work_mgbf2(k,:,:)=work_mgbf2(k,:,:)/rnormalization(k) 
-             enddo
              if(.not. self%intstate(jscale,ivargrp0)%l_for_localization ) then   !clthinkdebxxx
                work_mgbf=work_mgbf2
              else  !  if in the multivariate localization, all output for 3d or 2d variables are 3d structures 
