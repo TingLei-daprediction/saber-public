@@ -165,9 +165,14 @@ logical :: l_lin_horizontal=.true.     ! logical flag for linear interpolation i
 logical :: l_quad_horizontal=.false.    ! logical flag for quadratic interpolation in horizontal
 logical :: l_new_map            ! logical flag for new mapping between analysis and filter grid
 logical :: l_vertical_filter    ! logical flag for vertical filtering
+logical :: l_vert_stretched_filtgrid=.true.  ! true : filtering grids are stretched in tems of analysis grid unit 
+logical :: l_use_aspt_nml=.true.       !when l_vertical_filter=.true., still use the mg_ampl01 in the namelist
+                                !and a uniformly vertical filtering grids are supposed to be generated
+                                !hence, the veritcal interpolation sub with the Jim's sub for original l_vertical_filter=.ture.
+                                ! is supposed to be used in the following maping 
+                                ! in the future, maybe cleaner (while more efforts are needed) logics might be added 
+logical :: l_use_aspt_nml_input=.false. !when l_vertical_filter=.true., use the namlies as the input to get new vertcal aspt
 logical :: l_anal_sub_of_filt   ! true : analysis grids and filtering grids are the same excpet for later has boundary points 
-logical :: l_vert_stretched_filtgrid  ! true : filtering grids are stretched in tems of analysis grid unit 
-!logical :: l_vert_varied_ampl01  ! true, ampl01 is varied over the vertical analysis levels 
 integer(i_kind):: km            ! number of vertically stacked all variables (km=km2+lm*km3)
 integer(i_kind):: km_4
 integer(i_kind):: km_16
@@ -522,7 +527,9 @@ logical :: l_quad_horizontal=.false.    ! logical flag for quadratic interpolati
 logical :: l_new_map=.false.            ! logical flag for new mapping between analysis and filter grid
 logical :: l_vertical_filter=.true.    ! logical flag for vertical filtering
 logical ::  l_anal_sub_of_filt=.false.
-logical ::  l_vert_stretched_filtgrid=.false.
+logical ::  l_vert_stretched_filtgrid=.true.
+logical ::   l_use_aspt_nml=.true.
+logical ::   l_use_aspt_nml_input=.false.
 !cltlogical :: l_vert_varied_ampl01=.false.  ! true, ampl01 is varied over the vertical analysis levels 
 integer(i_kind):: gm_max=4   !clt by defaul
 
@@ -552,6 +559,8 @@ integer(i_kind), parameter       :: nf=20! refinement factor for z grid,used in 
                               ,l_vertical_filter                        &
                               ,l_anal_sub_of_filt                       &
                               ,l_vert_stretched_filtgrid                     &
+                              ,l_use_aspt_nml                           &
+                              ,l_use_aspt_nml_input                           &
                               ,l_for_localization,ldelta,lquart,lhelm   &
                               , l_mgbf_inhomogeneous                    &
                               ,gm_max                                   &
@@ -565,9 +574,14 @@ integer(i_kind), parameter       :: nf=20! refinement factor for z grid,used in 
 !
   allocate(this%zofis(lm))
   allocate(this%isofz(lm_a))
+  write(6,*)"thinkdeb999 filgrid is ",l_vert_stretched_filtgrid
   this%l_vert_stretched_filtgrid=l_vert_stretched_filtgrid 
+  this%l_use_aspt_nml=l_use_aspt_nml
+  this%l_use_aspt_nml_input=l_use_aspt_nml_input
 #if 1 
+   
   if(this%l_vert_stretched_filtgrid ) then
+    write(6,*)'thinkdeb999 l_vert_stretched_filtgrid ',this%l_vert_stretched_filtgrid 
    call convert_vert_varied_aspt 
 !in which the mg_ampl01 will be re-defined
   endif
@@ -605,7 +619,6 @@ integer(i_kind), parameter       :: nf=20! refinement factor for z grid,used in 
   this%l_new_map=l_new_map
   this%l_vertical_filter=l_vertical_filter
   this%l_anal_sub_of_filt=l_anal_sub_of_filt
-  this%l_vert_stretched_filtgrid=l_vert_stretched_filtgrid
 !clt  this%l_vert_varied_ampl01=l_vert_varied_ampl01
   this%l_for_localization=l_for_localization
   this%l_mgbf_inhomogeneous = l_mgbf_inhomogeneous
@@ -945,43 +958,50 @@ subroutine convert_vert_varied_aspt
   real (r_kind),allocatable,dimension(:)::sigofz
   real (r_kind),allocatable,dimension(:)::sigofis
   integer(i_kind):: user_mpi_real
+  real (r_kind) :: mg_ampl01_org
   
   allocate(this%aspect_vert_profile_angrid(lm_a),this%aspect_vert_profile_filtgrid(lm))
   allocate(sigofz(lm_a),sigofis(lm))
   call MPI_COMM_RANK(MPI_COMM_WORLD,mype,ierr)
+  write(6,*)'thinkdeb999 2 ',this%l_vert_stretched_filtgrid  ,' ',"l_use",this%l_vert_stretched_filtgrid
   if(this%l_vert_stretched_filtgrid) then 
-   if(mype.eq.0) then 
-     open(newunit=myunit,file="mgbf_vert_aspt_profile.txt",status='old')
-     read(myunit,*)lm_tmp 
-     if(lm_tmp.ne.lm_a) then 
-       error stop " the lm_a is not the same as the size in mgbf_vert_aspt_profile.txt, stop"
-     endif
-     do i=1,lm_a
-       read(myunit,*)this%aspect_vert_profile_angrid(i)
-     enddo
-    close(myunit)
-   endif 
-if (allocated(this%aspect_vert_profile_angrid)) then
-  write(6,*) 'DEBUG: size=', size(this%aspect_vert_profile_angrid)
-  write(6,*) 'DEBUG: kind1=', kind(this%aspect_vert_profile_angrid(1))
-endif
-   call MPI_Type_match_size(MPI_TYPECLASS_REAL, kind(this%aspect_vert_profile_angrid(1)), user_mpi_real, ierr)
-   if (ierr /= MPI_SUCCESS) then
-     write(6,*) "ERROR: No matching MPI type for real kind =", kind(this%aspect_vert_profile_angrid(1))
-     call MPI_Abort(MPI_COMM_WORLD, 1, ierr)
-   endif
-   call MPI_Bcast(this%aspect_vert_profile_angrid, lm_a, user_mpi_real, 0, MPI_COMM_WORLD, ierr)
-  
-!   nz=lm_a-1
-!   ns=lm-1
-    
-! calibrate sigscale to make sigofz go to sigbottom at z=0:
-      sigofz=sqrt(this%aspect_vert_profile_angrid)
-   if(mype==0) then
-   do iz=lm_a,1,-1
-      write(6,*)iz,sigofz(iz)
-   enddo
-   endif
+   if(.not.this%l_use_aspt_nml_input) then
+      if(mype.eq.0) then 
+        open(newunit=myunit,file="mgbf_vert_aspt_profile.txt",status='old')
+        read(myunit,*)lm_tmp 
+        if(lm_tmp.ne.lm_a) then 
+          error stop " the lm_a is not the same as the size in mgbf_vert_aspt_profile.txt, stop"
+        endif
+        do i=1,lm_a
+          read(myunit,*)this%aspect_vert_profile_angrid(i)
+        enddo
+       close(myunit)
+      endif 
+      if (allocated(this%aspect_vert_profile_angrid)) then
+        write(6,*) 'DEBUG: size=', size(this%aspect_vert_profile_angrid)
+        write(6,*) 'DEBUG: kind1=', kind(this%aspect_vert_profile_angrid(1))
+      endif
+      call MPI_Type_match_size(MPI_TYPECLASS_REAL, kind(this%aspect_vert_profile_angrid(1)), user_mpi_real, ierr)
+      if (ierr /= MPI_SUCCESS) then
+        write(6,*) "ERROR: No matching MPI type for real kind =", kind(this%aspect_vert_profile_angrid(1))
+        call MPI_Abort(MPI_COMM_WORLD, 1, ierr)
+      endif
+      call MPI_Bcast(this%aspect_vert_profile_angrid, lm_a, user_mpi_real, 0, MPI_COMM_WORLD, ierr)
+     
+   !   nz=lm_a-1
+   !   ns=lm-1
+       
+   ! calibrate sigscale to make sigofz go to sigbottom at z=0:
+         sigofz=sqrt(this%aspect_vert_profile_angrid)
+         if(mype==0) then
+         do iz=lm_a,1,-1
+         write(6,*)iz,sigofz(iz)
+         enddo
+         endif
+  else
+      sigofz=sqrt(mg_ampl01)
+      
+  endif 
    
 ! Make the new grid whose resolution of the correlation scale sigofz
 ! is uniform throughout.
@@ -996,17 +1016,31 @@ endif
 !clt    call logintgrid(nz,ns,zofis,sigofz,sigofis)
     call zsigtossig(lm_a-1,nf,lm-1,this%zofis,sigofz,sigofis)
     print'('' list the profile coordinates of zofis,sigofis, for each is:'')'
+!    if(this%l_use_aspt_nml) then
+!j       sigofis=sqrt(mg_amp01)
+!    else
+       mg_ampl01_org=mg_ampl01
+       mg_ampl01=(sum(sigofis**2)/size(sigofis))
+    if(this%l_use_aspt_nml.and.this%l_use_aspt_nml_input) then !the former could be only true when the latter is in effect
+       write(6,*)' suggested and actual/original ampl01 is ',mg_ampl01,' ' ,mg_ampl01_org
+       mg_ampl01=mg_ampl01_org
+!      if (abs(mg_ampl01_org-mg_ampl01)/mg_ampl01_org .gt.0.001) then
+!       write(6,*)'thinkdeb the new ampl01 is too much difference from the original one ,when this%l_use_aspt_nml'
+!       stop
+!      endif
+    endif
+       write(6,*)' the original and final  ampl01 is ',mg_ampl01_org,' ' ,mg_ampl01
+      
     do is=1,lm
       write(6,*)is,this%zofis(is),(sigofis(is))**2
     enddo
-   if(mype==6) then
-     open(newunit=myunit,file="converted_mgbf_vert_aspt_profile.txt",status='replace')
-    do is=1,lm
-     write(myunit,*)is,this%zofis(is),(sigofis(is))**2
-    enddo
-    close(myunit)
-   endif
-   mg_ampl01=(sum(sigofis**2)/size(sigofis))
+    if(mype==6) then
+      open(newunit=myunit,file="converted_mgbf_vert_aspt_profile.txt",status='replace')
+     do is=1,lm
+      write(myunit,*)is,this%zofis(is),(sigofis(is))**2
+     enddo
+     close(myunit)
+    endif
 !clt    if(this%l_2dvar_last_vertical_level == .true. ) then !the fieldset passed into mgbf will be top-down,so
 !clttodo need to access this from mgbf lib too     
      this%zofis=this%zofis(lm:1:-1)

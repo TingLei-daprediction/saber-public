@@ -274,7 +274,7 @@ integer(kind=i_kind)::nvar
 integer(kind=i_kind):: i,ivar,jvar,j,k,ij,lev1,lev2,iounit
 integer(kind=i_kind):: n2d
 integer(kind=i_kind),allocatable :: varvlev_index(:,:)
-logical  ::  l3d_encountered  
+logical  ::  l2d_encountered  
 logical :: test_once=.false.
 integer(kind=i_kind)::itest=0
 character(len=32) :: fileoutput
@@ -329,7 +329,7 @@ integer :: ilev1,ilev2
              nz3d=self%intstate(jscale,1)%lm_a   !should be the same for different vargrps
          
              n2d=0
-             l3d_encountered=.false.
+             l2d_encountered=.false.
              ivargrp0=1
              allocate(work_mgbf(total_km_a_all,self%intstate(jscale,ivargrp0)%nm,self%intstate(jscale,ivargrp0)%mm))
              allocate(work_mgbf2(total_km_a_all,self%intstate(jscale,ivargrp0)%nm,self%intstate(jscale,ivargrp0)%mm))
@@ -408,13 +408,16 @@ integer :: ilev1,ilev2
                     endif
                   endif
                    
-                  if(nz >  1) l3d_encountered=.true.
-                  if(nz == 1) then 
-                     if(l3d_encountered ) then
-                        write(6,*)"l3d_encountered is true , 2dvariable is not put in the begining, stop"
-                          stop  !  is required 2d fields are saved consecutively 
-                     endif
+                  if(nz ==  1) then 
+                    l2d_encountered=.true.
                     n2d=n2d+1
+                  endif
+                  if(nz > 1) then 
+                     if(l2d_encountered .and. .not.self%intstate(jscale,1)%l_for_localization ) then
+                      write(6,*)"l2d_encountered is true , 2dvariable is not put in the ending and l_for_localization=.false. , stop"
+                      call flush(6)
+                      error stop ("2dvariable is not put in the ending and l_for_localization=.false.")    !  is required 2d fields are saved consecutively,and at the ending  
+                     endif
                   endif
                   if(isize==1) then
                     varvlev_index(isize,1)= 1
@@ -453,9 +456,9 @@ integer :: ilev1,ilev2
                 endif 
              enddo
              do k=1,nzloc
-   !cltorg             work2d_mgbf(k,:)=work2d_mgbf(k,:)/rnormalization(k) !clttothink should be done after the filtering
                 work_mgbf(k,:,:) =reshape(work2d_mgbf(k,:),[dim3d(2),dim3d(3)])
              enddo
+               
              if(self%intstate(jscale,ivargrp0)%km2.ne.n2d.and. .not.self%intstate(jscale,ivargrp0)%l_for_localization ) then 
                 write(6,*)'The numbers of 2d variables is different from  mgbf-expected ,stop'
                 stop   ! a better exception handling is to be added
@@ -490,7 +493,7 @@ integer :: ilev1,ilev2
        
                 call btim(mg_postprocess_time)
                 do k=1,nlev_vargrp(ivargrp)
-                   vargrp_work_mgbf2(k,:,:)=vargrp_work_mgbf2(k,:,:)/rnormalization(k,ivargrp)
+                 vargrp_work_mgbf2(k,:,:)=vargrp_work_mgbf2(k,:,:)/rnormalization(k,ivargrp)
                 enddo
                 work_mgbf2(ii:ii+nlev_vargrp(ivargrp)-1,:,:)=vargrp_work_mgbf2(:,:,:)
                 ii=ii+nlev_vargrp(ivargrp)
