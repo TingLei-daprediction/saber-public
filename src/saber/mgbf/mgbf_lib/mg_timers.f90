@@ -125,16 +125,21 @@ contains
     ct = ctime()
 
     if (.not.t%running) then
-      write(0,*)'etim: timer is not running'
+      write(6,*)'etim: timer is not running'
+      call flush(6)
       STOP
     end if
 !clt    t%running = .true.
 
     t%time_clock = t%time_clock + (wt - t%start_clock)
+
     t%time_cpu = t%time_cpu + (ct - t%start_cpu)
     t%icount = t%icount+1
 !clt noneed    t%start_clock = 0.0
 !clt noneed    t%start_cpu = 0.0
+      write(6,*)'etim: timer is done'
+      call flush(6)
+
 
   endsubroutine etim
 !-----------------------------------------------------------------------

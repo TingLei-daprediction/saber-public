@@ -148,12 +148,12 @@ if(2.gt.3) then
 endif !2.gt.3 
      if(lm_a>lm) then
       do ivar=1,this%km2 !2dvar is directly passed
-        work(ivar,:,:)=worka(ivar,:,:)
+        work(this%km_all-ivar+1,:,:)=worka(this%km_all-ivar+1,:,:)
       enddo
       
       do ivar=1,this%km3
-         lev1_a=this%km2+1+(ivar-1)*this%lm_a
-         lev1_f=this%km2+1+(ivar-1)*this%lm
+         lev1_a=1+(ivar-1)*this%lm_a
+         lev1_f=1+(ivar-1)*this%lm
          lev2_a=lev1_a+this%lm_a-1
          lev2_f=lev1_f+this%lm-1
         
@@ -206,12 +206,12 @@ include "type_intstat_point2this.inc"
     call this%filt_to_anal(WORK)  !cltadded
      if(lm_a>lm) then
       do ivar=1,this%km2 !2dvar is directly passed
-        worka(ivar,:,:)=work(ivar,:,:)
+        worka(this%km_a_all-ivar+1,:,:)=work(this%km_all-ivar+1,:,:)
       enddo
       
       do ivar=1,this%km3
-         lev1_a=this%km2+1+(ivar-1)*this%lm_a
-         lev1_f=this%km2+1+(ivar-1)*this%lm
+         lev1_a=1+(ivar-1)*this%lm_a
+         lev1_f=1+(ivar-1)*this%lm
          lev2_a=lev1_a+this%lm_a-1
          lev2_f=lev1_f+this%lm-1
 !clt        call this%lwq_vertical_direct(this%lm,this%lm_a,1,nm,1,mm,this%cvf1,this%cvf2,this%cvf3,this%cvf4,this%lref,  &

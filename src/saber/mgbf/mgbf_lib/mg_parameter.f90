@@ -166,12 +166,12 @@ logical :: l_quad_horizontal=.false.    ! logical flag for quadratic interpolati
 logical :: l_new_map            ! logical flag for new mapping between analysis and filter grid
 logical :: l_vertical_filter    ! logical flag for vertical filtering
 logical :: l_vert_stretched_filtgrid=.true.  ! true : filtering grids are stretched in tems of analysis grid unit 
-logical :: l_use_aspt_nml=.true.       !when l_vertical_filter=.true., still use the mg_ampl01 in the namelist
+logical :: l_use_aspt_nml=.false.       !when l_vertical_filter=.true., still use the mg_ampl01 in the namelist
                                 !and a uniformly vertical filtering grids are supposed to be generated
                                 !hence, the veritcal interpolation sub with the Jim's sub for original l_vertical_filter=.ture.
                                 ! is supposed to be used in the following maping 
                                 ! in the future, maybe cleaner (while more efforts are needed) logics might be added 
-logical :: l_use_aspt_nml_input=.false. !when l_vertical_filter=.true., use the namlies as the input to get new vertcal aspt
+logical :: l_use_aspt_nml_input=.true. !when l_vertical_filter=.true., use the namlies as the input to get new vertcal aspt
 logical :: l_anal_sub_of_filt   ! true : analysis grids and filtering grids are the same excpet for later has boundary points 
 integer(i_kind):: km            ! number of vertically stacked all variables (km=km2+lm*km3)
 integer(i_kind):: km_4
@@ -528,8 +528,8 @@ logical :: l_new_map=.false.            ! logical flag for new mapping between a
 logical :: l_vertical_filter=.true.    ! logical flag for vertical filtering
 logical ::  l_anal_sub_of_filt=.false.
 logical ::  l_vert_stretched_filtgrid=.true.
-logical ::   l_use_aspt_nml=.true.
-logical ::   l_use_aspt_nml_input=.false.
+logical ::   l_use_aspt_nml=.false.
+logical ::   l_use_aspt_nml_input=.true.
 !cltlogical :: l_vert_varied_ampl01=.false.  ! true, ampl01 is varied over the vertical analysis levels 
 integer(i_kind):: gm_max=4   !clt by defaul
 
@@ -586,6 +586,8 @@ integer(i_kind), parameter       :: nf=20! refinement factor for z grid,used in 
 !in which the mg_ampl01 will be re-defined
   endif
 #endif
+  write(6,*)'thinkdeb999 2 4 ',this%l_vert_stretched_filtgrid  ,' ',"l_use",this%l_vert_stretched_filtgrid
+  call flush(6)
 !-----------------------------------------------------------------
 !for safety, copy all namelist loc vars to them of this object
   this%mg_ampl01=mg_ampl01
@@ -753,6 +755,8 @@ integer(i_kind), parameter       :: nf=20! refinement factor for z grid,used in 
 !
   this%nm = this%nm0/this%nxm
   this%mm = this%mm0/this%nym
+  write(6,*)'thinkdeb999 2 6 ',this%l_vert_stretched_filtgrid  ,' ',"l_use",this%l_vert_stretched_filtgrid
+  call flush(6)
   if(this%l_anal_sub_of_filt ) then
     if(this%im_filt.ne.this%nm.or.this%jm_filt.ne.this%mm) then
        write(6,*)'l_anal_sub_of_filter is true but the numbers of analysis/filtering grids are wrong, stop'
@@ -763,6 +767,8 @@ integer(i_kind), parameter       :: nf=20! refinement factor for z grid,used in 
        stop
     endif
   endif
+  write(6,*)'thinkdeb999 2 7 ',this%l_vert_stretched_filtgrid  ,' ',"l_use",this%l_vert_stretched_filtgrid
+  call flush(6)
 
 !***
 !***     Filter grid
@@ -861,6 +867,8 @@ integer(i_kind), parameter       :: nf=20! refinement factor for z grid,used in 
 ! Set number of processors at higher generations
 !
 
+  write(6,*)'thinkdeb999 2 8 ',this%l_vert_stretched_filtgrid  ,' ',"l_use",this%l_vert_stretched_filtgrid
+  call flush(6)
   allocate(this%ixm(this%gm))
   allocate(this%jym(this%gm))
   allocate(this%nxy(this%gm))
@@ -875,6 +883,8 @@ integer(i_kind), parameter       :: nf=20! refinement factor for z grid,used in 
   call def_ngens(this%ixm,this%gm,this%nxm)
   call def_ngens(this%jym,this%gm,this%nym)
 
+  write(6,*)'thinkdeb999 2 9 ',this%l_vert_stretched_filtgrid  ,' ',"l_use",this%l_vert_stretched_filtgrid
+  call flush(6)
   do g=1,this%gm
     this%nxy(g)=this%ixm(g)*this%jym(g)
   enddo
@@ -949,6 +959,8 @@ integer(i_kind), parameter       :: nf=20! refinement factor for z grid,used in 
   this%rmom2_4=u1/sqrt(this%pee2+6)
 #if 1 
 
+  write(6,*)'thinkdeb999 2 10 ',this%l_vert_stretched_filtgrid  ,' ',"l_use",this%l_vert_stretched_filtgrid
+  call flush(6)
 contains
 
 subroutine convert_vert_varied_aspt
@@ -963,11 +975,17 @@ subroutine convert_vert_varied_aspt
   allocate(this%aspect_vert_profile_angrid(lm_a),this%aspect_vert_profile_filtgrid(lm))
   allocate(sigofz(lm_a),sigofis(lm))
   call MPI_COMM_RANK(MPI_COMM_WORLD,mype,ierr)
-  write(6,*)'thinkdeb999 2 ',this%l_vert_stretched_filtgrid  ,' ',"l_use",this%l_vert_stretched_filtgrid
+  write(6,*)'thinkdeb999 2.0 ',this%l_vert_stretched_filtgrid  ,' ',"l_use",this%l_vert_stretched_filtgrid
+  call flush(6)
   if(this%l_vert_stretched_filtgrid) then 
    if(.not.this%l_use_aspt_nml_input) then
       if(mype.eq.0) then 
-        open(newunit=myunit,file="mgbf_vert_aspt_profile.txt",status='old')
+  write(6,*)'thinkdeb999 2.001 before open ',this%l_vert_stretched_filtgrid  ,' ',"l_use",this%l_use_aspt_nml_input
+  call flush(6)
+        open(newunit=myunit,file="mgbf_vert_aspt_profile.txt",status='old',iostat=ierr)
+  write(6,*)'thinkdeb999 2.001 after open ',this%l_vert_stretched_filtgrid  ,' ',"l_use",this%l_vert_stretched_filtgrid
+  call flush(6)
+        if(ierr /= 0) error stop "wrong with open file mgbf_vert_aspt_profile.txt ,stop"
         read(myunit,*)lm_tmp 
         if(lm_tmp.ne.lm_a) then 
           error stop " the lm_a is not the same as the size in mgbf_vert_aspt_profile.txt, stop"
@@ -977,16 +995,18 @@ subroutine convert_vert_varied_aspt
         enddo
        close(myunit)
       endif 
-      if (allocated(this%aspect_vert_profile_angrid)) then
-        write(6,*) 'DEBUG: size=', size(this%aspect_vert_profile_angrid)
-        write(6,*) 'DEBUG: kind1=', kind(this%aspect_vert_profile_angrid(1))
-      endif
+      write(6,*) 'DEBUG: size=', size(this%aspect_vert_profile_angrid)
+      write(6,*) 'DEBUG: kind1=', kind(this%aspect_vert_profile_angrid(1))
       call MPI_Type_match_size(MPI_TYPECLASS_REAL, kind(this%aspect_vert_profile_angrid(1)), user_mpi_real, ierr)
+      write(6,*)'thinkdeb999 2 0.2 '
+      call flush(6)
       if (ierr /= MPI_SUCCESS) then
         write(6,*) "ERROR: No matching MPI type for real kind =", kind(this%aspect_vert_profile_angrid(1))
         call MPI_Abort(MPI_COMM_WORLD, 1, ierr)
       endif
       call MPI_Bcast(this%aspect_vert_profile_angrid, lm_a, user_mpi_real, 0, MPI_COMM_WORLD, ierr)
+  write(6,*)'thinkdeb999 2 0.3 ',this%l_vert_stretched_filtgrid  ,' ',"l_use",this%l_vert_stretched_filtgrid
+  call flush(6)
      
    !   nz=lm_a-1
    !   ns=lm-1
@@ -999,6 +1019,8 @@ subroutine convert_vert_varied_aspt
          enddo
          endif
   else
+  write(6,*)'thinkdeb999 2 0.1 ',this%l_vert_stretched_filtgrid  ,' '
+  call flush(6)
       sigofz=sqrt(mg_ampl01)
       
   endif 
@@ -1008,6 +1030,8 @@ subroutine convert_vert_varied_aspt
 ! isofz is the s-index coordinate of each of the original z-grid points.
 ! zofis is the z-index coordinate of each of the new s-grid points.
 !cltorg     call make_ssgrid(nz,nf,ns,sigofz, sstop,dss,isofz,zofis)
+  write(6,*)'thinkdeb999 2 1 ',this%l_vert_stretched_filtgrid  ,' ',"l_use",this%l_vert_stretched_filtgrid
+  call flush(6)
     call make_ssgrid(lm_a-1,nf,lm-1,sigofz, sstop,dss,this%isofz,this%zofis)
 
 ! Use the new s-grid locations zofis, and the original profile of
@@ -1049,6 +1073,8 @@ subroutine convert_vert_varied_aspt
 
   endif 
   
+  write(6,*)'thinkdeb999 2 3 ',this%l_vert_stretched_filtgrid  ,' ',"l_use",this%l_vert_stretched_filtgrid
+  call flush(6)
 
   deallocate(sigofz,sigofis)
 end subroutine convert_vert_varied_aspt
