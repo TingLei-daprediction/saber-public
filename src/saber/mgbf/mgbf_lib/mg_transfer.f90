@@ -160,15 +160,14 @@ endif !2.gt.3
 !clt        call this%lwq_vertical_adjoint(nm_in,km_in,imin,imax,jmin,jmax,c1,c2,c3,c4,kref,w,f)
 !cltorg        call this%lwq_vertical_adjoint(this%lm_a,this%lm,1,nm,1,mm,this%cvf1,this%cvf2,this%cvf3,this%cvf4,this%lref,  &
 !clt             worka(lev1_a:lev2_a,:,:),work(lev1_f:lev2_f,:,:))
-        write(6,*)'thinkdeb999 l_vert_stretched_filtgrid is ',this%l_vert_stretched_filtgrid
-        if (this%l_vert_stretched_filtgrid) then
-        write(6,*)'thinkdeb999 l_vert_stretched_filtgrid 2 is ',this%l_vert_stretched_filtgrid
+!#        if (this%l_vert_stretched_filtgrid) then
+!        write(6,*)'thinkdeb999 l_vert_stretched_filtgrid 2 is ',this%l_vert_stretched_filtgrid
   
           call intgrid_f2a_3d_ad_top2bot_fast(this%lm_a-1,this%lm-1,nm,mm,this%zofis,worka(lev1_a:lev2_a,:,:),work(lev1_f:lev2_f,:,:))
-        else
-          call this%test_vertical_interpolation_adj(this%lm,this%lm_a,1,nm,1,mm, work(lev1_f:lev2_f,:,:), &
-             worka(lev1_a:lev2_a,:,:))
-        endif
+!        else
+!          call this%test_vertical_interpolation_adj(this%lm,this%lm_a,1,nm,1,mm, work(lev1_f:lev2_f,:,:), &
+!             worka(lev1_a:lev2_a,:,:))
+!        endif
        enddo
       else
         work=worka
@@ -216,12 +215,12 @@ include "type_intstat_point2this.inc"
          lev2_f=lev1_f+this%lm-1
 !clt        call this%lwq_vertical_direct(this%lm,this%lm_a,1,nm,1,mm,this%cvf1,this%cvf2,this%cvf3,this%cvf4,this%lref,  &
 !clt             work(lev1_f:lev2_f,:,:),worka(lev1_a:lev2_a,:,:))
-        if (this%l_vert_stretched_filtgrid) then
+!        if (this%l_vert_stretched_filtgrid) then
           call intgrid_f2a_3d_top2bot_fast(this%lm_a-1,this%lm-1,nm,mm,this%zofis,worka(lev1_a:lev2_a,:,:),work(lev1_f:lev2_f,:,:))
-        else
-        call this%test_vertical_interpolation(this%lm,this%lm_a,1,nm,1,mm, work(lev1_f:lev2_f,:,:), &
-             worka(lev1_a:lev2_a,:,:))
-        endif
+!        else
+!        call this%test_vertical_interpolation(this%lm,this%lm_a,1,nm,1,mm, work(lev1_f:lev2_f,:,:), &
+!             worka(lev1_a:lev2_a,:,:))
+!        endif
        enddo
       else
         worka=work

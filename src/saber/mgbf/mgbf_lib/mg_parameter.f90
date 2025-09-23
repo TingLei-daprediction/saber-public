@@ -165,13 +165,7 @@ logical :: l_lin_horizontal=.true.     ! logical flag for linear interpolation i
 logical :: l_quad_horizontal=.false.    ! logical flag for quadratic interpolation in horizontal
 logical :: l_new_map            ! logical flag for new mapping between analysis and filter grid
 logical :: l_vertical_filter    ! logical flag for vertical filtering
-logical :: l_vert_stretched_filtgrid=.true.  ! true : filtering grids are stretched in tems of analysis grid unit 
-logical :: l_use_aspt_nml=.false.       !when l_vertical_filter=.true., still use the mg_ampl01 in the namelist
-                                !and a uniformly vertical filtering grids are supposed to be generated
-                                !hence, the veritcal interpolation sub with the Jim's sub for original l_vertical_filter=.ture.
-                                ! is supposed to be used in the following maping 
-                                ! in the future, maybe cleaner (while more efforts are needed) logics might be added 
-logical :: l_use_aspt_nml_input=.true. !when l_vertical_filter=.true., use the namlies as the input to get new vertcal aspt
+logical :: l_vert_stretched_filtgrid=.false.  ! true : filtering grids are stretched in tems of analysis grid unit 
 logical :: l_anal_sub_of_filt   ! true : analysis grids and filtering grids are the same excpet for later has boundary points 
 integer(i_kind):: km            ! number of vertically stacked all variables (km=km2+lm*km3)
 integer(i_kind):: km_4
@@ -516,6 +510,7 @@ integer(i_kind):: lm            ! number of vertical layers in filter grids
 !clthhhreal(r_kind):: coef_normalization(lm_max)=1.0 !normalizaton coefficients
 real(r_kind):: coef_normalization(lm_max)=1 !normalizaton coefficients
 real(r_kind):: coef_normalization_const=-9999.0 ! constant, if set, this contant will be 
+character(len=256) ::file_coef_normalization="XXXX"
 integer(i_kind):: km2           ! number of 2d variables for filtering
 integer(i_kind):: km3           ! number of 3d variables for filtering
 integer(i_kind):: n_ens=1         ! number of ensemble members
@@ -527,9 +522,7 @@ logical :: l_quad_horizontal=.false.    ! logical flag for quadratic interpolati
 logical :: l_new_map=.false.            ! logical flag for new mapping between analysis and filter grid
 logical :: l_vertical_filter=.true.    ! logical flag for vertical filtering
 logical ::  l_anal_sub_of_filt=.false.
-logical ::  l_vert_stretched_filtgrid=.true.
-logical ::   l_use_aspt_nml=.false.
-logical ::   l_use_aspt_nml_input=.true.
+logical ::  l_vert_stretched_filtgrid=.false.
 !cltlogical :: l_vert_varied_ampl01=.false.  ! true, ampl01 is varied over the vertical analysis levels 
 integer(i_kind):: gm_max=4   !clt by defaul
 
@@ -541,6 +534,8 @@ integer(i_kind):: hx,hy,hz
 integer(i_kind):: p
 logical:: l_mg_weig_readin=.false.
 integer(i_kind), parameter       :: nf=20! refinement factor for z grid,used in make_ssgrid
+integer(i_kind) :: myunit,i
+logical :: l_exist
 
   namelist /parameters_mgbeta/ mg_ampl01,mg_ampl02,mg_ampl03            &
                               ,mg_weig1,mg_weig2,mg_weig3,mg_weig4      &
@@ -548,6 +543,7 @@ integer(i_kind), parameter       :: nf=20! refinement factor for z grid,used in 
                               ,mgbf_line,mgbf_proc                      &
                               ,lm_a,lm,coef_normalization               & 
                               ,coef_normalization_const & 
+                              ,file_coef_normalization  &
                               ,km2,km3                                  &
                               ,n_ens                                    &
                               ,l_loc                                    &
@@ -559,8 +555,6 @@ integer(i_kind), parameter       :: nf=20! refinement factor for z grid,used in 
                               ,l_vertical_filter                        &
                               ,l_anal_sub_of_filt                       &
                               ,l_vert_stretched_filtgrid                     &
-                              ,l_use_aspt_nml                           &
-                              ,l_use_aspt_nml_input                           &
                               ,l_for_localization,ldelta,lquart,lhelm   &
                               , l_mgbf_inhomogeneous                    &
                               ,gm_max                                   &
@@ -576,18 +570,14 @@ integer(i_kind), parameter       :: nf=20! refinement factor for z grid,used in 
   allocate(this%isofz(lm_a))
   write(6,*)"thinkdeb999 filgrid is ",l_vert_stretched_filtgrid
   this%l_vert_stretched_filtgrid=l_vert_stretched_filtgrid 
-  this%l_use_aspt_nml=l_use_aspt_nml
-  this%l_use_aspt_nml_input=l_use_aspt_nml_input
 #if 1 
    
-  if(this%l_vert_stretched_filtgrid ) then
+  if(lm_a .ne. lm ) then
     write(6,*)'thinkdeb999 l_vert_stretched_filtgrid ',this%l_vert_stretched_filtgrid 
    call convert_vert_varied_aspt 
 !in which the mg_ampl01 will be re-defined
   endif
 #endif
-  write(6,*)'thinkdeb999 2 4 ',this%l_vert_stretched_filtgrid  ,' ',"l_use",this%l_vert_stretched_filtgrid
-  call flush(6)
 !-----------------------------------------------------------------
 !for safety, copy all namelist loc vars to them of this object
   this%mg_ampl01=mg_ampl01
@@ -607,7 +597,30 @@ integer(i_kind), parameter       :: nf=20! refinement factor for z grid,used in 
   this%lm=lm
   
   if (coef_normalization_const >0 ) then  ! constant, if set, this contant will be 
+    
     coef_normalization=coef_normalization_const
+    if(trim(file_coef_normalization)=="XXXX" ) then
+      l_exist=.false.
+    else
+      inquire(file=trim(file_coef_normalization),exist=l_exist)
+    endif
+    if(l_exist) then
+     write(6,*)'the normalization profile file is ',trim(file_coef_normalization)
+!clt in the ../covairance/mgbf_covariance_mod.f90 the fldset is reversed in the vertical direction
+     open(newunit=myunit,file=trim(file_coef_normalization),status='old',action='read')
+      read(myunit,*)(coef_normalization(i),i=lm_a,1,-1)  
+     close (myunit)
+     coef_normalization(1:lm_a)=coef_normalization*coef_normalization_const  !re-calc
+     
+     
+    else
+     coef_normalization=coef_normalization_const  !re-calc
+    endif 
+  else
+     coef_normalization=1.0  
+       
+       
+   
   endif
   this%coef_normalization=coef_normalization
   this%km2=km2
@@ -965,7 +978,7 @@ contains
 
 subroutine convert_vert_varied_aspt
 
-  integer(i_kind) :: myunit,lm_tmp,i,iz,is,mype,ierr
+  integer(i_kind) :: lm_tmp,iz,is,mype,ierr
   real(r_kind)::sstop,dss
   real (r_kind),allocatable,dimension(:)::sigofz
   real (r_kind),allocatable,dimension(:)::sigofis
@@ -978,13 +991,8 @@ subroutine convert_vert_varied_aspt
   write(6,*)'thinkdeb999 2.0 ',this%l_vert_stretched_filtgrid  ,' ',"l_use",this%l_vert_stretched_filtgrid
   call flush(6)
   if(this%l_vert_stretched_filtgrid) then 
-   if(.not.this%l_use_aspt_nml_input) then
       if(mype.eq.0) then 
-  write(6,*)'thinkdeb999 2.001 before open ',this%l_vert_stretched_filtgrid  ,' ',"l_use",this%l_use_aspt_nml_input
-  call flush(6)
         open(newunit=myunit,file="mgbf_vert_aspt_profile.txt",status='old',iostat=ierr)
-  write(6,*)'thinkdeb999 2.001 after open ',this%l_vert_stretched_filtgrid  ,' ',"l_use",this%l_vert_stretched_filtgrid
-  call flush(6)
         if(ierr /= 0) error stop "wrong with open file mgbf_vert_aspt_profile.txt ,stop"
         read(myunit,*)lm_tmp 
         if(lm_tmp.ne.lm_a) then 
@@ -995,18 +1003,12 @@ subroutine convert_vert_varied_aspt
         enddo
        close(myunit)
       endif 
-      write(6,*) 'DEBUG: size=', size(this%aspect_vert_profile_angrid)
-      write(6,*) 'DEBUG: kind1=', kind(this%aspect_vert_profile_angrid(1))
       call MPI_Type_match_size(MPI_TYPECLASS_REAL, kind(this%aspect_vert_profile_angrid(1)), user_mpi_real, ierr)
-      write(6,*)'thinkdeb999 2 0.2 '
-      call flush(6)
       if (ierr /= MPI_SUCCESS) then
         write(6,*) "ERROR: No matching MPI type for real kind =", kind(this%aspect_vert_profile_angrid(1))
         call MPI_Abort(MPI_COMM_WORLD, 1, ierr)
       endif
       call MPI_Bcast(this%aspect_vert_profile_angrid, lm_a, user_mpi_real, 0, MPI_COMM_WORLD, ierr)
-  write(6,*)'thinkdeb999 2 0.3 ',this%l_vert_stretched_filtgrid  ,' ',"l_use",this%l_vert_stretched_filtgrid
-  call flush(6)
      
    !   nz=lm_a-1
    !   ns=lm-1
@@ -1030,8 +1032,6 @@ subroutine convert_vert_varied_aspt
 ! isofz is the s-index coordinate of each of the original z-grid points.
 ! zofis is the z-index coordinate of each of the new s-grid points.
 !cltorg     call make_ssgrid(nz,nf,ns,sigofz, sstop,dss,isofz,zofis)
-  write(6,*)'thinkdeb999 2 1 ',this%l_vert_stretched_filtgrid  ,' ',"l_use",this%l_vert_stretched_filtgrid
-  call flush(6)
     call make_ssgrid(lm_a-1,nf,lm-1,sigofz, sstop,dss,this%isofz,this%zofis)
 
 ! Use the new s-grid locations zofis, and the original profile of
@@ -1045,7 +1045,7 @@ subroutine convert_vert_varied_aspt
 !    else
        mg_ampl01_org=mg_ampl01
        mg_ampl01=(sum(sigofis**2)/size(sigofis))
-    if(this%l_use_aspt_nml.and.this%l_use_aspt_nml_input) then !the former could be only true when the latter is in effect
+    if(.not.this%l_vert_stretched_filtgrid) then !the former could be only true when the latter is in effect
        write(6,*)' suggested and actual/original ampl01 is ',mg_ampl01,' ' ,mg_ampl01_org
        mg_ampl01=mg_ampl01_org
 !      if (abs(mg_ampl01_org-mg_ampl01)/mg_ampl01_org .gt.0.001) then
@@ -1071,10 +1071,7 @@ subroutine convert_vert_varied_aspt
 
 !#   endif 
 
-  endif 
   
-  write(6,*)'thinkdeb999 2 3 ',this%l_vert_stretched_filtgrid  ,' ',"l_use",this%l_vert_stretched_filtgrid
-  call flush(6)
 
   deallocate(sigofz,sigofis)
 end subroutine convert_vert_varied_aspt

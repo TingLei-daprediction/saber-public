@@ -137,8 +137,6 @@ contains
     t%icount = t%icount+1
 !clt noneed    t%start_clock = 0.0
 !clt noneed    t%start_cpu = 0.0
-      write(6,*)'etim: timer is done'
-      call flush(6)
 
 
   endsubroutine etim

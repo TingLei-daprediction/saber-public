@@ -370,89 +370,94 @@ integer :: ilev1,ilev2
                 n_owned_size= fs%size_owned() !clt for debug
                 write(6,*)'thinkdeb333 iszie-rank ',isize,' ',afield%name(),' ',afield%rank()
                 if(afield%rank() == 2)  then
-                  write(6,*)'thinkdeb333 iszie ',isize,' ',afield%name()
-                  nz=afield%levels()
-                  write(6,*)'thinkdeb333 iszie-nz ',isize,' ',afield%name(),' ',nz
-                  call afield%data(ptr_2d)
-
-                  if(nz == 1) then 
-!clttothink                     if(self%intstate(iscale,ivargrp)%l_for_localization) then 
-                       if(self%intstate(jscale,1)%l_for_localization) then 
-                         if( self%l_2dvar_last_vertical_level) then  !when used for localization,2dvars are put on the last vertical level
-                            if(n_owned_size >0 ) then 
-                              work2d_mgbf(ilev+nz3d-1:ilev+nz3d-1,:)=ptr_2d(:,1:n_owned_size)
-                            else
-                              work2d_mgbf(ilev+nz3d-1:ilev+nz3d-1,:)=ptr_2d 
-                            endif
-                          else
-                            if(n_owned_size >0 ) then 
-                              work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d (:,1:n_owned_size)
-                            else
-                              work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d 
-                            endif
-                           endif
-                          
-                      
-                      else
-                          if(n_owned_size >0 ) then 
-                             work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d(:,1:n_owned_size) 
-                          else
-                             work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d 
-                          endif
-                      endif
-                   else
-                    if(n_owned_size >0 ) then 
-                     work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d(:,1:n_owned_size)
-                    else
-                     work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d
-                    endif
-                  endif
-                   
-                  if(nz ==  1) then 
-                    l2d_encountered=.true.
-                    n2d=n2d+1
-                  endif
-                  if(nz > 1) then 
-                     if(l2d_encountered .and. .not.self%intstate(jscale,1)%l_for_localization ) then
-                      write(6,*)"l2d_encountered is true , 2dvariable is not put in the ending and l_for_localization=.false. , stop"
+                    write(6,*)'thinkdeb333 iszie ',isize,' ',afield%name()
+                    nz=afield%levels()
+                    write(6,*)'thinkdeb333 iszie-nz ',isize,' ',afield%name(),' ',nz
+                    call afield%data(ptr_2d)
+                    if(nz /= 1 .and. nz /= nz3d ) then
+                      write(6,*)'the vertical dimension of the input fields are not as expectd ,stop ',nz,' ',nz3d 
                       call flush(6)
-                      error stop ("2dvariable is not put in the ending and l_for_localization=.false.")    !  is required 2d fields are saved consecutively,and at the ending  
-                     endif
-                  endif
-                  if(isize==1) then
-                    varvlev_index(isize,1)= 1
-  !cltothink                  if(.not.self%intstate(iscale,ivargrp)%l_for_localization )then 
-                    if(.not.self%intstate(jscale,1)%l_for_localization )then 
-                      varvlev_index(isize,2)= nz
-                    else
-                      varvlev_index(isize,2)= nz3d
+                      stop
                     endif
-                    varvlev_index(isize,3)= varvlev_index(isize,2) -varvlev_index(isize,1)+1 
-                  else
-   !cltorg                 varvlev_index(isize,1)= varvlev_index(isize-1,1)+nz3d
-                    varvlev_index(isize,1)= varvlev_index(isize-1,2)+1
-                    if(.not.self%intstate(jscale,ivargrp0)%l_for_localization )then 
-                      varvlev_index(isize,2)= varvlev_index(isize,1)+nz-1
-                    else
-                      varvlev_index(isize,2)= varvlev_index(isize,1)+nz3d-1
-                    endif
-                    varvlev_index(isize,3)= varvlev_index(isize,2) -varvlev_index(isize,1)+1 
-                  endif
-                  jvargrp=self%ivar2grp(isize)                      
 
-                    
-                  ilev=varvlev_index(isize,2)+1
+                    if(nz == 1) then 
+  !clttothink                     if(self%intstate(iscale,ivargrp)%l_for_localization) then 
+                        if(self%intstate(jscale,1)%l_for_localization) then 
+                             if( self%l_2dvar_last_vertical_level) then  !when used for localization,2dvars are put on the last vertical level
+                                if(n_owned_size >0 ) then 
+                                  work2d_mgbf(ilev+nz3d-1:ilev+nz3d-1,:)=ptr_2d(:,1:n_owned_size)
+                                else
+                                  work2d_mgbf(ilev+nz3d-1:ilev+nz3d-1,:)=ptr_2d 
+                                endif
+                              else
+                                if(n_owned_size >0 ) then 
+                                  work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d (:,1:n_owned_size)
+                                else
+                                  work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d 
+                                endif
+                              endif
+                            
+                        
+                        else
+                            if(n_owned_size >0 ) then 
+                               work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d(:,1:n_owned_size) 
+                            else
+                               work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d 
+                            endif
+                        endif
+                     else
+                       if(n_owned_size >0 ) then 
+                        work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d(:,1:n_owned_size)
+                       else
+                        work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d
+                       endif
+                    endif
+                     
+                    if(nz ==  1) then 
+                      l2d_encountered=.true.
+                      n2d=n2d+1
+                    endif
+                    if(nz > 1) then 
+                       if(l2d_encountered .and. .not.self%intstate(jscale,1)%l_for_localization ) then
+                        write(6,*)"l2d_encountered is true , 2dvariable is not put in the ending and l_for_localization=.false. , stop"
+                        call flush(6)
+                        error stop ("2dvariable is not put in the ending and l_for_localization=.false.")    !  is required 2d fields are saved consecutively,and at the ending  
+                       endif
+                    endif
+                    if(isize==1) then
+                        varvlev_index(isize,1)= 1
+      !cltothink                  if(.not.self%intstate(iscale,ivargrp)%l_for_localization )then 
+                        if(.not.self%intstate(jscale,1)%l_for_localization )then 
+                          varvlev_index(isize,2)= nz
+                        else
+                          varvlev_index(isize,2)= nz3d
+                        endif
+                        varvlev_index(isize,3)= varvlev_index(isize,2) -varvlev_index(isize,1)+1 
+                    else
+     !cltorg                 varvlev_index(isize,1)= varvlev_index(isize-1,1)+nz3d
+                        varvlev_index(isize,1)= varvlev_index(isize-1,2)+1
+                        if(.not.self%intstate(jscale,ivargrp0)%l_for_localization )then 
+                          varvlev_index(isize,2)= varvlev_index(isize,1)+nz-1
+                        else
+                          varvlev_index(isize,2)= varvlev_index(isize,1)+nz3d-1
+                        endif
+                        varvlev_index(isize,3)= varvlev_index(isize,2) -varvlev_index(isize,1)+1 
+                    endif
+                    jvargrp=self%ivar2grp(isize)                      
+
+                      
+                    ilev=varvlev_index(isize,2)+1
                 elseif (afield%rank() == 3) then  
-                  write(6,*)'this case needs more work, stop' ! a better exption handling to be added
-                  call flush(6)
-                  stop 
-                  call afield%data(ptr_3d)
-                  nz=afield%levels()
-                  work_mgbf(ilev:ilev+nz-1,:,:)=ptr_3d 
-                  ilev=ilev+nz
+                    write(6,*)'this case needs more work, stop' ! a better exption handling to be added
+                    call flush(6)
+                    stop 
+                    call afield%data(ptr_3d)
+                    nz=afield%levels()
+                    work_mgbf(ilev:ilev+nz-1,:,:)=ptr_3d 
+                    ilev=ilev+nz
                 else
-                  write(6,*)'wrong in mgbf_covariance_mod.f90 ' !todo  
-                  stop
+                    write(6,*)'wrong in mgbf_covariance_mod.f90 ' !todo  
+                    stop
                 endif 
              enddo
              do k=1,nzloc
@@ -504,31 +509,30 @@ integer :: ilev1,ilev2
                work_mgbf=work_mgbf2
              else  !  if in the multivariate localization, all output for 3d or 2d variables are 3d structures 
                allocate(work1var_mgbf(nz3d,nxloc,nyloc))
+               work1var_mgbf=0.0
                if(nvargrp == 1 ) then
-                 work1var_mgbf=0.0
                    do ivar=1,nvar
                      lev1=varvlev_index(ivar,1)
                      lev2=varvlev_index(ivar,2)
                      work1var_mgbf=work1var_mgbf+work_mgbf2(lev1:lev2,:,:)
                    enddo
-                 do jvar=1,nvar
-                   lev1=varvlev_index(jvar,1)
-                   lev2=varvlev_index(jvar,2)
-                  work_mgbf(lev1:lev2,:,:)=work1var_mgbf
-                 enddo
+                   do jvar=1,nvar
+                     lev1=varvlev_index(jvar,1)
+                     lev2=varvlev_index(jvar,2)
+                     work_mgbf(lev1:lev2,:,:)=work1var_mgbf
+                   enddo
                else
                  do jvar=1,nvar
-                   work1var_mgbf=0.0
                    jvargrp=self%ivar2grp(jvar)
                    do ivar=1,nvar
                      lev1=varvlev_index(ivar,1)
                      lev2=varvlev_index(ivar,2)
-                      ivargrp=self%ivar2grp(ivar)
+                     ivargrp=self%ivar2grp(ivar)
                      work1var_mgbf=work1var_mgbf+self%multigrp_cor(jvargrp,ivargrp)*work_mgbf2(lev1:lev2,:,:)
                    enddo
                    lev1=varvlev_index(jvar,1)
                    lev2=varvlev_index(jvar,2)
-                  work_mgbf(lev1:lev2,:,:)=work1var_mgbf
+                   work_mgbf(lev1:lev2,:,:)=work1var_mgbf
                  enddo
                endif
                deallocate(work1var_mgbf)
@@ -548,50 +552,43 @@ integer :: ilev1,ilev2
                   nz=afield%levels()
                   lev1=varvlev_index(isize,1)
                   if(nz.gt.1) then 
-   !                  if(n_owned_size == 0) then
-   !                  do i = 1, size(ghost)
-   !                      if (ghost(i) == 0) then
-       ! This point is owned (not a halo point)
-   !                       n_owned_size=n_owned_size+1
-   !                       endif
-   !                   end do
-   !!                  write(6,*)'thinkdeb2552 dimension of ptr_2d are ',size(ptr_2d,1), ' ',size(ptr_2d,2)
-   !                 endif
-   !clt                  write(6,*)'thinkdeb2552 n_owned_size ',n_owned_size,' ','total size is  ' ,size(ptr_2d,2) 
-                    if(n_owned_size >0 ) then 
-                        ptr_2d(1:nz,1:n_owned_size)=work2d_mgbf(lev1:lev1+nz-1,:)!if nz=1, only the first level is used (like for surface pressure) 
-                     else 
-                     !cltthinkdebto now, the n_owned_size can't be got rightly for mgbf_grid using PointCloud function space
-                        ptr_2d(1:nz,:)=work2d_mgbf(lev1:lev1+nz-1,:)!if nz=1, only the first level is used (like for surface pressure) 
-                    endif
-                  else
-                     if(self%intstate(1,1)%l_for_localization) then 
-                       if( self%l_2dvar_last_vertical_level) then !when used for localization,2dvars are put on the last vertical level
-
-                           if(n_owned_size >0 ) then 
-                            ptr_2d(1,1:n_owned_size)=work2d_mgbf(lev1+nz3d-1,:)!if nz=1, only the first level is used (like for surface pressure) 
-                          else 
-                            !cltthinkdebto now, the n_owned_size can't be got rightly for mgbf_grid using PointCloud function space
-                            ptr_2d(1,:)=work2d_mgbf(lev1+nz3d-1,:)!if nz=1, only the first level is used (like for surface pressure) 
-                          endif
-                       else
-                         if(n_owned_size >0 ) then 
-                             ptr_2d(1,1:n_owned_size)=work2d_mgbf(lev1,:)!if nz=1, only the first level is used (like for surface pressure) 
-                         else 
-                          !cltthinkdebto now, the n_owned_size can't be got rightly for mgbf_grid using PointCloud function space
-                             ptr_2d(1,:)=work2d_mgbf(lev1,:)!if nz=1, only the first level is used (like for surface pressure) 
-                        endif
-                       endif
-                     else
-                       if(n_owned_size >0 ) then 
-                          ptr_2d(1,1:n_owned_size)=work2d_mgbf(lev1,:)!if nz=1, only the first level is used (like for surface pressure) 
+                      if(n_owned_size >0 ) then 
+                          ptr_2d(1:nz,1:n_owned_size)=work2d_mgbf(lev1:lev1+nz-1,:)!if nz=1, only the first level is used (like for surface pressure) 
                        else 
                        !cltthinkdebto now, the n_owned_size can't be got rightly for mgbf_grid using PointCloud function space
-                          ptr_2d(1,:)=work2d_mgbf(lev1,:)!if nz=1, only the first level is used (like for surface pressure) 
+                          ptr_2d(1:nz,:)=work2d_mgbf(lev1:lev1+nz-1,:)!if nz=1, only the first level is used (like for surface pressure) 
                       endif
+                  else
+                     if(self%intstate(1,1)%l_for_localization) then 
+                         if( self%l_2dvar_last_vertical_level) then !when used for localization,2dvars are put on the last vertical level
+
+                              if(n_owned_size >0 ) then 
+                                ptr_2d(1,1:n_owned_size)=work2d_mgbf(lev1+nz3d-1,:)!if nz=1, only the first level is used (like for surface pressure) 
+                              else 
+                               !cltthinkdebto now, the n_owned_size can't be got rightly for mgbf_grid using PointCloud function space
+                                ptr_2d(1,:)=work2d_mgbf(lev1+nz3d-1,:)!if nz=1, only the first level is used (like for surface pressure) 
+                              endif
+                         else
+                              if(n_owned_size >0 ) then 
+                                  ptr_2d(1,1:n_owned_size)=work2d_mgbf(lev1,:)!if nz=1, only the first level is used (like for surface pressure) 
+                              else 
+                               !cltthinkdebto now, the n_owned_size can't be got rightly for mgbf_grid using PointCloud function space
+                                  ptr_2d(1,:)=work2d_mgbf(lev1,:)!if nz=1, only the first level is used (like for surface pressure) 
+                             endif
+                         endif
+                     else
+                         if(n_owned_size >0 ) then 
+                            ptr_2d(1,1:n_owned_size)=work2d_mgbf(lev1,:)!if nz=1, only the first level is used (like for surface pressure) 
+                         else 
+                         !cltthinkdebto now, the n_owned_size can't be got rightly for mgbf_grid using PointCloud function space
+                            write(6,*)'suspicous situation while n_owned_szie =0 ,stop'
+                            call flush(6)
+                            stop
+                            ptr_2d(1,:)=work2d_mgbf(lev1,:)!if nz=1, only the first level is used (like for surface pressure) 
+                        endif
                        
                      endif
-                  endif
+                  endif  !nz >1 or not
                 
                 elseif (afield%rank() == 3) then  
                   call afield%data(ptr_3d)
