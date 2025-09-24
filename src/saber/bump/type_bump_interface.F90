@@ -75,6 +75,12 @@ call bump%mpl%test_channel%reset_c_ptr(c_test_channel)
 ! Call Fortran
 call bump%create(f_comm,f_afunctionspace,f_fieldset,f_conf)
 
+! Release memory
+call f_comm%final()
+call f_afunctionspace%final()
+call f_fieldset%final()
+call f_conf%final()
+
 end subroutine bump_create_c
 
 !----------------------------------------------------------------------
@@ -103,6 +109,10 @@ f_fieldset = atlas_fieldset(c_afieldset)
 ! Call Fortran
 call bump%dual_resolution_setup(f_afunctionspace,f_fieldset)
 
+! Release memory
+call f_afunctionspace%final()
+call f_fieldset%final()
+
 end subroutine bump_dual_resolution_setup_c
 
 !----------------------------------------------------------------------
@@ -130,6 +140,9 @@ f_fieldset = atlas_fieldset(c_afieldset)
 ! Call Fortran
 call bump%add_member(f_fieldset,ie,iens)
 
+! Release memory
+call f_fieldset%final()
+
 end subroutine bump_add_member_c
 
 !----------------------------------------------------------------------
@@ -155,6 +168,9 @@ f_fieldset = atlas_fieldset(c_afieldset)
 
 ! Call Fortran
 call bump%update_vbal_cov(f_fieldset,ie)
+
+! Release memory
+call f_fieldset%final()
 
 end subroutine bump_update_vbal_cov_c
 
@@ -182,6 +198,9 @@ f_fieldset = atlas_fieldset(c_afieldset)
 ! Call Fortran
 call bump%update_var(f_fieldset,ie)
 
+! Release memory
+call f_fieldset%final()
+
 end subroutine bump_update_var_c
 
 !----------------------------------------------------------------------
@@ -208,6 +227,9 @@ f_fieldset = atlas_fieldset(c_afieldset)
 
 ! Call Fortran
 call bump%update_mom(f_fieldset,ie,iens)
+
+! Release memory
+call f_fieldset%final()
 
 end subroutine bump_update_mom_c
 
@@ -256,6 +278,9 @@ f_fieldset = atlas_fieldset(c_afieldset)
 ! Call Fortran
 call bump%apply_vbal(f_fieldset)
 
+! Release memory
+call f_fieldset%final()
+
 end subroutine bump_apply_vbal_c
 
 !----------------------------------------------------------------------
@@ -280,6 +305,9 @@ f_fieldset = atlas_fieldset(c_afieldset)
 
 ! Call Fortran
 call bump%apply_vbal_inv(f_fieldset)
+
+! Release memory
+call f_fieldset%final()
 
 end subroutine bump_apply_vbal_inv_c
 
@@ -306,6 +334,9 @@ f_fieldset = atlas_fieldset(c_afieldset)
 ! Call Fortran
 call bump%apply_vbal_ad(f_fieldset)
 
+! Release memory
+call f_fieldset%final()
+
 end subroutine bump_apply_vbal_ad_c
 
 !----------------------------------------------------------------------
@@ -330,6 +361,9 @@ f_fieldset = atlas_fieldset(c_afieldset)
 
 ! Call Fortran
 call bump%apply_stddev(f_fieldset)
+
+! Release memory
+call f_fieldset%final()
 
 end subroutine bump_apply_stddev_c
 
@@ -356,6 +390,9 @@ f_fieldset = atlas_fieldset(c_afieldset)
 ! Call Fortran
 call bump%apply_stddev_inv(f_fieldset)
 
+! Release memory
+call f_fieldset%final()
+
 end subroutine bump_apply_stddev_inv_c
 
 !----------------------------------------------------------------------
@@ -380,6 +417,9 @@ f_fieldset = atlas_fieldset(c_afieldset)
 
 ! Call Fortran
 call bump%apply_nicas(f_fieldset)
+
+! Release memory
+call f_fieldset%final()
 
 end subroutine bump_apply_nicas_c
 
@@ -433,6 +473,10 @@ f_fieldset = atlas_fieldset(c_afieldset)
 ! Call Fortran
 call bump%apply_nicas_sqrt(f_acv,f_fieldset,offset)
 
+! Release memory
+call f_acv%final()
+call f_fieldset%final()
+
 end subroutine bump_apply_nicas_sqrt_c
 
 !----------------------------------------------------------------------
@@ -462,6 +506,10 @@ f_acv = atlas_field(c_afield)
 ! Call Fortran
 call bump%apply_nicas_sqrt_ad(f_fieldset,f_acv,offset)
 
+! Release memory
+call f_acv%final()
+call f_fieldset%final()
+
 end subroutine bump_apply_nicas_sqrt_ad_c
 
 !----------------------------------------------------------------------
@@ -486,6 +534,9 @@ f_fieldset = atlas_fieldset(c_afieldset)
 
 ! Call Fortran
 call bump%randomize(f_fieldset)
+
+! Release memory
+call f_fieldset%final()
 
 end subroutine bump_randomize_c
 
@@ -512,6 +563,9 @@ f_fieldset = atlas_fieldset(c_afieldset)
 ! Call Fortran
 call bump%psichi_to_uv(f_fieldset)
 
+! Release memory
+call f_fieldset%final()
+
 end subroutine bump_psichi_to_uv_c
 
 !----------------------------------------------------------------------
@@ -536,6 +590,9 @@ f_fieldset = atlas_fieldset(c_afieldset)
 
 ! Call Fortran
 call bump%psichi_to_uv_ad(f_fieldset)
+
+! Release memory
+call f_fieldset%final()
 
 end subroutine bump_psichi_to_uv_ad_c
 
@@ -570,6 +627,9 @@ f_fieldset = atlas_fieldset(c_afieldset)
 
 ! Call Fortran
 call bump%get_parameter(param,icmp,f_fieldset)
+
+! Release memory
+call f_fieldset%final()
 
 end subroutine bump_get_parameter_c
 
@@ -627,6 +687,9 @@ f_fieldset = atlas_fieldset(c_afieldset)
 
 ! Call Fortran
 call bump%set_parameter(param,icmp,f_fieldset)
+
+! Release memory
+call f_fieldset%final()
 
 end subroutine bump_set_parameter_c
 
