@@ -610,11 +610,13 @@ logical :: l_exist
      open(newunit=myunit,file=trim(file_coef_normalization),status='old',action='read')
       read(myunit,*)(coef_normalization(i),i=lm_a,1,-1)  
      close (myunit)
-     coef_normalization(1:lm_a)=coef_normalization*coef_normalization_const  !re-calc
+     coef_normalization(1:lm_a)=coef_normalization(1:lm_a)*coef_normalization_const  !re-calc
      
      
     else
-     coef_normalization=coef_normalization_const  !re-calc
+     write(6,*)'the normalization profile file does not exist ,stop ',trim(file_coef_normalization)
+     call flush(6)
+     stop
     endif 
   else
      coef_normalization=1.0  
