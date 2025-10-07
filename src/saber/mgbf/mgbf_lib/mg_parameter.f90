@@ -598,29 +598,27 @@ logical :: l_exist
   
   if (coef_normalization_const >0 ) then  ! constant, if set, this contant will be 
     
-    coef_normalization=coef_normalization_const
     if(trim(file_coef_normalization)=="XXXX" ) then
       l_exist=.false.
+      coef_normalization=coef_normalization_const
     else
       inquire(file=trim(file_coef_normalization),exist=l_exist)
-    endif
-    if(l_exist) then
-     write(6,*)'the normalization profile file is ',trim(file_coef_normalization)
+      if(l_exist) then
+        write(6,*)'the normalization profile file is ',trim(file_coef_normalization)
 !clt in the ../covairance/mgbf_covariance_mod.f90 the fldset is reversed in the vertical direction
-     open(newunit=myunit,file=trim(file_coef_normalization),status='old',action='read')
-      read(myunit,*)(coef_normalization(i),i=lm_a,1,-1)  
-     close (myunit)
-     coef_normalization(1:lm_a)=coef_normalization(1:lm_a)*coef_normalization_const  !re-calc
+        open(newunit=myunit,file=trim(file_coef_normalization),status='old',action='read')
+              read(myunit,*)(coef_normalization(i),i=lm_a,1,-1)  
+             close (myunit)
+             coef_normalization(1:lm_a)=coef_normalization(1:lm_a)*coef_normalization_const  !re-calc
+       else 
      
-     
-    else
-     write(6,*)'the normalization profile file does not exist ,stop ',trim(file_coef_normalization)
-     call flush(6)
-     stop
-    endif 
+              write(6,*)'the normalization profile file does not exist ,stop ',trim(file_coef_normalization)
+              call flush(6)
+              stop
+       endif 
+     endif
   else
      coef_normalization=1.0  
-       
        
    
   endif
