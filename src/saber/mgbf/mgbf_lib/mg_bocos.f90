@@ -1477,14 +1477,14 @@ module subroutine bocoT_3d_gh &
 !                       - offset version -                             !
 !                                                                      !
 !***********************************************************************
-(this,W,km3_in,im_in,jm_in,Lm_in,nbx,nby,nbz,Fimax_in,Fjmax_in,mygen_min,mygen_max)
+(this,W,km_in,im_in,jm_in,Lm_in,nbx,nby,nbz,Fimax_in,Fjmax_in,mygen_min,mygen_max)
 !-----------------------------------------------------------------------
 use mpi
 implicit none
 class(mg_intstate_type),target::this
 !-----------------------------------------------------------------------
-integer(i_kind), intent(in):: km3_in,im_in,jm_in,Lm_in,nbx,nby,nbz,mygen_min,mygen_max
-real(r_kind), dimension(km3_in,1-nbx:im_in+nbx,1-nby:jm_in+nby,1-nbz:Lm_in+nbz),intent(inout):: W
+integer(i_kind), intent(in):: km_in,im_in,jm_in,Lm_in,nbx,nby,nbz,mygen_min,mygen_max
+real(r_kind), dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby,1-nbz:Lm_in+nbz),intent(inout):: W
 integer(i_kind), dimension(this%gm), intent(in):: Fimax_in,Fjmax_in
 !-----------------------------------------------------------------------
 real(r_kind), allocatable, dimension(:,:,:,:):: rBuf_W,rBuf_E,rBuf_S,rBuf_N
@@ -1545,8 +1545,8 @@ FILT_GRID:    if(l_sidesend) then
 
 
 !----------------------------------------------------------------------
-      ndatax =km3_in*(jmax+2*nby)*nbx*Lm_in
-      ndatay =km3_in*imax*nby*Lm_in
+      ndatax =km_in*(jmax+2*nby)*nbx*Lm_in
+      ndatay =km_in*imax*nby*Lm_in
 
       sHandle(:) = MPI_REQUEST_NULL
       rHandle(:) = MPI_REQUEST_NULL
@@ -1555,12 +1555,12 @@ FILT_GRID:    if(l_sidesend) then
 ! RECEIVE extended halos from EAST and WEST
 !
       if( itarg_w >= 0 ) then
-        allocate( rBuf_W(km3_in,nbx,1-nby:jmax+nby,Lm_in), stat = ierr )
+        allocate( rBuf_W(km_in,nbx,1-nby:jmax+nby,Lm_in), stat = ierr )
         call MPI_IRECV( rBuf_W, ndatax, dtype, itarg_w, itarg_w, &
                         mpi_comm_work, rHandle(DIR_W), ierr )
       end if
       if( itarg_e >= 0 ) then
-        allocate( rBuf_E(km3_in,nbx,1-nby:jmax+nby,Lm_in), stat = ierr )
+        allocate( rBuf_E(km_in,nbx,1-nby:jmax+nby,Lm_in), stat = ierr )
         call MPI_IRECV( rBuf_E, ndatax, dtype, itarg_e, itarg_e, &
                         mpi_comm_work, rHandle(DIR_E), ierr )
       end if
@@ -1569,12 +1569,12 @@ FILT_GRID:    if(l_sidesend) then
 ! RECEIVE boundaries from SOUTH and NORTH
 !
       if( itarg_s >= 0 ) then
-        allocate( rBuf_S(km3_in,imax,nby,Lm_in), stat = ierr )
+        allocate( rBuf_S(km_in,imax,nby,Lm_in), stat = ierr )
         call MPI_IRECV( rBuf_S, ndatay, dtype, itarg_s, itarg_s, &
                         mpi_comm_work, rHandle(DIR_S), ierr )
       end if
       if( itarg_n >= 0 ) then
-        allocate( rBuf_N(km3_in,imax,nby,Lm_in), stat = ierr )
+        allocate( rBuf_N(km_in,imax,nby,Lm_in), stat = ierr )
         call MPI_IRECV( rBuf_N, ndatay, dtype, itarg_n, itarg_n, &
                         mpi_comm_work, rHandle(DIR_N), ierr )
       end if
@@ -5881,6 +5881,7 @@ endsubroutine downsend_loc_g21
 
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 end submodule mg_bocos
+
 
 
 
