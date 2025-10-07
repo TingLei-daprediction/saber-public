@@ -905,21 +905,13 @@ real(r_kind),dimension(km3_in,1-nbx:im_in+nbx,1-nby:jm_in+nby,1-nbz:Lm_in+nbz)  
                       ,intent(inout):: W
 integer(i_kind), dimension(this%gm), intent(in):: Fimax_in,Fjmax_in
 !-----------------------------------------------------------------------
-
-real(r_kind), allocatable, dimension(:,:,:,:)::                         &
-                                  sBuf_N,sBuf_E,sBuf_S,sBuf_W           &
-                                 ,rBuf_N,rBuf_E,rBuf_S,rBuf_W           
-
 integer(i_kind) itarg_n,itarg_s,itarg_w,itarg_e,imax,jmax
-logical:: lwest,least,lsouth,lnorth                                      
-
-integer(i_kind) sHandle(4),rHandle(4),ISTAT(MPI_STATUS_SIZE)
-integer(i_kind) iaerr,ierr,iderr,l,i,j
-integer(i_kind) isend,irecv,nebpe
-integer(i_kind) ndatax,ndatay
-integer(i_kind) g_ind,g
-logical l_sidesend
-!-----------------------------------------------------------------------
+logical:: lwest,least,lsouth,lnorth
+integer(i_kind) sHandle(4),rHandle(4)
+integer(i_kind) ierr,i,j,L
+integer(i_kind) ndatay,ndatax
+integer(i_kind) g_ind
+integer(i_kind), parameter :: DIR_S=1, DIR_N=2, DIR_E=3, DIR_W=4
 include "type_parameter_locpointer.inc"
 include "type_intstat_locpointer.inc"
 include "type_parameter_point2this.inc"
@@ -937,308 +929,131 @@ include "type_intstat_point2this.inc"
           lwest   = Flwest(g_ind)
           least   = Fleast(g_ind)
           lsouth  = Flsouth(g_ind)
-          lnorth  = Flnorth(g_ind)                 
+          lnorth  = Flnorth(g_ind)
 
-          imax = im_in  
+          imax = im_in
           jmax = jm_in
 
 !-----------------------------------------------------------------------
-      ndatay = km3_in*imax*nby*Lm
+      ndatay = km3_in*imax*nby*Lm_in
       ndatax = km3_in*(jmax+2*nby)*nbx*Lm_in
 
+      sHandle(:) = MPI_REQUEST_NULL
+      rHandle(:) = MPI_REQUEST_NULL
 
 !
-! SEND boundaries toward SOUTH and NORTH
+!  Post receives toward SOUTH and NORTH
 !
-
-! --- toward SOUTH ---
-
       if( itarg_s >= 0 ) then
-        nebpe = itarg_s
-
-            allocate( sBuf_S(1:km3_in,1:imax,nby,1:Lm_in), stat = iaerr )
-
-              do L=1,Lm_in
-                do j=1,nby
-                  do i=1,imax
-                    sBuf_S(:,i,j,L) = W(:,i,j,L)
-                  enddo
-                enddo
-              enddo
-
-              call MPI_ISEND( sBuf_S, ndatay, dtype, nebpe, mype,  &
-                              mpi_comm_comp, sHandle(3), isend)
+        call MPI_IRECV( W(1,1,1-nby,1), ndatay, dtype, itarg_s, itarg_s, &
+                        mpi_comm_comp, rHandle(DIR_S), ierr )
       end if
-
-! --- toward NORTH ---
 
       if( itarg_n >= 0 ) then
-        nebpe = itarg_n
-
-            allocate( sBuf_N(1:km3_in,1:imax,nby,1:Lm_in), stat = iaerr )
-
-              do L=1,Lm_in
-                do j=1,nby
-                  do i=1,imax
-                    sBuf_N(:,i,j,L)=W(:,i,jmax-nby+j,L)
-                  enddo
-                enddo
-              enddo
-
-              call MPI_ISEND( sBuf_N, ndatay, dtype, nebpe, mype,        &
-                              mpi_comm_comp, sHandle(1), isend)
-
-      end if
-!
-! RECEIVE boundaries from NORTH and SOUTH
-!
-
-! --- from NORTH ---
-
-      if( itarg_n >= 0 ) then
-        nebpe = itarg_n
-
-          allocate( rBuf_N(1:km3_in,1:imax,nby,1:Lm_in), stat = iaerr )
-          call MPI_IRECV( rBuf_N, ndatay, dtype, nebpe, nebpe, &
-                      mpi_comm_comp, rHandle(1), irecv)
-          call MPI_WAIT( rHandle(1), istat, ierr )
-
-      end if
-
-! --- from SOUTH ---
-
-      if( itarg_s >= 0 ) then
-        nebpe = itarg_s
-
-          allocate( rBuf_S(1:km3_in,1:imax,nby,1:Lm_in), stat = iaerr )
-          call MPI_IRECV( rBuf_S, ndatay, dtype, nebpe, nebpe,  &
-                       mpi_comm_comp, rHandle(3), irecv)
-          call MPI_WAIT( rHandle(3), istat, ierr )
-
-      end if
-!
-! Assign received values from NORTH and SOUTH
-!
-
-! --- from NORTH ---
-
-   if( lnorth) then
-
-     do L=1,Lm_in
-     do j=1,nby
-     do i=1,imax
-       W(:,i,jmax+j,L)=W(:,i,jmax+1-j,L)
-     enddo
-     enddo
-     enddo
-
-   else
-
-     do L=1,Lm_in
-     do j=1,nby
-     do i=1,imax
-       W(:,i,jmax+j,L)=rBuf_N(:,i,j,L)
-     enddo
-     enddo
-     enddo
-
-   endif
-
-! From south
-
-   if(lsouth) then
-
-     do L=1,Lm_in
-     do j=1,nby
-     do i=1,imax
-       W(:,i,-nby+j,L)=W(:,i,nby+1-j,L)
-     end do
-     end do
-     end do
-
-   else
-
-     do L=1,Lm_in
-     do j=1,nby
-     do i=1,imax
-       W(:,i,-nby+j,L)=rBuf_S(:,i,j,L)
-     enddo
-     enddo
-     enddo
-
-   endif
-
-!
-! SEND extended boundaries toward WEST and EAST
-!
-! --- toward WEST ---
-
-      if( itarg_w >= 0) then
-        nebpe = itarg_w
-
-              allocate( sBuf_W(1:km3_in,nbx,1-nby:jmax+nby,1:Lm_in), stat = iaerr )
-
-              do L=1,Lm_in
-                do j=1-nby,jmax+nby
-                  do i=1,nbx
-                    sBuf_W(:,i,j,L) = W(:,i,j,L)
-                  enddo
-                enddo
-              enddo
-
-              call MPI_ISEND( sBuf_W, ndatax, dtype, nebpe, mype, &
-                              mpi_comm_comp, sHandle(4), isend)
-
-      end if
-
-! --- toward EAST ---
-
-      if( itarg_e >= 0 ) then
-        nebpe = itarg_e
-
-              allocate( sBuf_E(1:km3_in,nbx,1-nby:jmax+nby,1:Lm_in), stat = iaerr )
-
-              do L=1,Lm_in
-                do j=1-nby,jmax+nby
-                  do i=1,nbx
-                    sBuf_E(:,i,j,L) = W(:,imax-nbx+i,j,L)
-                  enddo
-                enddo
-              enddo
-
-              call MPI_ISEND( sBuf_E, ndatax, dtype, nebpe, mype, &
-                              mpi_comm_comp, sHandle(2), isend)
-
+        call MPI_IRECV( W(1,1,jmax+1,1), ndatay, dtype, itarg_n, itarg_n, &
+                        mpi_comm_comp, rHandle(DIR_N), ierr )
       end if
 
 !
-! RECEIVE boundaries WEST and EAST
+!  Post receives toward WEST and EAST
 !
-
-! --- from WEST ---
-
       if( itarg_w >= 0 ) then
-        nebpe = itarg_w
-
-          allocate( rBuf_W(1:km3_in,nbx,1-nby:jmax+nby,1:Lm_in), stat = iaerr )
-          call MPI_IRECV( rBuf_W, ndatax, dtype, nebpe, nebpe,  &
-                       mpi_comm_comp, rHandle(4), irecv)
-          call MPI_WAIT( rHandle(4), istat, ierr )
-
+        call MPI_IRECV( W(1,1-nbx,1-nby,1), ndatax, dtype, itarg_w, itarg_w, &
+                        mpi_comm_comp, rHandle(DIR_W), ierr )
       end if
-
-! --- from EAST ---
 
       if( itarg_e >= 0 ) then
-        nebpe = itarg_e
-
-          allocate( rBuf_E(1:km3_in,nbx,1-nby:jmax+nby,1:Lm_in), stat = iaerr )
-          call MPI_IRECV( rBuf_E, ndatax, dtype, nebpe, nebpe,  &
-                       mpi_comm_comp, rHandle(2), irecv)
-          call MPI_WAIT( rHandle(2), istat, ierr )
-
+        call MPI_IRECV( W(1,imax+1,1-nby,1), ndatax, dtype, itarg_e, itarg_e, &
+                        mpi_comm_comp, rHandle(DIR_E), ierr )
       end if
 
 !
-! Assign received values from  EAST and WEST
+!  SEND boundaries toward SOUTH and NORTH
 !
-! From west
+      if( itarg_s >= 0 ) then
+        call MPI_ISEND( W(1,1,1,1), ndatay, dtype, itarg_s, mype, &
+                        mpi_comm_comp, sHandle(DIR_S), ierr )
+      end if
 
-   if(lwest) then
+      if( itarg_n >= 0 ) then
+        call MPI_ISEND( W(1,1,jmax-nby+1,1), ndatay, dtype, itarg_n, mype, &
+                        mpi_comm_comp, sHandle(DIR_N), ierr )
+      end if
 
+!
+!  SEND extended boundaries toward WEST and EAST
+!
+      if( itarg_w >= 0 ) then
+        call MPI_ISEND( W(1,1,1-nby,1), ndatax, dtype, itarg_w, mype, &
+                        mpi_comm_comp, sHandle(DIR_W), ierr )
+      end if
+
+      if( itarg_e >= 0 ) then
+        call MPI_ISEND( W(1,imax-nbx+1,1-nby,1), ndatax, dtype, itarg_e, mype, &
+                        mpi_comm_comp, sHandle(DIR_E), ierr )
+      end if
+
+!
+!  Complete non-blocking receives and sends
+!
+      if( any(rHandle /= MPI_REQUEST_NULL) ) then
+        call MPI_WAITALL(4, rHandle, MPI_STATUSES_IGNORE, ierr)
+      end if
+
+      if( any(sHandle /= MPI_REQUEST_NULL) ) then
+        call MPI_WAITALL(4, sHandle, MPI_STATUSES_IGNORE, ierr)
+      end if
+
+!
+!  Apply physical boundary conditions where needed
+!
+   if( lsouth ) then
      do L=1,Lm_in
-     do j=1-nby,jmax+nby
-     do i=1,nbx
-       W(:,-nbx+i,j,L)= W(:,nbx+1-i,j,L)
+       do j=1,nby
+         do i=1,imax
+           W(:,i,-nby+j,L)=W(:,i,nby+1-j,L)
+         end do
+       end do
      end do
-     end do
-     end do
+   end if
 
-   else 
-
+   if( lnorth ) then
      do L=1,Lm_in
-     do j=1-nby,jmax+nby
-     do i=1,nbx
-       W(:,-nbx+i,j,L)= rBuf_W(:,i,j,L)
-     enddo
-     enddo
-     enddo
+       do j=1,nby
+         do i=1,imax
+           W(:,i,jmax+j,L)=W(:,i,jmax+1-j,L)
+         end do
+       end do
+     end do
+   end if
 
-
-   endif
-
-! From east
-
-   if(least) then
-
+   if( lwest ) then
      do L=1,Lm_in
-     do j=1-nby,jmax+nby
-     do i=1,nbx
-       W(:,imax+i,j,L)=W(:,imax-i,j,L)
+       do j=1-nby,jmax+nby
+         do i=1,nbx
+           W(:,-nbx+i,j,L)= W(:,nbx+1-i,j,L)
+         end do
+       end do
      end do
-     end do
-     end do
+   end if
 
-   else 
-
+   if( least ) then
      do L=1,Lm_in
-     do j=1-nby,jmax+nby
-     do i=1,nbx
-       W(:,imax+i,j,L)=rBuf_E(:,i,j,L)
-     enddo
-     enddo
-     enddo
-
-   endif
+       do j=1-nby,jmax+nby
+         do i=1,nbx
+           W(:,imax+i,j,L)=W(:,imax+1-i,j,L)
+         end do
+       end do
+     end do
+   end if
 
 !------------------------------------------------------------------
-!
-!                           DEALLOCATE rBufferes
-!
-
-      if( itarg_w >= 0 ) then
-        deallocate( rBuf_W, stat = iderr)
-      end if
-      if( itarg_e >= 0 ) then
-        deallocate( rBuf_E, stat = iderr)
-      end if
-      if( itarg_s >= 0 ) then
-        deallocate( rBuf_S, stat = iderr)
-      end if
-      if( itarg_n >= 0 ) then
-        deallocate( rBuf_N, stat = iderr)
-      end if
-
-!
-!                           DEALLOCATE sBufferes
-!
-      if( itarg_w >= 0 ) then
-        call MPI_WAIT( sHandle(4), istat, ierr )
-        deallocate( sBuf_W, stat = ierr )
-      end if
-      if( itarg_e >= 0 ) then
-        call MPI_WAIT( sHandle(2), istat, ierr )
-        deallocate( sBuf_E, stat = ierr )
-      end if
-      if( itarg_s >= 0 ) then
-        call MPI_WAIT( sHandle(3), istat, ierr )
-        deallocate( sBuf_S, stat = ierr )
-      end if
-      if( itarg_n >= 0 ) then
-        call MPI_WAIT( sHandle(1), istat, ierr )
-        deallocate( sBuf_N, stat = ierr )
-      end if
-
-!fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
-
-
-!-----------------------------------------------------------------------
 endsubroutine boco_3d_g1
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine boco_3d_gh &
 !**********************************************************************!
-
+!                                                                      !
 ! Side sending subroutine:                                             !
 ! Supplies (nbx,nby) lines of halos in (x,y) directions assuming       !
 ! mirror boundary conditions. Version for high generations             !
@@ -1253,24 +1068,17 @@ implicit none
 class(mg_intstate_type),target::this
 !-----------------------------------------------------------------------
 integer(i_kind), intent(in):: km3_in,im_in,jm_in,Lm_in,nbx,nby,nbz,mygen_min,mygen_max
-real(r_kind),dimension(km3_in,1-nbx:im_in+nbx,1-nby:jm_in+nby,1-nbz:Lm_in+nbz)    &
-                      ,intent(inout):: W
+real(r_kind),dimension(km3_in,1-nbx:im_in+nbx,1-nby:jm_in+nby,1-nbz:Lm_in+nbz),intent(inout):: W
 integer(i_kind), dimension(this%gm), intent(in):: Fimax_in,Fjmax_in
 !-----------------------------------------------------------------------
-
-real(r_kind), allocatable, dimension(:,:,:,:)::                         &
-                                  sBuf_N,sBuf_E,sBuf_S,sBuf_W           &
-                                 ,rBuf_N,rBuf_E,rBuf_S,rBuf_W           
-
 integer(i_kind) itarg_n,itarg_s,itarg_w,itarg_e,imax,jmax
-logical:: lwest,least,lsouth,lnorth                                      
-
-integer(i_kind) sHandle(4),rHandle(4),ISTAT(MPI_STATUS_SIZE)
-integer(i_kind) iaerr,ierr,iderr,l,i,j
-integer(i_kind) isend,irecv,nebpe
-integer(i_kind) ndatax,ndatay
+logical:: lwest,least,lsouth,lnorth
+integer(i_kind) sHandle(4),rHandle(4)
+integer(i_kind) ierr,i,j,L
+integer(i_kind) ndatay,ndatax
 integer(i_kind) g_ind,g
 logical l_sidesend
+integer(i_kind), parameter :: DIR_S=1, DIR_N=2, DIR_E=3, DIR_W=4
 include "type_parameter_locpointer.inc"
 include "type_intstat_locpointer.inc"
 include "type_parameter_point2this.inc"
@@ -1280,12 +1088,431 @@ include "type_intstat_point2this.inc"
 ! Limit communications to selected number of generations
 !
        if(mygen_min <= my_hgen .and. my_hgen <= mygen_max) then
-         g_ind=2 
+         g_ind=2
          g = my_hgen
          l_sidesend=.true.
        else
          l_sidesend=.false.
        endif
+
+!fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+
+FILT_GRID:    if(l_sidesend) then
+
+!fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+!
+! from mg_domain
+!
+          itarg_n = Fitarg_n(g_ind)
+          itarg_s = Fitarg_s(g_ind)
+          itarg_w = Fitarg_w(g_ind)
+          itarg_e = Fitarg_e(g_ind)
+
+          lwest   = Flwest(g_ind)
+          least   = Fleast(g_ind)
+          lsouth  = Flsouth(g_ind)
+          lnorth  = Flnorth(g_ind)
+
+          if(least) then
+            imax = Fimax_in(g)
+          else
+            imax = im_in
+          endif
+          if(lnorth) then
+            jmax = Fjmax_in(g)
+          else
+            jmax = jm_in
+          endif
+
+!-----------------------------------------------------------------------
+      ndatay = km3_in*imax*nby*Lm_in
+      ndatax = km3_in*(jmax+2*nby)*nbx*Lm_in
+
+      sHandle(:) = MPI_REQUEST_NULL
+      rHandle(:) = MPI_REQUEST_NULL
+
+!
+!  Post receives toward SOUTH and NORTH
+!
+      if( itarg_s >= 0 ) then
+        call MPI_IRECV( W(1,1,1-nby,1), ndatay, dtype, itarg_s, itarg_s, &
+                        mpi_comm_work, rHandle(DIR_S), ierr )
+      end if
+
+      if( itarg_n >= 0 ) then
+        call MPI_IRECV( W(1,1,jmax+1,1), ndatay, dtype, itarg_n, itarg_n, &
+                        mpi_comm_work, rHandle(DIR_N), ierr )
+      end if
+
+!
+!  Post receives toward WEST and EAST
+!
+      if( itarg_w >= 0 ) then
+        call MPI_IRECV( W(1,1-nbx,1-nby,1), ndatax, dtype, itarg_w, itarg_w, &
+                        mpi_comm_work, rHandle(DIR_W), ierr )
+      end if
+
+      if( itarg_e >= 0 ) then
+        call MPI_IRECV( W(1,imax+1,1-nby,1), ndatax, dtype, itarg_e, itarg_e, &
+                        mpi_comm_work, rHandle(DIR_E), ierr )
+      end if
+
+!
+!  SEND boundaries to SOUTH and NORTH
+!
+      if( itarg_s >= 0 ) then
+        call MPI_ISEND( W(1,1,1,1), ndatay, dtype, itarg_s, mype, &
+                        mpi_comm_work, sHandle(DIR_S), ierr )
+      end if
+
+      if( itarg_n >= 0 ) then
+        call MPI_ISEND( W(1,1,jmax-nby+1,1), ndatay, dtype, itarg_n, mype, &
+                        mpi_comm_work, sHandle(DIR_N), ierr )
+      end if
+
+!
+!  SEND extended boundaries to WEST and EAST
+!
+      if( itarg_w >= 0 ) then
+        call MPI_ISEND( W(1,1,1-nby,1), ndatax, dtype, itarg_w, mype, &
+                        mpi_comm_work, sHandle(DIR_W), ierr )
+      end if
+
+      if( itarg_e >= 0 ) then
+        call MPI_ISEND( W(1,imax-nbx+1,1-nby,1), ndatax, dtype, itarg_e, mype, &
+                        mpi_comm_work, sHandle(DIR_E), ierr )
+      end if
+
+!
+!  Complete non-blocking receives and sends
+!
+      if( any(rHandle /= MPI_REQUEST_NULL) ) then
+        call MPI_WAITALL(4, rHandle, MPI_STATUSES_IGNORE, ierr)
+      end if
+
+      if( any(sHandle /= MPI_REQUEST_NULL) ) then
+        call MPI_WAITALL(4, sHandle, MPI_STATUSES_IGNORE, ierr)
+      end if
+
+!
+!  Apply physical boundary conditions where needed
+!
+   if( lsouth ) then
+     do L=1,Lm_in
+       do j=1,nby
+         do i=1,imax
+           W(:,i,-nby+j,L)=W(:,i,nby+1-j,L)
+         end do
+       end do
+     end do
+   end if
+
+   if( lnorth ) then
+     do L=1,Lm_in
+       do j=1,nby
+         do i=1,imax
+           W(:,i,jmax+j,L)=W(:,i,jmax+1-j,L)
+         end do
+       end do
+     end do
+   end if
+
+   if( lwest ) then
+     do L=1,Lm_in
+       do j=1-nby,jmax+nby
+         do i=1,nbx
+           W(:,-nbx+i,j,L)= W(:,nbx+1-i,j,L)
+         end do
+       end do
+     end do
+   end if
+
+   if( least ) then
+     do L=1,Lm_in
+       do j=1-nby,jmax+nby
+         do i=1,nbx
+           W(:,imax+i,j,L)=W(:,imax+1-i,j,L)
+         end do
+       end do
+     end do
+   end if
+
+!fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+
+     endif FILT_GRID
+
+!fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+
+!-----------------------------------------------------------------------
+endsubroutine boco_3d_gh
+
+!&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+module subroutine bocoT_3d_g1 &
+!***********************************************************************
+!                                                                      !
+! Adjoint of side sending subroutine:                                  !
+! Supplies (nbx,nby) lines of halos in (x,y) directions, including     !
+! values at the edges of the subdomains and assuming mirror boundary   !
+! conditions just for generation 1                                     !
+!                                                                      !
+!                       - offset version -                             !
+!                                                                      !
+!***********************************************************************
+(this,W,km3_in,im_in,jm_in,Lm_in,nbx,nby,nbz,Fimax_in,Fjmax_in)
+!-----------------------------------------------------------------------
+use mpi
+implicit none
+class(mg_intstate_type),target::this
+!-----------------------------------------------------------------------
+integer(i_kind), intent(in):: km3_in,im_in,jm_in,Lm_in,nbx,nby,nbz
+real(r_kind), dimension(km3_in,1-nbx:im_in+nbx,1-nby:jm_in+nby,1-nbz:Lm_in+nbz),intent(inout):: W
+integer(i_kind), dimension(this%gm), intent(in):: Fimax_in,Fjmax_in
+!-----------------------------------------------------------------------
+real(r_kind), allocatable, dimension(:,:,:,:) :: rBuf_W,rBuf_E,rBuf_S,rBuf_N
+integer(i_kind) itarg_n,itarg_s,itarg_w,itarg_e,imax,jmax
+logical lwest,least,lsouth,lnorth                                       
+integer(i_kind) sHandle(4),rHandle(4)
+integer(i_kind) ierr,i,j,L
+integer(i_kind) ndatay,ndatax
+integer(i_kind) g_ind
+integer(i_kind), parameter :: DIR_S=1, DIR_N=2, DIR_E=3, DIR_W=4
+include "type_parameter_locpointer.inc"
+include "type_intstat_locpointer.inc"
+include "type_parameter_point2this.inc"
+include "type_intstat_point2this.inc"
+!
+! Limit communications to selected number of generations
+!
+
+         g_ind=1
+!
+! from mg_domain
+!
+          itarg_n = Fitarg_n(g_ind)
+          itarg_s = Fitarg_s(g_ind)
+          itarg_w = Fitarg_w(g_ind)
+          itarg_e = Fitarg_e(g_ind)
+
+          lwest   = Flwest(g_ind)
+          least   = Fleast(g_ind)
+          lsouth  = Flsouth(g_ind)
+          lnorth  = Flnorth(g_ind)
+
+          imax = im_in    
+          jmax = jm_in
+
+
+!----------------------------------------------------------------------
+      ndatay =km3_in*imax*nby*Lm_in
+      ndatax =km3_in*(jmax+2*nby)*nbx*Lm_in
+
+      sHandle(:) = MPI_REQUEST_NULL
+      rHandle(:) = MPI_REQUEST_NULL
+
+!
+! RECEIVE extended halos from EAST and WEST
+!
+      if( itarg_w >= 0 ) then
+        allocate( rBuf_W(km3_in,nbx,1-nby:jmax+nby,Lm_in), stat = ierr )
+        call MPI_IRECV( rBuf_W, ndatax, dtype, itarg_w, itarg_w, &
+                        mpi_comm_comp, rHandle(DIR_W), ierr )
+      end if
+
+      if( itarg_e >= 0 ) then
+        allocate( rBuf_E(km3_in,nbx,1-nby:jmax+nby,Lm_in), stat = ierr )
+        call MPI_IRECV( rBuf_E, ndatax, dtype, itarg_e, itarg_e, &
+                        mpi_comm_comp, rHandle(DIR_E), ierr )
+      end if
+
+!
+! RECEIVE boundaries from SOUTH and NORTH
+!
+      if( itarg_s >= 0 ) then
+        allocate( rBuf_S(km3_in,imax,nby,Lm_in), stat = ierr )
+        call MPI_IRECV( rBuf_S, ndatay, dtype, itarg_s, itarg_s, &
+                        mpi_comm_comp, rHandle(DIR_S), ierr )
+      end if
+
+      if( itarg_n >= 0 ) then
+        allocate( rBuf_N(km3_in,imax,nby,Lm_in), stat = ierr )
+        call MPI_IRECV( rBuf_N, ndatay, dtype, itarg_n, itarg_n, &
+                        mpi_comm_comp, rHandle(DIR_N), ierr )
+      end if
+
+!
+! SEND extended halos toward WEST and EAST
+!
+      if( itarg_w >= 0) then
+        call MPI_ISEND( W(1,1-nbx,1-nby,1), ndatax, dtype, itarg_w, mype, &
+                        mpi_comm_comp, sHandle(DIR_W), ierr )
+      end if
+
+      if( itarg_e >= 0 ) then
+        call MPI_ISEND( W(1,imax+1,1-nby,1), ndatax, dtype, itarg_e, mype, &
+                        mpi_comm_comp, sHandle(DIR_E), ierr )
+      end if
+
+!
+! SEND boundaries SOUTH and NORTH
+!
+      if( itarg_s >= 0 ) then
+        call MPI_ISEND( W(1,1,1-nby,1), ndatay, dtype, itarg_s, mype, &
+                        mpi_comm_comp, sHandle(DIR_S), ierr )
+      end if
+
+      if( itarg_n >= 0 ) then
+        call MPI_ISEND( W(1,1,jmax+1,1), ndatay, dtype, itarg_n, mype, &
+                        mpi_comm_comp, sHandle(DIR_N), ierr )
+      end if
+
+!
+!  Complete non-blocking operations
+!
+      if( any(rHandle /= MPI_REQUEST_NULL) ) then
+        call MPI_WAITALL(4, rHandle, MPI_STATUSES_IGNORE, ierr)
+      end if
+
+      if( any(sHandle /= MPI_REQUEST_NULL) ) then
+        call MPI_WAITALL(4, sHandle, MPI_STATUSES_IGNORE, ierr)
+      end if
+
+!
+! Assign received halos from WEST and EAST to interior of domains
+!
+   if(lwest) then
+     do L=1,Lm_in
+       do j=1-nby,jmax+nby
+         do i=1,nbx
+           W(:,i,j,L)= W(:,i,j,L)+W(:,1-i,j,L)
+         end do
+       end do
+     end do
+   else if( allocated(rBuf_W) ) then
+     do L=1,Lm_in
+       do j=1-nby,jmax+nby
+         do i=1,nbx
+           W(:,i,j,L)= W(:,i,j,L)+rBuf_W(:,i,j,L)
+         end do
+       end do
+     end do
+   end if
+
+   if(least) then
+     do L=1,Lm_in
+       do j=1-nby,jmax+nby
+         do i=1,nbx
+           W(:,imax-nbx+i,j,L)= W(:,imax-nbx+i,j,L)+W(:,imax+1+nbx-i,j,L)
+         end do
+       end do
+     end do
+   else if( allocated(rBuf_E) ) then
+     do L=1,Lm_in
+       do j=1-nby,jmax+nby
+         do i=1,nbx
+           W(:,imax-nbx+i,j,L)= W(:,imax-nbx+i,j,L)+rBuf_E(:,i,j,L)
+         end do
+       end do
+     end do
+   end if
+
+!
+! ASSIGN received values from SOUTH and NORTH
+!
+   if(lsouth) then
+     do L=1,Lm_in
+       do j=1,nby
+         do i=1,imax
+           W(:,i,j,L)= W(:,i,j,L)+W(:,i,1-j,L)
+         end do
+       end do
+     end do
+   else if( allocated(rBuf_S) ) then
+     do L=1,Lm_in
+       do j=1,nby
+         do i=1,imax
+           W(:,i,j,L)= W(:,i,j,L)+rBuf_S(:,i,j,L)
+         end do
+       end do
+     end do
+   end if
+
+   if(lnorth) then
+     do L=1,Lm_in
+       do j=1,nby
+         do i=1,imax
+           W(:,i,jmax-nby+j,L)= W(:,i,jmax-nby+j,L)+W(:,i,jmax+1+nby-j,L)
+         end do
+       end do
+     end do
+   else if( allocated(rBuf_N) ) then
+     do L=1,Lm_in
+       do j=1,nby
+         do i=1,imax
+           W(:,i,jmax-nby+j,L)= W(:,i,jmax-nby+j,L)+rBuf_N(:,i,j,L)
+         end do
+       end do
+     end do
+   end if
+
+!-----------------------------------------------------------------------
+!
+!                           DEALLOCATE rBufferes
+!
+      if( allocated(rBuf_W) ) deallocate( rBuf_W, stat = ierr)
+      if( allocated(rBuf_E) ) deallocate( rBuf_E, stat = ierr)
+      if( allocated(rBuf_S) ) deallocate( rBuf_S, stat = ierr)
+      if( allocated(rBuf_N) ) deallocate( rBuf_N, stat = ierr)
+
+!-----------------------------------------------------------------------
+endsubroutine bocoT_3d_g1
+
+!&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+module subroutine bocoT_3d_gh &
+!***********************************************************************
+!                                                                      !
+!  Supply n-lines inside of domains, including edges, with halos from  !
+!  the surrounding domains.  Assume mirror boundary conditions at the  !
+!  boundaries of the domain. For high multigrid generations.           !
+!                                                                      !
+!                       - offset version -                             !
+!                                                                      !
+!***********************************************************************
+(this,W,km3_in,im_in,jm_in,Lm_in,nbx,nby,nbz,Fimax_in,Fjmax_in,mygen_min,mygen_max)
+!-----------------------------------------------------------------------
+use mpi
+implicit none
+class(mg_intstate_type),target::this
+!-----------------------------------------------------------------------
+integer(i_kind), intent(in):: km3_in,im_in,jm_in,Lm_in,nbx,nby,nbz,mygen_min,mygen_max
+real(r_kind), dimension(km3_in,1-nbx:im_in+nbx,1-nby:jm_in+nby,1-nbz:Lm_in+nbz),intent(inout):: W
+integer(i_kind), dimension(this%gm), intent(in):: Fimax_in,Fjmax_in
+!-----------------------------------------------------------------------
+real(r_kind), allocatable, dimension(:,:,:,:):: rBuf_W,rBuf_E,rBuf_S,rBuf_N
+integer(i_kind) itarg_n,itarg_s,itarg_w,itarg_e,imax,jmax
+logical lwest,least,lsouth,lnorth                                       
+integer(i_kind) sHandle(4),rHandle(4)
+integer(i_kind) ierr,i,j,L
+integer(i_kind) ndatay,ndatax
+integer(i_kind) g_ind,g
+logical l_sidesend
+integer(i_kind), parameter :: DIR_S=1, DIR_N=2, DIR_E=3, DIR_W=4
+include "type_parameter_locpointer.inc"
+include "type_intstat_locpointer.inc"
+include "type_parameter_point2this.inc"
+include "type_intstat_point2this.inc"
+!
+! Limit comminications to selected number of generations
+!
+
+
+       if(mygen_min <= my_hgen .and. my_hgen <= mygen_max) then
+         g_ind=2
+         g = my_hgen
+         l_sidesend=.true.
+       else 
+         l_sidesend=.false.
+       endif
+
 
 !fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 
@@ -1317,1049 +1544,161 @@ FILT_GRID:    if(l_sidesend) then
           endif
 
 
-!-----------------------------------------------------------------------
-      ndatay = km3_in*imax*nby*Lm
-      ndatax = km3_in*(jmax+2*nby)*nbx*Lm
+!----------------------------------------------------------------------
+      ndatax =km3_in*(jmax+2*nby)*nbx*Lm_in
+      ndatay =km3_in*imax*nby*Lm_in
+
+      sHandle(:) = MPI_REQUEST_NULL
+      rHandle(:) = MPI_REQUEST_NULL
 
 !
-! SEND boundaries to SOUTH and NORTH
+! RECEIVE extended halos from EAST and WEST
 !
-
-! --- toward SOUTH ---
-
-      if( itarg_s >= 0 ) then
-        nebpe = itarg_s
-
-            allocate( sBuf_S(1:km3_in,1:imax,nby,1:Lm_in), stat = iaerr )
-
-              do L=1,Lm_in
-                do j=1,nby
-                  do i=1,imax
-                    sBuf_S(:,i,j,L) = W(:,i,j,L)
-                  enddo
-                enddo
-              enddo
-
-              call MPI_ISEND( sBuf_S, ndatay, dtype, nebpe, mype,  &
-                              mpi_comm_work, sHandle(3), isend)
+      if( itarg_w >= 0 ) then
+        allocate( rBuf_W(km3_in,nbx,1-nby:jmax+nby,Lm_in), stat = ierr )
+        call MPI_IRECV( rBuf_W, ndatax, dtype, itarg_w, itarg_w, &
+                        mpi_comm_work, rHandle(DIR_W), ierr )
+      end if
+      if( itarg_e >= 0 ) then
+        allocate( rBuf_E(km3_in,nbx,1-nby:jmax+nby,Lm_in), stat = ierr )
+        call MPI_IRECV( rBuf_E, ndatax, dtype, itarg_e, itarg_e, &
+                        mpi_comm_work, rHandle(DIR_E), ierr )
       end if
 
-! --- toward NORTH ---
-
-      if( itarg_n >= 0 ) then
-        nebpe = itarg_n
-
-            allocate( sBuf_N(1:km3_in,1:imax,nby,1:Lm_in), stat = iaerr )
-
-              do L=1,Lm_in
-                do j=1,nby
-                  do i=1,imax
-                    sBuf_N(:,i,j,L)=W(:,i,jmax-nby+j,L)
-                  enddo
-                enddo
-              enddo
-
-              call MPI_ISEND( sBuf_N, ndatay, dtype, nebpe, mype,        &
-                              mpi_comm_work, sHandle(1), isend)
-
-      end if
 !
 ! RECEIVE boundaries from SOUTH and NORTH
 !
-
-! --- from NORTH ---
-
-      if( itarg_n >= 0 ) then
-        nebpe = itarg_n
-
-          allocate( rBuf_N(1:km3_in,1:imax,nby,1:Lm_in), stat = iaerr )
-          call MPI_IRECV( rBuf_N, ndatay, dtype, nebpe, nebpe, &
-                      mpi_comm_work, rHandle(1), irecv)
-          call MPI_WAIT( rHandle(1), istat, ierr )
-
-      end if
-
-! --- from SOUTH ---
-
       if( itarg_s >= 0 ) then
-        nebpe = itarg_s
-
-          allocate( rBuf_S(1:km3_in,1:imax,nby,1:Lm_in), stat = iaerr )
-          call MPI_IRECV( rBuf_S, ndatay, dtype, nebpe, nebpe,  &
-                       mpi_comm_work, rHandle(3), irecv)
-          call MPI_WAIT( rHandle(3), istat, ierr )
-
+        allocate( rBuf_S(km3_in,imax,nby,Lm_in), stat = ierr )
+        call MPI_IRECV( rBuf_S, ndatay, dtype, itarg_s, itarg_s, &
+                        mpi_comm_work, rHandle(DIR_S), ierr )
       end if
-
-!TEST
       if( itarg_n >= 0 ) then
-        call MPI_WAIT( sHandle(1), istat, ierr )
-        deallocate( sBuf_N, stat = ierr )
+        allocate( rBuf_N(km3_in,imax,nby,Lm_in), stat = ierr )
+        call MPI_IRECV( rBuf_N, ndatay, dtype, itarg_n, itarg_n, &
+                        mpi_comm_work, rHandle(DIR_N), ierr )
       end if
-      if( itarg_s >= 0 ) then
-        call MPI_WAIT( sHandle(3), istat, ierr )
-        deallocate( sBuf_S, stat = ierr )
-      end if
-!TEST
-
-!
-! Assign received values from NORTH and SOUTH
-!
-
-! --- from NORTH ---
-
-   if( lnorth) then
-
-     do L=1,Lm_in
-     do j=1,nby
-     do i=1,imax
-       W(:,i,jmax+j,L)=W(:,i,jmax+1-j,L)
-     enddo
-     enddo
-     enddo
-
-   else
-
-     do L=1,Lm_in
-     do j=1,nby
-     do i=1,imax
-       W(:,i,jmax+j,L)=rBuf_N(:,i,j,L)
-     enddo
-     enddo
-     enddo
-
-   endif
-
-! From south
-
-   if(lsouth) then
-
-     do L=1,Lm_in
-     do j=1,nby
-     do i=1,imax
-       W(:,i,-nby+j,L)=W(:,i,nby+1-j,L)
-     end do
-     end do
-     end do
-
-   else
-
-     do L=1,Lm_in
-     do j=1,nby
-     do i=1,imax
-       W(:,i,-nby+j,L)=rBuf_S(:,i,j,L)
-     enddo
-     enddo
-     enddo
-
-   endif
-
-!TEST
-      if( itarg_n >= 0 ) then
-        deallocate( rBuf_N, stat = iderr)
-      endif
-
-      if( itarg_s >= 0 ) then
-        deallocate( rBuf_S, stat = iderr)
-      endif
-!TEST
-
-
-!
-! SEND extended boundaries to WEST and EAST   
-!
-! --- toward WEST ---
-
-      if( itarg_w >= 0) then
-        nebpe = itarg_w
-
-              allocate( sBuf_W(1:km3_in,nbx,1-nby:jmax+nby,1:Lm_in), stat = iaerr )
-
-              do L=1,Lm_in
-                do j=1-nby,jmax+nby
-                  do i=1,nbx
-                    sBuf_W(:,i,j,L) = W(:,i,j,L)
-                  enddo
-                enddo
-              enddo
-
-              call MPI_ISEND( sBuf_W, ndatax, dtype, nebpe, mype, &
-                              mpi_comm_work, sHandle(4), isend)
-
-      end if
-
-! --- toward EAST ---
-
-      if( itarg_e >= 0 ) then
-        nebpe = itarg_e
-
-              allocate( sBuf_E(1:km3_in,nbx,1-nby:jmax+nby,1:Lm_in), stat = iaerr )
-
-              do L=1,Lm_in
-                do j=1-nby,jmax+nby
-                  do i=1,nbx
-                    sBuf_E(:,i,j,L) = W(:,imax-nbx+i,j,L)
-                  enddo
-                enddo
-              enddo
-
-              call MPI_ISEND( sBuf_E, ndatax, dtype, nebpe, mype, &
-                              mpi_comm_work, sHandle(2), isend)
-
-      end if
-
-!
-! RECEIVE boundaries from EAST and WEST
-!
-
-! --- from EAST ---
-
-      if( itarg_e >= 0 ) then
-        nebpe = itarg_e
-
-          allocate( rBuf_E(1:km3_in,nbx,1-nby:jmax+nby,1:Lm_in), stat = iaerr )
-          call MPI_IRECV( rBuf_E, ndatax, dtype, nebpe, nebpe,  &
-                       mpi_comm_work, rHandle(2), irecv)
-          call MPI_WAIT( rHandle(2), istat, ierr )
-
-      end if
-
-! --- from WEST ---
-
-      if( itarg_w >= 0 ) then
-        nebpe = itarg_w
-
-          allocate( rBuf_W(1:km3_in,nbx,1-nby:jmax+nby,1:Lm_in), stat = iaerr )
-          call MPI_IRECV( rBuf_W, ndatax, dtype, nebpe, nebpe,  &
-                       mpi_comm_work, rHandle(2), irecv)
-          call MPI_WAIT( rHandle(2), istat, ierr )
-
-      end if
-
-!
-! Deallocate send bufferes from EAST and WEST
-!
-      if( itarg_e >= 0 ) then
-        call MPI_WAIT( sHandle(2), istat, ierr )
-        deallocate( sBuf_E, stat = ierr )
-      end if
-      if( itarg_w >= 0 ) then
-        call MPI_WAIT( sHandle(4), istat, ierr )
-        deallocate( sBuf_W, stat = ierr )
-      end if
-
-!
-! Assign received values from WEST and EAST
-!
-! From west
-
-   if(lwest) then
-
-     do L=1,Lm_in
-     do j=1-nby,jmax+nby
-     do i=1,nbx
-       W(:,-nbx+i,j,L)= W(:,nbx+1-i,j,L)
-     end do
-     end do
-     end do
-
-   else 
-
-     do L=1,Lm_in
-     do j=1-nby,jmax+nby
-     do i=1,nbx
-       W(:,-nbx+i,j,L)= rBuf_W(:,i,j,L)
-     enddo
-     enddo
-     enddo
-
-
-   endif
-
-! From east
-
-   if(least) then
-
-     do L=1,Lm_in
-     do j=1-nby,jmax+nby
-     do i=1,nbx
-       W(:,imax+i,j,L)=W(:,imax+1-i,j,L)
-     end do
-     end do
-     end do
-
-   else 
-
-     do L=1,Lm_in
-     do j=1-nby,jmax+nby
-     do i=1,nbx
-       W(:,imax+i,j,L)=rBuf_E(:,i,j,L)
-     enddo
-     enddo
-     enddo
-
-   endif
-
-!
-! Set up mirror b.c. at the bottom and top of domain 
-!
-        do L=1,nbz
-          W(:,:,:,1-L )=W(:,:,:, 1+L)
-          W(:,:,:,LM+L)=W(:,:,:,LM-L)
-        end do
-
-
-!-----------------------------------------------------------------------
-!
-!                           DEALLOCATE rBufferes
-!
-
-      if( itarg_w >= 0 ) then
-        deallocate( rBuf_W, stat = iderr)
-      endif
-      if( itarg_e >= 0 ) then
-        deallocate( rBuf_E, stat = iderr)
-      endif
-
-
-!fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
-
-     endif FILT_GRID
-
-!fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
-
-!-----------------------------------------------------------------------
-endsubroutine boco_3d_gh
-
-!&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-module subroutine bocoT_3d_g1 &
-!***********************************************************************
-!                                                                      *
-!  Supply n-lines inside of domains, including edges, with halos from  *
-!  the surrounding domains.  Assume mirror boundary conditions at the  *
-!  boundaries of the domain                                            *
-!                                                                      !
-!                       - offset version -                             !
-!                                                                      *
-!***********************************************************************
-(this,W,km3_in,im_in,jm_in,Lm_in,nbx,nby,nbz,Fimax_in,Fjmax_in)
-!-----------------------------------------------------------------------
-use mpi
-implicit none
-class(mg_intstate_type),target::this
-!-----------------------------------------------------------------------
-integer(i_kind), intent(in):: km3_in,im_in,jm_in,Lm_in,nbx,nby,nbz
-real(r_kind), dimension(km3_in,1-nbx:im_in+nbx,1-nby:jm_in+nby,1-nbz:Lm_in+nbz)   &
-                       ,intent(inout):: W
-integer(i_kind), dimension(this%gm), intent(in):: Fimax_in,Fjmax_in
-!-----------------------------------------------------------------------
-
-real(r_kind), allocatable, dimension(:,:,:,:)::                         &
-                                        sBuf_N,sBuf_E,sBuf_S,sBuf_W     &
-                                       ,rBuf_N,rBuf_E,rBuf_S,rBuf_W   
-
-integer(i_kind) itarg_n,itarg_s,itarg_w,itarg_e,imax,jmax
-logical lwest,least,lsouth,lnorth                                      
-
-integer(i_kind) sHandle(4),rHandle(4),ISTAT(MPI_STATUS_SIZE)
-integer(i_kind) iaerr,ierr,iderr,L,i,j
-integer(i_kind) isend,irecv,nebpe
-integer(i_kind) ndatax,ndatay
-logical l_sidesend
-integer(i_kind) g_ind,g,k
-include "type_parameter_locpointer.inc"
-include "type_intstat_locpointer.inc"
-include "type_parameter_point2this.inc"
-include "type_intstat_point2this.inc"
-!-----------------------------------------------------------------------
-!
-! Limit comminications to selected number of generations
-!
-
-         g_ind=1
-
-!
-! from mg_domain
-!
-          itarg_n = Fitarg_n(g_ind)
-          itarg_s = Fitarg_s(g_ind)
-          itarg_w = Fitarg_w(g_ind)
-          itarg_e = Fitarg_e(g_ind)
-
-          lwest   = Flwest(g_ind)
-          least   = Fleast(g_ind)
-          lsouth  = Flsouth(g_ind)
-          lnorth  = Flnorth(g_ind)
-
-
-          imax = im
-          jmax = jm
-
-!----------------------------------------------------------------------
-      ndatax =km3_in*(jmax+2*nby)*nbx *Lm_in
-      ndatay =km3_in*imax*nby *Lm_in
 
 !
 ! SEND extended halos toward WEST and EAST
 !
-! --- toward WEST ---
-
       if( itarg_w >= 0) then
-        nebpe = itarg_w
-
-              allocate( sBuf_W(1:km3_in,1:nbx,1-nby:jmax+nby,1:Lm_in), stat = iaerr )
-
-              do L=Lm_in,1,-1
-              do j=1-nby,jmax+nby
-              do i=1,nbx
-                sBuf_W(:,i,j,L) = W(:,-nbx+i,j,L)
-              enddo
-              enddo
-              enddo
-
-              call MPI_ISEND( sBuf_W, ndatax, dtype, nebpe, mype,       &
-                              mpi_comm_comp, sHandle(4), isend)
-
+        call MPI_ISEND( W(1,1-nbx,1-nby,1), ndatax, dtype, itarg_w, mype, &
+                        mpi_comm_work, sHandle(DIR_W), ierr )
       end if
-
-! --- toward EAST ---
-
       if( itarg_e >= 0 ) then
-        nebpe = itarg_e
-
-              allocate( sBuf_E(1:km3_in,1:nbx,1-nby:jmax+nby,1:Lm_in), stat = iaerr )
-
-              do L=Lm_in,1,-1
-              do j=1-nby,jmax+nby
-              do i=1,nbx
-                sBuf_E(:,i,j,L) = W(:,imax+i,j,L)
-              enddo
-              enddo
-              enddo
-
-              call MPI_ISEND( sBuf_E, ndatax, dtype, nebpe, mype,       &
-                              mpi_comm_comp, sHandle(2), isend)
-
-      end if
-!
-! RECEIVE extended halos from EAST and WEST
-!
-! --- from EAST ---
-
-      if(  itarg_e >= 0 ) then
-        nebpe = itarg_e
-
-
-          allocate( rBuf_E(1:km3_in,1:nbx,1-nby:jmax+nby,1:Lm_in), stat = iaerr )
-          call MPI_IRECV( rBuf_E, ndatax, dtype, nebpe, nebpe,          &
-                       mpi_comm_comp, rHandle(2), irecv)
-          call MPI_WAIT( rHandle(2), istat, ierr )
-
+        call MPI_ISEND( W(1,imax+1,1-nby,1), ndatax, dtype, itarg_e, mype, &
+                        mpi_comm_work, sHandle(DIR_E), ierr )
       end if
 
-! --- from WEST ---
-
-      if(  itarg_w >= 0 ) then
-        nebpe = itarg_w
-
-
-          allocate( rBuf_W(1:km3_in,1:nbx,1-nby:jmax+nby,1:Lm_in), stat = iaerr )
-          call MPI_IRECV( rBuf_W, ndatax, dtype, nebpe, nebpe,          &
-                       mpi_comm_comp, rHandle(4), irecv)
-          call MPI_WAIT( rHandle(4), istat, ierr )
-
-
+!
+! SEND boundaries SOUTH and NORTH
+!
+      if( itarg_s >= 0 ) then
+        call MPI_ISEND( W(1,1,1-nby,1), ndatay, dtype, itarg_s, mype, &
+                        mpi_comm_work, sHandle(DIR_S), ierr )
       end if
-!
-! Assign received extended halos from WEST and EAST to interior of domains
-!
+      if( itarg_n >= 0 ) then
+        call MPI_ISEND( W(1,1,jmax+1,1), ndatay, dtype, itarg_n, mype, &
+                        mpi_comm_work, sHandle(DIR_N), ierr )
+      end if
 
-! From west
+!
+!  Complete non-blocking operations
+!
+      if( any(rHandle /= MPI_REQUEST_NULL) ) then
+        call MPI_WAITALL(4, rHandle, MPI_STATUSES_IGNORE, ierr)
+      end if
 
+      if( any(sHandle /= MPI_REQUEST_NULL) ) then
+        call MPI_WAITALL(4, sHandle, MPI_STATUSES_IGNORE, ierr)
+      end if
+
+!
+! Assign received halos from WEST and EAST to interior of domains
+!
    if(lwest) then
-     do L=1,lm_in
+     do L=1,Lm_in
      do j=1-nby,jmax+nby
      do i=1,nbx
        W(:,i,j,L)= W(:,i,j,L)+W(:,1-i,j,L)
      end do
      end do
      end do
-   else
-     do L=1,lm_in
+   else if( allocated(rBuf_W) ) then
+     do L=1,Lm_in
      do j=1-nby,jmax+nby
      do i=1,nbx
       W(:,i,j,L)= W(:,i,j,L)+rBuf_W(:,i,j,L)
      end do
      end do
      end do
-   endif
-
-! From east
+   end if
 
    if(least) then
-     do L=1,lm_in
-     do j=1-nby,jmax+nby
-     do i=1,nbx
-       W(:,imax-nbx+i,j,L)= W(:,imax-nbx+i,j,L)+W(:,imax+nbx-i,j,L)
-     end do
-     end do
-     end do
-   else 
-     do L=1,lm_in
-     do j=1-nby,jmax+nby
-     do i=1,nbx  
-       W(:,imax-nbx+i,j,L)= W(:,imax-nbx+i,j,L)+rBuf_E(:,i,j,L)
-     end do
-     end do
-     end do
-   endif
-
-!
-! Send halos SOUTH and NORTH
-!
-
-! --- toward SOUTH ---
-
-      if( itarg_s >= 0 ) then
-        nebpe = itarg_s
-
-              allocate( sBuf_S(1:km3_in,1:imax,1:nby,1:Lm_in), stat = iaerr )
-
-              do L=Lm_in,1,-1
-              do j=1-nby,0
-              do i=1,imax
-                sBuf_S(:,i,j+nby,L) = W(:,i,j,L)
-              enddo
-              enddo
-              enddo
-
-              call MPI_ISEND( sBuf_S, ndatay, dtype, nebpe, mype,  &
-                              mpi_comm_comp, sHandle(3), isend)
-      end if
-
-! --- toward NORTH ---
-
-      if( itarg_n >= 0 ) then
-        nebpe = itarg_n
-
-             allocate( sBuf_N(1:km3_in,1:imax,1:nby,1:Lm_in), stat = iaerr )
-
-              do L=Lm_in,1,-1
-              do j=1,nby
-              do i=1,imax
-                sBuf_N(:,i,j,L)=W(:,i,jmax+j,L)
-              enddo
-              enddo
-              enddo
-
-             call MPI_ISEND( sBuf_N, ndatay, dtype, nebpe, mype,        &
-                             mpi_comm_comp, sHandle(1), isend)
-
-      end if
-
-
-!
-! RECEIVE boundaries from NORTH and SOUTH
-!
-! --- from NORTH ---
-
-      if( itarg_n >= 0 ) then
-        nebpe = itarg_n
-
-
-          allocate( rBuf_N(1:km3_in,1:imax,1:nby,1:Lm_in), stat = iaerr )
-          call MPI_IRECV( rBuf_N, ndatay, dtype, nebpe, nebpe,          &
-                      mpi_comm_comp, rHandle(1), irecv)
-          call MPI_WAIT( rHandle(1), istat, ierr )
-
-      end if
-
-! --- from SOUTH ---
-
-      if( itarg_s >= 0 ) then
-        nebpe = itarg_s
-
-
-          allocate( rBuf_S(1:km3_in,1:imax,1:nby,1:Lm_in), stat = iaerr )
-          call MPI_IRECV( rBuf_S, ndatay, dtype, nebpe, nebpe,          &
-                       mpi_comm_comp, rHandle(3), irecv)
-          call MPI_WAIT( rHandle(3), istat, ierr )
-
-
-      end if
-
-!
-! Assign received values from SOUTH and NORTH
-!
-
-! From south
-
-   if(lsouth) then
-     do L=1,lm_in
-     do j=1,nby
-     do i=1,imax
-       W(:,i,j,L)= W(:,i,j,L)+W(:,i,1-j,L)
-     end do
-     end do
-     end do
-   else
-     do L=1,lm_in
-     do j=1,nby
-     do i=1,imax
-       W(:,i,j,L)= W(:,i,j,L)+rBuf_S(:,i,j,L)
-     end do
-     end do
-     end do
-   endif
-
-!  From north
-
-   if(lnorth) then
-     do L=1,lm_in
-     do j=1,nby
-     do i=1,imax
-       W(:,i,jmax-nby+j,L)= W(:,i,jmax-nby+j,L)+W(:,i,jmax+nby-j,L)
-     enddo
-     enddo
-     enddo
-   else
-     do L=1,lm_in
-     do j=1,nby
-     do i=1,imax
-       W(:,i,jmax-nby+j,L)= W(:,i,jmax-nby+j,L)+rBuf_N(:,i,j,L)
-     enddo
-     enddo
-     enddo
-   endif
-
-!----------------------------------------------------------------------
-!
-! Set up mirror b.c. at the bottom and top of domain 
-!
-        do L=1,nbz
-          W(:,:,:,1+L )=W(:,:,:, 1+L)+W(:,:,:, 1-L)
-          W(:,:,:,LM-L)=W(:,:,:,LM-L)+W(:,:,:,LM+L)
-        end do
-
-
-!----------------------------------------------------------------------
-!
-!                           DEALLOCATE sBufferes
-!
-
-
-      if( itarg_w >= 0 ) then
-         call MPI_WAIT( sHandle(4), istat, ierr )
-         deallocate( sBuf_W, stat = ierr )
-      end if
-      if( itarg_e >= 0 ) then
-         call MPI_WAIT( sHandle(2), istat, ierr )
-         deallocate( sBuf_E, stat = ierr )
-      end if
-      if( itarg_s >= 0 ) then
-         call MPI_WAIT( sHandle(3), istat, ierr )
-         deallocate( sBuf_S, stat = ierr )
-      end if
-      if( itarg_n >= 0 ) then
-         call MPI_WAIT( sHandle(1), istat, ierr )
-         deallocate( sBuf_N, stat = ierr )
-      end if
-
-
-
-!-----------------------------------------------------------------------
-!
-!                           DEALLOCATE rBufferes
-!
-
-      if( itarg_w >= 0 ) then
-        deallocate( rBuf_W, stat = iderr)
-      endif 
-      if( itarg_e >= 0 ) then
-        deallocate( rBuf_E, stat = iderr)
-      endif 
-      if( itarg_s >= 0 ) then
-        deallocate( rBuf_S, stat = iderr)
-      endif 
-      if( itarg_n >= 0 ) then
-        deallocate( rBuf_N, stat = iderr)
-      endif
-
-
-!-----------------------------------------------------------------------
-endsubroutine bocoT_3d_g1
-
-!&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-module subroutine bocoT_3d_gh &
-!***********************************************************************
-!                                                                      *
-!  Supply n-lines inside of domains, including edges, with halos from  *
-!  the surrounding domains.  Assume mirror boundary conditions at the  *
-!  boundaries of the domain                                            *
-!                                                                      !
-!                       - offset version -                             !
-!                                                                      *
-!***********************************************************************
-(this,W,km_in,im_in,jm_in,Lm_in,nbx,nby,nbz,Fimax_in,Fjmax_in,mygen_min,mygen_max)
-!-----------------------------------------------------------------------
-use mpi
-implicit none
-class(mg_intstate_type),target::this
-!-----------------------------------------------------------------------
-integer(i_kind), intent(in):: km_in,im_in,jm_in,Lm_in,nbx,nby,nbz,mygen_min,mygen_max
-real(r_kind), dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby,1-nbz:Lm_in+nbz)    &
-                       ,intent(inout):: W
-integer(i_kind), dimension(this%gm), intent(in):: Fimax_in,Fjmax_in
-!-----------------------------------------------------------------------
-real(r_kind), allocatable, dimension(:,:,:,:)::                         &
-                                        sBuf_N,sBuf_E,sBuf_S,sBuf_W     &
-                                       ,rBuf_N,rBuf_E,rBuf_S,rBuf_W   
-
-integer(i_kind) itarg_n,itarg_s,itarg_w,itarg_e,imax,jmax
-logical lwest,least,lsouth,lnorth                                       
-
-integer(i_kind) sHandle(4),rHandle(4),ISTAT(MPI_STATUS_SIZE)
-integer(i_kind) iaerr,ierr,iderr,L,i,j
-integer(i_kind) isend,irecv,nebpe
-integer(i_kind) ndatax,ndatay
-logical l_sidesend
-integer(i_kind) g_ind,g,k
-include "type_parameter_locpointer.inc"
-include "type_intstat_locpointer.inc"
-include "type_parameter_point2this.inc"
-include "type_intstat_point2this.inc"
-!-----------------------------------------------------------------------
-!
-! Limit comminications to selected number of generations
-!
-
-       if(mygen_min <= my_hgen .and. my_hgen <= mygen_max) then
-         g_ind=2
-         g = my_hgen
-         l_sidesend=.true.
-       else
-         l_sidesend=.false.
-       endif
-
-
-!fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
-
-FILT_GRID:    if(l_sidesend) then
-
-!fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
-
-!
-! from mg_domain
-!
-          itarg_n = Fitarg_n(g_ind)
-          itarg_s = Fitarg_s(g_ind)
-          itarg_w = Fitarg_w(g_ind)
-          itarg_e = Fitarg_e(g_ind)
-
-          lwest   = Flwest(g_ind)
-          least   = Fleast(g_ind)
-          lsouth  = Flsouth(g_ind)
-          lnorth  = Flnorth(g_ind)
-
-          if(least) then
-            imax = Fimax_in(g)
-          else 
-            imax = im_in       !   << Note that is not necesseraly im from
-          endif             !      mg_parameter.  Could be also imL >>>
-          if(lnorth) then
-            jmax = Fjmax_in(g)
-          else  
-            jmax = jm_in
-          endif
-
-
-!----------------------------------------------------------------------
-      ndatax =km_in*(jmax+2*nby)*nbx *Lm_in
-      ndatay =km_in*imax*nby *Lm_in
-
-!
-! SEND extended halos toward WEST and EAST
-!
-! --- toward WEST ---
-
-      if( itarg_w >= 0) then
-        nebpe = itarg_w
-
-              allocate( sBuf_W(1:km_in,1:nbx,1-nby:jmax+nby,1:Lm_in), stat = iaerr )
-
-              do L=Lm_in,1,-1
-              do j=1-nby,jmax+nby
-              do i=1,nbx
-                sBuf_W(:,i,j,L) = W(:,-nbx+i,j,L)
-              enddo
-              enddo
-              enddo
-
-              call MPI_ISEND( sBuf_W, ndatax, dtype, nebpe, mype,       &
-                              mpi_comm_work, sHandle(4), isend)
-
-      end if
-
-! --- toward EAST ---
-
-      if( itarg_e >= 0 ) then
-        nebpe = itarg_e
-
-              allocate( sBuf_E(1:km_in,1:nbx,1-nby:jmax+nby,1:Lm_in), stat = iaerr )
-
-              do L=Lm_in,1,-1
-              do j=1-nby,jmax+nby
-              do i=1,nbx
-                sBuf_E(:,i,j,L) = W(:,imax+i,j,L)
-              enddo
-              enddo
-              enddo
-
-              call MPI_ISEND( sBuf_E, ndatax, dtype, nebpe, mype,       &
-                              mpi_comm_work, sHandle(2), isend)
-      end if
-
-!
-! RECEIVE extended halos from EAST and WEST
-!
-
-! --- from EAST ---
-
-      if(  itarg_e >= 0 ) then
-        nebpe = itarg_e
-
-
-          allocate( rBuf_E(1:km_in,1:nbx,1-nby:jmax+nby,1:Lm_in), stat = iaerr )
-          call MPI_IRECV( rBuf_E, ndatax, dtype, nebpe, nebpe,          &
-                       mpi_comm_work, rHandle(2), irecv)
-          call MPI_WAIT( rHandle(2), istat, ierr )
-
-      end if
-
-! --- from WEST ---
-
-      if(  itarg_w >= 0 ) then
-        nebpe = itarg_w
-
-
-          allocate( rBuf_W(1:km_in,1:nbx,1-nby:jmax+nby,1:Lm_in), stat = iaerr )
-          call MPI_IRECV( rBuf_W, ndatax, dtype, nebpe, nebpe,          &
-                       mpi_comm_work, rHandle(4), irecv)
-          call MPI_WAIT( rHandle(4), istat, ierr )
-
-
-      end if
-
-!
-! Assign received extended halos from WEST and EAST
-!
-
-! From west
-
-   if(lwest) then
-     do L=1,lm_in
-     do j=1-nby,jmax+nby
-     do i=1,nbx
-       W(:,i,j,L)= W(:,i,j,L)+W(:,1-i,j,L)
-     end do
-     end do
-     end do
-   else
-     do L=1,lm_in
-     do j=1-nby,jmax+nby
-     do i=1,nbx
-      W(:,i,j,L)= W(:,i,j,L)+rBuf_W(:,i,j,L)
-     end do
-     end do
-     end do
-   endif
-
-! From east
-
-   if(least) then
-     do L=1,lm_in
+     do L=1,Lm_in
      do j=1-nby,jmax+nby
      do i=1,nbx
        W(:,imax-nbx+i,j,L)= W(:,imax-nbx+i,j,L)+W(:,imax+1+nbx-i,j,L)
      end do
      end do
      end do
-   else 
-     do L=1,lm_in
+   else if( allocated(rBuf_E) ) then
+     do L=1,Lm_in
      do j=1-nby,jmax+nby
-     do i=1,nbx  
+     do i=1,nbx
        W(:,imax-nbx+i,j,L)= W(:,imax-nbx+i,j,L)+rBuf_E(:,i,j,L)
      end do
      end do
      end do
-   endif
+   end if
 
 !
-! SEND halos toward SOUTH and NORTH
+! Assign received values from SOUTH and NORTH
 !
-
-! --- toward SOUTH ---
-
-      if( itarg_s >= 0 ) then
-        nebpe = itarg_s
-
-              allocate( sBuf_S(1:km_in,1:imax,1:nby,1:Lm_in), stat = iaerr )
-
-              do L=Lm_in,1,-1
-              do j=1-nby,0
-              do i=1,imax
-                sBuf_S(:,i,j+nby,L) = W(:,i,j,L)
-              enddo
-              enddo
-              enddo
-
-              call MPI_ISEND( sBuf_S, ndatay, dtype, nebpe, mype,  &
-                              mpi_comm_work, sHandle(3), isend)
-      end if
-
-! --- toward NORTH ---
-
-      if( itarg_n >= 0 ) then
-        nebpe = itarg_n
-
-             allocate( sBuf_N(1:km_in,1:imax,1:nby,1:Lm_in), stat = iaerr )
-
-              do L=Lm_in,1,-1
-              do j=1,nby
-              do i=1,imax
-                sBuf_N(:,i,j,L)=W(:,i,jmax+j,L)
-              enddo
-              enddo
-              enddo
-
-             call MPI_ISEND( sBuf_N, ndatay, dtype, nebpe, mype,        &
-                             mpi_comm_work, sHandle(1), isend)
-
-      end if
-
-!
-! RECEIVE halos from NORTH and SOUTH
-!
-!
-! --- from NORTH ---
-
-      if( itarg_n >= 0 ) then
-        nebpe = itarg_n
-
-
-          allocate( rBuf_N(1:km_in,1:imax,1:nby,1:Lm_in), stat = iaerr )
-          call MPI_IRECV( rBuf_N, ndatay, dtype, nebpe, nebpe,          &
-                      mpi_comm_work, rHandle(1), irecv)
-          call MPI_WAIT( rHandle(1), istat, ierr )
-
-      end if
-
-! --- from SOUTH ---
-
-      if( itarg_s >= 0 ) then
-        nebpe = itarg_s
-
-
-          allocate( rBuf_S(1:km_in,1:imax,1:nby,1:Lm_in), stat = iaerr )
-          call MPI_IRECV( rBuf_S, ndatay, dtype, nebpe, nebpe,          &
-                       mpi_comm_work, rHandle(3), irecv)
-          call MPI_WAIT( rHandle(3), istat, ierr )
-
-
-      end if
-
-
-!-----------------------------------------------------------------------
-!
-! Assign received halos from SOUTH and NORTH
-!
-
    if(lsouth) then
-     do L=1,lm_in
+     do L=1,Lm_in
      do j=1,nby
      do i=1,imax
        W(:,i,j,L)= W(:,i,j,L)+W(:,i,1-j,L)
      end do
      end do
      end do
-   else
-     do L=1,lm_in
+   else if( allocated(rBuf_S) ) then
+     do L=1,Lm_in
      do j=1,nby
      do i=1,imax
        W(:,i,j,L)= W(:,i,j,L)+rBuf_S(:,i,j,L)
      end do
      end do
      end do
-   endif
-
-!  From north
+   end if
 
    if(lnorth) then
-     do L=1,lm_in
+     do L=1,Lm_in
      do j=1,nby
      do i=1,imax
        W(:,i,jmax-nby+j,L)= W(:,i,jmax-nby+j,L)+W(:,i,jmax+1+nby-j,L)
-     enddo
-     enddo
-     enddo
-   else
-     do L=1,lm_in
+     end do
+     end do
+     end do
+   else if( allocated(rBuf_N) ) then
+     do L=1,Lm_in
      do j=1,nby
      do i=1,imax
        W(:,i,jmax-nby+j,L)= W(:,i,jmax-nby+j,L)+rBuf_N(:,i,j,L)
-     enddo
-     enddo
-     enddo
-   endif
+     end do
+     end do
+     end do
+   end if
 
-
-!
-! Set up mirror b.c. at the bottom and top of domain 
-!
-        do L=1,nbz
-          W(:,:,:,1+L )=W(:,:,:, 1+L)+W(:,:,:, 1-L)
-          W(:,:,:,LM-L)=W(:,:,:,LM-L)+W(:,:,:,LM+L)
-        end do
-
-
-!-----------------------------------------------------------------------
-!
-!                           DEALLOCATE sBufferes
-!
-
-      if( itarg_w >= 0 ) then
-         call MPI_WAIT( sHandle(4), istat, ierr )
-         deallocate( sBuf_W, stat = ierr )
-      end if
-      if( itarg_e >= 0 ) then
-         call MPI_WAIT( sHandle(2), istat, ierr )
-         deallocate( sBuf_E, stat = ierr )
-      end if
-      if( itarg_s >= 0 ) then
-         call MPI_WAIT( sHandle(3), istat, ierr )
-         deallocate( sBuf_S, stat = ierr )
-      end if
-      if( itarg_n >= 0 ) then
-         call MPI_WAIT( sHandle(1), istat, ierr )
-         deallocate( sBuf_N, stat = ierr )
-      end if
 !
 !                           DEALLOCATE rBufferes
 !
-
-      if( itarg_w >= 0 ) then
-        deallocate( rBuf_W, stat = iderr)
-      endif
-      if( itarg_e >= 0 ) then
-        deallocate( rBuf_E, stat = iderr)
-      endif
-      if( itarg_s >= 0 ) then
-        deallocate( rBuf_S, stat = iderr)
-      endif
-      if( itarg_n >= 0 ) then
-        deallocate( rBuf_N, stat = iderr)
-      endif
-
+      if( allocated(rBuf_W) ) deallocate( rBuf_W, stat = ierr)
+      if( allocated(rBuf_E) ) deallocate( rBuf_E, stat = ierr)
+      if( allocated(rBuf_S) ) deallocate( rBuf_S, stat = ierr)
+      if( allocated(rBuf_N) ) deallocate( rBuf_N, stat = ierr)
 
 !fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 
@@ -2389,23 +1728,20 @@ integer(i_kind), intent(in):: km_in
 real(r_kind), dimension(km_in,1:this%imL,1:this%jmL),intent(in):: Harray
 real(r_kind), dimension(km_in,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(out):: Warray
 !-----------------------------------------------------------------------
-real(r_kind), allocatable, dimension(:,:,:)::                            &
-                                         sBuf_SW,sBuf_SE,sBuf_NW,sBuf_NE &
-                                        ,rBuf_SW,rBuf_SE,rBuf_NW,rBuf_NE              
-
 real(r_kind),dimension(1:km_in,1:this%imL,1:this%jmL):: dBuf_SW
 real(r_kind),dimension(1:km_in,1:this%imL,1:this%jmL):: dBuf_SE
 real(r_kind),dimension(1:km_in,1:this%imL,1:this%jmL):: dBuf_NW
 real(r_kind),dimension(1:km_in,1:this%imL,1:this%jmL):: dBuf_NE
 
-integer(i_kind) sHandle(4),rHandle(4),ISTAT(MPI_STATUS_SIZE)
-integer(i_kind) iaerr,ierr,iderr,ndata,i,j
-integer(i_kind) isend,irecv,nebpe
+integer(i_kind) sHandle(4),rHandle(4)
+integer(i_kind) ierr,ndata,i,j
+integer(i_kind) nebpe
 
 integer(i_kind):: mygen_dn,mygen_up
-logical:: lsendup_sw,lsendup_se,lsendup_nw,lsendup_ne,flag_up
+logical:: lsendup_sw,lsendup_se,lsendup_nw,lsendup_ne
 integer(i_kind):: itarg_up
 integer:: g_ind
+integer(i_kind), parameter :: DIR_SW=1, DIR_SE=2, DIR_NW=3, DIR_NE=4
 include "type_parameter_locpointer.inc"
 include "type_intstat_locpointer.inc"
 include "type_parameter_point2this.inc"
@@ -2424,9 +1760,7 @@ include "type_intstat_point2this.inc"
        lsendup_nw=Flsendup_nw(g_ind)
        lsendup_ne=Flsendup_ne(g_ind)
 
-
-       itarg_up=Fitarg_up(g_ind)                                          
-
+       itarg_up=Fitarg_up(g_ind)
 
 !-----------------------------------------------------------------------
 
@@ -2436,234 +1770,152 @@ include "type_intstat_point2this.inc"
 
      ndata =km_in*imL*jmL
 
+     sHandle(:) = MPI_REQUEST_NULL
+     rHandle(:) = MPI_REQUEST_NULL
+
 !
 ! --- Send data to SW portion of processors at higher generation
 !
-
-      if(  lsendup_sw ) then
-
+      if( lsendup_sw ) then
         nebpe = itarg_up
-    
         if(nebpe == mype) then
-           
              do j=1,jmL
              do i=1,imL
                 dBuf_SW(:,i,j) = Harray(:,i,j)
              enddo
              enddo
-
         else
-
-        allocate( sBuf_SW(1:km_in,1:imL,1:jmL), stat = iaerr )
-
-             do j=1,jmL
-             do i=1,imL
-                sBuf_SW(:,i,j) = Harray(:,i,j)
-             enddo
-             enddo
-
-        call MPI_ISEND( sBuf_SW, ndata, dtype, nebpe, mype,  &
-                       mpi_comm_comp, sHandle(1), isend)
-        call MPI_WAIT( sHandle(1), istat, ierr )
-
-        deallocate( sBuf_SW, stat = ierr )
-
+        call MPI_ISEND( Harray, ndata, dtype, nebpe, mype,  &
+                       mpi_comm_comp, sHandle(DIR_SW), ierr)
         endif
-
-      endif
+      end if
 !
 ! --- Receive SW portion of data at higher generation
 !
-
       if( my_hgen==mygen_up .and. itargdn_sw >= 0 ) then
-
         nebpe = itargdn_sw
-
         if(nebpe /= mype) then
           call MPI_IRECV( dBuf_SW, ndata, dtype, nebpe, nebpe,          &
-                          mpi_comm_comp, rHandle(1), irecv)
-          call MPI_WAIT( rHandle(1), istat, ierr )
+                          mpi_comm_comp, rHandle(DIR_SW), ierr)
         endif
-
-             do j=1,jmL
-             do i=1,imL
-                Warray(:,i,j)=dBuf_SW(:,i,j)
-             enddo
-             enddo
-
-      endif
-
+      end if
 !
 ! --- Send data to SE portion of processors at higher generation
 !
-
       if( lsendup_se ) then
         nebpe = itarg_up
-
         if(nebpe == mype) then
-
              do j=1,jmL
              do i=1,imL
-                dBuf_SE(:,i,j) = Harray(:,i,j)
+               dBuf_SE(:,i,j) = Harray(:,i,j)
              enddo
              enddo
-
         else
-
-        allocate( sBuf_SE(1:km_in,1:imL,1:jmL), stat = iaerr )
-
-             do j=1,jmL
-             do i=1,imL
-               sBuf_SE(:,i,j) = Harray(:,i,j)
-             enddo
-             enddo
-
-        call MPI_ISEND( sBuf_SE, ndata, dtype, nebpe, mype, &
-                       mpi_comm_comp, sHandle(2), isend)
-        call MPI_WAIT( sHandle(2), istat, ierr )
-
-        deallocate( sBuf_SE, stat = ierr )
-
+        call MPI_ISEND( Harray, ndata, dtype, nebpe, mype, &
+                       mpi_comm_comp, sHandle(DIR_SE), ierr)
         endif
-
       end if
-
 !
 ! --- Receive SE portion of data at higher generation
 !
-
       if( my_hgen==mygen_up .and. itargdn_se >= 0 ) then
-
         nebpe = itargdn_se
-
         if(nebpe /= mype) then
-
           call MPI_IRECV( dBuf_SE, ndata, dtype, nebpe, nebpe,          &
-                          mpi_comm_comp, rHandle(2), irecv)
-          call MPI_WAIT( rHandle(2), istat, ierr )
-
+                          mpi_comm_comp, rHandle(DIR_SE), ierr)
         endif
-             do j=1,jmL
-             do i=1,imL
-               Warray(:,imL+i,j)=dBuf_SE(:,i,j)
-             enddo
-             enddo
-
-      endif
+      end if
 !
 ! --- Send data to NW portion of processors at higher generation
 !
-
       if( lsendup_nw ) then
         nebpe = itarg_up
-
         if(nebpe == mype) then
-
              do j=1,jmL
              do i=1,imL
                dBuf_NW(:,i,j) = Harray(:,i,j)
              enddo
              enddo
-
         else
-
-        allocate( sBuf_NW(1:km_in,1:imL,1:jmL), stat = iaerr )
-
-             do j=1,jmL
-             do i=1,imL
-               sBuf_NW(:,i,j) = Harray(:,i,j)
-             enddo
-             enddo
-
-         call MPI_ISEND( sBuf_NW, ndata, dtype, nebpe, mype,  &
-                        mpi_comm_comp, sHandle(3), isend)
-
-         call MPI_WAIT( sHandle(3), istat, ierr )
-
-         deallocate( sBuf_NW, stat = ierr )
-
+         call MPI_ISEND( Harray, ndata, dtype, nebpe, mype,  &
+                        mpi_comm_comp, sHandle(DIR_NW), ierr)
+        end if
       end if
-
-    end if
-
 !
 ! --- Receive NW portion of data at higher generation
 !
-
       if( my_hgen==mygen_up .and. itargdn_nw >= 0 ) then
-
         nebpe = itargdn_nw
- 
         if(nebpe /= mype) then
           call MPI_IRECV( dBuf_NW, ndata, dtype, nebpe, nebpe,          &
-                          mpi_comm_comp, rHandle(3), irecv)
-          call MPI_WAIT( rHandle(3), istat, ierr )
+                          mpi_comm_comp, rHandle(DIR_NW), ierr)
         endif
-
-             do j=1,jmL
-             do i=1,imL
-               Warray(:,i,jmL+j)=dBuf_NW(:,i,j)
-             enddo
-             enddo
-
-      endif
+      end if
 !
 ! --- Send data to NE portion of processors at higher generation
 !
-
       if( lsendup_ne ) then
         nebpe = itarg_up
-
         if(nebpe == mype) then
-
              do j=1,jmL
              do i=1,imL
                dBuf_NE(:,i,j) = Harray(:,i,j)
              enddo
              enddo
-
         else
-
-        allocate( sBuf_NE(1:km_in,1:imL,1:jmL), stat = iaerr )
-
-             do j=1,jmL
-             do i=1,imL
-               sBuf_NE(:,i,j) = Harray(:,i,j)
-             enddo
-             enddo
-
-        call MPI_ISEND( sBuf_NE, ndata, dtype, nebpe, mype, &
-                      mpi_comm_comp, sHandle(4), isend)
-        call MPI_WAIT( sHandle(4), istat, ierr )
-
-         deallocate( sBuf_NE, stat = ierr )
-
+        call MPI_ISEND( Harray, ndata, dtype, nebpe, mype, &
+                      mpi_comm_comp, sHandle(DIR_NE), ierr)
         endif
-
       end if
-
 !
 ! --- Receive NE portion of data at higher generation
 !
-
       if( my_hgen==mygen_up .and. itargdn_ne >= 0 ) then
-
         nebpe = itargdn_ne
-
         if(nebpe /= mype) then
           call MPI_IRECV( dBuf_NE, ndata, dtype, nebpe, nebpe,          &
-                         mpi_comm_comp, rHandle(4), irecv)
-          call MPI_WAIT( rHandle(4), istat, ierr )
+                         mpi_comm_comp, rHandle(DIR_NE), ierr)
         endif
+      end if
 
+      if( any(rHandle /= MPI_REQUEST_NULL) ) then
+        call MPI_WAITALL(4, rHandle, MPI_STATUSES_IGNORE, ierr)
+      end if
+      if( any(sHandle /= MPI_REQUEST_NULL) ) then
+        call MPI_WAITALL(4, sHandle, MPI_STATUSES_IGNORE, ierr)
+      end if
+
+      if( my_hgen==mygen_up .and. itargdn_sw >= 0 ) then
+             do j=1,jmL
+             do i=1,imL
+                Warray(:,i,j)=dBuf_SW(:,i,j)
+             enddo
+             enddo
+      end if
+
+      if( my_hgen==mygen_up .and. itargdn_se >= 0 ) then
+             do j=1,jmL
+             do i=1,imL
+               Warray(:,imL+i,j)=dBuf_SE(:,i,j)
+             enddo
+             enddo
+      end if
+
+      if( my_hgen==mygen_up .and. itargdn_nw >= 0 ) then
+             do j=1,jmL
+             do i=1,imL
+               Warray(:,i,jmL+j)=dBuf_NW(:,i,j)
+             enddo
+             enddo
+      end if
+
+      if( my_hgen==mygen_up .and. itargdn_ne >= 0 ) then
              do j=1,jmL
              do i=1,imL
                Warray(:,imL+i,jmL+j)=dBuf_NE(:,i,j)
              enddo
              enddo
-
-      endif
-
+      end if
 
 !-----------------------------------------------------------------------
 endsubroutine upsend_all_g1
@@ -2691,22 +1943,19 @@ real(r_kind), dimension(km_in,1:this%imL,1:this%jmL),intent(in):: Harray
 real(r_kind), dimension(km_in,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(out):: Warray
 integer(i_kind),intent(in):: mygen_dn,mygen_up
 !-----------------------------------------------------------------------
-real(r_kind), allocatable, dimension(:,:,:)::                            &
-                                         sBuf_SW,sBuf_SE,sBuf_NW,sBuf_NE &
-                                        ,rBuf_SW,rBuf_SE,rBuf_NW,rBuf_NE              
-
 real(r_kind),dimension(1:km_in,1:this%imL,1:this%jmL):: dBuf_SW
 real(r_kind),dimension(1:km_in,1:this%imL,1:this%jmL):: dBuf_SE
 real(r_kind),dimension(1:km_in,1:this%imL,1:this%jmL):: dBuf_NW
 real(r_kind),dimension(1:km_in,1:this%imL,1:this%jmL):: dBuf_NE
 
-integer(i_kind) sHandle(4),rHandle(4),ISTAT(MPI_STATUS_SIZE)
-integer(i_kind) iaerr,ierr,iderr,ndata,i,j,L
-integer(i_kind) isend,irecv,nebpe
+integer(i_kind) sHandle(4),rHandle(4)
+integer(i_kind) ierr,ndata,i,j
+integer(i_kind) nebpe
 
-logical:: lsendup_sw,lsendup_se,lsendup_nw,lsendup_ne,flag_up
+logical:: lsendup_sw,lsendup_se,lsendup_nw,lsendup_ne
 integer(i_kind):: itarg_up
 integer:: g_ind
+integer(i_kind), parameter :: DIR_SW=1, DIR_SE=2, DIR_NW=3, DIR_NE=4
 include "type_parameter_locpointer.inc"
 include "type_intstat_locpointer.inc"
 include "type_parameter_point2this.inc"
@@ -2730,199 +1979,99 @@ include "type_intstat_point2this.inc"
 !-----------------------------------------------------------------------
 
    if(my_hgen==mygen_up) then
-      Warray(:,:,:)=0.0d0
+      Warray(:,:,:) = 0.0d0
    endif
 
      ndata =km_in*imL*jmL
 
+     sHandle(:) = MPI_REQUEST_NULL
+     rHandle(:) = MPI_REQUEST_NULL
+
       if(  lsendup_sw ) then
-
         nebpe = itarg_up
-    
-
-        allocate( sBuf_SW(1:km_in,1:imL,1:jmL), stat = iaerr )
-
-             do j=1,jmL
-             do i=1,imL
-                sBuf_SW(:,i,j) = Harray(:,i,j)
-             enddo
-             enddo
-
-        call MPI_ISEND( sBuf_SW, ndata, dtype, nebpe, mype,  &
-                       mpi_comm_work, sHandle(1), isend)
-        call MPI_WAIT( sHandle(1), istat, ierr )
-
-        deallocate( sBuf_SW, stat = ierr )
-
-
+        call MPI_ISEND( Harray, ndata, dtype, nebpe, mype,  &
+                       mpi_comm_work, sHandle(DIR_SW), ierr)
       end if
 
-!
-! --- Receive SW portion of data at higher generation
-!
-
       if( my_hgen==mygen_up .and. itargdn_sw >= 0 ) then
-
         nebpe = itargdn_sw
-
-        allocate( rBuf_SW(1:km_in,1:imL,1:jmL), stat = iaerr )
-
-        call MPI_IRECV( rBuf_SW, ndata, dtype, nebpe, nebpe, &
-                       mpi_comm_work, rHandle(1), irecv)
-        call MPI_WAIT( rHandle(1), istat, ierr )
-
-             do j=1,jmL
-             do i=1,imL
-               Warray(:,i,j)=Rbuf_SW(:,i,j)
-             enddo
-             enddo
-
+        call MPI_IRECV( dBuf_SW, ndata, dtype, nebpe, nebpe, &
+                       mpi_comm_work, rHandle(DIR_SW), ierr)
       endif
-
-!
-! --- Send data to SE portion of processors at higher generation
-!
 
       if( lsendup_se ) then
         nebpe = itarg_up
-
-
-        allocate( sBuf_SE(1:km_in,1:imL,1:jmL), stat = iaerr )
-
-             do j=1,jmL
-             do i=1,imL
-               sBuf_SE(:,i,j) = Harray(:,i,j)
-             enddo
-             enddo
-
-        call MPI_ISEND( sBuf_SE, ndata, dtype, nebpe, mype, &
-                       mpi_comm_work, sHandle(2), isend)
-
-        call MPI_WAIT( sHandle(2), istat, ierr )
-
-        deallocate( sBuf_SE, stat = ierr )
-
+        call MPI_ISEND( Harray, ndata, dtype, nebpe, mype, &
+                       mpi_comm_work, sHandle(DIR_SE), ierr)
       end if
-
-!
-! --- Receive SE portion of data at higher generation
-
 
       if( my_hgen==mygen_up .and. itargdn_se >= 0 ) then
         nebpe = itargdn_se
-
-
-        allocate( rBuf_SE(1:km_in,1:imL,1:jmL), stat = iaerr )
-
-        call MPI_IRECV( rBuf_SE, ndata, dtype, nebpe, nebpe,  &
-                       mpi_comm_work, rHandle(2), irecv)
-        call MPI_WAIT( rHandle(2), istat, ierr )
-
-             do j=1,jmL
-             do i=1,imL
-               Warray(:,imL+i,j)=Rbuf_SE(:,i,j)
-             enddo
-             enddo
-
+        call MPI_IRECV( dBuf_SE, ndata, dtype, nebpe, nebpe,  &
+                       mpi_comm_work, rHandle(DIR_SE), ierr)
       endif
-
-
-!
-! --- Send data to NW portion of processors at higher generation
-!
 
       if( lsendup_nw ) then
         nebpe = itarg_up
-
-        allocate( sBuf_NW(1:km_in,1:imL,1:jmL), stat = iaerr )
-
-             do j=1,jmL
-             do i=1,imL
-               sBuf_NW(:,i,j) = Harray(:,i,j)
-             enddo
-             enddo
-
-         call MPI_ISEND( sBuf_NW, ndata, dtype, nebpe, mype,  &
-                        mpi_comm_work, sHandle(3), isend)
-
-         call MPI_WAIT( sHandle(3), istat, ierr )
-
-         deallocate( sBuf_NW, stat = ierr )
-
-
-    end if
-
-!
-! --- Receive NW portion of data at higher generation
-!
+         call MPI_ISEND( Harray, ndata, dtype, nebpe, mype,  &
+                        mpi_comm_work, sHandle(DIR_NW), ierr)
+      end if
 
       if( my_hgen==mygen_up .and. itargdn_nw >= 0 ) then
         nebpe = itargdn_nw
- 
-
-        allocate( rBuf_NW(1:km_in,1:imL,1:jmL), stat = iaerr )
-
-        call MPI_IRECV( rBuf_NW, ndata, dtype, nebpe, nebpe,  &
-                       mpi_comm_work, rHandle(3), irecv)
-
-        call MPI_WAIT( rHandle(3), istat, ierr )
-
-             do j=1,jmL
-             do i=1,imL
-               Warray(:,i,jmL+j)=rBuf_NW(:,i,j)
-             enddo
-             enddo
-
-        deallocate( rBuf_NW, stat = iderr)
-
+        call MPI_IRECV( dBuf_NW, ndata, dtype, nebpe, nebpe,  &
+                       mpi_comm_work, rHandle(DIR_NW), ierr)
       end if
-
-!
-! --- Send data to NE portion of processors at higher generation
-!
 
       if( lsendup_ne ) then
         nebpe = itarg_up
-
-        allocate( sBuf_NE(1:km_in,1:imL,1:jmL), stat = iaerr )
-
-             do j=1,jmL
-             do i=1,imL
-               sBuf_NE(:,i,j) = Harray(:,i,j)
-             enddo
-             enddo
-
-        call MPI_ISEND( sBuf_NE, ndata, dtype, nebpe, mype, &
-                       mpi_comm_work, sHandle(4), isend)
-
-         call MPI_WAIT( sHandle(4), istat, ierr )
-
-         deallocate( sBuf_NE, stat = ierr )
-
+        call MPI_ISEND( Harray, ndata, dtype, nebpe, mype, &
+                       mpi_comm_work, sHandle(DIR_NE), ierr)
       end if
-
-!
-! --- Receive NE portion of data at higher generation
-!
 
       if( my_hgen==mygen_up .and. itargdn_ne >= 0 ) then
         nebpe = itargdn_ne
+        call MPI_IRECV( dBuf_NE, ndata, dtype, nebpe, nebpe,  &
+                       mpi_comm_work, rHandle(DIR_NE), ierr)
+      endif
 
-        allocate( rBuf_NE(1:km_in,1:imL,1:jmL), stat = iaerr )
+      if( any(rHandle /= MPI_REQUEST_NULL) ) then
+        call MPI_WAITALL(4, rHandle, MPI_STATUSES_IGNORE, ierr)
+      end if
+      if( any(sHandle /= MPI_REQUEST_NULL) ) then
+        call MPI_WAITALL(4, sHandle, MPI_STATUSES_IGNORE, ierr)
+      end if
 
-        call MPI_IRECV( rBuf_NE, ndata, dtype, nebpe, nebpe,  &
-                       mpi_comm_work, rHandle(4), irecv)
-
-        call MPI_WAIT( rHandle(4), istat, ierr )
-
+      if( my_hgen==mygen_up .and. itargdn_sw >= 0 ) then
              do j=1,jmL
              do i=1,imL
-               Warray(:,imL+i,jmL+j)=rBuf_NE(:,i,j)
+               Warray(:,i,j)=dBuf_SW(:,i,j)
              enddo
              enddo
+      endif
 
-          deallocate( rBuf_NE, stat = iderr)
+      if( my_hgen==mygen_up .and. itargdn_se >= 0 ) then
+             do j=1,jmL
+             do i=1,imL
+               Warray(:,imL+i,j)=dBuf_SE(:,i,j)
+             enddo
+             enddo
+      endif
 
+      if( my_hgen==mygen_up .and. itargdn_nw >= 0 ) then
+             do j=1,jmL
+             do i=1,imL
+               Warray(:,i,jmL+j)=dBuf_NW(:,i,j)
+             enddo
+             enddo
+      end if
+
+      if( my_hgen==mygen_up .and. itargdn_ne >= 0 ) then
+             do j=1,jmL
+             do i=1,imL
+               Warray(:,imL+i,jmL+j)=dBuf_NE(:,i,j)
+             enddo
+             enddo
       endif
 
 !-----------------------------------------------------------------------
@@ -2950,22 +2099,19 @@ real(r_kind), dimension(km_in,1:this%im,1:this%jm),intent(in):: Warray
 real(r_kind), dimension(km_in,1:this%imL,1:this%jmL),intent(out):: Harray
 integer, intent(in):: mygen_up,mygen_dn
 !-----------------------------------------------------------------------
-real(r_kind), allocatable, dimension(:,:,:)::                            &
-                            sBuf_SW,sBuf_SE,sBuf_NW,sBuf_NE              &
-                           ,rBuf_SW,rBuf_SE,rBuf_NW,rBuf_NE              
-
 real(r_kind),dimension(1:km_in,1:this%imL,1:this%jmL):: dBuf_SW
 real(r_kind),dimension(1:km_in,1:this%imL,1:this%jmL):: dBuf_SE
 real(r_kind),dimension(1:km_in,1:this%imL,1:this%jmL):: dBuf_NW
 real(r_kind),dimension(1:km_in,1:this%imL,1:this%jmL):: dBuf_NE
 
-integer(i_kind) sHandle(4),rHandle(4),ISTAT(MPI_STATUS_SIZE)
-integer(i_kind) iaerr,ierr,iderr,ndata,i,j,L
-integer(i_kind) isend,irecv,nebpe
+integer(i_kind) sHandle(4),rHandle(4)
+integer(i_kind) ierr,ndata,i,j
+integer(i_kind) nebpe
 
 logical:: lsendup_sw,lsendup_se,lsendup_nw,lsendup_ne  
 integer(i_kind):: itarg_up                                           
 integer(i_kind):: g_ind
+integer(i_kind), parameter :: DIR_SW=1, DIR_SE=2, DIR_NW=3, DIR_NE=4
 include "type_parameter_locpointer.inc"
 include "type_intstat_locpointer.inc"
 include "type_parameter_point2this.inc"
@@ -2987,194 +2133,132 @@ include "type_intstat_point2this.inc"
 
        ndata =km_in*imL*jmL
 
-!
-! --- Send data from SW portion of processors at the higher generation
-!     to corresponding  PE's at lower generation
+      dBuf_SW = 0.0d0
+      dBuf_SE = 0.0d0
+      dBuf_NW = 0.0d0
+      dBuf_NE = 0.0d0
 
- 
+      sHandle(:) = MPI_REQUEST_NULL
+      rHandle(:) = MPI_REQUEST_NULL
+
   if(my_hgen==mygen_up .and. itargdn_sw >= 0 ) then
         nebpe = itargdn_sw
-
-
-        allocate( sBuf_SW(1:km_in,1:imL,1:jmL), stat = iaerr )
-
+        if(nebpe == mype) then
              do j=1,jmL
              do i=1,imL
-                sBuf_SW(:,i,j) = Warray(:,i,j)
+                dBuf_SW(:,i,j) = Warray(:,i,j)
              enddo
              enddo
-
-        call MPI_ISEND( sBuf_SW, ndata, dtype, nebpe, mype,  &
-                        mpi_comm_work, sHandle(1), isend)
-        call MPI_WAIT( sHandle(1), istat, ierr )
-        deallocate( sBuf_SW, stat = ierr )
-
-
+        else
+        call MPI_ISEND( Warray(1,1,1), ndata, dtype, nebpe, mype,  &
+                        mpi_comm_work, sHandle(DIR_SW), ierr )
+        end if
   endif
-!
-! --- Receive SW portion of data at lower generation
-
-
-      if( lsendup_sw ) then
-
-        nebpe = itarg_up
-
-
-        allocate( rBuf_SW(1:km_in,1:imL,1:jmL), stat = iaerr )
-
-        call MPI_IRECV( rBuf_SW, ndata, dtype, nebpe, nebpe, &
-                        mpi_comm_work, rHandle(1), irecv)
-        call MPI_WAIT( rHandle(1), istat, ierr )
-
-             do j=1,jmL
-             do i=1,imL
-               Harray(:,i,j)=rBuf_SW(:,i,j)  
-             enddo
-             enddo
-
-        deallocate( rBuf_SW, stat = iderr)
-
-      endif
-
-!
-! --- Send data from SE portion of processors at the higher generation
-!     to corresponding  PE's at lower generation
 
   if(my_hgen==mygen_up .and.  itargdn_se >= 0 ) then
         nebpe = itargdn_se
-
-        allocate( sBuf_SE(1:km_in,1:imL,1:jmL), stat = iaerr )
-
+        if(nebpe == mype) then
              do j=1,jmL
              do i=1,imL
-               sBuf_SE(:,i,j) = Warray(:,imL+i,j)
+               dBuf_SE(:,i,j) = Warray(:,imL+i,j)
              enddo
              enddo
-
-        call MPI_ISEND( sBuf_SE, ndata, dtype, nebpe, mype,  &
-                       mpi_comm_work, sHandle(2), isend)
-        call MPI_WAIT( sHandle(2), istat, ierr )
-        deallocate( sBuf_SE, stat = ierr )
-
-
+        else
+        call MPI_ISEND( Warray(1,imL+1,1), ndata, dtype, nebpe, mype,  &
+                       mpi_comm_work, sHandle(DIR_SE), ierr )
+        end if
   endif
-!
-! --- Receive SE portion of data at lower generation
-
- 
-      if( lsendup_se ) then
-        nebpe = itarg_up
-
-
-        allocate( rBuf_SE(1:km_in,1:imL,1:jmL), stat = iaerr )
-
-        call MPI_IRECV( rBuf_SE, ndata, dtype, nebpe, nebpe, &
-                        mpi_comm_work, rHandle(2), irecv)
-        call MPI_WAIT( rHandle(2), istat, ierr )
-
-             do j=1,jmL
-             do i=1,imL
-               Harray(:,i,j)=Rbuf_SE(:,i,j)
-             enddo
-             enddo
-
-       deallocate( rBuf_SE, stat = iderr)
-  
-     end if
-
-!
-! --- Send data from NW portion of processors at the higher generation
-!     to corresponding  PE's at lower generantion
 
   if(my_hgen==mygen_up .and. itargdn_nw >= 0 ) then
         nebpe = itargdn_nw
-
-
-        allocate( sBuf_NW(1:km_in,1:imL,1:jmL), stat = iaerr )
-
+        if(nebpe == mype) then
              do j=1,jmL
              do i=1,imL
-                sBuf_NW(:,i,j) = Warray(:,i,jmL+j)
+                dBuf_NW(:,i,j) = Warray(:,i,jmL+j)
              enddo
              enddo
-
-        call MPI_ISEND( sBuf_NW, ndata, dtype, nebpe, mype,  &
-                        mpi_comm_work, sHandle(3), isend)
-        call MPI_WAIT( sHandle(3), istat, ierr )
-        deallocate( sBuf_NW, stat = ierr )
-
-
+        else
+        call MPI_ISEND( Warray(1,1,jmL+1), ndata, dtype, nebpe, mype,  &
+                        mpi_comm_work, sHandle(DIR_NW), ierr )
+        end if
   endif
-!
-! --- Receive NW portion of data at lower generation
-
-
-      if( lsendup_nw ) then
-
-        nebpe = itarg_up
-
-        allocate( rBuf_NW(1:km_in,1:imL,1:jmL), stat = iaerr )
-
-        call MPI_IRECV( rBuf_NW, ndata, dtype, nebpe, nebpe, &
-                       mpi_comm_work, rHandle(3), irecv)
-        call MPI_WAIT( rHandle(3), istat, ierr )
-
-             do j=1,jmL
-             do i=1,imL
-               Harray(:,i,j)=Rbuf_NW(:,i,j)
-             enddo
-             enddo
-
-        deallocate( rBuf_NW, stat = iderr)
-
-
-      end if
-
-
-! --- Send data from NE portion of processors at the higher generation
-!     to corresponding  PE's at lower generation
 
   if(my_hgen==mygen_up .and. itargdn_ne >= 0 ) then
         nebpe = itargdn_ne
-
-
-        allocate( sBuf_NE(1:km_in,1:imL,1:jmL), stat = iaerr )
-
+        if(nebpe == mype) then
              do j=1,jmL
              do i=1,imL
-                sBuf_NE(:,i,j) = Warray(:,imL+i,jmL+j)
+                dBuf_NE(:,i,j) = Warray(:,imL+i,jmL+j)
              enddo
              enddo
-
-        call MPI_ISEND( sBuf_NE, ndata, dtype, nebpe, mype,  &
-                        mpi_comm_work, sHandle(4), isend)
-        call MPI_WAIT( sHandle(4), istat, ierr )
-        deallocate( sBuf_NE, stat = ierr )
-
-
+        else
+        call MPI_ISEND( Warray(1,imL+1,jmL+1), ndata, dtype, nebpe, mype,  &
+                        mpi_comm_work, sHandle(DIR_NE), ierr )
+        end if
   endif
-!
-! --- Receive NE portion of data at lower generation
-!
 
-      if( lsendup_ne ) then
+  if( lsendup_sw ) then
         nebpe = itarg_up
+        call MPI_IRECV( dBuf_SW, ndata, dtype, nebpe, nebpe, &
+                        mpi_comm_work, rHandle(DIR_SW), ierr)
+  endif
 
-        allocate( rBuf_NE(1:km_in,1:imL,1:jmL), stat = iaerr )
+  if( lsendup_se ) then
+        nebpe = itarg_up
+        call MPI_IRECV( dBuf_SE, ndata, dtype, nebpe, nebpe, &
+                        mpi_comm_work, rHandle(DIR_SE), ierr)
+  end if
 
-        call MPI_IRECV( rBuf_NE, ndata, dtype, nebpe, nebpe, &
-                        mpi_comm_work, rHandle(4), irecv)
-        call MPI_WAIT( rHandle(4), istat, ierr )
+  if( lsendup_nw ) then
+        nebpe = itarg_up
+        call MPI_IRECV( dBuf_NW, ndata, dtype, nebpe, nebpe, &
+                        mpi_comm_work, rHandle(DIR_NW), ierr)
+  end if
 
+  if( lsendup_ne ) then
+        nebpe = itarg_up
+        call MPI_IRECV( dBuf_NE, ndata, dtype, nebpe, nebpe, &
+                        mpi_comm_work, rHandle(DIR_NE), ierr)
+  end if
+
+  if( any(rHandle /= MPI_REQUEST_NULL) ) then
+        call MPI_WAITALL(4, rHandle, MPI_STATUSES_IGNORE, ierr)
+  end if
+  if( any(sHandle /= MPI_REQUEST_NULL) ) then
+        call MPI_WAITALL(4, sHandle, MPI_STATUSES_IGNORE, ierr)
+  end if
+
+  if( lsendup_sw ) then
              do j=1,jmL
              do i=1,imL
-               Harray(:,i,j)=rBuf_NE(:,i,j)
+               Harray(:,i,j)=dBuf_SW(:,i,j)  
              enddo
              enddo
+  endif
 
-        deallocate( rBuf_NE, stat = iderr)
+  if( lsendup_se ) then
+             do j=1,jmL
+             do i=1,imL
+               Harray(:,i,j)=dBuf_SE(:,i,j)
+             enddo
+             enddo
+  endif
 
-      end if
+  if( lsendup_nw ) then
+             do j=1,jmL
+             do i=1,imL
+               Harray(:,i,j)=dBuf_NW(:,i,j)
+             enddo
+             enddo
+  endif
+
+  if( lsendup_ne ) then
+             do j=1,jmL
+             do i=1,imL
+               Harray(:,i,j)=dBuf_NE(:,i,j)
+             enddo
+             enddo
+  endif
 
 !-----------------------------------------------------------------------
 endsubroutine downsend_all_gh
@@ -3200,22 +2284,20 @@ integer(i_kind), intent(in):: km_in
 real(r_kind), dimension(km_in,1:this%im,1:this%jm),intent(in):: Warray
 real(r_kind), dimension(km_in,1:this%imL,1:this%jmL),intent(out):: Harray
 !-----------------------------------------------------------------------
-real(r_kind), allocatable, dimension(:,:,:)::                            &
-                            sBuf_SW,sBuf_SE,sBuf_NW,sBuf_NE             
-
 real(r_kind),dimension(1:km_in,1:this%imL,1:this%jmL):: dBuf_SW
 real(r_kind),dimension(1:km_in,1:this%imL,1:this%jmL):: dBuf_SE
 real(r_kind),dimension(1:km_in,1:this%imL,1:this%jmL):: dBuf_NW
 real(r_kind),dimension(1:km_in,1:this%imL,1:this%jmL):: dBuf_NE
 
-integer(i_kind) sHandle(4),rHandle(4),ISTAT(MPI_STATUS_SIZE)
-integer(i_kind) iaerr,ierr,iderr,ndata,i,j,L
-integer(i_kind) isend,irecv,nebpe
+integer(i_kind) sHandle(4),rHandle(4)
+integer(i_kind) ierr,ndata,i,j
+integer(i_kind) nebpe
 
 logical:: lsendup_sw,lsendup_se,lsendup_nw,lsendup_ne  
 integer:: mygen_up,mygen_dn
 integer(i_kind):: itarg_up                                           
 integer(i_kind):: g_ind
+integer(i_kind), parameter :: DIR_SW=1, DIR_SE=2, DIR_NW=3, DIR_NE=4
 !-----------------------------------------------------------------------
 include "type_parameter_locpointer.inc"
 include "type_intstat_locpointer.inc"
@@ -3235,240 +2317,147 @@ include "type_intstat_point2this.inc"
 
        itarg_up=Fitarg_up(g_ind)
 
-
       ndata =km_in*imL*jmL
 
+      dBuf_SW = 0.0d0
+      dBuf_SE = 0.0d0
+      dBuf_NW = 0.0d0
+      dBuf_NE = 0.0d0
+
+      sHandle(:) = MPI_REQUEST_NULL
+      rHandle(:) = MPI_REQUEST_NULL
 
 !
 ! Send data down to generation 1
 !
-LSEND:  if(my_hgen==mygen_up) then
-!
-! --- Send data from SW portion of processors at the higher generation
-!     to corresponding  PE's at lower generation
- 
-        nebpe = itargdn_sw
+      if(my_hgen==mygen_up) then
 
-        if(nebpe == mype) then
-
+        if(itargdn_sw >= 0) then
+          nebpe = itargdn_sw
+          if(nebpe == mype) then
              do j=1,jmL
              do i=1,imL
                dBuf_SW(:,i,j) = Warray(:,i,j)
              enddo
              enddo
+          else
+             call MPI_ISEND( Warray(1,1,1), ndata, dtype, nebpe, mype,  &
+                             mpi_comm_comp, sHandle(DIR_SW), ierr )
+          end if
+        end if
 
-        else
-
-        allocate( sBuf_SW(1:km_in,1:imL,1:jmL), stat = iaerr )
-
-             do j=1,jmL
-             do i=1,imL
-                sBuf_SW(:,i,j) = Warray(:,i,j)
-             enddo
-             enddo
-
-        call MPI_ISEND( sBuf_SW, ndata, dtype, nebpe, mype,  &
-                        mpi_comm_comp, sHandle(1), isend)
-        call MPI_WAIT( sHandle(1), istat, ierr )
-        deallocate( sBuf_SW, stat = ierr )
-
-        endif
-!
-! --- Send data from SE portion of processors at the higher generation
-!     to corresponding  PE's at lower generation
-
-        nebpe = itargdn_se
-
-        if(nebpe == mype) then
-
+        if(itargdn_se >= 0) then
+          nebpe = itargdn_se
+          if(nebpe == mype) then
              do j=1,jmL
              do i=1,imL
                dBuf_SE(:,i,j) = Warray(:,imL+i,j)
              enddo
              enddo
+          else
+             call MPI_ISEND( Warray(1,imL+1,1), ndata, dtype, nebpe, mype,  &
+                             mpi_comm_comp, sHandle(DIR_SE), ierr )
+          end if
+        end if
 
-        else
-
-        allocate( sBuf_SE(1:km_in,1:imL,1:jmL), stat = iaerr )
-
+        if(itargdn_nw >= 0) then
+          nebpe = itargdn_nw
+          if(nebpe == mype) then
              do j=1,jmL
              do i=1,imL
-               sBuf_SE(:,i,j) = Warray(:,imL+i,j)
+               dBuf_NW(:,i,j) = Warray(:,i,jmL+j)
              enddo
              enddo
+          else
+             call MPI_ISEND( Warray(1,1,jmL+1), ndata, dtype, nebpe, mype,  &
+                             mpi_comm_comp, sHandle(DIR_NW), ierr )
+          end if
+        end if
 
-        call MPI_ISEND( sBuf_SE, ndata, dtype, nebpe, mype,  &
-                       mpi_comm_comp, sHandle(2), isend)
-        call MPI_WAIT( sHandle(2), istat, ierr )
-        deallocate( sBuf_SE, stat = ierr )
-
-        endif
-
-! --- Send data from NW portion of processors at the higher generation
-!     to corresponding  PE's at lower generantion
-
-        nebpe = itargdn_nw
-
-        if(nebpe == mype) then
-
+        if(itargdn_ne >= 0) then
+          nebpe = itargdn_ne
+          if(nebpe == mype) then
              do j=1,jmL
              do i=1,imL
-                dBuf_NW(:,i,j) = Warray(:,i,jmL+j)
+               dBuf_NE(:,i,j) = Warray(:,imL+i,jmL+j)
              enddo
              enddo
-
-        else
-
-        allocate( sBuf_NW(1:km_in,1:imL,1:jmL), stat = iaerr )
-
-             do j=1,jmL
-             do i=1,imL
-                sBuf_NW(:,i,j) = Warray(:,i,jmL+j)
-             enddo
-             enddo
-
-        call MPI_ISEND( sBuf_NW, ndata, dtype, nebpe, mype,  &
-                        mpi_comm_comp, sHandle(3), isend)
-        call MPI_WAIT( sHandle(3), istat, ierr )
-        deallocate( sBuf_NW, stat = ierr )
-
-        endif
-
-!
-! --- Send data from NE portion of processors at the higher generation
-!     to corresponding  PE's at lower generation
-
-        nebpe = itargdn_ne
-        if(nebpe == mype) then
-
-             do j=1,jmL
-             do i=1,imL
-                dBuf_NE(:,i,j) = Warray(:,imL+i,jmL+j)
-             enddo
-             enddo
-
-        else
-
-        allocate( sBuf_NE(1:km_in,1:imL,1:jmL), stat = iaerr )
-
-             do j=1,jmL
-             do i=1,imL
-                sBuf_NE(:,i,j) = Warray(:,imL+i,jmL+j)
-             enddo
-             enddo
-
-        call MPI_ISEND( sBuf_NE, ndata, dtype, nebpe, mype,  &
-                        mpi_comm_comp, sHandle(4), isend)
-        call MPI_WAIT( sHandle(4), istat, ierr )
-        deallocate( sBuf_NE, stat = ierr )
-
-        endif
-
-
-    endif LSEND   
-
-!
-! --- Receive SW portion of data at lower generation
-!
-
-      if( lsendup_sw .and. mype /= itarg_up ) then
-
-        nebpe = itarg_up
-
-
-        call MPI_IRECV( dBuf_SW, ndata, dtype, nebpe, nebpe, &
-                        mpi_comm_comp, rHandle(1), irecv)
-        call MPI_WAIT( rHandle(1), istat, ierr )
-
-
-      else &
-
-!
-! --- Receive SE portion of data at lower generation
-
- 
-      if( lsendup_se .and. mype /= itarg_up) then
-
-        nebpe = itarg_up
-
-        call MPI_IRECV( dBuf_SE, ndata, dtype, nebpe, nebpe, &
-                        mpi_comm_comp, rHandle(2), irecv)
-        call MPI_WAIT( rHandle(2), istat, ierr )
-
-
-      else &
-
-
-!
-! --- Receive NW portion of data at lower generation
-
-
-      if( lsendup_nw .and. mype /= itarg_up) then
-
-        nebpe = itarg_up
-
-        call MPI_IRECV( dBuf_NW, ndata, dtype, nebpe, nebpe, &
-                       mpi_comm_comp, rHandle(3), irecv)
-        call MPI_WAIT( rHandle(3), istat, ierr )
-
-
-      else &
-
-
-!
-! --- Receive NE portion of data at lower generation
-!
-
-      if( lsendup_ne .and. mype /= itarg_up) then
-        nebpe = itarg_up
-
-        call MPI_IRECV( dBuf_NE, ndata, dtype, nebpe, nebpe, &
-                        mpi_comm_comp, rHandle(4), irecv)
-        call MPI_WAIT( rHandle(4), istat, ierr )
-
+          else
+             call MPI_ISEND( Warray(1,imL+1,jmL+1), ndata, dtype, nebpe, mype,  &
+                             mpi_comm_comp, sHandle(DIR_NE), ierr )
+          end if
+        end if
 
       end if
-   
+
+!
+! Receive data on generation one
+!
+      if( lsendup_sw .and. mype /= itarg_up ) then
+        nebpe = itarg_up
+        call MPI_IRECV( dBuf_SW, ndata, dtype, nebpe, nebpe, &
+                        mpi_comm_comp, rHandle(DIR_SW), ierr )
+      end if
+
+      if( lsendup_se .and. mype /= itarg_up ) then
+        nebpe = itarg_up
+        call MPI_IRECV( dBuf_SE, ndata, dtype, nebpe, nebpe, &
+                        mpi_comm_comp, rHandle(DIR_SE), ierr )
+      end if
+
+      if( lsendup_nw .and. mype /= itarg_up ) then
+        nebpe = itarg_up
+        call MPI_IRECV( dBuf_NW, ndata, dtype, nebpe, nebpe, &
+                        mpi_comm_comp, rHandle(DIR_NW), ierr )
+      end if
+
+      if( lsendup_ne .and. mype /= itarg_up ) then
+        nebpe = itarg_up
+        call MPI_IRECV( dBuf_NE, ndata, dtype, nebpe, nebpe, &
+                        mpi_comm_comp, rHandle(DIR_NE), ierr )
+      end if
+
+      if( any(rHandle /= MPI_REQUEST_NULL) ) then
+        call MPI_WAITALL(4, rHandle, MPI_STATUSES_IGNORE, ierr)
+      end if
+      if( any(sHandle /= MPI_REQUEST_NULL) ) then
+        call MPI_WAITALL(4, sHandle, MPI_STATUSES_IGNORE, ierr)
+      end if
+
 !
 ! Assign received and prescribed values
-!     
+!
       if( lsendup_sw ) then
-
              do j=1,jmL
              do i=1,imL
                Harray(:,i,j)=dBuf_SW(:,i,j)
              enddo
              enddo
+      end if
 
-      else &
       if( lsendup_se ) then
-
              do j=1,jmL
              do i=1,imL
                Harray(:,i,j)=dBuf_SE(:,i,j)
              enddo
              enddo
+      end if
 
-      else &
       if( lsendup_nw ) then
-
              do j=1,jmL
              do i=1,imL
                Harray(:,i,j)=dBuf_NW(:,i,j)
              enddo
              enddo
+      end if
 
-      else &
       if( lsendup_ne ) then
-
              do j=1,jmL
              do i=1,imL
                Harray(:,i,j)=dBuf_NE(:,i,j)
              enddo
              enddo
-
-       endif
-
+      end if
 
 !-----------------------------------------------------------------------
 endsubroutine downsend_all_g2
@@ -5856,21 +4845,17 @@ integer(i_kind), intent(in):: km_4_in,flag
 real(r_kind), dimension(km_4_in,1:this%imL,1:this%jmL),intent(in):: V_in
 real(r_kind), dimension(km_4_in,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(out):: H
 !-----------------------------------------------------------------------
-real(r_kind), allocatable, dimension(:,:,:)::                            &
-                                         sBuf_SW,sBuf_SE,sBuf_NW,sBuf_NE &
-                                        ,rBuf_SW,rBuf_SE,rBuf_NW,rBuf_NE              
-
 real(r_kind),dimension(1:km_4_in,1:this%imL,1:this%jmL):: dBuf_SW
 real(r_kind),dimension(1:km_4_in,1:this%imL,1:this%jmL):: dBuf_SE
 real(r_kind),dimension(1:km_4_in,1:this%imL,1:this%jmL):: dBuf_NW
 real(r_kind),dimension(1:km_4_in,1:this%imL,1:this%jmL):: dBuf_NE
 
-integer(i_kind) sHandle(4),rHandle(4),ISTAT(MPI_STATUS_SIZE)
-integer(i_kind) iaerr,ierr,iderr,ndata,i,j
-integer(i_kind) isend,irecv,nebpe
+integer(i_kind) sHandle(4),rHandle(4)
+integer(i_kind) ierr,ndata,i,j
 integer(i_kind):: mygen_dn,mygen_up
 integer(i_kind):: itarg_up
 logical:: lsendup_sw,lsendup_se,lsendup_nw,lsendup_ne
+integer(i_kind), parameter :: DIR_SW=1, DIR_SE=2, DIR_NW=3, DIR_NE=4
 include "type_parameter_locpointer.inc"
 include "type_intstat_locpointer.inc"
 include "type_parameter_point2this.inc"
@@ -5890,244 +4875,131 @@ include "type_intstat_point2this.inc"
        lsendup_ne = lsendup_ne_loc
 !-----------------------------------------------------------------------
 
-!N   if(my_hgen==mygen_up) then
       H(:,:,:) = 0.0d0
-!N   endif
 
      ndata =km_4_in*imL*jmL
 
-!
-! --- Send data to SW portion of processors at higher generation
-!
+     sHandle(:) = MPI_REQUEST_NULL
+     rHandle(:) = MPI_REQUEST_NULL
 
       if(  lsendup_sw ) then
-
-        nebpe = itarg_up
-    
-        if(nebpe == mype) then
-           
+        if(itarg_up == mype) then
              do j=1,jmL
              do i=1,imL
                 dBuf_SW(:,i,j) = V_in(:,i,j)
              enddo
              enddo
-
         else
-
-        allocate( sBuf_SW(1:km_4_in,1:imL,1:jmL), stat = iaerr )
-
-             do j=1,jmL
-             do i=1,imL
-                sBuf_SW(:,i,j) = V_in(:,i,j)
-             enddo
-             enddo
-
-        call MPI_ISEND( sBuf_SW, ndata, dtype, nebpe, mype,  &
-                       mpi_comm_comp, sHandle(1), isend)
-        call MPI_WAIT( sHandle(1), istat, ierr )
-
-        deallocate( sBuf_SW, stat = ierr )
-
+        call MPI_ISEND( V_in, ndata, dtype, itarg_up, mype,  &
+                       mpi_comm_comp, sHandle(DIR_SW), ierr)
         endif
-
       endif
 !
-! --- Receive SW portion of data at higher generation
-!
-
-!N      if( my_hgen==mygen_up .and. itargdn_sw_loc21 >= 0 ) then
       if( itargdn_sw_loc21 >= 0 ) then
-
-        nebpe = itargdn_sw_loc21
-
-        if(nebpe /= mype) then
-          call MPI_IRECV( dBuf_SW, ndata, dtype, nebpe, nebpe,          &
-                          mpi_comm_comp, rHandle(1), irecv)
-          call MPI_WAIT( rHandle(1), istat, ierr )
+        if(itargdn_sw_loc21 /= mype) then
+          call MPI_IRECV( dBuf_SW, ndata, dtype, itargdn_sw_loc21, itargdn_sw_loc21,          &
+                          mpi_comm_comp, rHandle(DIR_SW), ierr)
         endif
-
-             do j=1,jmL
-             do i=1,imL
-                H(:,i,j)=dBuf_SW(:,i,j)
-             enddo
-             enddo
-
       endif
-
-!
-! --- Send data to SE portion of processors at higher generation
-!
 
       if( lsendup_se ) then
-        nebpe = itarg_up
-
-        if(nebpe == mype) then
-
+        if(itarg_up == mype) then
              do j=1,jmL
              do i=1,imL
                 dBuf_SE(:,i,j) = V_in(:,i,j)
              enddo
              enddo
-
         else
-
-        allocate( sBuf_SE(1:km_4_in,1:imL,1:jmL), stat = iaerr )
-
-             do j=1,jmL
-             do i=1,imL
-               sBuf_SE(:,i,j) = V_in(:,i,j)
-             enddo
-             enddo
-
-        call MPI_ISEND( sBuf_SE, ndata, dtype, nebpe, mype, &
-                       mpi_comm_comp, sHandle(2), isend)
-        call MPI_WAIT( sHandle(2), istat, ierr )
-
-        deallocate( sBuf_SE, stat = ierr )
-
+        call MPI_ISEND( V_in, ndata, dtype, itarg_up, mype, &
+                       mpi_comm_comp, sHandle(DIR_SE), ierr)
         endif
-
       end if
 
-!
-! --- Receive SE portion of data at higher generation
-!
-
-!N      if( my_hgen==mygen_up .and. itargdn_se_loc21 >= 0 ) then
       if( itargdn_se_loc21 >= 0 ) then
-
-        nebpe = itargdn_se_loc21
-
-        if(nebpe /= mype) then
-
-          call MPI_IRECV( dBuf_SE, ndata, dtype, nebpe, nebpe,          &
-                          mpi_comm_comp, rHandle(2), irecv)
-          call MPI_WAIT( rHandle(2), istat, ierr )
-
+        if(itargdn_se_loc21 /= mype) then
+          call MPI_IRECV( dBuf_SE, ndata, dtype, itargdn_se_loc21, itargdn_se_loc21,          &
+                          mpi_comm_comp, rHandle(DIR_SE), ierr)
         endif
-             do j=1,jmL
-             do i=1,imL
-               H(:,imL+i,j)=dBuf_SE(:,i,j)
-             enddo
-             enddo
-
-      endif
-!
-! --- Send data to NW portion of processors at higher generation
-!
+      end if
 
       if( lsendup_nw ) then
-        nebpe = itarg_up
-
-        if(nebpe == mype) then
-
+        if(itarg_up == mype) then
              do j=1,jmL
              do i=1,imL
                dBuf_NW(:,i,j) = V_in(:,i,j)
              enddo
              enddo
-
         else
-
-        allocate( sBuf_NW(1:km_4_in,1:imL,1:jmL), stat = iaerr )
-
-             do j=1,jmL
-             do i=1,imL
-               sBuf_NW(:,i,j) = V_in(:,i,j)
-             enddo
-             enddo
-
-         call MPI_ISEND( sBuf_NW, ndata, dtype, nebpe, mype,  &
-                        mpi_comm_comp, sHandle(3), isend)
-
-         call MPI_WAIT( sHandle(3), istat, ierr )
-
-         deallocate( sBuf_NW, stat = ierr )
-
+         call MPI_ISEND( V_in, ndata, dtype, itarg_up, mype,  &
+                        mpi_comm_comp, sHandle(DIR_NW), ierr)
+        end if
       end if
 
-    end if
-
-!
-! --- Receive NW portion of data at higher generation
-!
-
-!      if( my_hgen==mygen_up .and. itargdn_nw_loc21 >= 0 ) then
       if( itargdn_nw_loc21 >= 0 ) then
-
-        nebpe = itargdn_nw_loc21
- 
-        if(nebpe /= mype) then
-          call MPI_IRECV( dBuf_NW, ndata, dtype, nebpe, nebpe,          &
-                          mpi_comm_comp, rHandle(3), irecv)
-          call MPI_WAIT( rHandle(3), istat, ierr )
+        if(itargdn_nw_loc21 /= mype) then
+          call MPI_IRECV( dBuf_NW, ndata, dtype, itargdn_nw_loc21, itargdn_nw_loc21,          &
+                          mpi_comm_comp, rHandle(DIR_NW), ierr)
         endif
-
-             do j=1,jmL
-             do i=1,imL
-               H(:,i,jmL+j)=dBuf_NW(:,i,j)
-             enddo
-             enddo
-
-      endif
-!
-! --- Send data to NE portion of processors at higher generation
-!
+      end if
 
       if( lsendup_ne ) then
-        nebpe = itarg_up
-
-        if(nebpe == mype) then
-
+        if(itarg_up == mype) then
              do j=1,jmL
              do i=1,imL
                dBuf_NE(:,i,j) = V_in(:,i,j)
              enddo
              enddo
-
         else
-
-        allocate( sBuf_NE(1:km_4_in,1:imL,1:jmL), stat = iaerr )
-
-             do j=1,jmL
-             do i=1,imL
-               sBuf_NE(:,i,j) = V_in(:,i,j)
-             enddo
-             enddo
-
-        call MPI_ISEND( sBuf_NE, ndata, dtype, nebpe, mype, &
-                      mpi_comm_comp, sHandle(4), isend)
-        call MPI_WAIT( sHandle(4), istat, ierr )
-
-         deallocate( sBuf_NE, stat = ierr )
-
+        call MPI_ISEND( V_in, ndata, dtype, itarg_up, mype, &
+                      mpi_comm_comp, sHandle(DIR_NE), ierr)
         endif
-
       end if
 
-!
-! --- Receive NE portion of data at higher generation
-!
-
-!N      if( my_hgen==mygen_up .and. itargdn_ne_loc21 >= 0 ) then
       if( itargdn_ne_loc21 >= 0 ) then
-
-        nebpe = itargdn_ne_loc21
-
-        if(nebpe /= mype) then
-          call MPI_IRECV( dBuf_NE, ndata, dtype, nebpe, nebpe,          &
-                         mpi_comm_comp, rHandle(4), irecv)
-          call MPI_WAIT( rHandle(4), istat, ierr )
+        if(itargdn_ne_loc21 /= mype) then
+          call MPI_IRECV( dBuf_NE, ndata, dtype, itargdn_ne_loc21, itargdn_ne_loc21,          &
+                         mpi_comm_comp, rHandle(DIR_NE), ierr)
         endif
+      end if
 
+      if( any(rHandle /= MPI_REQUEST_NULL) ) then
+        call MPI_WAITALL(4, rHandle, MPI_STATUSES_IGNORE, ierr)
+      end if
+      if( any(sHandle /= MPI_REQUEST_NULL) ) then
+        call MPI_WAITALL(4, sHandle, MPI_STATUSES_IGNORE, ierr)
+      end if
+
+      if( itargdn_sw_loc21 >= 0 ) then
+             do j=1,jmL
+             do i=1,imL
+                H(:,i,j)=dBuf_SW(:,i,j)
+             enddo
+             enddo
+      endif
+
+      if( itargdn_se_loc21 >= 0 ) then
+             do j=1,jmL
+             do i=1,imL
+               H(:,imL+i,j)=dBuf_SE(:,i,j)
+             enddo
+             enddo
+      endif
+
+      if( itargdn_nw_loc21 >= 0 ) then
+             do j=1,jmL
+             do i=1,imL
+               H(:,i,jmL+j)=dBuf_NW(:,i,j)
+             enddo
+             enddo
+      endif
+
+      if( itargdn_ne_loc21 >= 0 ) then
              do j=1,jmL
              do i=1,imL
                H(:,imL+i,jmL+j)=dBuf_NE(:,i,j)
              enddo
              enddo
-
       endif
-
 
 !-----------------------------------------------------------------------
 endsubroutine upsend_loc_g12
@@ -6151,21 +5023,17 @@ integer(i_kind), intent(in):: km_16_in,flag
 real(r_kind), dimension(km_16_in,1:this%imL,1:this%jmL),intent(in):: V_in
 real(r_kind), dimension(km_16_in,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(out):: H
 !-----------------------------------------------------------------------
-real(r_kind), allocatable, dimension(:,:,:)::                            &
-                                         sBuf_SW,sBuf_SE,sBuf_NW,sBuf_NE &
-                                        ,rBuf_SW,rBuf_SE,rBuf_NW,rBuf_NE              
-
 real(r_kind),dimension(1:km_16_in,1:this%imL,1:this%jmL):: dBuf_SW
 real(r_kind),dimension(1:km_16_in,1:this%imL,1:this%jmL):: dBuf_SE
 real(r_kind),dimension(1:km_16_in,1:this%imL,1:this%jmL):: dBuf_NW
 real(r_kind),dimension(1:km_16_in,1:this%imL,1:this%jmL):: dBuf_NE
 
-integer(i_kind) sHandle(4),rHandle(4),ISTAT(MPI_STATUS_SIZE)
-integer(i_kind) iaerr,ierr,iderr,ndata,i,j
-integer(i_kind) isend,irecv,nebpe
+integer(i_kind) sHandle(4),rHandle(4)
+integer(i_kind) ierr,ndata,i,j
 integer(i_kind):: mygen_dn,mygen_up
 integer(i_kind):: itarg_up
 logical:: lsendup_sw,lsendup_se,lsendup_nw,lsendup_ne
+integer(i_kind), parameter :: DIR_SW=1, DIR_SE=2, DIR_NW=3, DIR_NE=4
 include "type_parameter_locpointer.inc"
 include "type_intstat_locpointer.inc"
 include "type_parameter_point2this.inc"
@@ -6185,244 +5053,131 @@ include "type_intstat_point2this.inc"
        lsendup_ne = lsendup_ne_loc
 !-----------------------------------------------------------------------
 
-!N   if(my_hgen==mygen_up) then
       H(:,:,:) = 0.0d0
-!N   endif
 
      ndata =km_16_in*imL*jmL
 
-!
-! --- Send data to SW portion of processors at higher generation
-!
+     sHandle(:) = MPI_REQUEST_NULL
+     rHandle(:) = MPI_REQUEST_NULL
 
       if(  lsendup_sw ) then
-
-        nebpe = itarg_up
-    
-        if(nebpe == mype) then
-           
+        if(itarg_up == mype) then
              do j=1,jmL
              do i=1,imL
                 dBuf_SW(:,i,j) = V_in(:,i,j)
              enddo
              enddo
-
         else
-
-        allocate( sBuf_SW(1:km_16_in,1:imL,1:jmL), stat = iaerr )
-
-             do j=1,jmL
-             do i=1,imL
-                sBuf_SW(:,i,j) = V_in(:,i,j)
-             enddo
-             enddo
-
-        call MPI_ISEND( sBuf_SW, ndata, dtype, nebpe, mype,  &
-                       mpi_comm_comp, sHandle(1), isend)
-        call MPI_WAIT( sHandle(1), istat, ierr )
-
-        deallocate( sBuf_SW, stat = ierr )
-
+        call MPI_ISEND( V_in, ndata, dtype, itarg_up, mype,  &
+                       mpi_comm_comp, sHandle(DIR_SW), ierr)
         endif
-
       endif
-!
-! --- Receive SW portion of data at higher generation
-!
 
-!N      if( my_hgen==mygen_up .and. itargdn_sw_loc32 >= 0 ) then
       if( itargdn_sw_loc32 >= 0 ) then
-
-        nebpe = itargdn_sw_loc32
-
-        if(nebpe /= mype) then
-          call MPI_IRECV( dBuf_SW, ndata, dtype, nebpe, nebpe,          &
-                          mpi_comm_comp, rHandle(1), irecv)
-          call MPI_WAIT( rHandle(1), istat, ierr )
+        if(itargdn_sw_loc32 /= mype) then
+          call MPI_IRECV( dBuf_SW, ndata, dtype, itargdn_sw_loc32, itargdn_sw_loc32,          &
+                          mpi_comm_comp, rHandle(DIR_SW), ierr)
         endif
-
-             do j=1,jmL
-             do i=1,imL
-                H(:,i,j)=dBuf_SW(:,i,j)
-             enddo
-             enddo
-
       endif
-
-!
-! --- Send data to SE portion of processors at higher generation
-!
 
       if( lsendup_se ) then
-        nebpe = itarg_up
-
-        if(nebpe == mype) then
-
+        if(itarg_up == mype) then
              do j=1,jmL
              do i=1,imL
                 dBuf_SE(:,i,j) = V_in(:,i,j)
              enddo
              enddo
-
         else
-
-        allocate( sBuf_SE(1:km_16_in,1:imL,1:jmL), stat = iaerr )
-
-             do j=1,jmL
-             do i=1,imL
-               sBuf_SE(:,i,j) = V_in(:,i,j)
-             enddo
-             enddo
-
-        call MPI_ISEND( sBuf_SE, ndata, dtype, nebpe, mype, &
-                       mpi_comm_comp, sHandle(2), isend)
-        call MPI_WAIT( sHandle(2), istat, ierr )
-
-        deallocate( sBuf_SE, stat = ierr )
-
+        call MPI_ISEND( V_in, ndata, dtype, itarg_up, mype, &
+                       mpi_comm_comp, sHandle(DIR_SE), ierr)
         endif
-
       end if
 
-!
-! --- Receive SE portion of data at higher generation
-!
-
-!N      if( my_hgen==mygen_up .and. itargdn_se_loc32 >= 0 ) then
       if( itargdn_se_loc32 >= 0 ) then
-
-        nebpe = itargdn_se_loc32
-
-        if(nebpe /= mype) then
-
-          call MPI_IRECV( dBuf_SE, ndata, dtype, nebpe, nebpe,          &
-                          mpi_comm_comp, rHandle(2), irecv)
-          call MPI_WAIT( rHandle(2), istat, ierr )
-
+        if(itargdn_se_loc32 /= mype) then
+          call MPI_IRECV( dBuf_SE, ndata, dtype, itargdn_se_loc32, itargdn_se_loc32,          &
+                          mpi_comm_comp, rHandle(DIR_SE), ierr)
         endif
-             do j=1,jmL
-             do i=1,imL
-               H(:,imL+i,j)=dBuf_SE(:,i,j)
-             enddo
-             enddo
-
-      endif
-!
-! --- Send data to NW portion of processors at higher generation
-!
+      end if
 
       if( lsendup_nw ) then
-        nebpe = itarg_up
-
-        if(nebpe == mype) then
-
+        if(itarg_up == mype) then
              do j=1,jmL
              do i=1,imL
                dBuf_NW(:,i,j) = V_in(:,i,j)
              enddo
              enddo
-
         else
-
-        allocate( sBuf_NW(1:km_16_in,1:imL,1:jmL), stat = iaerr )
-
-             do j=1,jmL
-             do i=1,imL
-               sBuf_NW(:,i,j) = V_in(:,i,j)
-             enddo
-             enddo
-
-         call MPI_ISEND( sBuf_NW, ndata, dtype, nebpe, mype,  &
-                        mpi_comm_comp, sHandle(3), isend)
-
-         call MPI_WAIT( sHandle(3), istat, ierr )
-
-         deallocate( sBuf_NW, stat = ierr )
-
+         call MPI_ISEND( V_in, ndata, dtype, itarg_up, mype,  &
+                        mpi_comm_comp, sHandle(DIR_NW), ierr)
+        end if
       end if
 
-    end if
-
-!
-! --- Receive NW portion of data at higher generation
-!
-
-!      if( my_hgen==mygen_up .and. itargdn_nw_loc32 >= 0 ) then
       if( itargdn_nw_loc32 >= 0 ) then
-
-        nebpe = itargdn_nw_loc32
- 
-        if(nebpe /= mype) then
-          call MPI_IRECV( dBuf_NW, ndata, dtype, nebpe, nebpe,          &
-                          mpi_comm_comp, rHandle(3), irecv)
-          call MPI_WAIT( rHandle(3), istat, ierr )
+        if(itargdn_nw_loc32 /= mype) then
+          call MPI_IRECV( dBuf_NW, ndata, dtype, itargdn_nw_loc32, itargdn_nw_loc32,          &
+                          mpi_comm_comp, rHandle(DIR_NW), ierr)
         endif
-
-             do j=1,jmL
-             do i=1,imL
-               H(:,i,jmL+j)=dBuf_NW(:,i,j)
-             enddo
-             enddo
-
-      endif
-!
-! --- Send data to NE portion of processors at higher generation
-!
+      end if
 
       if( lsendup_ne ) then
-        nebpe = itarg_up
-
-        if(nebpe == mype) then
-
+        if(itarg_up == mype) then
              do j=1,jmL
              do i=1,imL
                dBuf_NE(:,i,j) = V_in(:,i,j)
              enddo
              enddo
-
         else
-
-        allocate( sBuf_NE(1:km_16_in,1:imL,1:jmL), stat = iaerr )
-
-             do j=1,jmL
-             do i=1,imL
-               sBuf_NE(:,i,j) = V_in(:,i,j)
-             enddo
-             enddo
-
-        call MPI_ISEND( sBuf_NE, ndata, dtype, nebpe, mype, &
-                      mpi_comm_comp, sHandle(4), isend)
-        call MPI_WAIT( sHandle(4), istat, ierr )
-
-         deallocate( sBuf_NE, stat = ierr )
-
+        call MPI_ISEND( V_in, ndata, dtype, itarg_up, mype, &
+                      mpi_comm_comp, sHandle(DIR_NE), ierr)
         endif
-
       end if
 
-!
-! --- Receive NE portion of data at higher generation
-!
-
-!N      if( my_hgen==mygen_up .and. itargdn_ne_loc32 >= 0 ) then
       if( itargdn_ne_loc32 >= 0 ) then
-
-        nebpe = itargdn_ne_loc32
-
-        if(nebpe /= mype) then
-          call MPI_IRECV( dBuf_NE, ndata, dtype, nebpe, nebpe,          &
-                         mpi_comm_comp, rHandle(4), irecv)
-          call MPI_WAIT( rHandle(4), istat, ierr )
+        if(itargdn_ne_loc32 /= mype) then
+          call MPI_IRECV( dBuf_NE, ndata, dtype, itargdn_ne_loc32, itargdn_ne_loc32,          &
+                         mpi_comm_comp, rHandle(DIR_NE), ierr)
         endif
+      end if
 
+      if( any(rHandle /= MPI_REQUEST_NULL) ) then
+        call MPI_WAITALL(4, rHandle, MPI_STATUSES_IGNORE, ierr)
+      end if
+      if( any(sHandle /= MPI_REQUEST_NULL) ) then
+        call MPI_WAITALL(4, sHandle, MPI_STATUSES_IGNORE, ierr)
+      end if
+
+      if( itargdn_sw_loc32 >= 0 ) then
+             do j=1,jmL
+             do i=1,imL
+                H(:,i,j)=dBuf_SW(:,i,j)
+             enddo
+             enddo
+      endif
+
+      if( itargdn_se_loc32 >= 0 ) then
+             do j=1,jmL
+             do i=1,imL
+               H(:,imL+i,j)=dBuf_SE(:,i,j)
+             enddo
+             enddo
+      endif
+
+      if( itargdn_nw_loc32 >= 0 ) then
+             do j=1,jmL
+             do i=1,imL
+               H(:,i,jmL+j)=dBuf_NW(:,i,j)
+             enddo
+             enddo
+      endif
+
+      if( itargdn_ne_loc32 >= 0 ) then
              do j=1,jmL
              do i=1,imL
                H(:,imL+i,jmL+j)=dBuf_NE(:,i,j)
              enddo
              enddo
-
       endif
-
 
 !-----------------------------------------------------------------------
 endsubroutine upsend_loc_g23
@@ -6446,21 +5201,17 @@ integer(i_kind), intent(in):: km_64_in,flag
 real(r_kind), dimension(km_64_in,1:this%imL,1:this%jmL),intent(in):: V_in
 real(r_kind), dimension(km_64_in,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(out):: H
 !-----------------------------------------------------------------------
-real(r_kind), allocatable, dimension(:,:,:)::                            &
-                                         sBuf_SW,sBuf_SE,sBuf_NW,sBuf_NE &
-                                        ,rBuf_SW,rBuf_SE,rBuf_NW,rBuf_NE              
-
 real(r_kind),dimension(1:km_64_in,1:this%imL,1:this%jmL):: dBuf_SW
 real(r_kind),dimension(1:km_64_in,1:this%imL,1:this%jmL):: dBuf_SE
 real(r_kind),dimension(1:km_64_in,1:this%imL,1:this%jmL):: dBuf_NW
 real(r_kind),dimension(1:km_64_in,1:this%imL,1:this%jmL):: dBuf_NE
 
-integer(i_kind) sHandle(4),rHandle(4),ISTAT(MPI_STATUS_SIZE)
-integer(i_kind) iaerr,ierr,iderr,ndata,i,j
-integer(i_kind) isend,irecv,nebpe
+integer(i_kind) sHandle(4),rHandle(4)
+integer(i_kind) ierr,ndata,i,j
 integer(i_kind):: mygen_dn,mygen_up
 integer(i_kind):: itarg_up
 logical:: lsendup_sw,lsendup_se,lsendup_nw,lsendup_ne
+integer(i_kind), parameter :: DIR_SW=1, DIR_SE=2, DIR_NW=3, DIR_NE=4
 include "type_parameter_locpointer.inc"
 include "type_intstat_locpointer.inc"
 include "type_parameter_point2this.inc"
@@ -6480,242 +5231,131 @@ include "type_intstat_point2this.inc"
        lsendup_ne = lsendup_ne_loc
 !-----------------------------------------------------------------------
 
-!N   if(my_hgen==mygen_up) then
       H(:,:,:) = 0.0d0
-!N   endif
 
      ndata =km_64_in*imL*jmL
 
-!
-! --- Send data to SW portion of processors at higher generation
-!
+     sHandle(:) = MPI_REQUEST_NULL
+     rHandle(:) = MPI_REQUEST_NULL
 
       if(  lsendup_sw ) then
-
-        nebpe = itarg_up
-    
-        if(nebpe == mype) then
-           
+        if(itarg_up == mype) then
              do j=1,jmL
              do i=1,imL
                 dBuf_SW(:,i,j) = V_in(:,i,j)
              enddo
              enddo
-
         else
-
-        allocate( sBuf_SW(1:km_64_in,1:imL,1:jmL), stat = iaerr )
-
-             do j=1,jmL
-             do i=1,imL
-                sBuf_SW(:,i,j) = V_in(:,i,j)
-             enddo
-             enddo
-
-        call MPI_ISEND( sBuf_SW, ndata, dtype, nebpe, mype,  &
-                       mpi_comm_comp, sHandle(1), isend)
-        call MPI_WAIT( sHandle(1), istat, ierr )
-
-        deallocate( sBuf_SW, stat = ierr )
-
+        call MPI_ISEND( V_in, ndata, dtype, itarg_up, mype,  &
+                       mpi_comm_comp, sHandle(DIR_SW), ierr)
         endif
-
       endif
-!
-! --- Receive SW portion of data at higher generation
-!
 
       if( itargdn_sw_loc43 >= 0 ) then
-
-        nebpe = itargdn_sw_loc43
-
-        if(nebpe /= mype) then
-          call MPI_IRECV( dBuf_SW, ndata, dtype, nebpe, nebpe,          &
-                          mpi_comm_comp, rHandle(1), irecv)
-          call MPI_WAIT( rHandle(1), istat, ierr )
+        if(itargdn_sw_loc43 /= mype) then
+          call MPI_IRECV( dBuf_SW, ndata, dtype, itargdn_sw_loc43, itargdn_sw_loc43,          &
+                          mpi_comm_comp, rHandle(DIR_SW), ierr)
         endif
-
-             do j=1,jmL
-             do i=1,imL
-                H(:,i,j)=dBuf_SW(:,i,j)
-             enddo
-             enddo
-
       endif
 
-!
-! --- Send data to SE portion of processors at higher generation
-!
-
       if( lsendup_se ) then
-        nebpe = itarg_up
-
-        if(nebpe == mype) then
-
+        if(itarg_up == mype) then
              do j=1,jmL
              do i=1,imL
                 dBuf_SE(:,i,j) = V_in(:,i,j)
              enddo
              enddo
-
         else
-
-        allocate( sBuf_SE(1:km_64_in,1:imL,1:jmL), stat = iaerr )
-
-             do j=1,jmL
-             do i=1,imL
-               sBuf_SE(:,i,j) = V_in(:,i,j)
-             enddo
-             enddo
-
-        call MPI_ISEND( sBuf_SE, ndata, dtype, nebpe, mype, &
-                       mpi_comm_comp, sHandle(2), isend)
-        call MPI_WAIT( sHandle(2), istat, ierr )
-
-        deallocate( sBuf_SE, stat = ierr )
-
+        call MPI_ISEND( V_in, ndata, dtype, itarg_up, mype, &
+                       mpi_comm_comp, sHandle(DIR_SE), ierr)
         endif
-
       end if
 
-!
-! --- Receive SE portion of data at higher generation
-!
-
       if( itargdn_se_loc43 >= 0 ) then
-
-        nebpe = itargdn_se_loc43
-
-        if(nebpe /= mype) then
-
-          call MPI_IRECV( dBuf_SE, ndata, dtype, nebpe, nebpe,          &
-                          mpi_comm_comp, rHandle(2), irecv)
-          call MPI_WAIT( rHandle(2), istat, ierr )
-
+        if(itargdn_se_loc43 /= mype) then
+          call MPI_IRECV( dBuf_SE, ndata, dtype, itargdn_se_loc43, itargdn_se_loc43,          &
+                          mpi_comm_comp, rHandle(DIR_SE), ierr)
         endif
-             do j=1,jmL
-             do i=1,imL
-               H(:,imL+i,j)=dBuf_SE(:,i,j)
-             enddo
-             enddo
-
-      endif
-!
-! --- Send data to NW portion of processors at higher generation
-!
+      end if
 
       if( lsendup_nw ) then
-        nebpe = itarg_up
-
-        if(nebpe == mype) then
-
+        if(itarg_up == mype) then
              do j=1,jmL
              do i=1,imL
                dBuf_NW(:,i,j) = V_in(:,i,j)
              enddo
              enddo
-
         else
-
-        allocate( sBuf_NW(1:km_64_in,1:imL,1:jmL), stat = iaerr )
-
-             do j=1,jmL
-             do i=1,imL
-               sBuf_NW(:,i,j) = V_in(:,i,j)
-             enddo
-             enddo
-
-         call MPI_ISEND( sBuf_NW, ndata, dtype, nebpe, mype,  &
-                        mpi_comm_comp, sHandle(3), isend)
-
-         call MPI_WAIT( sHandle(3), istat, ierr )
-
-         deallocate( sBuf_NW, stat = ierr )
-
+         call MPI_ISEND( V_in, ndata, dtype, itarg_up, mype,  &
+                        mpi_comm_comp, sHandle(DIR_NW), ierr)
+        end if
       end if
 
-    end if
-
-!
-! --- Receive NW portion of data at higher generation
-!
-
-!      if( my_hgen==mygen_up .and. itargdn_nw_loc43 >= 0 ) then
       if( itargdn_nw_loc43 >= 0 ) then
-
-        nebpe = itargdn_nw_loc43
- 
-        if(nebpe /= mype) then
-          call MPI_IRECV( dBuf_NW, ndata, dtype, nebpe, nebpe,          &
-                          mpi_comm_comp, rHandle(3), irecv)
-          call MPI_WAIT( rHandle(3), istat, ierr )
+        if(itargdn_nw_loc43 /= mype) then
+          call MPI_IRECV( dBuf_NW, ndata, dtype, itargdn_nw_loc43, itargdn_nw_loc43,          &
+                          mpi_comm_comp, rHandle(DIR_NW), ierr)
         endif
-
-             do j=1,jmL
-             do i=1,imL
-               H(:,i,jmL+j)=dBuf_NW(:,i,j)
-             enddo
-             enddo
-
-      endif
-!
-! --- Send data to NE portion of processors at higher generation
-!
+      end if
 
       if( lsendup_ne ) then
-        nebpe = itarg_up
-
-        if(nebpe == mype) then
-
+        if(itarg_up == mype) then
              do j=1,jmL
              do i=1,imL
                dBuf_NE(:,i,j) = V_in(:,i,j)
              enddo
              enddo
-
         else
-
-        allocate( sBuf_NE(1:km_64_in,1:imL,1:jmL), stat = iaerr )
-
-             do j=1,jmL
-             do i=1,imL
-               sBuf_NE(:,i,j) = V_in(:,i,j)
-             enddo
-             enddo
-
-        call MPI_ISEND( sBuf_NE, ndata, dtype, nebpe, mype, &
-                      mpi_comm_comp, sHandle(4), isend)
-        call MPI_WAIT( sHandle(4), istat, ierr )
-
-         deallocate( sBuf_NE, stat = ierr )
-
+        call MPI_ISEND( V_in, ndata, dtype, itarg_up, mype, &
+                      mpi_comm_comp, sHandle(DIR_NE), ierr)
         endif
-
       end if
 
-!
-! --- Receive NE portion of data at higher generation
-!
-
-!N      if( my_hgen==mygen_up .and. itargdn_ne_loc43 >= 0 ) then
       if( itargdn_ne_loc43 >= 0 ) then
-
-        nebpe = itargdn_ne_loc43
-
-        if(nebpe /= mype) then
-          call MPI_IRECV( dBuf_NE, ndata, dtype, nebpe, nebpe,          &
-                         mpi_comm_comp, rHandle(4), irecv)
-          call MPI_WAIT( rHandle(4), istat, ierr )
+        if(itargdn_ne_loc43 /= mype) then
+          call MPI_IRECV( dBuf_NE, ndata, dtype, itargdn_ne_loc43, itargdn_ne_loc43,          &
+                         mpi_comm_comp, rHandle(DIR_NE), ierr)
         endif
+      end if
 
+      if( any(rHandle /= MPI_REQUEST_NULL) ) then
+        call MPI_WAITALL(4, rHandle, MPI_STATUSES_IGNORE, ierr)
+      end if
+      if( any(sHandle /= MPI_REQUEST_NULL) ) then
+        call MPI_WAITALL(4, sHandle, MPI_STATUSES_IGNORE, ierr)
+      end if
+
+      if( itargdn_sw_loc43 >= 0 ) then
+             do j=1,jmL
+             do i=1,imL
+                H(:,i,j)=dBuf_SW(:,i,j)
+             enddo
+             enddo
+      endif
+
+      if( itargdn_se_loc43 >= 0 ) then
+             do j=1,jmL
+             do i=1,imL
+               H(:,imL+i,j)=dBuf_SE(:,i,j)
+             enddo
+             enddo
+      endif
+
+      if( itargdn_nw_loc43 >= 0 ) then
+             do j=1,jmL
+             do i=1,imL
+               H(:,i,jmL+j)=dBuf_NW(:,i,j)
+             enddo
+             enddo
+      endif
+
+      if( itargdn_ne_loc43 >= 0 ) then
              do j=1,jmL
              do i=1,imL
                H(:,imL+i,jmL+j)=dBuf_NE(:,i,j)
              enddo
              enddo
-
       endif
-
 
 !-----------------------------------------------------------------------
 endsubroutine upsend_loc_g34
@@ -6741,20 +5381,16 @@ integer(i_kind), intent(in):: km_64_in,flag
 real(r_kind), dimension(km_64_in,1:this%im,1:this%jm),intent(in):: W
 real(r_kind), dimension(km_64_in,1:this%imL,1:this%jmL),intent(out):: Z
 !-----------------------------------------------------------------------
-real(r_kind), allocatable, dimension(:,:,:)::                            &
-                            sBuf_SW,sBuf_SE,sBuf_NW,sBuf_NE              &
-                           ,rBuf_SW,rBuf_SE,rBuf_NW,rBuf_NE              
-
 real(r_kind),dimension(1:km_64_in,1:this%imL,1:this%jmL):: dBuf_SW
 real(r_kind),dimension(1:km_64_in,1:this%imL,1:this%jmL):: dBuf_SE
 real(r_kind),dimension(1:km_64_in,1:this%imL,1:this%jmL):: dBuf_NW
 real(r_kind),dimension(1:km_64_in,1:this%imL,1:this%jmL):: dBuf_NE
 
-integer(i_kind) sHandle(4),rHandle(4),ISTAT(MPI_STATUS_SIZE)
-integer(i_kind) iaerr,ierr,iderr,ndata,i,j,L
-integer(i_kind) isend,irecv,nebpe
+integer(i_kind) sHandle(4),rHandle(4)
+integer(i_kind) ierr,ndata,i,j
 integer(i_kind):: itarg_up                                           
 logical:: lsendup_sw,lsendup_se,lsendup_nw,lsendup_ne
+integer(i_kind), parameter :: DIR_SW=1, DIR_SE=2, DIR_NW=3, DIR_NE=4
 include "type_parameter_locpointer.inc"
 include "type_intstat_locpointer.inc"
 include "type_parameter_point2this.inc"
@@ -6768,197 +5404,131 @@ include "type_intstat_point2this.inc"
 
        itarg_up=Fitargup_loc34(flag)
 
+       lsendup_sw = lsendup_sw_loc
+       lsendup_se = lsendup_se_loc
+       lsendup_nw = lsendup_nw_loc
+       lsendup_ne = lsendup_ne_loc
+
        ndata =km_64_in*imL*jmL
 
-!
-! --- Send data from SW portion of processors at the higher generation
-!     to corresponding  PE's at lower generation
+      dBuf_SW = 0.0d0
+      dBuf_SE = 0.0d0
+      dBuf_NW = 0.0d0
+      dBuf_NE = 0.0d0
+
+      sHandle(:) = MPI_REQUEST_NULL
+      rHandle(:) = MPI_REQUEST_NULL
 
      if(itargdn_sw_loc43 >= 0) then
-
-        nebpe = itargdn_sw_loc43
-
-
-        allocate( sBuf_SW(1:km_64_in,1:imL,1:jmL), stat = iaerr )
-
+        if(itargdn_sw_loc43 == mype) then
              do j=1,jmL
              do i=1,imL
-                sBuf_SW(:,i,j) = W(:,i,j)
+                dBuf_SW(:,i,j) = W(:,i,j)
              enddo
              enddo
-
-        call MPI_ISEND( sBuf_SW, ndata, dtype, nebpe, mype,  &
-                        mpi_comm_work, sHandle(1), isend)
-        call MPI_WAIT( sHandle(1), istat, ierr )
-        deallocate( sBuf_SW, stat = ierr )
-
+        else
+        call MPI_ISEND( W(1,1,1), ndata, dtype, itargdn_sw_loc43, mype,  &
+                        mpi_comm_work, sHandle(DIR_SW), ierr )
+        end if
      endif
 
-!
-! --- Receive SW portion of data at lower generation
-
-
-      if( lsendup_sw ) then
-
-        nebpe = itarg_up
-
-
-        allocate( rBuf_SW(1:km_64_in,1:imL,1:jmL), stat = iaerr )
-
-        call MPI_IRECV( rBuf_SW, ndata, dtype, nebpe, nebpe, &
-                        mpi_comm_work, rHandle(1), irecv)
-        call MPI_WAIT( rHandle(1), istat, ierr )
-
-             do j=1,jmL
-             do i=1,imL
-               Z(:,i,j)=rBuf_SW(:,i,j)  
-             enddo
-             enddo
-
-        deallocate( rBuf_SW, stat = iderr)
-
+      if( lsendup_sw .and. itarg_up /= mype ) then
+        call MPI_IRECV( dBuf_SW, ndata, dtype, itarg_up, itarg_up, &
+                        mpi_comm_work, rHandle(DIR_SW), ierr)
       endif
 
-!
-! --- Send data from SE portion of processors at the higher generation
-!     to corresponding  PE's at lower generation
-
      if(itargdn_se_loc43 >= 0) then
-
-        nebpe = itargdn_se_loc43
-
-        allocate( sBuf_SE(1:km_64_in,1:imL,1:jmL), stat = iaerr )
-
+        if(itargdn_se_loc43 == mype) then
              do j=1,jmL
              do i=1,imL
-               sBuf_SE(:,i,j) = W(:,imL+i,j)
+               dBuf_SE(:,i,j) = W(:,imL+i,j)
              enddo
              enddo
-
-        call MPI_ISEND( sBuf_SE, ndata, dtype, nebpe, mype,  &
-                       mpi_comm_work, sHandle(2), isend)
-        call MPI_WAIT( sHandle(2), istat, ierr )
-        deallocate( sBuf_SE, stat = ierr )
-
+        else
+        call MPI_ISEND( W(1,imL+1,1), ndata, dtype, itargdn_se_loc43, mype,  &
+                       mpi_comm_work, sHandle(DIR_SE), ierr )
+        end if
      endif
-!
-! --- Receive SE portion of data at lower generation
 
- 
-      if( lsendup_se ) then
-        nebpe = itarg_up
-
-
-        allocate( rBuf_SE(1:km_64_in,1:imL,1:jmL), stat = iaerr )
-
-        call MPI_IRECV( rBuf_SE, ndata, dtype, nebpe, nebpe, &
-                        mpi_comm_work, rHandle(2), irecv)
-        call MPI_WAIT( rHandle(2), istat, ierr )
-
-             do j=1,jmL
-             do i=1,imL
-               Z(:,i,j)=Rbuf_SE(:,i,j)
-             enddo
-             enddo
-
-       deallocate( rBuf_SE, stat = iderr)
-  
-     end if
-
-!
-! --- Send data from NW portion of processors at the higher generation
-!     to corresponding  PE's at lower generantion
+      if( lsendup_se .and. itarg_up /= mype ) then
+        call MPI_IRECV( dBuf_SE, ndata, dtype, itarg_up, itarg_up, &
+                        mpi_comm_work, rHandle(DIR_SE), ierr)
+      end if
 
      if(itargdn_nw_loc43 >= 0) then
-
-        nebpe = itargdn_nw_loc43
-
-
-        allocate( sBuf_NW(1:km_64_in,1:imL,1:jmL), stat = iaerr )
-
+        if(itargdn_nw_loc43 == mype) then
              do j=1,jmL
              do i=1,imL
-                sBuf_NW(:,i,j) = W(:,i,jmL+j)
+                dBuf_NW(:,i,j) = W(:,i,jmL+j)
              enddo
              enddo
-
-        call MPI_ISEND( sBuf_NW, ndata, dtype, nebpe, mype,  &
-                        mpi_comm_work, sHandle(3), isend)
-        call MPI_WAIT( sHandle(3), istat, ierr )
-        deallocate( sBuf_NW, stat = ierr )
-
+        else
+        call MPI_ISEND( W(1,1,jmL+1), ndata, dtype, itargdn_nw_loc43, mype,  &
+                        mpi_comm_work, sHandle(DIR_NW), ierr )
+        end if
      endif
 
-!
-! --- Receive NW portion of data at lower generation
-
-
-      if( lsendup_nw ) then
-
-        nebpe = itarg_up
-
-        allocate( rBuf_NW(1:km_64_in,1:imL,1:jmL), stat = iaerr )
-
-        call MPI_IRECV( rBuf_NW, ndata, dtype, nebpe, nebpe, &
-                       mpi_comm_work, rHandle(3), irecv)
-        call MPI_WAIT( rHandle(3), istat, ierr )
-
-             do j=1,jmL
-             do i=1,imL
-               Z(:,i,j)=Rbuf_NW(:,i,j)
-             enddo
-             enddo
-
-        deallocate( rBuf_NW, stat = iderr)
-
-
+      if( lsendup_nw .and. itarg_up /= mype ) then
+        call MPI_IRECV( dBuf_NW, ndata, dtype, itarg_up, itarg_up, &
+                       mpi_comm_work, rHandle(DIR_NW), ierr)
       end if
-
-
-! --- Send data from NE portion of processors at the higher generation
-!     to corresponding  PE's at lower generation
 
      if(itargdn_ne_loc43 >= 0) then
-
-        nebpe = itargdn_ne_loc43
-
-        allocate( sBuf_NE(1:km_64_in,1:imL,1:jmL), stat = iaerr )
-
+        if(itargdn_ne_loc43 == mype) then
              do j=1,jmL
              do i=1,imL
-                sBuf_NE(:,i,j) = W(:,imL+i,jmL+j)
+                dBuf_NE(:,i,j) = W(:,imL+i,jmL+j)
              enddo
              enddo
-
-        call MPI_ISEND( sBuf_NE, ndata, dtype, nebpe, mype,  &
-                        mpi_comm_work, sHandle(4), isend)
-        call MPI_WAIT( sHandle(4), istat, ierr )
-        deallocate( sBuf_NE, stat = ierr )
-
+        else
+        call MPI_ISEND( W(1,imL+1,jmL+1), ndata, dtype, itargdn_ne_loc43, mype,  &
+                        mpi_comm_work, sHandle(DIR_NE), ierr )
+        end if
      endif
 
-!
-! --- Receive NE portion of data at lower generation
-!
+      if( lsendup_ne .and. itarg_up /= mype ) then
+        call MPI_IRECV( dBuf_NE, ndata, dtype, itarg_up, itarg_up, &
+                        mpi_comm_work, rHandle(DIR_NE), ierr)
+      end if
 
-      if( lsendup_ne ) then
-        nebpe = itarg_up
+      if( any(rHandle /= MPI_REQUEST_NULL) ) then
+        call MPI_WAITALL(4, rHandle, MPI_STATUSES_IGNORE, ierr)
+      end if
+      if( any(sHandle /= MPI_REQUEST_NULL) ) then
+        call MPI_WAITALL(4, sHandle, MPI_STATUSES_IGNORE, ierr)
+      end if
 
-        allocate( rBuf_NE(1:km_64_in,1:imL,1:jmL), stat = iaerr )
-
-        call MPI_IRECV( rBuf_NE, ndata, dtype, nebpe, nebpe, &
-                        mpi_comm_work, rHandle(4), irecv)
-        call MPI_WAIT( rHandle(4), istat, ierr )
-
+      if( lsendup_sw ) then
              do j=1,jmL
              do i=1,imL
-               Z(:,i,j)=rBuf_NE(:,i,j)
+               Z(:,i,j)=dBuf_SW(:,i,j)  
              enddo
              enddo
+      endif
 
-        deallocate( rBuf_NE, stat = iderr)
+      if( lsendup_se ) then
+             do j=1,jmL
+             do i=1,imL
+               Z(:,i,j)=dBuf_SE(:,i,j)
+             enddo
+             enddo
+      endif
 
-      end if
+      if( lsendup_nw ) then
+             do j=1,jmL
+             do i=1,imL
+               Z(:,i,j)=dBuf_NW(:,i,j)
+             enddo
+             enddo
+      endif
+
+      if( lsendup_ne ) then
+             do j=1,jmL
+             do i=1,imL
+               Z(:,i,j)=dBuf_NE(:,i,j)
+             enddo
+             enddo
+      endif
 
 !-----------------------------------------------------------------------
 endsubroutine downsend_loc_g43
@@ -6984,20 +5554,16 @@ integer(i_kind), intent(in):: km_16_in,flag
 real(r_kind), dimension(km_16_in,1:this%im,1:this%jm),intent(in):: Z
 real(r_kind), dimension(km_16_in,1:this%imL,1:this%jmL),intent(out):: H
 !-----------------------------------------------------------------------
-real(r_kind), allocatable, dimension(:,:,:)::                            &
-                            sBuf_SW,sBuf_SE,sBuf_NW,sBuf_NE              &
-                           ,rBuf_SW,rBuf_SE,rBuf_NW,rBuf_NE              
-
 real(r_kind),dimension(1:km_16_in,1:this%imL,1:this%jmL):: dBuf_SW
 real(r_kind),dimension(1:km_16_in,1:this%imL,1:this%jmL):: dBuf_SE
 real(r_kind),dimension(1:km_16_in,1:this%imL,1:this%jmL):: dBuf_NW
 real(r_kind),dimension(1:km_16_in,1:this%imL,1:this%jmL):: dBuf_NE
 
-integer(i_kind) sHandle(4),rHandle(4),ISTAT(MPI_STATUS_SIZE)
-integer(i_kind) iaerr,ierr,iderr,ndata,i,j,L
-integer(i_kind) isend,irecv,nebpe
+integer(i_kind) sHandle(4),rHandle(4)
+integer(i_kind) ierr,ndata,i,j
 integer(i_kind):: itarg_up                                           
 logical:: lsendup_sw,lsendup_se,lsendup_nw,lsendup_ne
+integer(i_kind), parameter :: DIR_SW=1, DIR_SE=2, DIR_NW=3, DIR_NE=4
 include "type_parameter_locpointer.inc"
 include "type_intstat_locpointer.inc"
 include "type_parameter_point2this.inc"
@@ -7011,198 +5577,131 @@ include "type_intstat_point2this.inc"
 
        itarg_up=Fitargup_loc23(flag)
 
+       lsendup_sw = lsendup_sw_loc
+       lsendup_se = lsendup_se_loc
+       lsendup_nw = lsendup_nw_loc
+       lsendup_ne = lsendup_ne_loc
+
        ndata =km_16_in*imL*jmL
 
-!
-! --- Send data from SW portion of processors at the higher generation
-!     to corresponding  PE's at lower generation
+      dBuf_SW = 0.0d0
+      dBuf_SE = 0.0d0
+      dBuf_NW = 0.0d0
+      dBuf_NE = 0.0d0
 
- 
+      sHandle(:) = MPI_REQUEST_NULL
+      rHandle(:) = MPI_REQUEST_NULL
+
   if( itargdn_sw_loc32 >= 0 ) then
-
-        nebpe = itargdn_sw_loc32
-
-
-        allocate( sBuf_SW(1:km_16_in,1:imL,1:jmL), stat = iaerr )
-
+        if(itargdn_sw_loc32 == mype) then
              do j=1,jmL
              do i=1,imL
-                sBuf_SW(:,i,j) = Z(:,i,j)
+                dBuf_SW(:,i,j) = Z(:,i,j)
              enddo
              enddo
-
-        call MPI_ISEND( sBuf_SW, ndata, dtype, nebpe, mype,  &
-                        mpi_comm_work, sHandle(1), isend)
-        call MPI_WAIT( sHandle(1), istat, ierr )
-        deallocate( sBuf_SW, stat = ierr )
-
+        else
+        call MPI_ISEND( Z(1,1,1), ndata, dtype, itargdn_sw_loc32, mype,  &
+                        mpi_comm_work, sHandle(DIR_SW), ierr )
+        end if
   endif
 
-!
-! --- Receive SW portion of data at lower generation
-
-
-      if( lsendup_sw ) then
-
-        nebpe = itarg_up
-
-
-        allocate( rBuf_SW(1:km_16_in,1:imL,1:jmL), stat = iaerr )
-
-        call MPI_IRECV( rBuf_SW, ndata, dtype, nebpe, nebpe, &
-                        mpi_comm_work, rHandle(1), irecv)
-        call MPI_WAIT( rHandle(1), istat, ierr )
-
-             do j=1,jmL
-             do i=1,imL
-               H(:,i,j)=rBuf_SW(:,i,j)  
-             enddo
-             enddo
-
-        deallocate( rBuf_SW, stat = iderr)
-
-      endif
-
-!
-! --- Send data from SE portion of processors at the higher generation
-!     to corresponding  PE's at lower generation
+  if( lsendup_sw .and. itarg_up /= mype ) then
+        call MPI_IRECV( dBuf_SW, ndata, dtype, itarg_up, itarg_up, &
+                        mpi_comm_work, rHandle(DIR_SW), ierr)
+  endif
 
   if( itargdn_se_loc32 >= 0 ) then
-
-        nebpe = itargdn_se_loc32
-
-        allocate( sBuf_SE(1:km_16_in,1:imL,1:jmL), stat = iaerr )
-
+        if(itargdn_se_loc32 == mype) then
              do j=1,jmL
              do i=1,imL
-               sBuf_SE(:,i,j) = Z(:,imL+i,j)
+               dBuf_SE(:,i,j) = Z(:,imL+i,j)
              enddo
              enddo
-
-        call MPI_ISEND( sBuf_SE, ndata, dtype, nebpe, mype,  &
-                       mpi_comm_work, sHandle(2), isend)
-        call MPI_WAIT( sHandle(2), istat, ierr )
-        deallocate( sBuf_SE, stat = ierr )
-
-
+        else
+        call MPI_ISEND( Z(1,imL+1,1), ndata, dtype, itargdn_se_loc32, mype,  &
+                       mpi_comm_work, sHandle(DIR_SE), ierr )
+        end if
   endif
-!
-! --- Receive SE portion of data at lower generation
 
- 
-      if( lsendup_se ) then
-        nebpe = itarg_up
-
-
-        allocate( rBuf_SE(1:km_16_in,1:imL,1:jmL), stat = iaerr )
-
-        call MPI_IRECV( rBuf_SE, ndata, dtype, nebpe, nebpe, &
-                        mpi_comm_work, rHandle(2), irecv)
-        call MPI_WAIT( rHandle(2), istat, ierr )
-
-             do j=1,jmL
-             do i=1,imL
-               H(:,i,j)=Rbuf_SE(:,i,j)
-             enddo
-             enddo
-
-       deallocate( rBuf_SE, stat = iderr)
-  
-     end if
-
-!
-! --- Send data from NW portion of processors at the higher generation
-!     to corresponding  PE's at lower generantion
+  if( lsendup_se .and. itarg_up /= mype ) then
+        call MPI_IRECV( dBuf_SE, ndata, dtype, itarg_up, itarg_up, &
+                        mpi_comm_work, rHandle(DIR_SE), ierr)
+  end if
 
   if( itargdn_nw_loc32 >= 0 ) then
-
-        nebpe = itargdn_nw_loc32
-
-
-        allocate( sBuf_NW(1:km_16_in,1:imL,1:jmL), stat = iaerr )
-
+        if(itargdn_nw_loc32 == mype) then
              do j=1,jmL
              do i=1,imL
-                sBuf_NW(:,i,j) = Z(:,i,jmL+j)
+                dBuf_NW(:,i,j) = Z(:,i,jmL+j)
              enddo
              enddo
-
-        call MPI_ISEND( sBuf_NW, ndata, dtype, nebpe, mype,  &
-                        mpi_comm_work, sHandle(3), isend)
-        call MPI_WAIT( sHandle(3), istat, ierr )
-        deallocate( sBuf_NW, stat = ierr )
-
-
+        else
+        call MPI_ISEND( Z(1,1,jmL+1), ndata, dtype, itargdn_nw_loc32, mype,  &
+                        mpi_comm_work, sHandle(DIR_NW), ierr )
+        end if
   endif
-!
-! --- Receive NW portion of data at lower generation
 
-
-      if( lsendup_nw ) then
-
-        nebpe = itarg_up
-
-        allocate( rBuf_NW(1:km_16_in,1:imL,1:jmL), stat = iaerr )
-
-        call MPI_IRECV( rBuf_NW, ndata, dtype, nebpe, nebpe, &
-                       mpi_comm_work, rHandle(3), irecv)
-        call MPI_WAIT( rHandle(3), istat, ierr )
-
-             do j=1,jmL
-             do i=1,imL
-               H(:,i,j)=Rbuf_NW(:,i,j)
-             enddo
-             enddo
-
-        deallocate( rBuf_NW, stat = iderr)
-
-
-      end if
-
-
-! --- Send data from NE portion of processors at the higher generation
-!     to corresponding  PE's at lower generation
+  if( lsendup_nw .and. itarg_up /= mype ) then
+        call MPI_IRECV( dBuf_NW, ndata, dtype, itarg_up, itarg_up, &
+                        mpi_comm_work, rHandle(DIR_NW), ierr)
+  end if
 
   if( itargdn_ne_loc32 >= 0 ) then
-        nebpe = itargdn_ne_loc32
-
-
-        allocate( sBuf_NE(1:km_16_in,1:imL,1:jmL), stat = iaerr )
-
+        if(itargdn_ne_loc32 == mype) then
              do j=1,jmL
              do i=1,imL
-                sBuf_NE(:,i,j) = Z(:,imL+i,jmL+j)
+                dBuf_NE(:,i,j) = Z(:,imL+i,jmL+j)
              enddo
              enddo
-
-        call MPI_ISEND( sBuf_NE, ndata, dtype, nebpe, mype,  &
-                        mpi_comm_work, sHandle(4), isend)
-        call MPI_WAIT( sHandle(4), istat, ierr )
-        deallocate( sBuf_NE, stat = ierr )
-
+        else
+        call MPI_ISEND( Z(1,imL+1,jmL+1), ndata, dtype, itargdn_ne_loc32, mype,  &
+                        mpi_comm_work, sHandle(DIR_NE), ierr )
+        end if
   endif
-!
-! --- Receive NE portion of data at lower generation
-!
 
-      if( lsendup_ne ) then
-        nebpe = itarg_up
+  if( lsendup_ne .and. itarg_up /= mype ) then
+        call MPI_IRECV( dBuf_NE, ndata, dtype, itarg_up, itarg_up, &
+                        mpi_comm_work, rHandle(DIR_NE), ierr)
+  end if
 
-        allocate( rBuf_NE(1:km_16_in,1:imL,1:jmL), stat = iaerr )
+  if( any(rHandle /= MPI_REQUEST_NULL) ) then
+        call MPI_WAITALL(4, rHandle, MPI_STATUSES_IGNORE, ierr)
+  end if
+  if( any(sHandle /= MPI_REQUEST_NULL) ) then
+        call MPI_WAITALL(4, sHandle, MPI_STATUSES_IGNORE, ierr)
+  end if
 
-        call MPI_IRECV( rBuf_NE, ndata, dtype, nebpe, nebpe, &
-                        mpi_comm_work, rHandle(4), irecv)
-        call MPI_WAIT( rHandle(4), istat, ierr )
-
+  if( lsendup_sw ) then
              do j=1,jmL
              do i=1,imL
-               H(:,i,j)=rBuf_NE(:,i,j)
+               H(:,i,j)=dBuf_SW(:,i,j)  
              enddo
              enddo
+  endif
 
-        deallocate( rBuf_NE, stat = iderr)
+  if( lsendup_se ) then
+             do j=1,jmL
+             do i=1,imL
+               H(:,i,j)=dBuf_SE(:,i,j)
+             enddo
+             enddo
+  endif
 
-      end if
+  if( lsendup_nw ) then
+             do j=1,jmL
+             do i=1,imL
+               H(:,i,j)=dBuf_NW(:,i,j)
+             enddo
+             enddo
+  endif
+
+  if( lsendup_ne ) then
+             do j=1,jmL
+             do i=1,imL
+               H(:,i,j)=dBuf_NE(:,i,j)
+             enddo
+             enddo
+  endif
 
 !-----------------------------------------------------------------------
 endsubroutine downsend_loc_g32
@@ -7228,20 +5727,16 @@ integer(i_kind), intent(in):: km_4_in,flag
 real(r_kind), dimension(km_4_in,1:this%im,1:this%jm),intent(in):: H
 real(r_kind), dimension(km_4_in,1:this%imL,1:this%jmL),intent(out):: V_out
 !-----------------------------------------------------------------------
-real(r_kind), allocatable, dimension(:,:,:)::                            &
-                            sBuf_SW,sBuf_SE,sBuf_NW,sBuf_NE              &
-                           ,rBuf_SW,rBuf_SE,rBuf_NW,rBuf_NE              
-
 real(r_kind),dimension(1:km_4_in,1:this%imL,1:this%jmL):: dBuf_SW
 real(r_kind),dimension(1:km_4_in,1:this%imL,1:this%jmL):: dBuf_SE
 real(r_kind),dimension(1:km_4_in,1:this%imL,1:this%jmL):: dBuf_NW
 real(r_kind),dimension(1:km_4_in,1:this%imL,1:this%jmL):: dBuf_NE
 
-integer(i_kind) sHandle(4),rHandle(4),ISTAT(MPI_STATUS_SIZE)
-integer(i_kind) iaerr,ierr,iderr,ndata,i,j,L
-integer(i_kind) isend,irecv,nebpe
+integer(i_kind) sHandle(4),rHandle(4)
+integer(i_kind) ierr,ndata,i,j
 integer(i_kind):: itarg_up                                           
 logical:: lsendup_sw,lsendup_se,lsendup_nw,lsendup_ne
+integer(i_kind), parameter :: DIR_SW=1, DIR_SE=2, DIR_NW=3, DIR_NE=4
 include "type_parameter_locpointer.inc"
 include "type_intstat_locpointer.inc"
 include "type_parameter_point2this.inc"
@@ -7255,206 +5750,156 @@ include "type_intstat_point2this.inc"
 
        itarg_up=Fitargup_loc12(flag)
 
+       lsendup_sw = lsendup_sw_loc
+       lsendup_se = lsendup_se_loc
+       lsendup_nw = lsendup_nw_loc
+       lsendup_ne = lsendup_ne_loc
+
        ndata =km_4_in*imL*jmL
 
-!
-! --- Send data from SW portion of processors at the higher generation
-!     to corresponding  PE's at lower generation
-  
- 
+      dBuf_SW = 0.0d0
+      dBuf_SE = 0.0d0
+      dBuf_NW = 0.0d0
+      dBuf_NE = 0.0d0
+
+      sHandle(:) = MPI_REQUEST_NULL
+      rHandle(:) = MPI_REQUEST_NULL
+
   if( itargdn_sw_loc21 >= 0 ) then
-        nebpe = itargdn_sw_loc21
-
-
-        allocate( sBuf_SW(1:km_4_in,1:imL,1:jmL), stat = iaerr )
-
+        if(itargdn_sw_loc21 == mype) then
              do j=1,jmL
              do i=1,imL
-                sBuf_SW(:,i,j) = H(:,i,j)
+                dBuf_SW(:,i,j) = H(:,i,j)
              enddo
              enddo
-
-        call MPI_ISEND( sBuf_SW, ndata, dtype, nebpe, mype,  &
-                        mpi_comm_work, sHandle(1), isend)
-        call MPI_WAIT( sHandle(1), istat, ierr )
-        deallocate( sBuf_SW, stat = ierr )
-  
+        else
+        call MPI_ISEND( H(1,1,1), ndata, dtype, itargdn_sw_loc21, mype,  &
+                        mpi_comm_work, sHandle(DIR_SW), ierr )
+        end if
   endif
 
-!
-! --- Receive SW portion of data at lower generation
-!
-
-
-      if( lsendup_sw ) then
-
-        nebpe = itarg_up
-
-
-        allocate( rBuf_SW(1:km_4_in,1:imL,1:jmL), stat = iaerr )
-
-        call MPI_IRECV( rBuf_SW, ndata, dtype, nebpe, nebpe, &
-                        mpi_comm_work, rHandle(1), irecv)
-        call MPI_WAIT( rHandle(1), istat, ierr )
-
-             do j=1,jmL
-             do i=1,imL
-               V_out(:,i,j)=rBuf_SW(:,i,j)  
-             enddo
-             enddo
-
-        deallocate( rBuf_SW, stat = iderr)
-
+      if( lsendup_sw .and. itarg_up /= mype ) then
+        call MPI_IRECV( dBuf_SW, ndata, dtype, itarg_up, itarg_up, &
+                        mpi_comm_work, rHandle(DIR_SW), ierr)
       endif
 
-!
-! --- Send data from SE portion of processors at the higher generation
-!     to corresponding  PE's at lower generation
-
   if( itargdn_se_loc21 >= 0 ) then
-        nebpe = itargdn_se_loc21
-
-        allocate( sBuf_SE(1:km_4_in,1:imL,1:jmL), stat = iaerr )
-
+        if(itargdn_se_loc21 == mype) then
              do j=1,jmL
              do i=1,imL
-               sBuf_SE(:,i,j) = H(:,imL+i,j)
+               dBuf_SE(:,i,j) = H(:,imL+i,j)
              enddo
              enddo
-
-        call MPI_ISEND( sBuf_SE, ndata, dtype, nebpe, mype,  &
-                       mpi_comm_work, sHandle(2), isend)
-        call MPI_WAIT( sHandle(2), istat, ierr )
-        deallocate( sBuf_SE, stat = ierr )
-
-
+        else
+        call MPI_ISEND( H(1,imL+1,1), ndata, dtype, itargdn_se_loc21, mype,  &
+                       mpi_comm_work, sHandle(DIR_SE), ierr )
+        end if
   endif
-!
-! --- Receive SE portion of data at lower generation
 
- 
-      if( lsendup_se ) then
-        nebpe = itarg_up
-
-
-        allocate( rBuf_SE(1:km_4_in,1:imL,1:jmL), stat = iaerr )
-
-        call MPI_IRECV( rBuf_SE, ndata, dtype, nebpe, nebpe, &
-                        mpi_comm_work, rHandle(2), irecv)
-        call MPI_WAIT( rHandle(2), istat, ierr )
-
-             do j=1,jmL
-             do i=1,imL
-               V_out(:,i,j)=Rbuf_SE(:,i,j)
-             enddo
-             enddo
-
-       deallocate( rBuf_SE, stat = iderr)
-  
-     end if
-
-!
-! --- Send data from NW portion of processors at the higher generation
-!     to corresponding  PE's at lower generantion
+      if( lsendup_se .and. itarg_up /= mype ) then
+        call MPI_IRECV( dBuf_SE, ndata, dtype, itarg_up, itarg_up, &
+                        mpi_comm_work, rHandle(DIR_SE), ierr)
+      end if
 
   if( itargdn_nw_loc21 >= 0 ) then
-
-        nebpe = itargdn_nw_loc21
-
-
-        allocate( sBuf_NW(1:km_4_in,1:imL,1:jmL), stat = iaerr )
-
+        if(itargdn_nw_loc21 == mype) then
              do j=1,jmL
              do i=1,imL
-                sBuf_NW(:,i,j) = H(:,i,jmL+j)
+                dBuf_NW(:,i,j) = H(:,i,jmL+j)
              enddo
              enddo
-
-        call MPI_ISEND( sBuf_NW, ndata, dtype, nebpe, mype,  &
-                        mpi_comm_work, sHandle(3), isend)
-        call MPI_WAIT( sHandle(3), istat, ierr )
-        deallocate( sBuf_NW, stat = ierr )
-
-
+        else
+        call MPI_ISEND( H(1,1,jmL+1), ndata, dtype, itargdn_nw_loc21, mype,  &
+                        mpi_comm_work, sHandle(DIR_NW), ierr )
+        end if
   endif
-!
-! --- Receive NW portion of data at lower generation
 
-
-      if( lsendup_nw ) then
-
-        nebpe = itarg_up
-
-        allocate( rBuf_NW(1:km_4_in,1:imL,1:jmL), stat = iaerr )
-
-        call MPI_IRECV( rBuf_NW, ndata, dtype, nebpe, nebpe, &
-                       mpi_comm_work, rHandle(3), irecv)
-        call MPI_WAIT( rHandle(3), istat, ierr )
-
-             do j=1,jmL
-             do i=1,imL
-               V_out(:,i,j)=Rbuf_NW(:,i,j)
-             enddo
-             enddo
-
-        deallocate( rBuf_NW, stat = iderr)
-
-
+      if( lsendup_nw .and. itarg_up /= mype ) then
+        call MPI_IRECV( dBuf_NW, ndata, dtype, itarg_up, itarg_up, &
+                       mpi_comm_work, rHandle(DIR_NW), ierr)
       end if
-
-
-! --- Send data from NE portion of processors at the higher generation
-!     to corresponding  PE's at lower generation
 
   if( itargdn_ne_loc21 >= 0 ) then
-
-        nebpe = itargdn_ne_loc21
-
-
-        allocate( sBuf_NE(1:km_4_in,1:imL,1:jmL), stat = iaerr )
-
+        if(itargdn_ne_loc21 == mype) then
              do j=1,jmL
              do i=1,imL
-                sBuf_NE(:,i,j) = H(:,imL+i,jmL+j)
+                dBuf_NE(:,i,j) = H(:,imL+i,jmL+j)
              enddo
              enddo
-
-        call MPI_ISEND( sBuf_NE, ndata, dtype, nebpe, mype,  &
-                        mpi_comm_work, sHandle(4), isend)
-        call MPI_WAIT( sHandle(4), istat, ierr )
-        deallocate( sBuf_NE, stat = ierr )
-
-
+        else
+        call MPI_ISEND( H(1,imL+1,jmL+1), ndata, dtype, itargdn_ne_loc21, mype,  &
+                        mpi_comm_work, sHandle(DIR_NE), ierr )
+        end if
   endif
-!
-! --- Receive NE portion of data at lower generation
-!
+
+      if( lsendup_ne .and. itarg_up /= mype ) then
+        call MPI_IRECV( dBuf_NE, ndata, dtype, itarg_up, itarg_up, &
+                        mpi_comm_work, rHandle(DIR_NE), ierr)
+      end if
+
+      if( any(rHandle /= MPI_REQUEST_NULL) ) then
+        call MPI_WAITALL(4, rHandle, MPI_STATUSES_IGNORE, ierr)
+      end if
+      if( any(sHandle /= MPI_REQUEST_NULL) ) then
+        call MPI_WAITALL(4, sHandle, MPI_STATUSES_IGNORE, ierr)
+      end if
+
+      if( lsendup_sw ) then
+             do j=1,jmL
+             do i=1,imL
+               V_out(:,i,j)=dBuf_SW(:,i,j)  
+             enddo
+             enddo
+      endif
+
+      if( lsendup_se ) then
+             do j=1,jmL
+             do i=1,imL
+               V_out(:,i,j)=dBuf_SE(:,i,j)
+             enddo
+             enddo
+      endif
+
+      if( lsendup_nw ) then
+             do j=1,jmL
+             do i=1,imL
+               V_out(:,i,j)=dBuf_NW(:,i,j)
+             enddo
+             enddo
+      endif
 
       if( lsendup_ne ) then
-
-        nebpe = itarg_up
-
-        allocate( rBuf_NE(1:km_4_in,1:imL,1:jmL), stat = iaerr )
-
-        call MPI_IRECV( rBuf_NE, ndata, dtype, nebpe, nebpe, &
-                        mpi_comm_work, rHandle(4), irecv)
-        call MPI_WAIT( rHandle(4), istat, ierr )
-
              do j=1,jmL
              do i=1,imL
-               V_out(:,i,j)=rBuf_NE(:,i,j)
+               V_out(:,i,j)=dBuf_NE(:,i,j)
              enddo
              enddo
-
-        deallocate( rBuf_NE, stat = iderr)
-
-      end if
+      endif
 
 !-----------------------------------------------------------------------
 endsubroutine downsend_loc_g21
 
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 end submodule mg_bocos
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
