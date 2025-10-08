@@ -1785,7 +1785,7 @@ include "type_intstat_point2this.inc"
              enddo
              enddo
         else
-        call MPI_ISEND( Harray, ndata, dtype, nebpe, mype,  &
+        call MPI_ISEND( Harray(1,1,1), ndata, dtype, nebpe, mype,  &
                        mpi_comm_comp, sHandle(DIR_SW), ierr)
         endif
       end if
@@ -1811,7 +1811,7 @@ include "type_intstat_point2this.inc"
              enddo
              enddo
         else
-        call MPI_ISEND( Harray, ndata, dtype, nebpe, mype, &
+        call MPI_ISEND( Harray(1,1,1), ndata, dtype, nebpe, mype, &
                        mpi_comm_comp, sHandle(DIR_SE), ierr)
         endif
       end if
@@ -1837,7 +1837,7 @@ include "type_intstat_point2this.inc"
              enddo
              enddo
         else
-         call MPI_ISEND( Harray, ndata, dtype, nebpe, mype,  &
+         call MPI_ISEND( Harray(1,1,1), ndata, dtype, nebpe, mype,  &
                         mpi_comm_comp, sHandle(DIR_NW), ierr)
         end if
       end if
@@ -1863,7 +1863,7 @@ include "type_intstat_point2this.inc"
              enddo
              enddo
         else
-        call MPI_ISEND( Harray, ndata, dtype, nebpe, mype, &
+        call MPI_ISEND( Harray(1,1,1), ndata, dtype, nebpe, mype, &
                       mpi_comm_comp, sHandle(DIR_NE), ierr)
         endif
       end if
@@ -1989,7 +1989,7 @@ include "type_intstat_point2this.inc"
 
       if(  lsendup_sw ) then
         nebpe = itarg_up
-        call MPI_ISEND( Harray, ndata, dtype, nebpe, mype,  &
+        call MPI_ISEND( Harray(1,1,1), ndata, dtype, nebpe, mype,  &
                        mpi_comm_work, sHandle(DIR_SW), ierr)
       end if
 
@@ -2001,7 +2001,7 @@ include "type_intstat_point2this.inc"
 
       if( lsendup_se ) then
         nebpe = itarg_up
-        call MPI_ISEND( Harray, ndata, dtype, nebpe, mype, &
+        call MPI_ISEND( Harray(1,1,1), ndata, dtype, nebpe, mype, &
                        mpi_comm_work, sHandle(DIR_SE), ierr)
       end if
 
@@ -2013,7 +2013,7 @@ include "type_intstat_point2this.inc"
 
       if( lsendup_nw ) then
         nebpe = itarg_up
-         call MPI_ISEND( Harray, ndata, dtype, nebpe, mype,  &
+         call MPI_ISEND( Harray(1,1,1), ndata, dtype, nebpe, mype,  &
                         mpi_comm_work, sHandle(DIR_NW), ierr)
       end if
 
@@ -2025,7 +2025,7 @@ include "type_intstat_point2this.inc"
 
       if( lsendup_ne ) then
         nebpe = itarg_up
-        call MPI_ISEND( Harray, ndata, dtype, nebpe, mype, &
+        call MPI_ISEND( Harray(1,1,1), ndata, dtype, nebpe, mype, &
                        mpi_comm_work, sHandle(DIR_NE), ierr)
       end if
 
@@ -2133,10 +2133,6 @@ include "type_intstat_point2this.inc"
 
        ndata =km_in*imL*jmL
 
-      dBuf_SW = 0.0d0
-      dBuf_SE = 0.0d0
-      dBuf_NW = 0.0d0
-      dBuf_NE = 0.0d0
 
       sHandle(:) = MPI_REQUEST_NULL
       rHandle(:) = MPI_REQUEST_NULL
@@ -2319,10 +2315,6 @@ include "type_intstat_point2this.inc"
 
       ndata =km_in*imL*jmL
 
-      dBuf_SW = 0.0d0
-      dBuf_SE = 0.0d0
-      dBuf_NW = 0.0d0
-      dBuf_NE = 0.0d0
 
       sHandle(:) = MPI_REQUEST_NULL
       rHandle(:) = MPI_REQUEST_NULL
@@ -5411,10 +5403,6 @@ include "type_intstat_point2this.inc"
 
        ndata =km_64_in*imL*jmL
 
-      dBuf_SW = 0.0d0
-      dBuf_SE = 0.0d0
-      dBuf_NW = 0.0d0
-      dBuf_NE = 0.0d0
 
       sHandle(:) = MPI_REQUEST_NULL
       rHandle(:) = MPI_REQUEST_NULL
@@ -5584,10 +5572,6 @@ include "type_intstat_point2this.inc"
 
        ndata =km_16_in*imL*jmL
 
-      dBuf_SW = 0.0d0
-      dBuf_SE = 0.0d0
-      dBuf_NW = 0.0d0
-      dBuf_NE = 0.0d0
 
       sHandle(:) = MPI_REQUEST_NULL
       rHandle(:) = MPI_REQUEST_NULL
@@ -5757,10 +5741,6 @@ include "type_intstat_point2this.inc"
 
        ndata =km_4_in*imL*jmL
 
-      dBuf_SW = 0.0d0
-      dBuf_SE = 0.0d0
-      dBuf_NW = 0.0d0
-      dBuf_NE = 0.0d0
 
       sHandle(:) = MPI_REQUEST_NULL
       rHandle(:) = MPI_REQUEST_NULL
