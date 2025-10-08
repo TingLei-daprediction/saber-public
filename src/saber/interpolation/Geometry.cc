@@ -75,9 +75,6 @@ std::vector<int> computeS2NCheckerboardPartition(const atlas::RegularGrid & rg,
   return partition;
 }
 
-constexpr double deg2rad(double deg) { return deg * M_PI / 180.0; }
-constexpr double rad2deg(double rad) { return rad * 180.0 / M_PI; }
-
 void setupGsiMatchingGrid(const eckit::Configuration & config,
                           const eckit::mpi::Comm & comm,
                           atlas::Grid & grid,
