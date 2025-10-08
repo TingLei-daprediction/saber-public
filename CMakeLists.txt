@@ -69,7 +69,7 @@ find_package( vader 1.7.0 REQUIRED )
 
 # Optionals
 find_package( FFTW 3.3.8 QUIET )
-find_package( gsibec 1.2.1 QUIET )
+find_package( gsibec 1.3.2 QUIET )
 find_package( eccodes 2.24 QUIET )
 if( eccodes_FOUND )
     set( ECCODES_LIBRARIES eccodes )

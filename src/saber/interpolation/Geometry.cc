@@ -155,7 +155,9 @@ void setupGsiMatchingGrid(const eckit::Configuration & config,
   testconfig.set("type", "structured");
   testconfig.set("xspace", build_xspace_config(grid_type));
   testconfig.set("yspace", build_yspace_config(grid_type));
-  if (grid_type == "rotated_lonlat") testconfig.set("projection", build_projection_config(grid_type));
+  if (grid_type == "rotated_lonlat") {
+    testconfig.set("projection", build_projection_config(grid_type));
+  }
   grid = atlas::Grid{testconfig};
 
   const atlas::RegularGrid rg{grid};
@@ -170,34 +172,6 @@ void setupGsiMatchingGrid(const eckit::Configuration & config,
   const unsigned halo = config.getUnsigned("halo", 1);
   functionSpace = atlas::functionspace::StructuredColumns(grid, distribution,
                                                           atlas::option::halo(halo));
-
-  // Get rotated_lonlat on the Earth coordinate
-  if (grid_type == "rotated_lonlat") {
-    atlas::Field lonlatField = functionSpace.lonlat();
-    auto lonlatView = atlas::array::make_view<double, 2>(lonlatField);
-    for (int j = 0; j < lonlatView.shape(0); ++j) {
-      double rlon = lonlatView(j, 0);
-      double rlat = lonlatView(j, 1);
-      double rlon0 = north_pole_lon - 180.0;
-      double rlat0 = north_pole_lat - 90.0;
-
-      double xtt = std::cos(deg2rad(rlat)) * std::cos(deg2rad(rlon));
-      double ytt = std::cos(deg2rad(rlat)) * std::sin(deg2rad(rlon));
-      double ztt = std::sin(deg2rad(rlat));
-
-      double  xt = xtt*std::cos(deg2rad(rlat0)) - ztt*std::sin(deg2rad(rlat0));
-      double  yt = ytt;
-      double  zt = xtt*std::sin(deg2rad(rlat0)) + ztt*std::cos(deg2rad(rlat0));
-
-      double   x = xt*std::cos(deg2rad(rlon0)) - yt*std::sin(deg2rad(rlon0));
-      double   y = xt*std::sin(deg2rad(rlon0)) + yt*std::cos(deg2rad(rlon0));
-      double   z = zt;
-
-      lonlatView(j, 0) = rad2deg(std::atan2(y,x));
-      lonlatView(j, 1) = rad2deg(std::asin(z));
-    }
-    lonlatField.set_dirty();
-  }
 
   // Using atlas::mpi::Scope in the call to atlas::functionspace::StructuredColumns
   // may have reverted the default communicator to the world communicator.
