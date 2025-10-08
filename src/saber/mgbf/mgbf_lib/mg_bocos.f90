@@ -1811,7 +1811,7 @@ include "type_intstat_point2this.inc"
              enddo
              enddo
         else
-        call MPI_ISEND( Harray(1,1,1), ndata, dtype, nebpe, mype, &
+        call MPI_ISEND( Harray(1,imL+1,1), ndata, dtype, nebpe, mype, &
                        mpi_comm_comp, sHandle(DIR_SE), ierr)
         endif
       end if
@@ -1837,7 +1837,7 @@ include "type_intstat_point2this.inc"
              enddo
              enddo
         else
-         call MPI_ISEND( Harray(1,1,1), ndata, dtype, nebpe, mype,  &
+         call MPI_ISEND( Harray(1,1,jmL+1), ndata, dtype, nebpe, mype,  &
                         mpi_comm_comp, sHandle(DIR_NW), ierr)
         end if
       end if
@@ -1863,7 +1863,7 @@ include "type_intstat_point2this.inc"
              enddo
              enddo
         else
-        call MPI_ISEND( Harray(1,1,1), ndata, dtype, nebpe, mype, &
+        call MPI_ISEND( Harray(1,imL+1,jmL+1), ndata, dtype, nebpe, mype, &
                       mpi_comm_comp, sHandle(DIR_NE), ierr)
         endif
       end if
@@ -2001,7 +2001,7 @@ include "type_intstat_point2this.inc"
 
       if( lsendup_se ) then
         nebpe = itarg_up
-        call MPI_ISEND( Harray(1,1,1), ndata, dtype, nebpe, mype, &
+        call MPI_ISEND( Harray(1,imL+1,1), ndata, dtype, nebpe, mype, &
                        mpi_comm_work, sHandle(DIR_SE), ierr)
       end if
 
@@ -2013,7 +2013,7 @@ include "type_intstat_point2this.inc"
 
       if( lsendup_nw ) then
         nebpe = itarg_up
-         call MPI_ISEND( Harray(1,1,1), ndata, dtype, nebpe, mype,  &
+         call MPI_ISEND( Harray(1,1,jmL+1), ndata, dtype, nebpe, mype,  &
                         mpi_comm_work, sHandle(DIR_NW), ierr)
       end if
 
@@ -2025,7 +2025,7 @@ include "type_intstat_point2this.inc"
 
       if( lsendup_ne ) then
         nebpe = itarg_up
-        call MPI_ISEND( Harray(1,1,1), ndata, dtype, nebpe, mype, &
+        call MPI_ISEND( Harray(1,imL+1,jmL+1), ndata, dtype, nebpe, mype, &
                        mpi_comm_work, sHandle(DIR_NE), ierr)
       end if
 
@@ -5861,6 +5861,8 @@ endsubroutine downsend_loc_g21
 
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 end submodule mg_bocos
+
+
 
 
 
