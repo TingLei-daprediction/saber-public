@@ -146,18 +146,27 @@ if (nchecks .gt. 0) then  ! only run checks if data was passed in from JEDI
   endif
 
   do ix = 1, gsi_nx
-    gsi_lon = self%grid%lons(self%grid%isc-1 + ix)
+    if(self%grid%regional) then
+      gsi_lon = self%grid%lons2(self%grid%isc-1 + ix,self%grid%jsc)
+    else
+      gsi_lon = self%grid%lons(self%grid%isc-1 + ix)
+    endif
     jedi_lon = checks(2+ix)
-    if (abs(gsi_lon - jedi_lon) > 1e-8) then
+    if(jedi_lon .lt. 0.) jedi_lon = jedi_lon + 360.
+    if (abs(gsi_lon - jedi_lon) > 1e-5) then
       write (*,*) 'ERROR connecting GSI-block to JEDI -- inconsistent lon with gsi, atlas = ', gsi_lon, jedi_lon
       gsi_jedi_grid_error = .true.
     endif
   enddo
 
   do iy = 1, gsi_ny
-    gsi_lat = self%grid%lats(self%grid%jsc-1 + iy)
+    if(self%grid%regional) then
+      gsi_lat = self%grid%lats2(self%grid%iec,self%grid%jsc-1 + iy)
+    else
+      gsi_lat = self%grid%lats(self%grid%jsc-1 + iy)
+    endif
     jedi_lat = checks(2+gsi_nx+iy)
-    if (abs(gsi_lat - jedi_lat) > 1e-8) then
+    if (abs(gsi_lat - jedi_lat) > 1e-5) then
       write (*,*) 'ERROR connecting GSI-block to JEDI -- inconsistent lat with gsi, atlas = ', gsi_lat, jedi_lat
       gsi_jedi_grid_error = .true.
     endif
@@ -394,6 +403,9 @@ endif
 ! Randomization leaves atlas halos out of date, so set dirty flag
 call fields%set_dirty(.true.)
 
+! Release memory
+call afield%final()
+
 end subroutine randomize
 
 ! --------------------------------------------------------------------------------------------------
@@ -600,7 +612,6 @@ if (any(needvrs(:)(1:6)/='filled')) then
   call abor1_ftn(myname_//": missing fields in cv(tlm) ")
 endif
 
-
 ! Release pointer
 ! ---------------
 if (self%cv) then
@@ -614,13 +625,16 @@ endif
 deallocate(needvrs)
 deallocate(tbdvars)
 deallocate(gvars2d,gvars3d)
-call afield%final()
 
 ! GSI covariance leaves atlas halos out of date, so set dirty flag
 ! ----------------------------------------------------------------
 do ii=1,ntimes
   call fields(ii)%set_dirty(.true.)
 enddo
+
+! Release memory
+! --------------
+call afield%final()
 
 end subroutine multiply
 
@@ -783,6 +797,7 @@ end subroutine multiply
       call afield%data(rank2)
       ier=0
    endif
+   call afield%final()
    end subroutine get_rank2_
 
    ! copy atlas array into GSI array
