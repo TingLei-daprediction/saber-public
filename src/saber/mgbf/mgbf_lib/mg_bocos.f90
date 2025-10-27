@@ -2967,7 +2967,7 @@ integer(i_kind) isend,irecv,nebpe
 integer(i_kind):: mygen_dn,mygen_up
 logical:: lsendup_sw,lsendup_se,lsendup_nw,lsendup_ne,flag_up
 integer(i_kind):: itarg_up
-integer:: g_ind
+integer(i_kind):: g_ind
 include "type_parameter_locpointer.inc"
 include "type_intstat_locpointer.inc"
 include "type_parameter_point2this.inc"
@@ -3268,7 +3268,7 @@ integer(i_kind) isend,irecv,nebpe
 
 logical:: lsendup_sw,lsendup_se,lsendup_nw,lsendup_ne,flag_up
 integer(i_kind):: itarg_up
-integer:: g_ind
+integer(i_kind):: g_ind
 include "type_parameter_locpointer.inc"
 include "type_intstat_locpointer.inc"
 include "type_parameter_point2this.inc"
@@ -3510,7 +3510,7 @@ class(mg_intstate_type),target::this
 integer(i_kind), intent(in):: km_in
 real(r_kind), dimension(km_in,1:this%im,1:this%jm),intent(in):: Warray
 real(r_kind), dimension(km_in,1:this%imL,1:this%jmL),intent(out):: Harray
-integer, intent(in):: mygen_up,mygen_dn
+integer(i_kind), intent(in):: mygen_up,mygen_dn
 !-----------------------------------------------------------------------
 real(r_kind), allocatable, dimension(:,:,:)::                            &
                             sBuf_SW,sBuf_SE,sBuf_NW,sBuf_NE              &
@@ -3775,7 +3775,7 @@ integer(i_kind) iaerr,ierr,iderr,ndata,i,j,L
 integer(i_kind) isend,irecv,nebpe
 
 logical:: lsendup_sw,lsendup_se,lsendup_nw,lsendup_ne  
-integer:: mygen_up,mygen_dn
+integer(i_kind):: mygen_up,mygen_dn
 integer(i_kind):: itarg_up                                           
 integer(i_kind):: g_ind
 !-----------------------------------------------------------------------
