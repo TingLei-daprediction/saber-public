@@ -65,7 +65,9 @@ real(r_kind), allocatable,dimension(:,:):: p_sig
 real(r_kind), allocatable,dimension(:,:):: p_rho
 
 real(r_kind), allocatable,dimension(:,:,:):: paspx
+real(r_kind), allocatable,dimension(:,:,:,:):: paspx4d
 real(r_kind), allocatable,dimension(:,:,:):: paspy
+real(r_kind), allocatable,dimension(:,:,:,:):: paspy4d
 real(r_kind), allocatable,dimension(:,:,:):: pasp1
 real(r_kind), allocatable,dimension(:,:,:,:):: pasp2
 real(r_kind), allocatable,dimension(:,:,:,:,:):: pasp3
@@ -76,7 +78,9 @@ real(r_kind), allocatable,dimension(:,:,:,:):: vpasp3
 real(r_kind), allocatable,dimension(:,:,:,:):: hss3
 
 real(r_kind), allocatable,dimension(:):: ssx
+real(r_kind), allocatable,dimension(:,:,:,:):: ssx4d
 real(r_kind), allocatable,dimension(:):: ssy
+real(r_kind), allocatable,dimension(:,:,:,:):: ssy4d
 real(r_kind), allocatable,dimension(:):: ss1
 real(r_kind), allocatable,dimension(:,:):: ss2
 real(r_kind), allocatable,dimension(:,:,:):: ss3
@@ -1128,7 +1132,9 @@ allocate(this%p_sig(1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this
 allocate(this%p_rho(1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this%p_rho=0.
 
 allocate(this%paspx(1,1,1:this%im)) ; this%paspx=0.
+allocate(this%paspx4d(this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,2)) ; this%paspx4d=0.
 allocate(this%paspy(1,1,1:this%jm)) ; this%paspy=0.
+allocate(this%paspy4d(this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,2)) ; this%paspy4d=0.
 
 allocate(this%pasp1(1,1,1:this%lm))                     ; this%pasp1=0.
 allocate(this%pasp2(2,2,1:this%im,1:this%jm))           ; this%pasp2=0.
@@ -1139,9 +1145,11 @@ allocate(this%hss2(1:this%im,1:this%jm,1:3))   ; this%hss2=0.
 
 allocate(this%vpasp3(1:6,1:this%im,1:this%jm,1:this%lm)) ; this%vpasp3=0.
 allocate(this%hss3(1:this%im,1:this%jm,1:this%lm,1:6))   ; this%hss3=0.
-
+!clt ssx and ssy are all 0 for filtering_fast_bkg, hence, they are not changed for the inhomogeneous case
 allocate(this%ssx(1:this%im))                     ; this%ssx=0.
+allocate(this%ssx4d(this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,2)) ; this%ssx=0.
 allocate(this%ssy(1:this%jm))                     ; this%ssy=0.
+allocate(this%ssy4d(this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,2)) ; this%ssy=0.
 allocate(this%ss1(1:this%lm))                     ; this%ss1=0.
 allocate(this%ss2(1:this%im,1:this%jm))           ; this%ss2=0.
 allocate(this%ss3(1:this%im,1:this%jm,1:this%lm)) ; this%ss3=0.
@@ -1400,12 +1408,37 @@ do L=1,this%lm
    this%pasp1(1,1,L)=this%pasp01
 enddo
 
-do i=1,this%im
-   this%paspx(1,1,i)=this%pasp02
-enddo
-do j=1,this%jm
-   this%paspy(1,1,j)=this%pasp02
-enddo
+!tothink
+!cltorg do i=1,this%im
+!cltorg   this%paspx(1,1,i)=this%pasp02
+!cltorg enddo
+       do i=1,this%im
+      do j=1,this%jm
+   do k=1,this%lm
+     this%paspx4d(:,:,:,1)=this%pasp02  !for first generation
+   enddo
+      enddo
+       enddo
+   
+  !to initialize halo points 
+   call this%boco_2d(this%paspx4d(1:this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,1),this%lm,this%im,this%jm,this%hx,this%hy)
+   call this%upsending_normalized(this%paspx4d(:,:,:,1),this%paspx4d(:,:,:,2))
+
+
+
+!cltorg do j=1,this%jm
+!cltorg   this%paspy(1,1,j)=this%pasp02
+!cltorg enddo
+!lct   this%paspy(:,:,:,1)=this%pasp02  !for first generation
+       do i=1,this%im
+      do j=1,this%jm
+   do k=1,this%lm
+     this%paspy4d(:,:,:,1)=this%pasp02  !for first generation
+   enddo
+      enddo
+       enddo
+  !to initialize halo points 
+   call this%boco_2d(this%paspy4d(1:this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,1),this%lm,this%im,this%jm,this%hx,this%hy)
 
 do j=1,this%jm
 do i=1,this%im
@@ -1476,6 +1509,16 @@ end do
          call this%cholaspect(1,this%im,1,this%jm,1,this%lm,this%pasp3)
          call this%getlinesum(this%hx,1,this%im,this%paspx,this%ssx)
          call this%getlinesum(this%hy,1,this%jm,this%paspy,this%ssy)
+       do k=1,this%lm
+         do j=1,this%jm
+         call this%getlinesum(this%hx,1,this%im,this%paspx4d(k,1:this%im,j,1),this%ssx4d(k,1:this%im,j,1))
+         end do
+       enddo
+       do k=1,this%lm
+         do i=1,this%im
+         call this%getlinesum(this%hy,1,this%jm,this%paspy4d(k,i,1:this%jm,1),this%ssy4d(k,i,1:this%jm,1))
+         end do 
+       enddo
          call this%getlinesum(this%hz,1,this%lm,this%pasp1,this%ss1)
          call this%getlinesum(this%hx,1,this%im,this%hy,1,this%jm,this%pasp2,this%ss2)
          call this%getlinesum(this%hx,1,this%im,this%hy,1,this%jm,this%hz,1,this%lm,this%pasp3,this%ss3)
@@ -1502,6 +1545,14 @@ end do
       this%VALL(1,1-this%hx:this%imH+this%hx,1-this%hy:this%jmH+this%hy)=0.
    end if
 !cltorg  end if
+   call this%upsending_normalized(this%paspx4d(:,:,:,1),this%paspx4d(:,:,:,2))
+   call this%upsending_normalized(this%paspy4d(:,:,:,1),this%paspy4d(:,:,:,2))
+   call this%upsending_normalized(this%ssx4d(:,:,:,1),this%ssx4d(:,:,:,2))
+   call this%upsending_normalized(this%ssy4d(:,:,:,1),this%ssy4d(:,:,:,2))
+
+
+
+
 !-----------------------------------------------------------------------
 endsubroutine def_mg_weights
 

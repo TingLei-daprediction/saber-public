@@ -10,6 +10,14 @@ module mgbf_covariance_mod
 use atlas_module,                   only: atlas_fieldset, atlas_field
 use atlas_module,    only: atlas_functionspace
 use atlas_module,    only: atlas_functionspace_StructuredColumns 
+use atlas_module, only : atlas_functionspace,                      &
+                         atlas_functionspace_nodecolumns,          &
+                         atlas_functionspace_pointcloud,           &
+                         atlas_functionspace_structuredcolumns,    &
+                         atlas_mesh_nodes, atlas_field
+
+use tools_func, only : sphere_dist
+use tools_const, only : req          ! Earth radius (m)
 
 ! fckit
 use fckit_mpi_module,               only: fckit_mpi_comm
@@ -78,6 +86,10 @@ type(atlas_fieldset),      intent(in)    :: background
 type(atlas_fieldset),      intent(in)    :: firstguess
 
 ! Locals
+real(r_kind) :: dist_rad, dist_m
+integer      :: ipt
+
+
 character(len=*), parameter :: myname_=myname//'*create'
 character(len=:), allocatable :: mgbf_nml,centralblockname
 logical :: central
@@ -155,6 +167,40 @@ if(nscale == 1 .and. nvargrp ==1 ) then
                                       ! the previous namelist files could be still used,correctly,
                                       ! by the current sdl/vdl enhanced version
 endif
+
+! grab the generic handle from an atlas field
+afield= firstguess%field(1)
+fs_generic = afield%functionspace()
+select case (trim(fs_generic%name()))
+case ('NodeColumns')
+  fs_nc = atlas_functionspace_nodecolumns(fs_generic%c_ptr())
+  nodes = fs_nc%nodes()
+  lonlat_field = nodes%lonlat()
+  call lonlat_field%data(lonlat_ptr)
+
+case ('PointCloud')
+  fs_pc = atlas_functionspace_pointcloud(fs_generic%c_ptr())
+  lonlat_field = fs_pc%lonlat()
+  call lonlat_field%data(lonlat_ptr)
+
+case ('StructuredColumns')
+  fs_sc = atlas_functionspace_structuredcolumns(fs_generic%c_ptr())
+  lonlat_field = fs_sc%xy()
+  call lonlat_field%data(lonlat_ptr)
+
+case default
+  call mpl%abort('mgbf_covariance:get_lonlat', &
+                 'unsupported Atlas function space: '//fs_generic%name())
+end select
+
+do ipt = 1, npts_owned
+  call sphere_dist(lon_ref, lat_ref, lonlat_ptr(1, ipt), lonlat_ptr(2, ipt), dist_rad)
+  dist_m = dist_rad * req
+  ! …store or use dist_m as needed…
+end do
+
+
+
 allocate(self%intstate(nscale,nvargrp))
 call flush(6)
 do iscale=1,nscale

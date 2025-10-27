@@ -176,6 +176,42 @@ do ix=Lx,Mx
 !clt   write(6,*)'thinkdebss is ',ss(ix)
 enddo
 end subroutine getlinesum1
+module subroutine getlinesum1d(this,hx,lx,mx, el, ss)            ! [getlinesum]
+!=============================================================================
+!clt from getlinesum1, just reduce e1 to a 1d array
+! Get inverse of the line-sum of the matrix representing the
+! unnormalized
+! beta function with aspect tensor pasp=(el*el^T)^(-1), and invert the
+! result 
+! so it can be used subsequently in the normalized version of this
+! filter.
+!=============================================================================
+class(mg_parameter_type)::this
+integer,                  intent(in   ):: hx,Lx,mx
+real(dp),dimension(Lx:Mx),intent(in   ):: el
+real(dp),dimension(lx:mx),intent(  out):: ss
+!-----------------------------------------------------------------------------
+real(dp),parameter:: eps=1.e-12
+real(dp)          :: s,rr,rrc,exx,x
+integer           :: ix,gxl,gxm,gx
+!=============================================================================
+!clt  write(6,*)'thinkdebss Lx,MX = ',Lx, ' ',Mx
+do ix=Lx,Mx
+   s=0
+   exx=el(ix)*this%rmom2_1
+   x=u1/exx
+   gxl=ceiling(-x+eps); gxm=floor( x-eps)
+   if(gxl<-hx.or.gxm>hx)&
+        stop 'In getlinesum1; filter reach fx becomes too large for hx'
+   do gx=gxl,gxm
+      x=gx
+      rr=(x*exx)**2; rrc=u1-rr
+      s=s+rrc**this%p
+   enddo
+   ss(ix)=u1/s
+!clt   write(6,*)'thinkdebss is ',ss(ix)
+enddo
+end subroutine getlinesum1d
 !=============================================================================
 module subroutine getlinesum2(this,hx,lx,mx, hy,ly,my, el, ss)  ! [getlinesum]
 !=============================================================================

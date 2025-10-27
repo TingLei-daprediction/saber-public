@@ -244,8 +244,8 @@ contains
 !from jp_pbfil.f90
   generic :: cholaspect => cholaspect1,cholaspect2,cholaspect3,cholaspect4
   procedure,nopass :: cholaspect1,cholaspect2,cholaspect3,cholaspect4
-  generic :: getlinesum => getlinesum1,getlinesum2,getlinesum3
-  procedure :: getlinesum1,getlinesum2,getlinesum3
+  generic :: getlinesum => getlinesum1,getlinesum1d,getlinesum2,getlinesum3
+  procedure :: getlinesum1,getlinesum1d,getlinesum2,getlinesum3
   generic :: rbeta => rbeta1,rbeta2,rbeta3,rbeta4,vrbeta1,vrbeta2,vrbeta3,vrbeta4                 
   procedure:: rbeta1,rbeta2,rbeta3,rbeta4,vrbeta1,vrbeta2,vrbeta3,vrbeta4                 
   generic :: rbetaT => rbeta1t,rbeta2t,rbeta3t,rbeta4t,vrbeta1t,vrbeta2t,vrbeta3t,vrbeta4t
@@ -325,6 +325,13 @@ interface
      class(mg_parameter_type)::this
      integer,                      intent(in   ):: hx,Lx,mx
      real(dp),dimension(1,1,Lx:Mx),intent(in   ):: el
+     real(dp),dimension(    lx:mx),intent(  out):: ss
+   end subroutine
+   module subroutine getlinesum1d(this,hx,lx,mx, el, ss)
+     use mgbf_kinds, only: dp=>r_kind
+     class(mg_parameter_type)::this
+     integer,                      intent(in   ):: hx,Lx,mx
+     real(dp),dimension(Lx:Mx),intent(in   ):: el
      real(dp),dimension(    lx:mx),intent(  out):: ss
    end subroutine
    module subroutine getlinesum2(this,hx,lx,mx, hy,ly,my, el, ss)

@@ -477,8 +477,10 @@ include "type_intstat_point2this.inc"
             call this%lsqr_adjoint_offset(WORK,VALL(1:km_all,1-ibm:im+ibm,1-jbm:jm+jbm),km_all,ibm,jbm)
           endif
      else
-            ibm=3
-            jbm=3
+!clttothink
+            ibm=1
+            jbm=1  ! to make the following bocoT_2d still work with 0 values of 1 bank of halo points to be 
+                   ! exchanged. 
           VALL(1:km_all,1:im,1:jm)=WORK
  !clt         call this%lin_adjoint_offset(WORK,VALL(1:km_all,1-ibm:im+ibm,1-jbm:jm+jbm),km_all,ibm,jbm)
 
@@ -488,7 +490,8 @@ include "type_intstat_point2this.inc"
 !***
 !cltthinkdeb555
 !clt     if(.not.this%l_anal_sub_of_filt) then
-         call this%bocoT_2d(VALL(1:km_all,1-ibm:im+ibm,1-jbm:jm+jbm),km_all,im,jm,ibm,jbm)
+!cltorg         call this%bocoT_2d(VALL(1:km_all,1-ibm:im+ibm,1-jbm:jm+jbm),km_all,im,jm,ibm,jbm)
+         call this%bocoT_2d(VALL(1:km_all,1-this%hx:im+this%hx,1-this%hy:jm+this%hy),km_all,im,jm,this%hx,this%hy)
  !clt    endif 
 
 !----------------------------------------------------------------------
@@ -527,7 +530,8 @@ include "type_intstat_point2this.inc"
 !***
 !cltthinkdeb255
 !   if(.not.this%l_anal_sub_of_filt) then
-         call this%boco_2d(VALL(1:km_all,1-ibm:im+ibm,1-jbm:jm+jbm),km_all,im,jm,ibm,jbm)
+!cltorg         call this%boco_2d(VALL(1:km_all,1-ibm:im+ibm,1-jbm:jm+jbm),km_all,im,jm,ibm,jbm)
+         call this%boco_2d(VALL(1:km_all,1-this%hx:im+this%hx,1-this%hy:jm+this%hy),km_all,im,jm,this%hx,this%hy)
 !   endif
    if(this%l_anal_sub_of_filt) then
        WORK(:,:,:)=VALL(:,1:im,1:jm)
