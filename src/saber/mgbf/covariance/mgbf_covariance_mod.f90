@@ -1,4 +1,4 @@
-! (C) Copyright 2022 United States Government as represented by the Administrator of the National
+﻿! (C) Copyright 2022 United States Government as represented by the Administrator of the National
 !     Aeronautics and Space Administration
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
@@ -220,7 +220,7 @@ do iscale=1,nscale
   do ivargrp=1,nvargrp
    write(6,*)'the999 nml is ', trim(self%mgbf_nml_group(iscale,ivargrp))  
    call flush(6)
-   call  self%intstate(iscale,ivargrp)%mg_initialize(self%mgbf_nml_group(iscale,ivargrp))  !mgbf_nml like mgbeta.nml
+   call  self%intstate(iscale,ivargrp)%mg_initialize(inputfilename=self%mgbf_nml_group(iscale,ivargrp))  !mgbf_nml like mgbeta.nml
   enddo
 enddo
 ! Get background (temporary test of the functionality)
