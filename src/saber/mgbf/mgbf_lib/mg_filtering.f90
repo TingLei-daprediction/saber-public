@@ -990,17 +990,17 @@ include "type_intstat_point2this.inc"
                                                  call btim(hfiltT_tim)
      do i=im,1,-1
         do k=1,km3
-           lev1=(k-1)*km3+1
-           lev2=k*km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
         
-          call this%rbetaT(lm_f,hy,1,jm,this%paspy4d(k,i,1:jm,1),this%ssy4d(k,i,1:jm,1),VALL(lev1:lev2,i,:))
+          call this%rbetaT(lm,hy,1,jm,this%paspy4d(:,i,1:jm,1),this%ssy4d(:,i,1:jm,1),VALL(lev1:lev2,i,:))
         enddo
  !cltorg       call this%rbetaT(km,hy,1,jm,paspy(1,i,1:jm),ssy(1,i,1:jm),VALL(:,i,:))
 !clt assuming 2d variables are suface variable
         do k=1,km2
           lev1=lev2+1
           lev2=lev1
-          call this%rbetaT(1,hy,1,jm,this%paspy4d(lm_f,i,1:jm,1),this%ssy4d(lm_f,i,1:jm,1),VALL(lev1:lev2,i,:))
+          call this%rbetaT(1,hy,1,jm,this%paspy4d(lm,i,1:jm,1),this%ssy4d(lm,i,1:jm,1),VALL(lev1:lev2,i,:))
           lev1=lev1+1
           lev2=lev2+1
         enddo
@@ -1012,17 +1012,17 @@ include "type_intstat_point2this.inc"
                                                  call btim(hfiltT_tim)
      do j=jm,1,-1
         do k=1,km3
-           lev1=(k-1)*km3+1
-           lev2=k*km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
         
-          call this%rbetaT(lm_f,hx,1,im,this%paspx4d(k,1:im,j,1),this%ssx4d(k,1:im,j,1),VALL(lev1:lev2,:,j))
+          call this%rbetaT(lm,hx,1,im,this%paspx4d(:,1:im,j,1),this%ssx4d(:,1:im,j,1),VALL(lev1:lev2,:,j))
         enddo
 !cltorg        call this%rbetaT(km,hx,1,im,paspx(1,:,1:im,j),ssx(1,1:im,j),VALL(:,:,j))
 !clt assuming 2d variables are suface variable
         do k=1,km2
           lev1=lev2+1
           lev2=lev1
-          call this%rbetaT(1,hx,1,im,this%paspx4d(lm_f,1:im,j,1),this%ssx4d(lm_f,1:im,j,1),VALL(lev1:lev2,:,j))
+          call this%rbetaT(1,hx,1,im,this%paspx4d(lm,1:im,j,1),this%ssx4d(lm,1:im,j,1),VALL(lev1:lev2,:,j))
           lev1=lev1+1
           lev2=lev2+1
         enddo
@@ -1035,16 +1035,16 @@ include "type_intstat_point2this.inc"
                                                  call btim(hfiltT_tim)
      do i=im,1,-1
         do k=1,km3
-           lev1=(k-1)*km3+1
-           lev2=k*km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
         
-          call this%rbetaT(lm_f,hy,1,jm,this%paspy4d(k,i,1:jm,2),this%ssy4d(k,i,1:jm,2),HALL(lev1:lev2,i,:))
+          call this%rbetaT(lm,hy,1,jm,this%paspy4d(:,i,1:jm,2),this%ssy4d(:,i,1:jm,2),HALL(lev1:lev2,i,:))
         enddo
 !clt assuming 2d variables are suface variable
         do k=1,km2
           lev1=lev2+1
           lev2=lev1
-          call this%rbetaT(1,hy,1,jm,this%paspy4d(lm_f,i,1:jm,2),this%ssy4d(lm_f,i,1:jm,2),HALL(lev1:lev2,i,:))
+          call this%rbetaT(1,hy,1,jm,this%paspy4d(lm,i,1:jm,2),this%ssy4d(lm,i,1:jm,2),HALL(lev1:lev2,i,:))
           lev1=lev1+1
           lev2=lev2+1
         enddo
@@ -1059,16 +1059,16 @@ include "type_intstat_point2this.inc"
                                                  call btim(hfiltT_tim)
      do j=jm,1,-1
         do k=1,km3
-           lev1=(k-1)*km3+1
-           lev2=k*km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
         
-          call this%rbetaT(lm_f,hx,1,im,this%paspx4d(k,1:im,j,2),this%ssx4d(k,1:im,j,2),HALL(lev1:lev2,:,j))
+          call this%rbetaT(lm,hx,1,im,this%paspx4d(:,1:im,j,2),this%ssx4d(:,1:im,j,2),HALL(lev1:lev2,:,j))
         enddo
 !cltorg        call this%rbetaT(km,hx,1,im,paspx(:,2),ssx(:,,HALL(:,:,j))
         do k=1,km2
           lev1=lev2+1
           lev2=lev1
-          call this%rbetaT(1,hx,1,im,this%paspx4d(lm_f,1:im,j,2),this%ssx4d(lm_f,1:im,j,2),HALL(lev1:lev2,:,j))
+          call this%rbetaT(1,hx,1,im,this%paspx4d(lm,1:im,j,2),this%ssx4d(lm,1:im,j,2),HALL(lev1:lev2,:,j))
           lev1=lev1+1
           lev2=lev2+1
         enddo
@@ -1093,16 +1093,16 @@ include "type_intstat_point2this.inc"
                                                  call btim(hfilt_tim)
      do j=1,jm
         do k=1,km3
-           lev1=(k-1)*km3+1
-           lev2=k*km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
         
-          call this%rbeta(lm_f,hx,1,im,this%paspx4d(k,1:im,j,1),this%ssx4d(k,1:im,j,1),VALL(lev1:lev2,:,j))
+          call this%rbeta(lm,hx,1,im,this%paspx4d(:,1:im,j,1),this%ssx4d(:,1:im,j,1),VALL(lev1:lev2,:,j))
         enddo
 !cltorg        call this%rbeta(km,hx,1,im,paspx,ssx,VALL(:,:,j))
         do k=1,km2
           lev1=lev2+1
           lev2=lev1
-          call this%rbetaT(1,hx,1,im,this%paspx4d(lm_f,1:im,j,1),this%ssx4d(lm_f,1:im,j,1),VALL(lev1:lev2,:,j))
+          call this%rbetaT(1,hx,1,im,this%paspx4d(lm,1:im,j,1),this%ssx4d(lm,1:im,j,1),VALL(lev1:lev2,:,j))
           lev1=lev1+1
           lev2=lev2+1
         enddo
@@ -1114,17 +1114,17 @@ include "type_intstat_point2this.inc"
                                                  call btim(hfilt_tim)
      do i=1,im
         do k=1,km3
-           lev1=(k-1)*km3+1
-           lev2=k*km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
         
-          call this%rbeta(lm_f,hy,1,jm,this%paspy4d(k,i,1:jm,1),this%ssy4d(k,i,1:jm,1),VALL(lev1:lev2,i,:))
+          call this%rbeta(lm,hy,1,jm,this%paspy4d(:,i,1:jm,1),this%ssy4d(:,i,1:jm,1),VALL(lev1:lev2,i,:))
         enddo
 !cltorg        call this%rbeta(km,hy,1,jm,paspy,ssy,VALL(:,i,:))
 !clt assuming 2d variables are suface variable
         do k=1,km2
           lev1=lev2+1
           lev2=lev1
-          call this%rbeta(1,hy,1,jm,this%paspy4d(lm_f,i,1:jm,1),this%ssy4d(lm_f,i,1:jm,1),VALL(lev1:lev2,i,:))
+          call this%rbeta(1,hy,1,jm,this%paspy4d(lm,i,1:jm,1),this%ssy4d(lm,i,1:jm,1),VALL(lev1:lev2,i,:))
           lev1=lev1+1
           lev2=lev2+1
         enddo
@@ -1137,16 +1137,16 @@ include "type_intstat_point2this.inc"
                                                  call btim(hfilt_tim)
      do j=1,jm
         do k=1,km3
-           lev1=(k-1)*km3+1
-           lev2=k*km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
         
-          call this%rbeta(lm_f,hx,1,im,this%paspx4d(k,1:im,j,2),this%ssx4d(k,1:im,j,2),HALL(lev1:lev2,:,j))
+          call this%rbeta(lm,hx,1,im,this%paspx4d(:,1:im,j,2),this%ssx4d(:,1:im,j,2),HALL(lev1:lev2,:,j))
         enddo
 !cltorg        call this%rbeta(km,hx,1,im,paspx,ssx,HALL(:,:,j))
         do k=1,km2
           lev1=lev2+1
           lev2=lev1
-          call this%rbeta(1,hx,1,im,this%paspx4d(lm_f,1:im,j,1),this%ssx4d(lm_f,1:im,j,2),HALL(lev1:lev2,:,j))
+          call this%rbeta(1,hx,1,im,this%paspx4d(lm,1:im,j,1),this%ssx4d(lm,1:im,j,2),HALL(lev1:lev2,:,j))
           lev1=lev1+1
           lev2=lev2+1
         enddo
@@ -1160,17 +1160,17 @@ include "type_intstat_point2this.inc"
                                                  call btim(hfilt_tim)
      do i=1,im
         do k=1,km3
-           lev1=(k-1)*km3+1
-           lev2=k*km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
         
-          call this%rbeta(lm_f,hy,1,jm,this%paspy4d(k,i,1:jm,2),this%ssy4d(k,i,1:jm,2),HALL(lev1:lev2,i,:))
+          call this%rbeta(lm,hy,1,jm,this%paspy4d(:,i,1:jm,2),this%ssy4d(:,i,1:jm,2),HALL(lev1:lev2,i,:))
         enddo
 !cltorg        call this%rbeta(km,hy,1,jm,paspy,ssy,HALL(:,i,:))
 !clt assuming 2d variables are suface variable
         do k=1,km2
           lev1=lev2+1
           lev2=lev1
-          call this%rbeta(1,hy,1,jm,this%paspy4d(lm_f,i,1:jm,2),this%ssy4d(lm_f,i,1:jm,2),HALL(lev1:lev2,i,:))
+          call this%rbeta(1,hy,1,jm,this%paspy4d(lm,i,1:jm,2),this%ssy4d(lm,i,1:jm,2),HALL(lev1:lev2,i,:))
           lev1=lev1+1
           lev2=lev2+1
         enddo
