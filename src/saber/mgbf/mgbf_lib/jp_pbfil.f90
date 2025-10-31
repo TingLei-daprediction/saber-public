@@ -404,6 +404,46 @@ do ix=Lx,Mx
 enddo
 a=b
 end subroutine rbeta1
+module subroutine rbeta3d_1(this,nz,hx,lx,mx, el,ss, a)                    ! [rbeta]
+!=============================================================================
+!clt modified from rbeta1 to treat files of vertical dimension nz
+! Perform a radial beta-function filter in 1D.
+! It averages the surrounding density values, and so preserves the value
+! (in its target region) when presented with a constant-density input
+! field.
+! The input data occupy the extended region:
+! Lx-hx <= jx <= mx+hx.
+! The output data occupy the central region
+! Lx <= ix <= Mx.
+!=============================================================================
+class(mg_parameter_type)::this
+integer,                        intent(in   ):: nz,hx,Lx,mx
+real(dp),dimension(nz, Lx:Mx),   intent(in   ):: el
+real(dp),dimension(nz, Lx:Mx),   intent(in   ):: ss
+real(dp),dimension(nz,lx-hx:mx+hx),intent(inout):: a
+!-----------------------------------------------------------------------------
+real(dp),parameter             :: eps=1.e-12
+real(dp),dimension(nz,lx-hx:mx+hx):: b
+real(dp)                       :: x,tb,s,rr,rrc,frow,exx
+integer                        :: ix,jx,gx,k
+!=============================================================================
+b=0
+do k=1,nz 
+do ix=Lx,Mx
+   tb=0; s=ss(k,ix)
+   exx=el(k,ix)*this%rmom2_1
+   x=u1/exx
+   do gx=ceiling(-x+eps),floor( x-eps)
+      jx=ix+gx;      x=gx
+      rr=(x*exx)**2; rrc=u1-rr
+      frow=s*rrc**this%p
+      tb=tb+frow*a(k,jx)
+   enddo
+   b(k,ix)=tb
+enddo
+enddo
+a=b
+end subroutine rbeta3d_1
 !=============================================================================
 module subroutine rbeta2(this,hx,lx,mx, hy,ly,my, el,ss, a)          ! [rbeta]
 !=============================================================================
@@ -673,6 +713,44 @@ do ix=Lx,Mx
 enddo
 a=b
 end subroutine rbeta1t
+module subroutine rbeta3d_1T(this,nz,hx,lx,mx, el,ss, a)                  ! [rbetat]
+!clt modified from rbeta1T to add a vertical dimension
+!=============================================================================
+! Perform an ADJOINT radial beta-function filter in 1D.
+! It conserves "masses" initially distributed only at the closure of 
+! the central domain, 
+! Lx <= ix <= Mx.
+! The output field of the redistributed masses occupies the
+! the extended domain, 
+! Lx-hx <= jx <= mx+hx.
+!=============================================================================
+class(mg_parameter_type)::this
+integer,                        intent(in   )::nz, hx,Lx,mx
+real(dp),dimension(nz,Lx:Mx),  intent(in   ):: el
+real(dp),dimension(nz,  Lx:Mx),    intent(in   ):: ss
+real(dp),dimension(nz,lx-hx:mx+hx),intent(inout):: a
+!-----------------------------------------------------------------------------
+real(dp),parameter             :: eps=1.e-12
+real(dp),dimension(nz,lx-hx:mx+hx):: b
+real(dp)                       :: ta,s,rr,rrc,frow,exx,x
+integer                        :: ix,jx,gx,k
+!=============================================================================
+b=0
+do k=1,nz
+do ix=Lx,Mx
+   ta=a(k,ix); s=ss(k,ix)
+   exx=el(k,ix)*this%rmom2_1
+   x=u1/exx
+   do gx=ceiling(-x+eps),floor( x-eps)
+      jx=ix+gx;      x=gx
+      rr=(x*exx)**2; rrc=u1-rr
+      frow=s*rrc**this%p
+      b(k,jx)=b(k,jx)+frow*ta
+   enddo
+enddo
+enddo
+a=b
+end subroutine rbeta3d_1t
 !=============================================================================
 module subroutine rbeta2T(this,hx,lx,mx, hy,ly,my, el,ss, a)        ! [rbetat]
 !=============================================================================

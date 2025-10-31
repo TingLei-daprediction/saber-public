@@ -249,10 +249,10 @@ contains
   procedure,nopass :: cholaspect1,cholaspect2,cholaspect3,cholaspect4
   generic :: getlinesum => getlinesum1,getlinesum1d,getlinesum2,getlinesum3
   procedure :: getlinesum1,getlinesum1d,getlinesum2,getlinesum3
-  generic :: rbeta => rbeta1,rbeta2,rbeta3,rbeta4,vrbeta1,vrbeta2,vrbeta3,vrbeta4                 
-  procedure:: rbeta1,rbeta2,rbeta3,rbeta4,vrbeta1,vrbeta2,vrbeta3,vrbeta4                 
-  generic :: rbetaT => rbeta1t,rbeta2t,rbeta3t,rbeta4t,vrbeta1t,vrbeta2t,vrbeta3t,vrbeta4t
-  procedure:: rbeta1t,rbeta2t,rbeta3t,rbeta4t,vrbeta1t,vrbeta2t,vrbeta3t,vrbeta4t
+  generic :: rbeta => rbeta1,rbeta3d_1,rbeta2,rbeta3,rbeta4,vrbeta1,vrbeta2,vrbeta3,vrbeta4                 
+  procedure:: rbeta1,rbeta3d_1,rbeta2,rbeta3,rbeta4,vrbeta1,vrbeta2,vrbeta3,vrbeta4                 
+  generic :: rbetaT => rbeta1t,rbeta3d_1t,rbeta2t,rbeta3t,rbeta4t,vrbeta1t,vrbeta2t,vrbeta3t,vrbeta4t
+  procedure:: rbeta1t,rbeta3d_1t,rbeta2t,rbeta3t,rbeta4t,vrbeta1t,vrbeta2t,vrbeta3t,vrbeta4t
 end type  mg_parameter_type
 
 interface
@@ -366,6 +366,14 @@ interface
      real(dp),dimension(Lx:Mx),intent(in   ):: ss
      real(dp),dimension(lx-hx:mx+hx),intent(inout):: a
    end subroutine
+   module subroutine rbeta3d_1(this,nz,hx,lx,mx, el,ss, a)
+     use mgbf_kinds, only: dp=>r_kind
+     class(mg_parameter_type)::this
+     integer,                  intent(in   )::nz, hx,Lx,mx
+     real(dp),dimension(nz,Lx:Mx),intent(in   ):: el
+     real(dp),dimension(nz,Lx:Mx),intent(in   ):: ss
+     real(dp),dimension(nz,lx-hx:mx+hx),intent(inout):: a
+   end subroutine
    module subroutine rbeta2(this,hx,lx,mx, hy,ly,my, el,ss, a)
      use mgbf_kinds, only: dp=>r_kind
      class(mg_parameter_type)::this
@@ -397,6 +405,14 @@ interface
      real(dp),dimension(1,1,Lx:Mx),intent(in   ):: el
      real(dp),dimension(    Lx:Mx),intent(in   ):: ss
      real(dp),dimension(lx-hx:mx+hx),intent(inout):: a
+   end subroutine
+   module subroutine rbeta3d_1T(this,nz,hx,lx,mx, el,ss, a)
+     use mgbf_kinds, only: dp=>r_kind
+     class(mg_parameter_type)::this
+     integer,                      intent(in   )::nz, hx,Lx,mx
+     real(dp),dimension(nz,Lx:Mx),intent(in   ):: el
+     real(dp),dimension(nz, Lx:Mx),intent(in   ):: ss
+     real(dp),dimension(nz,lx-hx:mx+hx),intent(inout):: a
    end subroutine
    module subroutine rbeta2T(this,hx,lx,mx, hy,ly,my, el,ss, a)
      use mgbf_kinds, only: dp=>r_kind
