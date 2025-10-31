@@ -1087,8 +1087,8 @@ interface
 !from mg_entrymod.f90
    module subroutine mg_initialize(this,n_owned_anl,anl_lonlat1d,inputfilename,obj_parameter)
      class (mg_intstate_type):: this
-     integer(i_kind),intent(in)::n_owned_anl
-     real(r_kind),intent(in)::anl_lonlat1d(:,:)
+     integer(i_kind),optional,intent(in)::n_owned_anl
+     real(r_kind),optional,intent(in)::anl_lonlat1d(:,:)
      character*(*),optional,intent(in) :: inputfilename
      class(mg_parameter_type),optional,intent(in)::obj_parameter
    end subroutine

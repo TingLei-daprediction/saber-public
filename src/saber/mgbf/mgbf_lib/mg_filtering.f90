@@ -964,7 +964,7 @@ module subroutine filtering_fast_bkg(this)
 !***********************************************************************
 implicit none
 class (mg_intstate_type),target::this
-integer(i_kind) L,i,j
+integer(i_kind) L,i,j,k,lev1,lev2
 include "type_parameter_locpointer.inc"
 include "type_intstat_locpointer.inc"
 include "type_parameter_point2this.inc"
@@ -1015,14 +1015,14 @@ include "type_intstat_point2this.inc"
            lev1=(k-1)*km3+1
            lev2=k*km3
         
-          call this%rbetaT(lm_f,hx,1,im,this%paspx4d(k,1:im,j,1),this%ssx4d(k,1:im,j,1),ALL(lev1:lev2,:,j))
+          call this%rbetaT(lm_f,hx,1,im,this%paspx4d(k,1:im,j,1),this%ssx4d(k,1:im,j,1),VALL(lev1:lev2,:,j))
         enddo
 !cltorg        call this%rbetaT(km,hx,1,im,paspx(1,:,1:im,j),ssx(1,1:im,j),VALL(:,:,j))
 !clt assuming 2d variables are suface variable
         do k=1,km2
           lev1=lev2+1
           lev2=lev1
-          call this%rbetaT(1,hx,1,im,this%paspx4d(lm_f,1:im,j,1),this%ssx4d(lm_f,1:im,j,1),ALL(lev1:lev2,:,j))
+          call this%rbetaT(1,hx,1,im,this%paspx4d(lm_f,1:im,j,1),this%ssx4d(lm_f,1:im,j,1),VALL(lev1:lev2,:,j))
           lev1=lev1+1
           lev2=lev2+1
         enddo
