@@ -125,6 +125,8 @@ namelist /parameters_mgbf_init/ nscale,nvargrp,readin_mgbf_nml_group ,readin_mul
 !clt call self%grid%create(config, comm)
 self%rank = comm%rank()
 
+write(6,*)'thinkdeb mgbf create999 '
+call flush(6)
 call config%get_or_die("saber block name", centralblockname)
 !clt call config%get_or_die("debuggingxx bypass mgbf", self%noMGBF)
 if (config%has("mgbf sdl and vdl init namelist file")) then
@@ -180,15 +182,31 @@ if(nscale == 1 .and. nvargrp ==1 ) then
 endif
 
 ! grab the generic handle from an atlas field
+write(6,*)'thinkdeb mgbf create999 1 '
+call flush(6)
 afield= firstguess%field(1)
+write(6,*)'thinkdeb mgbf create999 2 '
+call flush(6)
 fs_generic = afield%functionspace()
+write(6,*)'thinkdeb mgbf create999 2.1iname ',trim(fs_generic%name())
+call flush(6)
 select case (trim(fs_generic%name()))
 case ('NodeColumns')
+write(6,*)'thinkdeb mgbf create999 2.10 '
+call flush(6)
   fs_nc = atlas_functionspace_nodecolumns(fs_generic%c_ptr())
+write(6,*)'thinkdeb mgbf create999 2.11 '
+call flush(6)
   nodes = fs_nc%nodes()
+write(6,*)'thinkdeb mgbf create999 2.12 '
+call flush(6)
   lonlat_field = nodes%lonlat()
+write(6,*)'thinkdeb mgbf create999 2.13 '
+call flush(6)
   call lonlat_field%data(lonlat_ptr)
 !clt  npts_owned= fs_nc%size_owned() 
+write(6,*)'thinkdeb mgbf create999 2.14 '
+call flush(6)
 
 case ('PointCloud')
   fs_pc = atlas_functionspace_pointcloud(fs_generic%c_ptr())
@@ -197,10 +215,20 @@ case ('PointCloud')
 !clt  npts_owned= fs_pc%size_owned() 
 
 case ('StructuredColumns')
+write(6,*)'thinkdeb mgbf create999 2.2 '
+call flush(6)
   fs_sc = atlas_functionspace_structuredcolumns(fs_generic%c_ptr())
+write(6,*)'thinkdeb mgbf create999 2.3 '
+call flush(6)
   lonlat_field = fs_sc%xy()
+write(6,*)'thinkdeb mgbf create999 2.4 '
+call flush(6)
   call lonlat_field%data(lonlat_ptr)
+write(6,*)'thinkdeb mgbf create999 2.5 '
+call flush(6)
   npts_owned= fs_sc%size_owned() 
+write(6,*)'thinkdeb mgbf create999 2.6 '
+call flush(6)
 
 case default
   error stop 'mgbf_covariance:get_lonlat &
@@ -213,6 +241,8 @@ endif
 
 
 
+write(6,*)'thinkdeb mgbf create999 4 '
+call flush(6)
 
 allocate(self%intstate(nscale,nvargrp))
 call flush(6)
