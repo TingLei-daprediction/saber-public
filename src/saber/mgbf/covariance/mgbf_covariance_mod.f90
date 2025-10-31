@@ -86,6 +86,10 @@ type(atlas_fieldset),      intent(in)    :: background
 type(atlas_fieldset),      intent(in)    :: firstguess
 
 ! Locals
+type(atlas_functionspace) :: fs_generic
+type(atlas_functionspace_nodecolumns) :: fs_nc
+type(atlas_functionspace_pointcloud) :: fs_pc
+type(atlas_functionspace_structuredcolumns) :: fs_sc
 real(r_kind) :: dist_rad, dist_m
 integer      :: ipt
 
@@ -97,7 +101,14 @@ integer :: layout(2)
 integer :: myunit
 integer :: iscale,ivargrp
 integer :: nscale=1, nvargrp=1
-type(atlas_field) :: afield
+type(atlas_field) :: afield,lonlat_field
+type(atlas_mesh_nodes) :: nodes 
+real,pointer   ::  lonlat_ptr (:,:)
+integer :: npts_owned
+
+
+
+
 character(len=80) :: readin_mgbf_nml_group(99)
 real :: readin_multigrp_cor(99)=1.0
 integer :: readin_iscalegroup(99)=999
@@ -177,27 +188,29 @@ case ('NodeColumns')
   nodes = fs_nc%nodes()
   lonlat_field = nodes%lonlat()
   call lonlat_field%data(lonlat_ptr)
+!clt  npts_owned= fs_nc%size_owned() 
 
 case ('PointCloud')
   fs_pc = atlas_functionspace_pointcloud(fs_generic%c_ptr())
   lonlat_field = fs_pc%lonlat()
   call lonlat_field%data(lonlat_ptr)
+!clt  npts_owned= fs_pc%size_owned() 
 
 case ('StructuredColumns')
   fs_sc = atlas_functionspace_structuredcolumns(fs_generic%c_ptr())
   lonlat_field = fs_sc%xy()
   call lonlat_field%data(lonlat_ptr)
+  npts_owned= fs_sc%size_owned() 
 
 case default
-  call mpl%abort('mgbf_covariance:get_lonlat', &
-                 'unsupported Atlas function space: '//fs_generic%name())
+  error stop 'mgbf_covariance:get_lonlat &
+                 unsupported Atlas function space: '//fs_generic%name()
 end select
 
-do ipt = 1, npts_owned
-  call sphere_dist(lon_ref, lat_ref, lonlat_ptr(1, ipt), lonlat_ptr(2, ipt), dist_rad)
-  dist_m = dist_rad * req
-  ! …store or use dist_m as needed…
-end do
+if (trim(fs_generic%name()).ne."StructuredColumns") then
+  error stop 'For mgbf filtering grids,only StructuredColumns functionspace is supported now'
+endif
+
 
 
 
@@ -328,6 +341,7 @@ character(len=4) :: str_rank
 integer :: n_owned_size
 integer, pointer :: ghost(:)
 !clttype(atlas_FunctionSpace) :: fs
+type(atlas_functionspace) :: fs_generic
 type(atlas_functionspace_StructuredColumns) :: fs
 integer :: ierr
 real(kind=8) :: val

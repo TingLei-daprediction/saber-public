@@ -174,6 +174,9 @@ integer(i_kind):: km_64
 
 real(r_kind):: lengthx,lengthy,xa0,ya0,xf0,yf0
 real(r_kind):: dxf,dyf,dxa,dya
+real(r_kind),allocatable,dimension (:,:):: dxfm,dyfm  ! actual filtering grid intervals in meters
+real(r_kind):: dxfmctrl=13000,dyfmctrl=13000  !the control filtering grid intervals corresponding to the contstant horizontal aspect tensor
+logical :: l_constant_aspt2 =.true. ! using constant horizontal aspect tensor : ampl02
 
 integer(i_kind):: npadx         ! x padding on analysis grid
 integer(i_kind):: mpady         ! y padding on analysis grid
@@ -951,10 +954,12 @@ logical :: l_exist
 
   this%dxa =this%lengthx/this%nm
   this%dxf = this%lengthx/this%im
+  allocate(this%dxfm(this%im,this%jm))
   this%nb = 2*this%dxf/this%dxa
 
   this%dya = this%lengthy/this%mm
   this%dyf = this%lengthy/this%jm
+  allocate(this%dyfm(this%im,this%jm))
   this%mb = 2*this%dyf/this%dya
 
   this%xa0 = this%dxa*0.5

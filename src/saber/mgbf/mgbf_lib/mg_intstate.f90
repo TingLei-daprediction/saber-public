@@ -33,6 +33,9 @@ use mgbf_kinds, only: r_kind,i_kind
 use jp_pkind2, only: fpi
 use jp_pbfil3, only: inimomtab,t22_to_3,tritform,t33_to_6,hextform
 use mg_parameter,only: mg_parameter_type
+use mg_tools,only : interp_analysis_to_filter
+use tools_func, only:sphere_dist
+use  tools_const, only: req
 implicit none
 type,extends( mg_parameter_type):: mg_intstate_type
 real(r_kind), allocatable,dimension(:,:,:):: V
@@ -1082,8 +1085,10 @@ interface
      real (r_kind):: WORK(this%km_all,1:this%nm,1:this%mm)
    end subroutine
 !from mg_entrymod.f90
-   module subroutine mg_initialize(this,inputfilename,obj_parameter)
+   module subroutine mg_initialize(this,n_owned_anl,anl_lonlat1d,inputfilename,obj_parameter)
      class (mg_intstate_type):: this
+     integer(i_kind),intent(in)::n_owned_anl
+     real(r_kind),intent(in)::anl_lonlat1d(:,:)
      character*(*),optional,intent(in) :: inputfilename
      class(mg_parameter_type),optional,intent(in)::obj_parameter
    end subroutine
@@ -1106,6 +1111,9 @@ subroutine allocate_mg_intstate(this)
 !***********************************************************************
 implicit none
 class(mg_intstate_type),target::this
+
+
+
 
 if(this%l_loc) then
    allocate(this%w1_loc(this%km_all   ,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this%w1_loc=0.
@@ -1240,13 +1248,15 @@ allocate(this%cvh4(1:this%lm)) ; this%cvh4=0.
 endsubroutine allocate_mg_intstate
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-subroutine def_mg_weights(this)
+subroutine def_mg_weights(this,n_owned_anl,lonlat1d_anl)
 !***********************************************************************
 !                                                                      !
 ! Define weights and scales                                            !
 !                                                                      !
 implicit none
 class (mg_intstate_type),target::this
+integer(i_kind),optional,intent(in)::n_owned_anl
+real(r_kind),optional,intent(in)::lonlat1d_anl(:,:)
 !***********************************************************************
 integer(i_kind):: i,j,k,L
 
@@ -1255,12 +1265,20 @@ real(r_kind),allocatable, dimension(:,:,:,:):: weig_g
 real(r_kind),allocatable, dimension(:,:,:,:):: loc_a 
 real(r_kind),allocatable, dimension(:,:,:):: weigh_tmp 
 real(r_kind),allocatable, dimension(:):: par_weig_g 
+real(r_kind),allocatable :: lonlat2d_anl(:,:,:)
+real(r_kind),allocatable :: lonlat2d_filt(:,:,:)
+                         !
+! Allocate internal state variables                                    !
+!                                                                      !
+!*************************************************real(r_kind),allocatable :: lonlat2d_filt(:,:,:)
 integer :: rank, size, ierr, comm2d
 integer,allocatable,dimension(:) :: sendcounts, displs
 integer :: dims(2), periods(2), coords(2)
 integer(i_kind):: nxloc,nyloc,nz,nt,start_idx,end_idx
 integer(i_kind):: ig
 character*72  tmpfilename
+real (r_kind)::rtem1
+real (r_kind) :: dist_rad
 !-----------------------------------------------------------------------
 start_idx=Lbound(this%weig_var,4)
 end_idx=Ubound(this%weig_var,4)
@@ -1268,6 +1286,23 @@ if(start_idx /=1 ) then
  write(6,*)'the expected begin index of weig_var is 1, stop'
  stop
 endif
+
+ if (present(lonlat1d_anl)) then
+    if (size(lonlat1d_anl,2) /= 2 .or. size(lonlat1d_anl,1) /= n_owned_anl) then
+      error stop "lonlat1d_anl has wrong shape"
+    end if
+    this%l_constant_aspt2=.false.
+   
+  end if
+ if (present(n_owned_anl)) then
+   if(this%nm*this%mm /= n_owned_anl) then 
+     error stop "the input grid number is not as expected , stop "
+   endif
+ endif
+
+
+
+
 allocate(sendcounts(this%nxpe*this%nype), displs(this%nxpe*this%nype))
 allocate(weigh_tmp(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy))        ; this%weig_var=0.
 !clt first transform/upsend original mg_weigh_var to their correct locations
@@ -1412,21 +1447,15 @@ enddo
 !cltorg do i=1,this%im
 !cltorg   this%paspx(1,1,i)=this%pasp02
 !cltorg enddo
+if (this%l_constant_aspt2 ) then 
        do i=1,this%im
       do j=1,this%jm
    do k=1,this%lm
-     this%paspx4d(:,:,:,1)=this%pasp02  !for first generation
+     this%paspx4d(:,:,:,2)=this%pasp02  !for first generation
    enddo
       enddo
        enddo
    
-  !to initialize halo points 
-   call this%boco_2d(this%paspx4d(1:this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,1),this%lm,this%im,this%jm,this%hx,this%hy)
-   call this%upsending_normalized(this%paspx4d(:,:,:,1),this%paspx4d(:,:,:,2))
-
-
-
-!cltorg do j=1,this%jm
 !cltorg   this%paspy(1,1,j)=this%pasp02
 !cltorg enddo
 !lct   this%paspy(:,:,:,1)=this%pasp02  !for first generation
@@ -1437,9 +1466,57 @@ enddo
    enddo
       enddo
        enddo
+ else  !clt inhomogeneous and anisotropic aspect tensors 
   !to initialize halo points 
-   call this%boco_2d(this%paspy4d(1:this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,1),this%lm,this%im,this%jm,this%hx,this%hy)
+  !to initialize halo points 
 
+   allocate (lonlat2d_anl(this%nm,this%mm,2))
+   allocate (lonlat2d_filt(this%im,this%jm,2))
+   lonlat2d_anl(:,:,1)=reshape(lonlat1d_anl(:,1),[size(lonlat2d_anl,1),size(lonlat2d_anl,2)])
+   lonlat2d_anl(:,:,2)=reshape(lonlat1d_anl(:,2),[size(lonlat2d_anl,1),size(lonlat2d_anl,2)])
+   call interp_analysis_to_filter(lonlat2d_anl(:,:,1),this%nm,this%mm,this%im,this%jm,lonlat2d_filt(:,:,1))
+   call interp_analysis_to_filter(lonlat2d_anl(:,:,2),this%nm,this%mm,this%im,this%jm,lonlat2d_filt(:,:,2))
+  
+   do j=1,this%jm
+    do i=1,this%im
+      if (i.le.this%im-1) then
+        call sphere_dist(lonlat2d_filt(i,j,1), lonlat2d_filt(i,j,2), lonlat2d_filt(i+1,j,1),lonlat2d_filt(i+1,j,2), dist_rad)
+      else
+        call sphere_dist(lonlat2d_filt(i-1,j,1), lonlat2d_filt(i-1,j,2), lonlat2d_filt(i,j,1),lonlat2d_filt(i,j,2), dist_rad)
+      endif
+      this%dxfm(i,j)=dist_rad*req
+      if (j.le.this%jm-1) then
+        call sphere_dist(lonlat2d_filt(i,j,1), lonlat2d_filt(i,j,2), lonlat2d_filt(i,j+1,1),lonlat2d_filt(i,j+1,2), dist_rad)
+      else
+        call sphere_dist(lonlat2d_filt(i,j-1,1), lonlat2d_filt(i,j-1,2), lonlat2d_filt(i,j,1),lonlat2d_filt(i,j,2), dist_rad)
+      endif
+      this%dyfm(i,j)=dist_rad*req
+    enddo
+   enddo
+       
+     rtem1=sqrt(this%pasp02) 
+     
+       do i=1,this%im
+      do j=1,this%jm
+   do k=1,this%lm
+     this%paspx4d(k,i,j,1)=(rtem1*this%dxfmctrl/this%dxfm(i,j))**2  !
+     this%paspy4d(k,i,j,1)=(rtem1*this%dyfmctrl/this%dyfm(i,j))**2  !
+   enddo
+      enddo
+       enddo
+   
+   
+
+
+   
+    
+   call this%boco_2d(this%paspx4d(1:this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,1),this%lm,this%im,this%jm,this%hx,this%hy)
+   call this%upsending_normalized(this%paspx4d(:,:,:,1),this%paspx4d(:,:,:,2))
+   call this%boco_2d(this%paspy4d(1:this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,1),this%lm,this%im,this%jm,this%hx,this%hy)
+   call this%upsending_normalized(this%paspy4d(:,:,:,1),this%paspy4d(:,:,:,2))
+   deallocate (lonlat2d_anl)
+   deallocate (lonlat2d_filt)
+endif
 do j=1,this%jm
 do i=1,this%im
    this%pasp2(1,1,i,j)=this%pasp02*(1.+this%p_del(i,j))
@@ -1463,6 +1540,8 @@ do L=1,this%lm
       this%pasp3(3,1,i,j,l)=this%pasp03*this%p_rho(i,j)
    end do
    end do
+
+
 end do
 
 
@@ -1654,6 +1733,7 @@ if(this%l_loc) then
 endif
 if (allocated(this%aspect_vert_profile_angrid) ) deallocate( this%aspect_vert_profile_angrid)
 if (allocated(this%aspect_vert_profile_filtgrid) ) deallocate( this%aspect_vert_profile_filtgrid)
+deallocate(this%dxfm,this%dyfm)
 
 end subroutine deallocate_mg_intstate
 

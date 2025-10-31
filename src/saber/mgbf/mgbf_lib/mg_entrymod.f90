@@ -34,7 +34,7 @@ contains
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-module subroutine mg_initialize(this,inputfilename,obj_parameter)
+module subroutine mg_initialize(this,n_owned_anl,anl_lonlat1d,inputfilename,obj_parameter)
 implicit none
 !**********************************************************************!
 !                                                                      !
@@ -42,7 +42,10 @@ implicit none
 !                                                     M. Rancic (2020) !
 !***********************************************************************
 class (mg_intstate_type):: this
+integer(i_kind),optional,intent(in)::n_owned_anl
+real(r_kind),optional,intent(in)::anl_lonlat1d(:,:)
 character*(*),optional,intent(in) :: inputfilename
+
 class(mg_parameter_type),optional,intent(in)::obj_parameter
 
 !---------------------------------------------------------------------------
@@ -60,6 +63,13 @@ if (present(inputfilename)) then
 elseif (present(obj_parameter)) then
    this%mg_parameter_type=obj_parameter
 endif
+
+ if (present(anl_lonlat1d)) then
+    if (size(anl_lonlat1d,2) /= 2 .or. size(anl_lonlat1d,1) <=  n_owned_anl) then
+      error stop "anl_lonlat1d has wrong shape"
+    end if
+   
+ end if
 
 !****
 !**** Initialize MPI
