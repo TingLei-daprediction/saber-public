@@ -1000,7 +1000,7 @@ include "type_intstat_point2this.inc"
         do k=1,km2
           lev1=lev2+1
           lev2=lev1
-          call this%rbetaT(1,hy,1,jm,this%paspy4d(lm,i,1:jm,1),this%ssy4d(lm,i,1:jm,1),VALL(lev1:lev2,i,:))
+          call this%rbetaT(1,hy,1,jm,this%paspy4d(lm:lm,i,1:jm,1),this%ssy4d(lm:lm,i,1:jm,1),VALL(lev1:lev2,i,:))
           lev1=lev1+1
           lev2=lev2+1
         enddo
@@ -1022,7 +1022,7 @@ include "type_intstat_point2this.inc"
         do k=1,km2
           lev1=lev2+1
           lev2=lev1
-          call this%rbetaT(1,hx,1,im,this%paspx4d(lm,1:im,j,1),this%ssx4d(lm,1:im,j,1),VALL(lev1:lev2,:,j))
+          call this%rbetaT(1,hx,1,im,this%paspx4d(lm:lm,1:im,j,1),this%ssx4d(lm:lm,1:im,j,1),VALL(lev1:lev2,:,j))
           lev1=lev1+1
           lev2=lev2+1
         enddo
@@ -1044,7 +1044,7 @@ include "type_intstat_point2this.inc"
         do k=1,km2
           lev1=lev2+1
           lev2=lev1
-          call this%rbetaT(1,hy,1,jm,this%paspy4d(lm,i,1:jm,2),this%ssy4d(lm,i,1:jm,2),HALL(lev1:lev2,i,:))
+          call this%rbetaT(1,hy,1,jm,this%paspy4d(lm:lm,i,1:jm,2),this%ssy4d(lm:lm,i,1:jm,2),HALL(lev1:lev2,i,:))
           lev1=lev1+1
           lev2=lev2+1
         enddo
@@ -1068,7 +1068,7 @@ include "type_intstat_point2this.inc"
         do k=1,km2
           lev1=lev2+1
           lev2=lev1
-          call this%rbetaT(1,hx,1,im,this%paspx4d(lm,1:im,j,2),this%ssx4d(lm,1:im,j,2),HALL(lev1:lev2,:,j))
+          call this%rbetaT(1,hx,1,im,this%paspx4d(lm:lm,1:im,j,2),this%ssx4d(lm:lm,1:im,j,2),HALL(lev1:lev2,:,j))
           lev1=lev1+1
           lev2=lev2+1
         enddo
@@ -1102,7 +1102,7 @@ include "type_intstat_point2this.inc"
         do k=1,km2
           lev1=lev2+1
           lev2=lev1
-          call this%rbetaT(1,hx,1,im,this%paspx4d(lm,1:im,j,1),this%ssx4d(lm,1:im,j,1),VALL(lev1:lev2,:,j))
+          call this%rbetaT(1,hx,1,im,this%paspx4d(lm:lm,1:im,j,1),this%ssx4d(lm:lm,1:im,j,1),VALL(lev1:lev2,:,j))
           lev1=lev1+1
           lev2=lev2+1
         enddo
@@ -1124,7 +1124,7 @@ include "type_intstat_point2this.inc"
         do k=1,km2
           lev1=lev2+1
           lev2=lev1
-          call this%rbeta(1,hy,1,jm,this%paspy4d(lm,i,1:jm,1),this%ssy4d(lm,i,1:jm,1),VALL(lev1:lev2,i,:))
+          call this%rbeta(1,hy,1,jm,this%paspy4d(lm:lm,i,1:jm,1),this%ssy4d(lm:lm,i,1:jm,1),VALL(lev1:lev2,i,:))
           lev1=lev1+1
           lev2=lev2+1
         enddo
@@ -1146,7 +1146,7 @@ include "type_intstat_point2this.inc"
         do k=1,km2
           lev1=lev2+1
           lev2=lev1
-          call this%rbeta(1,hx,1,im,this%paspx4d(lm,1:im,j,1),this%ssx4d(lm,1:im,j,2),HALL(lev1:lev2,:,j))
+          call this%rbeta(1,hx,1,im,this%paspx4d(lm:lm,1:im,j,1),this%ssx4d(lm:lm,1:im,j,2),HALL(lev1:lev2,:,j))
           lev1=lev1+1
           lev2=lev2+1
         enddo
@@ -1170,7 +1170,7 @@ include "type_intstat_point2this.inc"
         do k=1,km2
           lev1=lev2+1
           lev2=lev1
-          call this%rbeta(1,hy,1,jm,this%paspy4d(lm,i,1:jm,2),this%ssy4d(lm,i,1:jm,2),HALL(lev1:lev2,i,:))
+          call this%rbeta(1,hy,1,jm,this%paspy4d(lm:lm,i,1:jm,2),this%ssy4d(lm:lm,i,1:jm,2),HALL(lev1:lev2,i,:))
           lev1=lev1+1
           lev2=lev2+1
         enddo
