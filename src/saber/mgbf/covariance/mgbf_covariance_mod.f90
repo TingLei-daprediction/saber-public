@@ -31,7 +31,7 @@ use random_mod
 !clt use mgbf_grid_mod,                   only: mgbf_grid
 use mg_intstate , only:            mg_intstate_type
 use mg_timers
-use iso_c_binding, only: c_double, c_int, c_null_ptr, c_ptr
+use iso_c_binding, only: c_double, c_int, c_null_ptr, c_ptr, c_f_pointer, c_associated
 use mpi
 use, intrinsic :: ieee_arithmetic
 implicit none
@@ -113,7 +113,7 @@ integer :: layout(2)
 integer :: myunit
 integer :: iscale,ivargrp
 integer :: nscale=1, nvargrp=1
-real(c_double), pointer :: lonlat_c_view(:,:)
+real(c_double), pointer :: lonlat_c_view(:,:) => null()
 real(r_kind), allocatable :: lonlat_anl(:,:)
 integer :: npts_owned
 integer :: npts_total
@@ -198,14 +198,14 @@ config_cptr = config%c_ptr()
 comm_cptr = comm%c_ptr()
 lonlat_cptr = c_null_ptr
 call saber_mgbf_inner_geom_build(config_cptr, comm_cptr, lonlat_cptr, n_total_c, n_owned_c, status_c)
-if (status_c /= 0 .or. lonlat_cptr == c_null_ptr) then
+if (status_c /= 0 .or. .not. c_associated(lonlat_cptr)) then
   call saber_mgbf_inner_geom_free(lonlat_cptr)
   error stop 'Failed to construct inner geometry for MGBF covariance'
 endif
 
 call c_f_pointer(lonlat_cptr, lonlat_c_view, (/ n_total_c, 2 /))
-npts_total = n_total_c
-npts_owned = n_owned_c
+npts_total = int(n_total_c, kind=kind(npts_total))
+npts_owned = int(n_owned_c, kind=kind(npts_owned))
 allocate(lonlat_anl(npts_total,2))
 lonlat_anl(:,1) = real(lonlat_c_view(:,1), kind=r_kind)
 lonlat_anl(:,2) = real(lonlat_c_view(:,2), kind=r_kind)
@@ -227,7 +227,6 @@ do iscale=1,nscale
   enddo
 enddo
 if (allocated(lonlat_anl)) deallocate(lonlat_anl)
-if (allocated(owned_idx)) deallocate(owned_idx)
 ! Get background (temporary test of the functionality)
 !cltafield = background%field('air_temperature')
 !clt call afield%data(t)
