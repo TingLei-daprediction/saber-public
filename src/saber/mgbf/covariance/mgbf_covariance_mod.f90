@@ -87,8 +87,6 @@ type(atlas_fieldset),      intent(in)    :: firstguess
 
 ! Locals
 type(atlas_functionspace) :: fs_generic
-type(atlas_functionspace_nodecolumns) :: fs_nc
-type(atlas_functionspace_pointcloud) :: fs_pc
 type(atlas_functionspace_structuredcolumns) :: fs_sc
 real(r_kind) :: dist_rad, dist_m
 integer      :: ipt
@@ -102,9 +100,10 @@ integer :: myunit
 integer :: iscale,ivargrp
 integer :: nscale=1, nvargrp=1
 type(atlas_field) :: afield,lonlat_field
-type(atlas_mesh_nodes) :: nodes 
-real(r_kind),pointer   ::  lonlat_ptr (:,:)
+real(r_kind), pointer, contiguous :: lonlat_ptr(:,:)
+real(r_kind), allocatable :: lonlat_anl(:,:)
 integer :: npts_owned
+integer :: npts_total
 
 
 
@@ -190,53 +189,28 @@ call flush(6)
 fs_generic = afield%functionspace()
 write(6,*)'thinkdeb mgbf create999 2.1iname ',trim(fs_generic%name())
 call flush(6)
-select case (trim(fs_generic%name()))
-case ('NodeColumns')
-write(6,*)'thinkdeb mgbf create999 2.10 '
-call flush(6)
-  fs_nc = atlas_functionspace_nodecolumns(fs_generic%c_ptr())
-write(6,*)'thinkdeb mgbf create999 2.11 '
-call flush(6)
-  nodes = fs_nc%nodes()
-write(6,*)'thinkdeb mgbf create999 2.12 '
-call flush(6)
-  lonlat_field = nodes%lonlat()
-write(6,*)'thinkdeb mgbf create999 2.13 '
-call flush(6)
-  call lonlat_field%data(lonlat_ptr)
-  npts_owned= fs_nc%size_owned() 
-write(6,*)'thinkdeb mgbf create999 2.14 '
-call flush(6)
-
-case ('PointCloud')
-  fs_pc = atlas_functionspace_pointcloud(fs_generic%c_ptr())
-  lonlat_field = fs_pc%lonlat()
-  call lonlat_field%data(lonlat_ptr)
-!clt  npts_owned= fs_pc%size_owned() 
-
-case ('StructuredColumns')
+if (trim(fs_generic%name()) == 'StructuredColumns') then
 write(6,*)'thinkdeb mgbf create999 2.2 '
 call flush(6)
   fs_sc = atlas_functionspace_structuredcolumns(fs_generic%c_ptr())
 write(6,*)'thinkdeb mgbf create999 2.3 '
 call flush(6)
-  lonlat_field = fs_sc%xy()
+  lonlat_field = fs_sc%lonlat()
 write(6,*)'thinkdeb mgbf create999 2.4 '
 call flush(6)
   call lonlat_field%data(lonlat_ptr)
 write(6,*)'thinkdeb mgbf create999 2.5 '
 call flush(6)
-  npts_owned= fs_sc%size_owned() 
-write(6,*)'thinkdeb mgbf create999 2.6 '
+  npts_owned = fs_sc%size_owned()
+  npts_total = size(lonlat_ptr,2)
+  allocate(lonlat_anl(npts_total,2))
+  lonlat_anl(:,1) = lonlat_ptr(1,1:npts_total)
+  lonlat_anl(:,2) = lonlat_ptr(2,1:npts_total)
+write(6,*)'thinkdeb mgbf create999 2.6 ',npts_owned,npts_total
 call flush(6)
 
-case default
-  error stop 'mgbf_covariance:get_lonlat &
-                 unsupported Atlas function space: '//fs_generic%name()
-end select
-
-if (trim(fs_generic%name()).ne."StructuredColumns".or.trim(fs_generic%name()).ne."NodeColumns") then
-  error stop 'For mgbf filtering grids,only StructuredColumns functionspace is supported now'
+else
+  error stop 'mgbf_covariance:get_lonlat unsupported Atlas function space: '//fs_generic%name()
 endif
 
 
@@ -250,9 +224,12 @@ do iscale=1,nscale
   do ivargrp=1,nvargrp
    write(6,*)'the999 nml is ', trim(self%mgbf_nml_group(iscale,ivargrp))  
    call flush(6)
-   call  self%intstate(iscale,ivargrp)%mg_initialize(inputfilename=self%mgbf_nml_group(iscale,ivargrp))  !mgbf_nml like mgbeta.nml
+   call  self%intstate(iscale,ivargrp)%mg_initialize(n_owned_anl=npts_owned, &
+        anl_lonlat1d=lonlat_anl, inputfilename=self%mgbf_nml_group(iscale,ivargrp))  !mgbf_nml like mgbeta.nml
   enddo
 enddo
+if (allocated(lonlat_anl)) deallocate(lonlat_anl)
+if (allocated(owned_idx)) deallocate(owned_idx)
 ! Get background (temporary test of the functionality)
 !cltafield = background%field('air_temperature')
 !clt call afield%data(t)
