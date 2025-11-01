@@ -31,12 +31,30 @@ use random_mod
 !clt use mgbf_grid_mod,                   only: mgbf_grid
 use mg_intstate , only:            mg_intstate_type
 use mg_timers
-use iso_c_binding
+use iso_c_binding, only: c_double, c_int, c_null_ptr, c_ptr
 use mpi
 use, intrinsic :: ieee_arithmetic
 implicit none
 private
 public mgbf_covariance
+
+interface
+  subroutine saber_mgbf_inner_geom_build(conf_ptr, comm_ptr, lonlat_ptr, npts_total, npts_owned, status) &
+       bind(C, name="saber_mgbf_inner_geom_build")
+    use iso_c_binding, only: c_ptr, c_int
+    type(c_ptr), value :: conf_ptr
+    type(c_ptr), value :: comm_ptr
+    type(c_ptr) :: lonlat_ptr
+    integer(c_int) :: npts_total
+    integer(c_int) :: npts_owned
+    integer(c_int) :: status
+  end subroutine saber_mgbf_inner_geom_build
+
+  subroutine saber_mgbf_inner_geom_free(lonlat_ptr) bind(C, name="saber_mgbf_inner_geom_free")
+    use iso_c_binding, only: c_ptr
+    type(c_ptr), value :: lonlat_ptr
+  end subroutine saber_mgbf_inner_geom_free
+end interface
 
 
 ! Fortran class header
@@ -86,12 +104,8 @@ type(atlas_fieldset),      intent(in)    :: background
 type(atlas_fieldset),      intent(in)    :: firstguess
 
 ! Locals
-type(atlas_functionspace) :: fs_generic
-type(atlas_functionspace_structuredcolumns) :: fs_sc
 real(r_kind) :: dist_rad, dist_m
 integer      :: ipt
-
-
 character(len=*), parameter :: myname_=myname//'*create'
 character(len=:), allocatable :: mgbf_nml,centralblockname
 logical :: central
@@ -99,13 +113,12 @@ integer :: layout(2)
 integer :: myunit
 integer :: iscale,ivargrp
 integer :: nscale=1, nvargrp=1
-type(atlas_field) :: afield,lonlat_field
-real(r_kind), pointer, contiguous :: lonlat_ptr(:,:)
+real(c_double), pointer :: lonlat_c_view(:,:)
 real(r_kind), allocatable :: lonlat_anl(:,:)
 integer :: npts_owned
 integer :: npts_total
-
-
+type(c_ptr) :: config_cptr, comm_cptr, lonlat_cptr
+integer(c_int) :: n_total_c, n_owned_c, status_c
 
 
 character(len=80) :: readin_mgbf_nml_group(99)
@@ -181,37 +194,22 @@ if(nscale == 1 .and. nvargrp ==1 ) then
 endif
 
 ! grab the generic handle from an atlas field
-write(6,*)'thinkdeb mgbf create999 1 '
-call flush(6)
-afield= firstguess%field(1)
-write(6,*)'thinkdeb mgbf create999 2 '
-call flush(6)
-fs_generic = afield%functionspace()
-write(6,*)'thinkdeb mgbf create999 2.1iname ',trim(fs_generic%name())
-call flush(6)
-if (trim(fs_generic%name()) == 'StructuredColumns') then
-write(6,*)'thinkdeb mgbf create999 2.2 '
-call flush(6)
-  fs_sc = atlas_functionspace_structuredcolumns(fs_generic%c_ptr())
-write(6,*)'thinkdeb mgbf create999 2.3 '
-call flush(6)
-  lonlat_field = fs_sc%lonlat()
-write(6,*)'thinkdeb mgbf create999 2.4 '
-call flush(6)
-  call lonlat_field%data(lonlat_ptr)
-write(6,*)'thinkdeb mgbf create999 2.5 '
-call flush(6)
-  npts_owned = fs_sc%size_owned()
-  npts_total = size(lonlat_ptr,2)
-  allocate(lonlat_anl(npts_total,2))
-  lonlat_anl(:,1) = lonlat_ptr(1,1:npts_total)
-  lonlat_anl(:,2) = lonlat_ptr(2,1:npts_total)
-write(6,*)'thinkdeb mgbf create999 2.6 ',npts_owned,npts_total
-call flush(6)
-
-else
-  error stop 'mgbf_covariance:get_lonlat unsupported Atlas function space: '//fs_generic%name()
+config_cptr = config%c_ptr()
+comm_cptr = comm%c_ptr()
+lonlat_cptr = c_null_ptr
+call saber_mgbf_inner_geom_build(config_cptr, comm_cptr, lonlat_cptr, n_total_c, n_owned_c, status_c)
+if (status_c /= 0 .or. lonlat_cptr == c_null_ptr) then
+  call saber_mgbf_inner_geom_free(lonlat_cptr)
+  error stop 'Failed to construct inner geometry for MGBF covariance'
 endif
+
+call c_f_pointer(lonlat_cptr, lonlat_c_view, (/ n_total_c, 2 /))
+npts_total = n_total_c
+npts_owned = n_owned_c
+allocate(lonlat_anl(npts_total,2))
+lonlat_anl(:,1) = real(lonlat_c_view(:,1), kind=r_kind)
+lonlat_anl(:,2) = real(lonlat_c_view(:,2), kind=r_kind)
+call saber_mgbf_inner_geom_free(lonlat_cptr)
 
 
 
