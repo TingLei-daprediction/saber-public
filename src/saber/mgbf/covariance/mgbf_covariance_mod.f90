@@ -103,7 +103,7 @@ integer :: iscale,ivargrp
 integer :: nscale=1, nvargrp=1
 type(atlas_field) :: afield,lonlat_field
 type(atlas_mesh_nodes) :: nodes 
-real,pointer   ::  lonlat_ptr (:,:)
+real(r_kind),pointer   ::  lonlat_ptr (:,:)
 integer :: npts_owned
 
 
@@ -204,7 +204,7 @@ call flush(6)
 write(6,*)'thinkdeb mgbf create999 2.13 '
 call flush(6)
   call lonlat_field%data(lonlat_ptr)
-!clt  npts_owned= fs_nc%size_owned() 
+  npts_owned= fs_nc%size_owned() 
 write(6,*)'thinkdeb mgbf create999 2.14 '
 call flush(6)
 
@@ -235,7 +235,7 @@ case default
                  unsupported Atlas function space: '//fs_generic%name()
 end select
 
-if (trim(fs_generic%name()).ne."StructuredColumns") then
+if (trim(fs_generic%name()).ne."StructuredColumns".or.trim(fs_generic%name()).ne."NodeColumns") then
   error stop 'For mgbf filtering grids,only StructuredColumns functionspace is supported now'
 endif
 
