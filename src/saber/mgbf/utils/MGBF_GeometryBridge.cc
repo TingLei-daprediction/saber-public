@@ -4,16 +4,15 @@
 #include <stdexcept>
 
 #include "atlas/array.h"
-#include "atlas/functionspace/StructuredColumns.h"
-#include "atlas/functionspace/FunctionSpace.h"
 #include "atlas/field.h"
+#include "atlas/functionspace/FunctionSpace.h"
+#include "atlas/functionspace/StructuredColumns.h"
 
+#include "eckit/log/Log.h"
+#include "eckit/config/Configuration.h"
 #include "eckit/config/LocalConfiguration.h"
 #include "eckit/exception/Exceptions.h"
-#include "eckit/log/Log.h"
-
-#include "fckit/config/Configuration.h"
-#include "fckit/mpi/Comm.h"
+#include "eckit/mpi/Comm.h"
 
 #include "saber/interpolation/Geometry.h"
 
@@ -24,7 +23,7 @@ namespace {
 
 const char *kInnerGeometryKey = "inner geometry";
 
-const eckit::Configuration &ensureInnerGeometry(const fckit::Configuration &conf,
+const eckit::Configuration &ensureInnerGeometry(const eckit::Configuration &conf,
                                                 std::unique_ptr<eckit::Configuration> &holder) {
   if (!conf.has(kInnerGeometryKey)) {
     throw eckit::BadParameter("inner geometry section missing in SABER configuration");
@@ -53,8 +52,8 @@ extern "C" void saber_mgbf_inner_geom_build(const void *conf_ptr,
   *status_out = 0;
 
   try {
-    const auto *conf_wrapper = reinterpret_cast<const fckit::Configuration *>(conf_ptr);
-    const auto *comm_wrapper = reinterpret_cast<const fckit::mpi::Comm *>(comm_ptr);
+    const auto *conf_wrapper = reinterpret_cast<const eckit::Configuration *>(conf_ptr);
+    const auto *comm_wrapper = reinterpret_cast<const eckit::mpi::Comm *>(comm_ptr);
 
     if (conf_wrapper == nullptr || comm_wrapper == nullptr) {
       throw eckit::SeriousBug("Null configuration or communicator pointer passed to geometry bridge");
@@ -63,7 +62,7 @@ extern "C" void saber_mgbf_inner_geom_build(const void *conf_ptr,
     std::unique_ptr<eckit::Configuration> inner_holder;
     const eckit::Configuration &inner_conf = ensureInnerGeometry(*conf_wrapper, inner_holder);
 
-    saber::interpolation::Geometry geom(inner_conf, comm_wrapper->mpiComm());
+    saber::interpolation::Geometry geom(inner_conf, *comm_wrapper);
 
     const atlas::FunctionSpace &fs = geom.functionSpace();
     if (fs.type() != "StructuredColumns") {
