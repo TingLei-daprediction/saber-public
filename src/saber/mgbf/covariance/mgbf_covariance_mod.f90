@@ -128,6 +128,8 @@ integer :: readin_ivargroup(99)=999
 integer ::i,j, ii
 namelist /parameters_mgbf_init/ nscale,nvargrp,readin_mgbf_nml_group ,readin_multigrp_cor,readin_iscalegroup,readin_ivargroup
 
+character(len=:), allocatable :: dump_json
+
 ! Hold communicator
 ! -----------------
 !self%mp_comm_world=comm%communicator()
@@ -138,6 +140,9 @@ namelist /parameters_mgbf_init/ nscale,nvargrp,readin_mgbf_nml_group ,readin_mul
 self%rank = comm%rank()
 
 write(6,*)'thinkdeb mgbf create999 '
+write(6,*)'thinkdeb mgbf create999 config'
+   dump_json=config%json()          ! serialize to a JSON string
+write(6,'(A)')trim(dump_json)
 call flush(6)
 call config%get_or_die("saber block name", centralblockname)
 !clt call config%get_or_die("debuggingxx bypass mgbf", self%noMGBF)
