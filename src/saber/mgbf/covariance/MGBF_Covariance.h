@@ -150,7 +150,7 @@ throw eckit::UserError("doCalibration=.true. is not implemented ", Here());
   // Create covariance module
 //cltwhy not working  mgbf_covariance_create_f90(keySelf_, *comm_, params_.MGBFNML.value()->toConfiguration(),
   mgbf_covariance_create_f90(keySelf_, *comm_, mgbf_config,
-                            xb.get(), fg.get());
+                            mgbfGridFuncSpace_.get(), xb.get(), fg.get());
 
   oops::Log::trace() << classname() << "::Covariance done" << std::endl;
 }

@@ -1,4 +1,4 @@
-﻿! (C) Copyright 2022 United States Government as represented by the Administrator of the National
+! (C) Copyright 2022 United States Government as represented by the Administrator of the National
 !     Aeronautics and Space Administration
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
@@ -31,31 +31,12 @@ use random_mod
 !clt use mgbf_grid_mod,                   only: mgbf_grid
 use mg_intstate , only:            mg_intstate_type
 use mg_timers
-use iso_c_binding, only: c_double, c_int, c_null_ptr, c_ptr, c_f_pointer, c_associated
+use iso_c_binding, only: c_ptr
 use mpi
 use, intrinsic :: ieee_arithmetic
 implicit none
 private
 public mgbf_covariance
-
-interface
-  subroutine saber_mgbf_inner_geom_build(conf_ptr, comm_ptr, lonlat_ptr, npts_total, npts_owned, status) &
-       bind(C, name="saber_mgbf_inner_geom_build")
-    use iso_c_binding, only: c_ptr, c_int
-    type(c_ptr), value :: conf_ptr
-    type(c_ptr), value :: comm_ptr
-    type(c_ptr) :: lonlat_ptr
-    integer(c_int) :: npts_total
-    integer(c_int) :: npts_owned
-    integer(c_int) :: status
-  end subroutine saber_mgbf_inner_geom_build
-
-  subroutine saber_mgbf_inner_geom_free(lonlat_ptr) bind(C, name="saber_mgbf_inner_geom_free")
-    use iso_c_binding, only: c_ptr
-    type(c_ptr), value :: lonlat_ptr
-  end subroutine saber_mgbf_inner_geom_free
-end interface
-
 
 ! Fortran class header
 type :: mgbf_covariance
@@ -94,12 +75,13 @@ contains
 
 ! --------------------------------------------------------------------------------------------------
 
-subroutine create(self, comm, config, background, firstguess)
+subroutine create(self, comm, config, funcspace, background, firstguess)
 
 ! Arguments
 class(mgbf_covariance),     intent(inout) :: self
 type(fckit_mpi_comm),      intent(in)    :: comm
 type(fckit_configuration), intent(in)    :: config
+type(atlas_functionspace), intent(in)    :: funcspace
 type(atlas_fieldset),      intent(in)    :: background
 type(atlas_fieldset),      intent(in)    :: firstguess
 
@@ -113,12 +95,12 @@ integer :: layout(2)
 integer :: myunit
 integer :: iscale,ivargrp
 integer :: nscale=1, nvargrp=1
-real(c_double), pointer :: lonlat_c_view(:,:) => null()
+type(atlas_field) :: afield, lonlat_field
+type(atlas_functionspace_structuredcolumns) :: fs_sc
+real(r_kind), pointer :: lonlat_ptr(:,:)
 real(r_kind), allocatable :: lonlat_anl(:,:)
 integer :: npts_owned
 integer :: npts_total
-type(c_ptr) :: config_cptr, comm_cptr, lonlat_cptr
-integer(c_int) :: n_total_c, n_owned_c, status_c
 
 
 character(len=80) :: readin_mgbf_nml_group(99)
@@ -198,25 +180,15 @@ if(nscale == 1 .and. nvargrp ==1 ) then
                                       ! by the current sdl/vdl enhanced version
 endif
 
-! grab the generic handle from an atlas field
-config_cptr = config%c_ptr()
-comm_cptr = comm%c_ptr()
-lonlat_cptr = c_null_ptr
-call saber_mgbf_inner_geom_build(config_cptr, comm_cptr, lonlat_cptr, n_total_c, n_owned_c, status_c)
-if (status_c /= 0 .or. .not. c_associated(lonlat_cptr)) then
-  call saber_mgbf_inner_geom_free(lonlat_cptr)
-  error stop 'Failed to construct inner geometry for MGBF covariance'
-endif
-
-call c_f_pointer(lonlat_cptr, lonlat_c_view, (/ n_total_c, 2 /))
-npts_total = int(n_total_c, kind=kind(npts_total))
-npts_owned = int(n_owned_c, kind=kind(npts_owned))
+fs_sc = atlas_functionspace_structuredcolumns(funcspace%c_ptr())
+lonlat_field = fs_sc%lonlat()
+call lonlat_field%data(lonlat_ptr)
+npts_owned = fs_sc%size_owned()
+npts_total = size(lonlat_ptr,2)
 allocate(lonlat_anl(npts_total,2))
-lonlat_anl(:,1) = real(lonlat_c_view(:,1), kind=r_kind)
-lonlat_anl(:,2) = real(lonlat_c_view(:,2), kind=r_kind)
-call saber_mgbf_inner_geom_free(lonlat_cptr)
-
-
+lonlat_anl(:,1) = lonlat_ptr(1,1:npts_total)
+lonlat_anl(:,2) = lonlat_ptr(2,1:npts_total)
+call fs_sc%final()
 
 write(6,*)'thinkdeb mgbf create999 4 '
 call flush(6)
@@ -734,3 +706,4 @@ end function ivar2grp
 ! --------------------------------------------------------------------------------------------------
 
 end module mgbf_covariance_mod
+
