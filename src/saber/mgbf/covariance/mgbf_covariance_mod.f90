@@ -31,7 +31,6 @@ use random_mod
 !clt use mgbf_grid_mod,                   only: mgbf_grid
 use mg_intstate , only:            mg_intstate_type
 use mg_timers
-use iso_c_binding, only: c_ptr
 use mpi
 use, intrinsic :: ieee_arithmetic
 implicit none
@@ -180,15 +179,18 @@ if(nscale == 1 .and. nvargrp ==1 ) then
                                       ! by the current sdl/vdl enhanced version
 endif
 
-fs_sc = atlas_functionspace_structuredcolumns(funcspace%c_ptr())
-lonlat_field = fs_sc%lonlat()
+if (trim(funcspace%name()) /= 'StructuredColumns') then
+  error stop 'MGBF requires StructuredColumns function space'
+end if
+fs_sc = funcspace
+lonlat_field = fs_sc%xy()
 call lonlat_field%data(lonlat_ptr)
 npts_owned = fs_sc%size_owned()
 npts_total = size(lonlat_ptr,2)
 allocate(lonlat_anl(npts_total,2))
 lonlat_anl(:,1) = lonlat_ptr(1,1:npts_total)
 lonlat_anl(:,2) = lonlat_ptr(2,1:npts_total)
-call fs_sc%final()
+call lonlat_field%final()
 
 write(6,*)'thinkdeb mgbf create999 4 '
 call flush(6)
@@ -325,7 +327,6 @@ integer, pointer :: ghost(:)
 type(atlas_functionspace) :: fs_generic
 type(atlas_functionspace_StructuredColumns) :: fs
 integer :: ierr
-real(kind=8) :: val
 integer :: member_index
 integer :: iscale,jscale, ivargrp,ivargrp0,jvargrp
 integer :: total_km_a_all,ii,nvargrp
