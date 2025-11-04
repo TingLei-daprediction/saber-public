@@ -205,6 +205,8 @@ do iscale=1,nscale
         anl_lonlat1d=lonlat_anl, inputfilename=self%mgbf_nml_group(iscale,ivargrp))  !mgbf_nml like mgbeta.nml
   enddo
 enddo
+write(6,*)'thinkdeb mgbf create999 10 '
+call flush(6)
 if (allocated(lonlat_anl)) deallocate(lonlat_anl)
 ! Get background (temporary test of the functionality)
 !cltafield = background%field('air_temperature')

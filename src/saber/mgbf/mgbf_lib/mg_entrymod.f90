@@ -79,11 +79,15 @@ if(this%nxm*this%nym>1) call this%init_mg_MPI
 !***
 !*** Initialize integration domain
 !***
+      write(6,*)'thinkdeb in mg_entry,  ', 3   
+      call flush(6)
 call this%init_mg_domain
 if(this%l_loc) then
    call this%init_domain_loc
 endif
 
+      write(6,*)'thinkdeb in mg_entry,  ', 4   
+      call flush(6)
 !---------------------------------------------------------------------------
 !
 !               All others are function of km2,km3,km,nm,mm,im,jm
@@ -101,20 +105,32 @@ endif
 !***
 
 call this%allocate_mg_intstate
+      write(6,*)'thinkdeb in mg_entry,  ', 5   
+      call flush(6)
 
 call this%def_offset_coef
+      write(6,*)'thinkdeb in mg_entry,  ', 6   
+      call flush(6)
 
 call this%def_mg_weights
+      write(6,*)'thinkdeb in mg_entry,  ', 7   
+      call flush(6)
 
 if(this%mgbf_line) then
    write(6,*)'thinkdeb init_mg_line is called'
    call this%init_mg_line
 endif
+      write(6,*)'thinkdeb in mg_entry,  ', 8   
+      call flush(6)
 
 call this%lsqr_mg_coef 
+      write(6,*)'thinkdeb in mg_entry,  ', 9   
+      call flush(6)
 
 call this%lwq_vertical_coef(this%lm_a,this%lm,this%cvf1,this%cvf2,this%cvf3,this%cvf4,this%lref)
 
+      write(6,*)'thinkdeb in mg_entry,  ', 10   
+      call flush(6)
 !***
 !*** Just for testing of standalone version. In GSI WORKA will be given
 !*** through a separate subroutine 

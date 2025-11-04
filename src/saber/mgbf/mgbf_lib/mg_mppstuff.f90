@@ -148,6 +148,8 @@ include "type_parameter_point2this.inc"
 !-----------------------------------------------------------------------
 !
       call MPI_BARRIER(mpi_comm_comp,ierr)
+      write(6,*)'thinkdeb in mg_mppstuff 3, end of init_mg_MPI ',npes_filt   
+      call flush(6)
 !
 !-----------------------------------------------------------------------
 endsubroutine init_mg_MPI

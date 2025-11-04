@@ -1280,12 +1280,16 @@ character*72  tmpfilename
 real (r_kind)::rtem1
 real (r_kind) :: dist_rad
 !-----------------------------------------------------------------------
+      write(6,*)'thinkdeb in def_mg_weights,  ', 01   
+      call flush(6)
 start_idx=Lbound(this%weig_var,4)
 end_idx=Ubound(this%weig_var,4)
 if(start_idx /=1 ) then
  write(6,*)'the expected begin index of weig_var is 1, stop'
  stop
 endif
+      write(6,*)'thinkdeb in def_mg_weights,  ', 02   
+      call flush(6)
 
  if (present(lonlat1d_anl)) then
     if (size(lonlat1d_anl,2) /= 2 .or. size(lonlat1d_anl,1) /= n_owned_anl) then
@@ -1302,10 +1306,14 @@ endif
 
 
 
+      write(6,*)'thinkdeb in def_mg_weights,  ', 03   
+      call flush(6)
 
 allocate(sendcounts(this%nxpe*this%nype), displs(this%nxpe*this%nype))
 allocate(weigh_tmp(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy))        ; this%weig_var=0.
 !clt first transform/upsend original mg_weigh_var to their correct locations
+      write(6,*)'thinkdeb in def_mg_weights,  ', 04   
+      call flush(6)
 if(this%l_mgbf_inhomogeneous ) then
   if(this%l_mg_weig_readin) then
    dims=(/this%nxpe,this%nype/)
@@ -1397,6 +1405,8 @@ endif
 !--------------------------------------------------------
 gen_fac=1.
 !cltorg this%a_diff_f(:,:,:)=this%mg_weig1 
+      write(6,*)'thinkdeb in def_mg_weights,  ', 05   
+      call flush(6)
 write(tmpfilename, '("mgbf_tmpfile_", I0, ".txt")') this%mype
 open(12,file=trim(tmpfilename),form="formatted")
 if(this%l_mgbf_inhomogeneous ) then
@@ -1447,28 +1457,22 @@ enddo
 !cltorg do i=1,this%im
 !cltorg   this%paspx(1,1,i)=this%pasp02
 !cltorg enddo
+      write(6,*)'thinkdeb in def_mg_weights, l_constant_aspt2  ', this%l_constant_aspt2   
+      call flush(6)
 if (this%l_constant_aspt2 ) then 
-       do i=1,this%im
-      do j=1,this%jm
-   do k=1,this%lm
-     this%paspx4d(:,:,:,2)=this%pasp02  !for first generation
-   enddo
-      enddo
-       enddo
-   
+     this%paspx=this%pasp02
+     this%paspy=this%pasp02
+     this%paspx4d(:,:,:,:)=this%pasp02  !for first generation
 !cltorg   this%paspy(1,1,j)=this%pasp02
 !cltorg enddo
 !lct   this%paspy(:,:,:,1)=this%pasp02  !for first generation
-       do i=1,this%im
-      do j=1,this%jm
-   do k=1,this%lm
-     this%paspy4d(:,:,:,1)=this%pasp02  !for first generation
-   enddo
-      enddo
-       enddo
+     this%paspy4d(:,:,:,:)=this%pasp02  !for first generation
  else  !clt inhomogeneous and anisotropic aspect tensors 
   !to initialize halo points 
   !to initialize halo points 
+     this%paspx=this%pasp02
+     this%paspy=this%pasp02  !paspx and paspy will be replaced by paspx4d/paspy4d when the x/y filter
+                             ! is used ( filtering_fast_bkg ) 
 
    allocate (lonlat2d_anl(this%nm,this%mm,2))
    allocate (lonlat2d_filt(this%im,this%jm,2))
@@ -1510,10 +1514,6 @@ if (this%l_constant_aspt2 ) then
 
    
     
-   call this%boco_2d(this%paspx4d(1:this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,1),this%lm,this%im,this%jm,this%hx,this%hy)
-   call this%upsending_normalized(this%paspx4d(:,:,:,1),this%paspx4d(:,:,:,2))
-   call this%boco_2d(this%paspy4d(1:this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,1),this%lm,this%im,this%jm,this%hx,this%hy)
-   call this%upsending_normalized(this%paspy4d(:,:,:,1),this%paspy4d(:,:,:,2))
    deallocate (lonlat2d_anl)
    deallocate (lonlat2d_filt)
 endif
@@ -1544,6 +1544,8 @@ do L=1,this%lm
 
 end do
 
+      write(6,*)'thinkdeb in def_mg_weights,  ', 08   
+      call flush(6)
 
 !cltorg  if(.not.this%mgbf_line) then
    if(this%nxm*this%nym>1) then
@@ -1624,10 +1626,17 @@ end do
       this%VALL(1,1-this%hx:this%imH+this%hx,1-this%hy:this%jmH+this%hy)=0.
    end if
 !cltorg  end if
+   call this%boco_2d(this%paspx4d(1:this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,1),this%lm,this%im,this%jm,this%hx,this%hy)
    call this%upsending_normalized(this%paspx4d(:,:,:,1),this%paspx4d(:,:,:,2))
+   call this%boco_2d(this%paspy4d(1:this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,1),this%lm,this%im,this%jm,this%hx,this%hy)
    call this%upsending_normalized(this%paspy4d(:,:,:,1),this%paspy4d(:,:,:,2))
+
+   call this%boco_2d(this%ssx4d(1:this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,1),this%lm,this%im,this%jm,this%hx,this%hy)
    call this%upsending_normalized(this%ssx4d(:,:,:,1),this%ssx4d(:,:,:,2))
+   call this%boco_2d(this%ssy4d(1:this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,1),this%lm,this%im,this%jm,this%hx,this%hy)
    call this%upsending_normalized(this%ssy4d(:,:,:,1),this%ssy4d(:,:,:,2))
+   write(6,*)'thinkdeb999 end of def_mg_weights'
+   call flush(6)
 
 
 
