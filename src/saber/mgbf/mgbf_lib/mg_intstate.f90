@@ -1368,7 +1368,7 @@ if(this%l_mgbf_inhomogeneous ) then
   !clt to convert data in weigt_var to their correct locations
      do ig=start_idx,end_idx
        weigh_tmp=this%weig_var(:,:,:,ig)
-       call this%upsending_normalized(weigh_tmp,this%weig_var(:,:,:,ig))
+       call this%upsending_normalized(this%km_all,weigh_tmp,this%weig_var(:,:,:,ig))
      enddo 
 
       deallocate(weig_g,weigh_tmp)
@@ -1378,7 +1378,7 @@ if(this%l_mgbf_inhomogeneous ) then
    do ig=start_idx,end_idx
    write(6,*)'thinkdeb255 par_weig_g(ig) ',par_weig_g(ig)
    weigh_tmp=par_weig_g(ig)
-   call this%upsending_normalized(weigh_tmp,this%weig_var(:,:,:,ig))
+   call this%upsending_normalized(this%km_all,weigh_tmp,this%weig_var(:,:,:,ig))
   !clto call this%upsending(weigh_tmp,this%weig_var(:,:,:,ig))
    enddo 
 
@@ -1627,14 +1627,14 @@ end do
    end if
 !cltorg  end if
    call this%boco_2d(this%paspx4d(1:this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,1),this%lm,this%im,this%jm,this%hx,this%hy)
-   call this%upsending_normalized(this%paspx4d(:,:,:,1),this%paspx4d(:,:,:,2))
+   call this%upsending_normalized(this%lm,this%paspx4d(:,:,:,1),this%paspx4d(:,:,:,2))
    call this%boco_2d(this%paspy4d(1:this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,1),this%lm,this%im,this%jm,this%hx,this%hy)
-   call this%upsending_normalized(this%paspy4d(:,:,:,1),this%paspy4d(:,:,:,2))
+   call this%upsending_normalized(this%lm,this%paspy4d(:,:,:,1),this%paspy4d(:,:,:,2))
 
    call this%boco_2d(this%ssx4d(1:this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,1),this%lm,this%im,this%jm,this%hx,this%hy)
-   call this%upsending_normalized(this%ssx4d(:,:,:,1),this%ssx4d(:,:,:,2))
+   call this%upsending_normalized(this%lm,this%ssx4d(:,:,:,1),this%ssx4d(:,:,:,2))
    call this%boco_2d(this%ssy4d(1:this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,1),this%lm,this%im,this%jm,this%hx,this%hy)
-   call this%upsending_normalized(this%ssy4d(:,:,:,1),this%ssy4d(:,:,:,2))
+   call this%upsending_normalized(this%lm,this%ssy4d(:,:,:,1),this%ssy4d(:,:,:,2))
    write(6,*)'thinkdeb999 end of def_mg_weights'
    call flush(6)
 
