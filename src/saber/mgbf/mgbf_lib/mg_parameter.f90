@@ -536,6 +536,8 @@ integer(i_kind):: lm            ! number of vertical layers in filter grids
 !clthhhreal(r_kind):: coef_normalization(lm_max)=1.0 !normalizaton coefficients
 real(r_kind):: coef_normalization(lm_max)=1 !normalizaton coefficients
 real(r_kind):: coef_normalization_const=-9999.0 ! constant, if set, this contant will be 
+real(r_kind):: dxfmctrl=13000,dyfmctrl=13000  !the control filtering grid intervals corresponding to the contstant horizontal aspect tensor
+logical :: l_constant_aspt2 =.true. ! using constant horizontal aspect tensor : ampl02
 character(len=256) ::file_coef_normalization="XXXX"
 integer(i_kind):: km2           ! number of 2d variables for filtering
 integer(i_kind):: km3           ! number of 3d variables for filtering
@@ -570,6 +572,8 @@ logical :: l_exist
                               ,lm_a,lm,coef_normalization               & 
                               ,coef_normalization_const & 
                               ,file_coef_normalization  &
+                              , dxfmctrl,dyfmctrl       & 
+                              , l_constant_aspt2        &
                               ,km2,km3                                  &
                               ,n_ens                                    &
                               ,l_loc                                    &
@@ -652,6 +656,9 @@ logical :: l_exist
 
 
   this%coef_normalization=coef_normalization
+  this%dxfmctrl=dxfmctrl; this%dyfmctrl=dyfmctrl 
+  write(6,*)'thinkdeb999 readin l_constant_aspt2  ',l_constant_aspt2
+  this%l_constant_aspt2 = l_constant_aspt2
   this%km2=km2
   this%km3=km3
   this%n_ens=n_ens

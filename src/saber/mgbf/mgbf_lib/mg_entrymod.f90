@@ -111,8 +111,11 @@ call this%allocate_mg_intstate
 call this%def_offset_coef
       write(6,*)'thinkdeb in mg_entry,  ', 6   
       call flush(6)
-
+if(present(n_owned_anl).and.present(anl_lonlat1d)) then 
+call this%def_mg_weights(n_owned_anl=n_owned_anl,lonlat1d_anl=anl_lonlat1d)
+else
 call this%def_mg_weights
+endif
       write(6,*)'thinkdeb in mg_entry,  ', 7   
       call flush(6)
 

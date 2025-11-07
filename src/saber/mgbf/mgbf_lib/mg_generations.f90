@@ -239,7 +239,7 @@ integer(i_kind):: g,L
         write(6,*)'thinkdeb144 after 2  min/max output ', minval(V_INT),maxval(V_INT)
 !clttothink
 
-        call this%upsend_all(nz,V_INT(1:this%km,1:this%imL,1:this%jmL),H,nz)
+        call this%upsend_all(V_INT(1:nz,1:this%imL,1:this%jmL),H,nz)
         write(6,*)'thinkdeb144 after 2  min/max output ', minval(H),maxval(H)
 !
 ! From generation 2 sequentially to higher generations
@@ -248,14 +248,14 @@ integer(i_kind):: g,L
 
     if(g==this%my_hgen) then
         write(6,*)'thinkdeb144 before second adjoint  min/max input ', minval(H),maxval(H)
-        call this%adjoint_normalized(H(1:this%km,0:this%im+1,0:this%jm+1),H_INT,nz,g) 
+        call this%adjoint_normalized(H(1:nz,0:this%im+1,0:this%jm+1),H_INT,nz,g) 
         write(6,*)'thinkdeb144 after second adjoint  min/max input ', minval(H_INT),maxval(H_INT)
     endif
 
         call this%bocoT_2d(H_INT,nz,this%imL,this%jmL,2,2,this%FimaxL,this%FjmaxL,g,g)
 
         write(6,*)'thinkdeb144 before final upsend_all  min/max input ', minval(H_INT),maxval(H_INT)
-        call this%upsend_all(H_INT(1:this%km,1:this%imL,1:this%jmL),H,nz,g,g+1)
+        call this%upsend_all(H_INT(1:nz,1:this%imL,1:this%jmL),H,nz,g,g+1)
         write(6,*)'thinkdeb144 after final upsend_all  min/max input ', minval(H_INT),maxval(H_INT)
 
   end do    

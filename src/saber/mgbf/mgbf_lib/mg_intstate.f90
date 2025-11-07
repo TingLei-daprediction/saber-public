@@ -658,13 +658,14 @@ interface
      real(r_kind),dimension(this%km,-1:this%imL+2,-1:this%jmL+2):: H_INT
    end subroutine
    module subroutine upsending_normalized &
-        (this,V,H)
+        (this,nz,V,H)
      implicit none
      class (mg_intstate_type),target:: this
-     real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(in):: V
-     real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(out):: H
-     real(r_kind),dimension(this%km,-1:this%imL+2,-1:this%jmL+2):: V_INT
-     real(r_kind),dimension(this%km,-1:this%imL+2,-1:this%jmL+2):: H_INT
+     integer (i_kind):: nz
+     real(r_kind),dimension(nz,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(in):: V
+     real(r_kind),dimension(nz,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(out):: H
+     real(r_kind),dimension(nz,-1:this%imL+2,-1:this%jmL+2):: V_INT
+     real(r_kind),dimension(nz,-1:this%imL+2,-1:this%jmL+2):: H_INT
    end subroutine
    module subroutine downsending &
         (this,H,V)
@@ -1292,16 +1293,21 @@ endif
       call flush(6)
 
  if (present(lonlat1d_anl)) then
-    if (size(lonlat1d_anl,2) /= 2 .or. size(lonlat1d_anl,1) /= n_owned_anl) then
+    if (size(lonlat1d_anl,2) /= 2 .or. size(lonlat1d_anl,1) < n_owned_anl) then
       error stop "lonlat1d_anl has wrong shape"
     end if
-    this%l_constant_aspt2=.false.
+  else
+    this%l_constant_aspt2=.true.
    
   end if
+    write(6,*)'thinkdeb in def_mg_weights, changed  l_constant_aspt2  ', this%l_constant_aspt2   
  if (present(n_owned_anl)) then
    if(this%nm*this%mm /= n_owned_anl) then 
      error stop "the input grid number is not as expected , stop "
    endif
+ else
+    this%l_constant_aspt2=.true.
+    
  endif
 
 
