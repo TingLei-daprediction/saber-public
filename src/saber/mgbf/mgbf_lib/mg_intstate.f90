@@ -33,7 +33,7 @@ use mgbf_kinds, only: r_kind,i_kind
 use jp_pkind2, only: fpi
 use jp_pbfil3, only: inimomtab,t22_to_3,tritform,t33_to_6,hextform
 use mg_parameter,only: mg_parameter_type
-use mg_tools,only : interp_analysis_to_filter
+use mg_tools,only : interp_analysis_to_filter,mg_sphere_dist
 use tools_func, only:sphere_dist
 use  tools_const, only: req
 implicit none
@@ -1484,21 +1484,29 @@ if (this%l_constant_aspt2 ) then
    allocate (lonlat2d_filt(this%im,this%jm,2))
    lonlat2d_anl(:,:,1)=reshape(lonlat1d_anl(:,1),[size(lonlat2d_anl,1),size(lonlat2d_anl,2)])
    lonlat2d_anl(:,:,2)=reshape(lonlat1d_anl(:,2),[size(lonlat2d_anl,1),size(lonlat2d_anl,2)])
+   if(this%mype.eq.0) then 
+     open(13,file='latlon.txt',form="formatted")
+       write(13,*)"lon "
+       write(13,*)lonlat2d_anl(:,:,1)
+       write(13,*)"lat "
+       write(13,*)lonlat2d_anl(:,:,2)
+   endif
+   stop
    call interp_analysis_to_filter(lonlat2d_anl(:,:,1),this%nm,this%mm,this%im,this%jm,lonlat2d_filt(:,:,1))
    call interp_analysis_to_filter(lonlat2d_anl(:,:,2),this%nm,this%mm,this%im,this%jm,lonlat2d_filt(:,:,2))
   
    do j=1,this%jm
     do i=1,this%im
       if (i.le.this%im-1) then
-        call sphere_dist(lonlat2d_filt(i,j,1), lonlat2d_filt(i,j,2), lonlat2d_filt(i+1,j,1),lonlat2d_filt(i+1,j,2), dist_rad)
+        call mg_sphere_dist(lonlat2d_filt(i,j,1), lonlat2d_filt(i,j,2), lonlat2d_filt(i+1,j,1),lonlat2d_filt(i+1,j,2), dist_rad)
       else
-        call sphere_dist(lonlat2d_filt(i-1,j,1), lonlat2d_filt(i-1,j,2), lonlat2d_filt(i,j,1),lonlat2d_filt(i,j,2), dist_rad)
+        call mg_sphere_dist(lonlat2d_filt(i-1,j,1), lonlat2d_filt(i-1,j,2), lonlat2d_filt(i,j,1),lonlat2d_filt(i,j,2), dist_rad)
       endif
       this%dxfm(i,j)=dist_rad*req
       if (j.le.this%jm-1) then
-        call sphere_dist(lonlat2d_filt(i,j,1), lonlat2d_filt(i,j,2), lonlat2d_filt(i,j+1,1),lonlat2d_filt(i,j+1,2), dist_rad)
+        call mg_sphere_dist(lonlat2d_filt(i,j,1), lonlat2d_filt(i,j,2), lonlat2d_filt(i,j+1,1),lonlat2d_filt(i,j+1,2), dist_rad)
       else
-        call sphere_dist(lonlat2d_filt(i,j-1,1), lonlat2d_filt(i,j-1,2), lonlat2d_filt(i,j,1),lonlat2d_filt(i,j,2), dist_rad)
+        call mg_sphere_dist(lonlat2d_filt(i,j-1,1), lonlat2d_filt(i,j-1,2), lonlat2d_filt(i,j,1),lonlat2d_filt(i,j,2), dist_rad)
       endif
       this%dyfm(i,j)=dist_rad*req
     enddo
@@ -1508,12 +1516,13 @@ if (this%l_constant_aspt2 ) then
      
        do i=1,this%im
       do j=1,this%jm
-   do k=1,this%lm
-     this%paspx4d(k,i,j,1)=(rtem1*this%dxfmctrl/this%dxfm(i,j))**2  !
-     this%paspy4d(k,i,j,1)=(rtem1*this%dyfmctrl/this%dyfm(i,j))**2  !
-   enddo
+      write(6,*)'thinkdebx99999 dxfm/dyfm = ',this%dxfm(i,j)
+      write(6,*)'thinkdebx99999 dxfm/dyfm = ',this%dxfm(i,j)
+     this%paspx4d(1,i,j,1)=(rtem1*this%dxfmctrl/this%dxfm(i,j))**2  !
+     this%paspy4d(1,i,j,1)=(rtem1*this%dyfmctrl/this%dyfm(i,j))**2  !
       enddo
        enddo
+     this%paspx4d(2:this%lm,:,:,1)=spread(this%paspx4d(1,:,:,1),dim=1,ncopies=this%lm-1)
    
    
 
