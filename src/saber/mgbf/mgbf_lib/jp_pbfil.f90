@@ -61,6 +61,7 @@ submodule(mg_parameter) jp_pbfil
 use mpi
 use mgbf_kinds, only: dp=>r_kind
 use jp_pietc, only: u1
+use, intrinsic :: iso_fortran_env, only: output_unit, error_unit
 implicit none
 
 contains
@@ -201,8 +202,13 @@ do ix=Lx,Mx
    exx=el(ix)*this%rmom2_1
    x=u1/exx
    gxl=ceiling(-x+eps); gxm=floor( x-eps)
-   if(gxl<-hx.or.gxm>hx)&
-        stop 'In getlinesum1; filter reach fx becomes too large for hx'
+   if(gxl<-hx.or.gxm>hx) then
+        write(error_unit,*) 'thinkdeb7777 exx =',exx,' ',this%rmom2_1,' ',hx,' ',el(ix)
+        call flush(error_unit)
+        write(error_unit,*) 'In getlinesum1dxx; filter reach fx becomes too large for hx'
+        call flush(error_unit)
+        stop 'In getlinesum1d; filter reach becomes too large for hy'
+   endif
    do gx=gxl,gxm
       x=gx
       rr=(x*exx)**2; rrc=u1-rr

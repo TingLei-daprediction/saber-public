@@ -35,7 +35,7 @@ use jp_pbfil3, only: inimomtab,t22_to_3,tritform,t33_to_6,hextform
 use mg_parameter,only: mg_parameter_type
 use mg_tools,only : interp_analysis_to_filter,mg_sphere_dist
 use tools_func, only:sphere_dist
-use  tools_const, only: req
+use  tools_const, only: req,deg2rad
 implicit none
 type,extends( mg_parameter_type):: mg_intstate_type
 real(r_kind), allocatable,dimension(:,:,:):: V
@@ -1281,7 +1281,7 @@ character*72  tmpfilename
 real (r_kind)::rtem1
 real (r_kind) :: dist_rad
 !-----------------------------------------------------------------------
-      write(6,*)'thinkdeb in def_mg_weights,  ', 01   
+      write(6,*)'thinkdeb in def_mg_weights,   01'   
       call flush(6)
 start_idx=Lbound(this%weig_var,4)
 end_idx=Ubound(this%weig_var,4)
@@ -1289,7 +1289,7 @@ if(start_idx /=1 ) then
  write(6,*)'the expected begin index of weig_var is 1, stop'
  stop
 endif
-      write(6,*)'thinkdeb in def_mg_weights,  ', 02   
+      write(6,*)'thinkdeb in def_mg_weights,   02'   
       call flush(6)
 
  if (present(lonlat1d_anl)) then
@@ -1312,13 +1312,13 @@ endif
 
 
 
-      write(6,*)'thinkdeb in def_mg_weights,  ', 03   
+      write(6,*)'thinkdeb in def_mg_weights,   03'   
       call flush(6)
 
 allocate(sendcounts(this%nxpe*this%nype), displs(this%nxpe*this%nype))
 allocate(weigh_tmp(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy))        ; this%weig_var=0.
 !clt first transform/upsend original mg_weigh_var to their correct locations
-      write(6,*)'thinkdeb in def_mg_weights,  ', 04   
+      write(6,*)'thinkdeb in def_mg_weights,   04 '  
       call flush(6)
 if(this%l_mgbf_inhomogeneous ) then
   if(this%l_mg_weig_readin) then
@@ -1411,7 +1411,7 @@ endif
 !--------------------------------------------------------
 gen_fac=1.
 !cltorg this%a_diff_f(:,:,:)=this%mg_weig1 
-      write(6,*)'thinkdeb in def_mg_weights,  ', 05   
+      write(6,*)'thinkdeb in def_mg_weights,   05'   
       call flush(6)
 write(tmpfilename, '("mgbf_tmpfile_", I0, ".txt")') this%mype
 open(12,file=trim(tmpfilename),form="formatted")
@@ -1484,14 +1484,15 @@ if (this%l_constant_aspt2 ) then
    allocate (lonlat2d_filt(this%im,this%jm,2))
    lonlat2d_anl(:,:,1)=reshape(lonlat1d_anl(:,1),[size(lonlat2d_anl,1),size(lonlat2d_anl,2)])
    lonlat2d_anl(:,:,2)=reshape(lonlat1d_anl(:,2),[size(lonlat2d_anl,1),size(lonlat2d_anl,2)])
+   lonlat2d_anl=lonlat2d_anl*deg2rad
    if(this%mype.eq.0) then 
      open(13,file='latlon.txt',form="formatted")
        write(13,*)"lon "
        write(13,*)lonlat2d_anl(:,:,1)
        write(13,*)"lat "
        write(13,*)lonlat2d_anl(:,:,2)
+    close(13)
    endif
-   stop
    call interp_analysis_to_filter(lonlat2d_anl(:,:,1),this%nm,this%mm,this%im,this%jm,lonlat2d_filt(:,:,1))
    call interp_analysis_to_filter(lonlat2d_anl(:,:,2),this%nm,this%mm,this%im,this%jm,lonlat2d_filt(:,:,2))
   
@@ -1517,12 +1518,16 @@ if (this%l_constant_aspt2 ) then
        do i=1,this%im
       do j=1,this%jm
       write(6,*)'thinkdebx99999 dxfm/dyfm = ',this%dxfm(i,j)
-      write(6,*)'thinkdebx99999 dxfm/dyfm = ',this%dxfm(i,j)
+      write(6,*)'thinkdebx99999 dxfm/dyfm = ',this%dyfm(i,j)
      this%paspx4d(1,i,j,1)=(rtem1*this%dxfmctrl/this%dxfm(i,j))**2  !
      this%paspy4d(1,i,j,1)=(rtem1*this%dyfmctrl/this%dyfm(i,j))**2  !
       enddo
        enddo
+           
+
+
      this%paspx4d(2:this%lm,:,:,1)=spread(this%paspx4d(1,:,:,1),dim=1,ncopies=this%lm-1)
+     this%paspy4d(2:this%lm,:,:,1)=spread(this%paspy4d(1,:,:,1),dim=1,ncopies=this%lm-1)
    
    
 
@@ -1559,7 +1564,7 @@ do L=1,this%lm
 
 end do
 
-      write(6,*)'thinkdeb in def_mg_weights,  ', 08   
+      write(6,*)'thinkdeb in def_mg_weights,   08'   
       call flush(6)
 
 !cltorg  if(.not.this%mgbf_line) then
@@ -1605,6 +1610,12 @@ end do
          call this%cholaspect(1,this%im,1,this%jm,1,this%lm,this%pasp3)
          call this%getlinesum(this%hx,1,this%im,this%paspx,this%ssx)
          call this%getlinesum(this%hy,1,this%jm,this%paspy,this%ssy)
+         write(6,*)'thinkdeb888 min/max dxfm ',minval(this%dxfm) ,maxval(this%dxfm)
+         write(6,*)'thinkdeb888 min/max dyfm ',minval(this%dyfm) ,maxval(this%dyfm)
+         write(6,*)'thinkdeb888 min/max dyfm',minval(this%paspx4d(:,1:this%im,1:this%jm,1)),' ',& 
+                 maxval(this%paspx4d(:,1:this%im,1:this%jm,1))
+         write(6,*)'thinkdeb888 min/max papy4d ',minval(this%paspy4d(:,1:this%im,1:this%jm,1)),' ', & 
+                 maxval(this%paspy4d(:,1:this%im,1:this%jm,1))
        do k=1,this%lm
          do j=1,this%jm
          call this%getlinesum(this%hx,1,this%im,this%paspx4d(k,1:this%im,j,1),this%ssx4d(k,1:this%im,j,1))

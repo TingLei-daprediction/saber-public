@@ -175,7 +175,7 @@ integer(i_kind):: km_64
 real(r_kind):: lengthx,lengthy,xa0,ya0,xf0,yf0
 real(r_kind):: dxf,dyf,dxa,dya
 real(r_kind),allocatable,dimension (:,:):: dxfm,dyfm  ! actual filtering grid intervals in meters
-real(r_kind):: dxfmctrl=13000,dyfmctrl=13000  !the control filtering grid intervals corresponding to the contstant horizontal aspect tensor
+real(r_kind):: dxfmctrl=35000,dyfmctrl=35000  !the control filtering grid intervals corresponding to the contstant horizontal aspect tensor
 logical :: l_constant_aspt2 =.true. ! using constant horizontal aspect tensor : ampl02
 
 integer(i_kind):: npadx         ! x padding on analysis grid
@@ -536,7 +536,7 @@ integer(i_kind):: lm            ! number of vertical layers in filter grids
 !clthhhreal(r_kind):: coef_normalization(lm_max)=1.0 !normalizaton coefficients
 real(r_kind):: coef_normalization(lm_max)=1 !normalizaton coefficients
 real(r_kind):: coef_normalization_const=-9999.0 ! constant, if set, this contant will be 
-real(r_kind):: dxfmctrl=13000,dyfmctrl=13000  !the control filtering grid intervals corresponding to the contstant horizontal aspect tensor
+real(r_kind):: dxfmctrl=35000,dyfmctrl=35000  !the control filtering grid intervals corresponding to the contstant horizontal aspect tensor
 logical :: l_constant_aspt2 =.true. ! using constant horizontal aspect tensor : ampl02
 character(len=256) ::file_coef_normalization="XXXX"
 integer(i_kind):: km2           ! number of 2d variables for filtering
