@@ -1479,7 +1479,7 @@ if (this%l_constant_aspt2 ) then
      this%paspx=this%pasp02
      this%paspy=this%pasp02  !paspx and paspy will be replaced by paspx4d/paspy4d when the x/y filter
                              ! is used ( filtering_fast_bkg ) 
-
+#if 0
    allocate (lonlat2d_anl(this%nm,this%mm,2))
    allocate (lonlat2d_filt(this%im,this%jm,2))
    lonlat2d_anl(:,:,1)=reshape(lonlat1d_anl(:,1),[size(lonlat2d_anl,1),size(lonlat2d_anl,2)])
@@ -1536,6 +1536,11 @@ if (this%l_constant_aspt2 ) then
     
    deallocate (lonlat2d_anl)
    deallocate (lonlat2d_filt)
+#else
+     this%paspx4d(:,:,:,1)=this%pasp02
+     this%paspy4d(:,:,:,1)=this%pasp02
+#endif
+  
 endif
 do j=1,this%jm
 do i=1,this%im
@@ -1661,7 +1666,6 @@ end do
    call this%upsending_normalized(this%lm,this%ssx4d(:,:,:,1),this%ssx4d(:,:,:,2))
    call this%boco_2d(this%ssy4d(1:this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,1),this%lm,this%im,this%jm,this%hx,this%hy)
    call this%upsending_normalized(this%lm,this%ssy4d(:,:,:,1),this%ssy4d(:,:,:,2))
-   write(6,*)'thinkdeb999 end of def_mg_weights'
    call flush(6)
 
 

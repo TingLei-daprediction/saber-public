@@ -234,29 +234,30 @@ integer(i_kind):: g,L
         write(6,*)'thinkdeb144 before adjoint_nral min/max input ', minval(V),maxval(V)
         call this%adjoint_normalized(V(1:nz,0:this%im+1,0:this%jm+1),V_INT,nz,1) 
         write(6,*)'thinkdeb144 after adjoint_nral min/max output ', minval(V_INT),maxval(V_INT)
+        write(6,*)'thinkdeb144 after adjoint_nral2 min/max output ', minval(V_INT(:,1:this%imL,1:this%jmL))
 
         call this%bocoT_2d(V_INT,nz,this%imL,this%jmL,2,2)
-        write(6,*)'thinkdeb144 after 2  min/max output ', minval(V_INT),maxval(V_INT)
+        write(6,*)'thinkdeb144 after 2  min/max output ', maxval(V_INT(:,1:this%imL,1:this%jmL)),minval(V_INT(:,1:this%imL,1:this%jmL))
 !clttothink
 
         call this%upsend_all(V_INT(1:nz,1:this%imL,1:this%jmL),H,nz)
-        write(6,*)'thinkdeb144 after 2  min/max output ', minval(H),maxval(H)
+        write(6,*)'thinkdeb144 after 2xx  min/max output ', maxval(H(:,1:this%imL,1:this%jmL)),minval(H(:,1:this%imL,1:this%jmL))
 !
 ! From generation 2 sequentially to higher generations
 !
   do g=2,this%gm-1 
 
     if(g==this%my_hgen) then
-        write(6,*)'thinkdeb144 before second adjoint  min/max input ', minval(H),maxval(H)
+        write(6,*)'thinkdeb144 before second adjoint  min/max input ', maxval(H(:,1:this%imL,1:this%jmL)),minval(H(:,1:this%imL,1:this%jmL))
         call this%adjoint_normalized(H(1:nz,0:this%im+1,0:this%jm+1),H_INT,nz,g) 
-        write(6,*)'thinkdeb144 after second adjoint  min/max input ', minval(H_INT),maxval(H_INT)
+        write(6,*)'thinkdeb144 after second adjoint  min/max input ', maxval(H_INT(:,1:this%imL,1:this%jmL)),minval(H_INT(:,1:this%imL,1:this%jmL))
     endif
 
         call this%bocoT_2d(H_INT,nz,this%imL,this%jmL,2,2,this%FimaxL,this%FjmaxL,g,g)
 
-        write(6,*)'thinkdeb144 before final upsend_all  min/max input ', minval(H_INT),maxval(H_INT)
+        write(6,*)'thinkdeb144 before final upsend_all  min/max input ', maxval(H_INT(:,1:this%imL,1:this%jmL)),minval(H_INT(:,1:this%imL,1:this%jmL))
         call this%upsend_all(H_INT(1:nz,1:this%imL,1:this%jmL),H,nz,g,g+1)
-        write(6,*)'thinkdeb144 after final upsend_all  min/max input ', minval(H_INT),maxval(H_INT)
+        write(6,*)'thinkdeb144 after final upsend_all  min/max input ', maxval(H_INT),minval(H_INT)
 
   end do    
 
@@ -1456,8 +1457,8 @@ else
     W(:,:,this%jmL+1:this%jmL+2)=0
 endif
 
-     write(6,*)'thinkdeb253 4 W is ',minval(W),' ',maxval(W)!
-     write(6,*)'thinkdeb253 4 Wnorm is ',minval(Wnorm),' ',maxval(Wnorm)!
+     write(6,*)'thinkdeb253 4 W is ',minval(W(:,1:this%imL,1:this%jmL)),' ',maxval(W(:,1:this%imL,1:this%jmL))!
+     write(6,*)'thinkdeb253 4 Wnorm is ',minval(Wnorm(:,1:this%imL,1:this%jmL)),' ',maxval(Wnorm(:,1:this%imL,1:this%jmL))!
 
 endif
 !-----------------------------------------------------------------------
