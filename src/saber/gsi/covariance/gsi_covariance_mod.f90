@@ -53,6 +53,8 @@ use state_vectors,                  only: deallocate_state
 
 use constants,                      only: grav
 
+use mpi
+
 implicit none
 private
 public gsi_covariance
@@ -430,9 +432,13 @@ type(control_vector) :: gsicv
 type(gsi_bundle),allocatable :: gsisv(:)
 integer :: isc,iec,jsc,jec,npz
 integer :: iv,k,ier,itbd,ii
+integer :: mype
+real(kind=8) :: time_beg,time_end,walltime
 
 character(len=32),allocatable :: gvars2d(:),gvars3d(:)
 character(len=30),allocatable :: tbdvars(:),needvrs(:)
+
+integer :: ierr
 
 ! afield = fields%field('air_pressure_at_surface')
 ! call afield%data(rank2)
@@ -549,11 +555,19 @@ endif
 
 ! Apply GSI B-error operator
 ! --------------------------
+          time_beg=MPI_Wtime()
 if (self%cv) then
    call gsibec_cv_space(gsicv,internalcv=.false.,bypassbe=self%bypassGSIbe)
 else
    call gsibec_sv_space(gsisv,internalsv=.false.,bypassbe=self%bypassGSIbe)
 endif
+          call mpi_comm_rank(mpi_comm_world,mype,ierr)
+    
+         time_end=MPI_Wtime()  !now use the existing variable
+          call MPI_Reduce(time_end-time_beg, walltime, 1, MPI_REAL8, MPI_MAX, 0, MPI_COMM_WORLD, ierr)
+           if (mype == 0) then
+             print '(A,F10.6,A)', 'thinkdeb999gsi_covariance_mod.f90 multiply time (max over ranks)',walltime
+           end if
 
 ! Convert back to Atlas Fields
 ! ----------------------------
