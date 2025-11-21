@@ -850,7 +850,7 @@ interface
      class (mg_intstate_type),target:: this
      integer(i_kind),intent(in):: g
      integer(i_kind),intent(in):: km_in
-     real(r_kind), dimension(km_in,0:this%im+1,0:this%jm+1), intent(in):: F
+     real(r_kind), dimension(km_in,1:this%im,1:this%jm), intent(in):: F
      real(r_kind), dimension(km_in,-1:this%imL+2,-1:this%jmL+2), intent(out):: W
    end subroutine
    module subroutine direct1 &
@@ -1281,16 +1281,12 @@ character*72  tmpfilename
 real (r_kind)::rtem1
 real (r_kind) :: dist_rad
 !-----------------------------------------------------------------------
-      write(6,*)'thinkdeb in def_mg_weights,   01'   
-      call flush(6)
 start_idx=Lbound(this%weig_var,4)
 end_idx=Ubound(this%weig_var,4)
 if(start_idx /=1 ) then
  write(6,*)'the expected begin index of weig_var is 1, stop'
  stop
 endif
-      write(6,*)'thinkdeb in def_mg_weights,   02'   
-      call flush(6)
 
  if (present(lonlat1d_anl)) then
     if (size(lonlat1d_anl,2) /= 2 .or. size(lonlat1d_anl,1) < n_owned_anl) then
@@ -1300,7 +1296,6 @@ endif
     this%l_constant_aspt2=.true.
    
   end if
-    write(6,*)'thinkdeb in def_mg_weights, changed  l_constant_aspt2  ', this%l_constant_aspt2   
  if (present(n_owned_anl)) then
    if(this%nm*this%mm /= n_owned_anl) then 
      error stop "the input grid number is not as expected , stop "
@@ -1312,14 +1307,10 @@ endif
 
 
 
-      write(6,*)'thinkdeb in def_mg_weights,   03'   
-      call flush(6)
 
 allocate(sendcounts(this%nxpe*this%nype), displs(this%nxpe*this%nype))
 allocate(weigh_tmp(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy))        ; this%weig_var=0.
 !clt first transform/upsend original mg_weigh_var to their correct locations
-      write(6,*)'thinkdeb in def_mg_weights,   04 '  
-      call flush(6)
 if(this%l_mgbf_inhomogeneous ) then
   if(this%l_mg_weig_readin) then
    dims=(/this%nxpe,this%nype/)
@@ -1382,7 +1373,6 @@ if(this%l_mgbf_inhomogeneous ) then
    allocate(par_weig_g(4))
    par_weig_g=(/this%mg_weig1,this%mg_weig2,this%mg_weig3,this%mg_weig4/)
    do ig=start_idx,end_idx
-   write(6,*)'thinkdeb255 par_weig_g(ig) ',par_weig_g(ig)
    weigh_tmp=par_weig_g(ig)
    call this%upsending_normalized(this%km_all,weigh_tmp,this%weig_var(:,:,:,ig))
   !clto call this%upsending(weigh_tmp,this%weig_var(:,:,:,ig))
@@ -1411,8 +1401,6 @@ endif
 !--------------------------------------------------------
 gen_fac=1.
 !cltorg this%a_diff_f(:,:,:)=this%mg_weig1 
-      write(6,*)'thinkdeb in def_mg_weights,   05'   
-      call flush(6)
 write(tmpfilename, '("mgbf_tmpfile_", I0, ".txt")') this%mype
 open(12,file=trim(tmpfilename),form="formatted")
 if(this%l_mgbf_inhomogeneous ) then
@@ -1426,15 +1414,11 @@ this%b_diff_h(:,:,:)=0.
 select case(this%my_hgen)
 case(2) 
 !cltorg   this%a_diff_h(:,:,:)=this%mg_weig2
-write(12,*)'thinkdeb256 weigh2 ',this%mg_weig2,minval(this%weig_var(:,:,:,2)),(this%weig_var(:,:,:,2))
    this%a_diff_h(:,:,:)=this%weig_var(:,:,:,2)
 case(3) 
 !cltorg   this%a_diff_h(:,:,:)=this%mg_weig3 
-write(12,*)'thinkdeb256 weigh3 ',this%mg_weig3,minval(this%weig_var(:,:,:,3)),(this%weig_var(:,:,:,3))
    this%a_diff_h(:,:,:)=this%weig_var(:,:,:,3)
-write(6,*)'thinkdeb256 weigh3 1 ',this%weig_var(:,:,:,3)
 case default 
-write(12,*)'thinkdeb256 weigh4 ',this%mg_weig1,minval(this%weig_var(:,:,:,4)),(this%weig_var(:,:,:,4))
 !cltorg   this%a_diff_h(:,:,:)=this%mg_weig4
    this%a_diff_h(:,:,:)=this%weig_var(:,:,:,4)
 end select
@@ -1463,8 +1447,6 @@ enddo
 !cltorg do i=1,this%im
 !cltorg   this%paspx(1,1,i)=this%pasp02
 !cltorg enddo
-      write(6,*)'thinkdeb in def_mg_weights, l_constant_aspt2  ', this%l_constant_aspt2   
-      call flush(6)
 if (this%l_constant_aspt2 ) then 
      this%paspx=this%pasp02
      this%paspy=this%pasp02
@@ -1517,8 +1499,8 @@ if (this%l_constant_aspt2 ) then
      
        do i=1,this%im
       do j=1,this%jm
-      write(6,*)'thinkdebx99999 dxfm/dyfm = ',this%dxfm(i,j)
-      write(6,*)'thinkdebx99999 dxfm/dyfm = ',this%dyfm(i,j)
+!clt      write(6,*)'thinkdebx99999 dxfm/dyfm = ',this%dxfm(i,j)
+!clt      write(6,*)'thinkdebx99999 dxfm/dyfm = ',this%dyfm(i,j)
      this%paspx4d(1,i,j,1)=(rtem1*this%dxfmctrl/this%dxfm(i,j))**2  !
      this%paspy4d(1,i,j,1)=(rtem1*this%dyfmctrl/this%dyfm(i,j))**2  !
       enddo
@@ -1569,8 +1551,6 @@ do L=1,this%lm
 
 end do
 
-      write(6,*)'thinkdeb in def_mg_weights,   08'   
-      call flush(6)
 
 !cltorg  if(.not.this%mgbf_line) then
    if(this%nxm*this%nym>1) then
@@ -1615,12 +1595,6 @@ end do
          call this%cholaspect(1,this%im,1,this%jm,1,this%lm,this%pasp3)
          call this%getlinesum(this%hx,1,this%im,this%paspx,this%ssx)
          call this%getlinesum(this%hy,1,this%jm,this%paspy,this%ssy)
-         write(6,*)'thinkdeb888 min/max dxfm ',minval(this%dxfm) ,maxval(this%dxfm)
-         write(6,*)'thinkdeb888 min/max dyfm ',minval(this%dyfm) ,maxval(this%dyfm)
-         write(6,*)'thinkdeb888 min/max dyfm',minval(this%paspx4d(:,1:this%im,1:this%jm,1)),' ',& 
-                 maxval(this%paspx4d(:,1:this%im,1:this%jm,1))
-         write(6,*)'thinkdeb888 min/max papy4d ',minval(this%paspy4d(:,1:this%im,1:this%jm,1)),' ', & 
-                 maxval(this%paspy4d(:,1:this%im,1:this%jm,1))
        do k=1,this%lm
          do j=1,this%jm
          call this%getlinesum(this%hx,1,this%im,this%paspx4d(k,1:this%im,j,1),this%ssx4d(k,1:this%im,j,1))
@@ -1657,8 +1631,10 @@ end do
       this%VALL(1,1-this%hx:this%imH+this%hx,1-this%hy:this%jmH+this%hy)=0.
    end if
 !cltorg  end if
+!cltthinkdeb10000
    call this%boco_2d(this%paspx4d(1:this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,1),this%lm,this%im,this%jm,this%hx,this%hy)
    call this%upsending_normalized(this%lm,this%paspx4d(:,:,:,1),this%paspx4d(:,:,:,2))
+
    call this%boco_2d(this%paspy4d(1:this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,1),this%lm,this%im,this%jm,this%hx,this%hy)
    call this%upsending_normalized(this%lm,this%paspy4d(:,:,:,1),this%paspy4d(:,:,:,2))
 
@@ -1666,7 +1642,6 @@ end do
    call this%upsending_normalized(this%lm,this%ssx4d(:,:,:,1),this%ssx4d(:,:,:,2))
    call this%boco_2d(this%ssy4d(1:this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,1),this%lm,this%im,this%jm,this%hx,this%hy)
    call this%upsending_normalized(this%lm,this%ssy4d(:,:,:,1),this%ssy4d(:,:,:,2))
-   call flush(6)
 
 
 

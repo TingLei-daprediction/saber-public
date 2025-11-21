@@ -231,33 +231,25 @@ integer(i_kind):: g,L
 !
 ! From generation 1 to generation 2
 !
-        write(6,*)'thinkdeb144 before adjoint_nral min/max input ', minval(V),maxval(V)
-        call this%adjoint_normalized(V(1:nz,0:this%im+1,0:this%jm+1),V_INT,nz,1) 
-        write(6,*)'thinkdeb144 after adjoint_nral min/max output ', minval(V_INT),maxval(V_INT)
-        write(6,*)'thinkdeb144 after adjoint_nral2 min/max output ', minval(V_INT(:,1:this%imL,1:this%jmL))
+        call this%adjoint_normalized(V(1:nz,1:this%im,1:this%jm),V_INT,nz,1) 
 
         call this%bocoT_2d(V_INT,nz,this%imL,this%jmL,2,2)
-        write(6,*)'thinkdeb144 after 2  min/max output ', maxval(V_INT(:,1:this%imL,1:this%jmL)),minval(V_INT(:,1:this%imL,1:this%jmL))
 !clttothink
 
         call this%upsend_all(V_INT(1:nz,1:this%imL,1:this%jmL),H,nz)
-        write(6,*)'thinkdeb144 after 2xx  min/max output ', maxval(H(:,1:this%imL,1:this%jmL)),minval(H(:,1:this%imL,1:this%jmL))
 !
 ! From generation 2 sequentially to higher generations
 !
   do g=2,this%gm-1 
 
     if(g==this%my_hgen) then
-        write(6,*)'thinkdeb144 before second adjoint  min/max input ', maxval(H(:,1:this%imL,1:this%jmL)),minval(H(:,1:this%imL,1:this%jmL))
-        call this%adjoint_normalized(H(1:nz,0:this%im+1,0:this%jm+1),H_INT,nz,g) 
-        write(6,*)'thinkdeb144 after second adjoint  min/max input ', maxval(H_INT(:,1:this%imL,1:this%jmL)),minval(H_INT(:,1:this%imL,1:this%jmL))
+        call this%adjoint_normalized(H(1:nz,1:this%im,1:this%jm),H_INT,nz,g) 
     endif
 
         call this%bocoT_2d(H_INT,nz,this%imL,this%jmL,2,2,this%FimaxL,this%FjmaxL,g,g)
 
-        write(6,*)'thinkdeb144 before final upsend_all  min/max input ', maxval(H_INT(:,1:this%imL,1:this%jmL)),minval(H_INT(:,1:this%imL,1:this%jmL))
+!clt tothink ,problem on rank =20
         call this%upsend_all(H_INT(1:nz,1:this%imL,1:this%jmL),H,nz,g,g+1)
-        write(6,*)'thinkdeb144 after final upsend_all  min/max input ', maxval(H_INT),minval(H_INT)
 
   end do    
 
@@ -1391,17 +1383,18 @@ implicit none
 class (mg_intstate_type),target:: this
 integer(i_kind),intent(in):: g 
 integer(i_kind),intent(in):: km_in
-real(r_kind), dimension(km_in,0:this%im+1,0:this%jm+1), intent(in):: F
+real(r_kind), dimension(km_in,1:this%im,1:this%jm), intent(in):: F
 real(r_kind), dimension(km_in,-1:this%imL+2,-1:this%jmL+2), intent(out):: W
 real(r_kind), dimension(km_in,-1:this%imL+2,-1:this%jmL+2) :: Wnorm
 integer(i_kind):: i,j,iL,jL
 real(r_kind):: r1_16,r3_16,r9_16
 integer(i_kind):: k 
 real(r_kind), parameter :: eps = 1.0e-10_r_kind  ! Add epsilon for safety check
+integer(i_kind):: im1, ip0, ip1, ip2
+integer(i_kind):: jm1, jp0, jp1, jp2
 !-----------------------------------------------------------------------
 !
 ! 3)
-     write(6,*)'thinkdeb253 f is ',minval(F),' ',maxval(F)!
     W(:,:,:)=0.
    Wnorm=0.!
 
@@ -1410,24 +1403,21 @@ r1_16 = 1./16.
 r3_16 = 3.*r1_16
 r9_16 = 9.*r1_16
 
-
- 
-  do jL=1,this%jmL
+ do jL=1,this%jmL
     j = 2*jL - 1
-  do iL=1,this%imL
-    i = 2*iL - 1
-    W(:,iL,jL) = r1_16*(F(:,i-1,j-1)+F(:,i+2,j-1)+F(:,i-1,j+2)+F(:,i+2,j+2))+ &
-               + r3_16*(F(:,i,j-1)+F(:,i+1,j-1)                               &
-               +        F(:,i-1,j)+F(:,i-1,j+1)                               &
-               +        F(:,i+2,j)+F(:,i+2,j+1)                               &
-               +        F(:,i,j+2)+F(:,i+1,j+2))                              &
-               + r9_16*(F(:,i,j)+F(:,i+1,j)+F(:,i,j+1)+F(:,i+1,j+1))  
-    wnorm(:,iL,jL) =wnorm(:,iL,jL)+ r1_16*4+ &
-               + r3_16*8                                                      &
-               + r9_16*4  
-  enddo
-  enddo
-   
+    jm1 = max(j-1,1); jp0 = j; jp1 = min(j+1,this%jm); jp2 = min(j+2,this%jm)
+    do iL=1,this%imL
+      i = 2*iL - 1
+      im1 = max(i-1,1); ip0 = i; ip1 = min(i+1,this%im); ip2 = min(i+2,this%im)
+      W(:,iL,jL) = r1_16*(F(:,im1,jm1)+F(:,ip2,jm1)+F(:,im1,jp2)+F(:,ip2,jp2))+ &
+                 + r3_16*(F(:,ip0,jm1)+F(:,ip1,jm1)                           &
+                 +        F(:,im1,jp0)+F(:,im1,jp1)                           &
+                 +        F(:,ip2,jp0)+F(:,ip2,jp1)                           &
+                 +        F(:,ip0,jp2)+F(:,ip1,jp2))                          &
+                 + r9_16*(F(:,ip0,jp0)+F(:,ip1,jp0)+F(:,ip0,jp1)+F(:,ip1,jp1))
+      wnorm(:,iL,jL) = wnorm(:,iL,jL) + r1_16*4 + r3_16*8 + r9_16*4
+    enddo
+  enddo 
 !
 if (1.gt.0) then
   do jL=1,this%jmL
@@ -1457,8 +1447,6 @@ else
     W(:,:,this%jmL+1:this%jmL+2)=0
 endif
 
-     write(6,*)'thinkdeb253 4 W is ',minval(W(:,1:this%imL,1:this%jmL)),' ',maxval(W(:,1:this%imL,1:this%jmL))!
-     write(6,*)'thinkdeb253 4 Wnorm is ',minval(Wnorm(:,1:this%imL,1:this%jmL)),' ',maxval(Wnorm(:,1:this%imL,1:this%jmL))!
 
 endif
 !-----------------------------------------------------------------------
