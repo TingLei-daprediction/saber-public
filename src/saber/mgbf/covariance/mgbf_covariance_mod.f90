@@ -291,6 +291,10 @@ integer :: ilev1,ilev2
 !  afield = fields%field('air_temperature')
 !  call afield%data(t)
 !*** From the analysis to first generation of filter grid
+          if(index_member >= 999)  then ! not set previously and should not be used,
+                                        ! namely, it is not a sdl/vdl run.
+            index_member= 0
+          enddif            
           member_index=index_member_in+1  ! the privous ensemble index starts from 0)
           jscale=self%imem2scale(member_index)
           nvargrp=self%nvargrp
