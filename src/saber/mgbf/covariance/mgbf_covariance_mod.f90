@@ -10,6 +10,14 @@ module mgbf_covariance_mod
 use atlas_module,                   only: atlas_fieldset, atlas_field
 use atlas_module,    only: atlas_functionspace
 use atlas_module,    only: atlas_functionspace_StructuredColumns 
+use atlas_module, only : atlas_functionspace,                      &
+                         atlas_functionspace_nodecolumns,          &
+                         atlas_functionspace_pointcloud,           &
+                         atlas_functionspace_structuredcolumns,    &
+                         atlas_mesh_nodes, atlas_field
+
+use tools_func, only : sphere_dist
+use tools_const, only : req          ! Earth radius (m)
 
 ! fckit
 use fckit_mpi_module,               only: fckit_mpi_comm
@@ -23,13 +31,11 @@ use random_mod
 !clt use mgbf_grid_mod,                   only: mgbf_grid
 use mg_intstate , only:            mg_intstate_type
 use mg_timers
-use iso_c_binding
 use mpi
 use, intrinsic :: ieee_arithmetic
 implicit none
 private
 public mgbf_covariance
-
 
 ! Fortran class header
 type :: mgbf_covariance
@@ -68,16 +74,19 @@ contains
 
 ! --------------------------------------------------------------------------------------------------
 
-subroutine create(self, comm, config, background, firstguess)
+subroutine create(self, comm, config, funcspace, background, firstguess)
 
 ! Arguments
 class(mgbf_covariance),     intent(inout) :: self
 type(fckit_mpi_comm),      intent(in)    :: comm
 type(fckit_configuration), intent(in)    :: config
+type(atlas_functionspace), intent(in)    :: funcspace
 type(atlas_fieldset),      intent(in)    :: background
 type(atlas_fieldset),      intent(in)    :: firstguess
 
 ! Locals
+real(r_kind) :: dist_rad, dist_m
+integer      :: ipt
 character(len=*), parameter :: myname_=myname//'*create'
 character(len=:), allocatable :: mgbf_nml,centralblockname
 logical :: central
@@ -85,13 +94,22 @@ integer :: layout(2)
 integer :: myunit
 integer :: iscale,ivargrp
 integer :: nscale=1, nvargrp=1
-type(atlas_field) :: afield
+type(atlas_field) :: afield, lonlat_field
+type(atlas_functionspace_structuredcolumns) :: fs_sc
+real(r_kind), pointer :: lonlat_ptr(:,:)
+real(r_kind), allocatable :: lonlat_anl(:,:)
+integer :: npts_owned
+integer :: npts_total
+
+
 character(len=80) :: readin_mgbf_nml_group(99)
 real :: readin_multigrp_cor(99)=1.0
 integer :: readin_iscalegroup(99)=999
 integer :: readin_ivargroup(99)=999
 integer ::i,j, ii
 namelist /parameters_mgbf_init/ nscale,nvargrp,readin_mgbf_nml_group ,readin_multigrp_cor,readin_iscalegroup,readin_ivargroup
+
+character(len=:), allocatable :: dump_json
 
 ! Hold communicator
 ! -----------------
@@ -102,6 +120,11 @@ namelist /parameters_mgbf_init/ nscale,nvargrp,readin_mgbf_nml_group ,readin_mul
 !clt call self%grid%create(config, comm)
 self%rank = comm%rank()
 
+write(6,*)'thinkdeb mgbf create999 '
+write(6,*)'thinkdeb mgbf create999 config'
+   dump_json=config%json()          ! serialize to a JSON string
+write(6,'(A)')trim(dump_json)
+call flush(6)
 call config%get_or_die("saber block name", centralblockname)
 !clt call config%get_or_die("debuggingxx bypass mgbf", self%noMGBF)
 if (config%has("mgbf sdl and vdl init namelist file")) then
@@ -155,12 +178,37 @@ if(nscale == 1 .and. nvargrp ==1 ) then
                                       ! the previous namelist files could be still used,correctly,
                                       ! by the current sdl/vdl enhanced version
 endif
+
+if (trim(funcspace%name()) /= 'StructuredColumns') then
+  error stop 'MGBF requires StructuredColumns function space'
+end if
+fs_sc = funcspace
+lonlat_field = fs_sc%xy()
+call lonlat_field%data(lonlat_ptr)
+npts_owned = fs_sc%size_owned()
+npts_total = size(lonlat_ptr,2)
+write(6,*)'thinkdeb mgbf create npts_owned/_total ',npts_owned, ' ',npts_total
+allocate(lonlat_anl(npts_total,2))
+lonlat_anl(:,1) = lonlat_ptr(1,1:npts_total)
+lonlat_anl(:,2) = lonlat_ptr(2,1:npts_total)
+call lonlat_field%final()
+
+write(6,*)'thinkdeb mgbf create999 4 '
+call flush(6)
+
 allocate(self%intstate(nscale,nvargrp))
+call flush(6)
 do iscale=1,nscale
   do ivargrp=1,nvargrp
-   call  self%intstate(iscale,ivargrp)%mg_initialize(self%mgbf_nml_group(iscale,ivargrp))  !mgbf_nml like mgbeta.nml
+   write(6,*)'the999 nml is ', trim(self%mgbf_nml_group(iscale,ivargrp))  
+   call flush(6)
+   call  self%intstate(iscale,ivargrp)%mg_initialize(n_owned_anl=npts_owned, &
+        anl_lonlat1d=lonlat_anl, inputfilename=self%mgbf_nml_group(iscale,ivargrp))  !mgbf_nml like mgbeta.nml
   enddo
 enddo
+write(6,*)'thinkdeb mgbf create999 10 '
+call flush(6)
+if (allocated(lonlat_anl)) deallocate(lonlat_anl)
 ! Get background (temporary test of the functionality)
 !cltafield = background%field('air_temperature')
 !clt call afield%data(t)
@@ -279,9 +327,9 @@ character(len=4) :: str_rank
 integer :: n_owned_size
 integer, pointer :: ghost(:)
 !clttype(atlas_FunctionSpace) :: fs
+type(atlas_functionspace) :: fs_generic
 type(atlas_functionspace_StructuredColumns) :: fs
 integer :: ierr
-real(kind=8) :: val
 integer :: member_index
 integer :: iscale,jscale, ivargrp,ivargrp0,jvargrp
 integer :: total_km_a_all,ii,nvargrp
@@ -290,12 +338,12 @@ integer :: ilev1,ilev2
 !clt now noly consider t
 !  afield = fields%field('air_temperature')
 !  call afield%data(t)
-!*** From the analysis to first generation of filter grid
-          if(index_member >= 999)  then ! not set previously and should not be used,
+          if(index_member_in >= 999)  then ! not set previously and should not be used,
+          member_index=1  ! the privous ensemble index starts from 0)
+          else
                                         ! namely, it is not a sdl/vdl run.
-            index_member= 0
-          enddif            
           member_index=index_member_in+1  ! the privous ensemble index starts from 0)
+          endif 
           jscale=self%imem2scale(member_index)
           nvargrp=self%nvargrp
           call btim(mg_multiply_time)
@@ -371,7 +419,9 @@ integer :: ilev1,ilev2
                 n_owned_size= fs%size_owned() !clt for debug
                 write(6,*)'thinkdeb333 iszie-rank ',isize,' ',afield%name(),' ',afield%rank()
                 if(afield%rank() == 2)  then
+                    write(6,*)'thinkdeb333 iszie ',isize,' ',afield%name()
                     nz=afield%levels()
+                    write(6,*)'thinkdeb333 iszie-nz ',isize,' ',afield%name(),' ',nz
                     call afield%data(ptr_2d)
                     if(nz /= 1 .and. nz /= nz3d ) then
                       write(6,*)'the vertical dimension of the input fields are not as expectd ,stop ',nz,' ',nz3d 
@@ -608,7 +658,7 @@ integer :: ilev1,ilev2
 
              call etim(mg_postprocess_time)
 
-             call afield%final()
+
 
 
              deallocate(work_mgbf)
@@ -664,3 +714,4 @@ end function ivar2grp
 ! --------------------------------------------------------------------------------------------------
 
 end module mgbf_covariance_mod
+

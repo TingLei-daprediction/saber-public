@@ -65,7 +65,11 @@ elseif (present(obj_parameter)) then
 endif
 
  if (present(anl_lonlat1d)) then
-    if (size(anl_lonlat1d,2) /= 2 .or. size(anl_lonlat1d,1) <=  n_owned_anl) then
+    if (size(anl_lonlat1d,2) /= 2 .or. size(anl_lonlat1d,1) <  n_owned_anl) then
+      write(6,*)'thinkdeb size(anl_lonlat1d,2) ',size(anl_lonlat1d,2)
+      write(6,*)'thinkdeb size(anl_lonlat1d,1) ',size(anl_lonlat1d,1)
+      write(6,*)'thinkdeb n_owned_anl ) ', n_owned_anl 
+      call flush(6)
       error stop "anl_lonlat1d has wrong shape"
     end if
    
