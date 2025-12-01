@@ -214,12 +214,14 @@ void MGBF_Covariance::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace()<<"thinkdeb999 sdl multiply index_member "<<index_member<<std::endl;
   std::cout<<"thinkdeb999cout sdl multiply index_member "<<index_member<<std::endl;
   mgbf_covariance_multiply_f90(keySelf_, fset.get(),index_member);
+  std::cout<<"thinkdeb999cout sdl multiply index_member after fortran multiple"<<std::endl;
     // Mark all fields as having dirty halos after modification
     for (const auto & fieldname : fset.field_names()) {
         atlas::Field field = fset[fieldname];
         field.set_dirty();  // Mark field as having dirty halos that need to be synchronized
     }
        // Perform the actual halo exchange
+  std::cout<<"thinkdeb999cout sdl multiply index_member after fortran multiple2"<<std::endl;
     fset.fieldSet().haloExchange();
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }

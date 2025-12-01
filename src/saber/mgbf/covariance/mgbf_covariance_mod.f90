@@ -334,10 +334,7 @@ integer :: member_index
 integer :: iscale,jscale, ivargrp,ivargrp0,jvargrp
 integer :: total_km_a_all,ii,nvargrp
 integer :: ilev1,ilev2
-
-!clt now noly consider t
-!  afield = fields%field('air_temperature')
-!  call afield%data(t)
+       
           if(index_member_in >= 999)  then ! not set previously and should not be used,
           member_index=1  ! the privous ensemble index starts from 0)
           else
@@ -433,12 +430,22 @@ integer :: ilev1,ilev2
   !clttothink                     if(self%intstate(iscale,ivargrp)%l_for_localization) then 
                         if(self%intstate(jscale,1)%l_for_localization) then 
                              if( self%l_2dvar_last_vertical_level) then  !when used for localization,2dvars are put on the last vertical level
+                                if(ilev+nz3d-1 > total_km_a_all) then 
+                                   write(6,*)'MGBF abort 1 : the dimensions are not as expected'
+                                   call flush(6)
+                                   stop
+                                endif
                                 if(n_owned_size >0 ) then 
                                   work2d_mgbf(ilev+nz3d-1:ilev+nz3d-1,:)=ptr_2d(:,1:n_owned_size)
                                 else
                                   work2d_mgbf(ilev+nz3d-1:ilev+nz3d-1,:)=ptr_2d 
                                 endif
                               else
+                                if(ilev+nz-1 > total_km_a_all) then 
+                                   write(6,*)'MGBF abort 2 : the dimensions are not as expected'
+                                   call flush(6)
+                                   stop
+                                endif
                                 if(n_owned_size >0 ) then 
                                   work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d (:,1:n_owned_size)
                                 else
@@ -448,6 +455,11 @@ integer :: ilev1,ilev2
                             
                         
                         else
+                                if(ilev+nz-1 > total_km_a_all) then 
+                                   write(6,*)'MGBF abort 3 : the dimensions are not as expected'
+                                   call flush(6)
+                                   stop
+                                endif
                             if(n_owned_size >0 ) then 
                                work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d(:,1:n_owned_size) 
                             else
@@ -455,6 +467,11 @@ integer :: ilev1,ilev2
                             endif
                         endif
                      else
+                                if(ilev+nz-1 > total_km_a_all) then 
+                                   write(6,*)'MGBF abort 4 : the dimensions are not as expected'
+                                   call flush(6)
+                                   stop
+                                endif
                        if(n_owned_size >0 ) then 
                         work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d(:,1:n_owned_size)
                        else
@@ -524,13 +541,13 @@ integer :: ilev1,ilev2
              test_once=.false. 
              close(iounit)
              endif
+                call etim(mg_preprocess_time)
              ii=1
              do ivargrp=1,nvargrp
                 allocate(vargrp_work_mgbf(nlev_vargrp(ivargrp),nxloc,nyloc))
                 allocate(vargrp_work_mgbf2(nlev_vargrp(ivargrp),nxloc,nyloc))
                 vargrp_work_mgbf(:,:,:)=work_mgbf(ii:ii+nlev_vargrp(ivargrp)-1,:,:)
     
-                call etim(mg_preprocess_time)
 
                 call btim(mg_anal_to_filt_time)
                 call self%intstate(jscale,ivargrp)%anal_to_filt_allmap(vargrp_work_mgbf)
@@ -596,6 +613,8 @@ integer :: ilev1,ilev2
                 afield=fields%field(isize)  !clttodo
                 fs= afield%functionspace()  !cltthinkfore debug
                 n_owned_size= fs%size_owned() !clt for debug
+
+
                 if(afield%rank() == 2) then 
                   call afield%data(ptr_2d)
                   nz=afield%levels()
