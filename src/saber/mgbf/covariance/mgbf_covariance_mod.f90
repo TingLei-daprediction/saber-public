@@ -183,11 +183,19 @@ if (trim(funcspace%name()) /= 'StructuredColumns') then
   error stop 'MGBF requires StructuredColumns function space'
 end if
 fs_sc = funcspace
+npts_owned = fs_sc%size_owned()
+npts_total   = fs_sc%size()
+write(6,*)'thinkdeb mgbf create npts_owned/_total ',npts_owned, ' ',npts_total
+call flush(6)
+if(npts_owned.ge.npts_total) then
+   write(6,*)'the halo points are not present, on which the outer block interpolator would be problematic, stop'
+   call flush(6)
+   stop
+endif
+
+
 lonlat_field = fs_sc%xy()
 call lonlat_field%data(lonlat_ptr)
-npts_owned = fs_sc%size_owned()
-npts_total = size(lonlat_ptr,2)
-write(6,*)'thinkdeb mgbf create npts_owned/_total ',npts_owned, ' ',npts_total
 allocate(lonlat_anl(npts_total,2))
 lonlat_anl(:,1) = lonlat_ptr(1,1:npts_total)
 lonlat_anl(:,2) = lonlat_ptr(2,1:npts_total)
