@@ -1278,7 +1278,7 @@ integer :: dims(2), periods(2), coords(2)
 integer(i_kind):: nxloc,nyloc,nz,nt,start_idx,end_idx
 integer(i_kind):: ig
 character*72  tmpfilename
-real (r_kind)::rtem1
+real (r_kind)::rtem1,rtem2
 real (r_kind) :: dist_rad
 !-----------------------------------------------------------------------
 start_idx=Lbound(this%weig_var,4)
@@ -1469,10 +1469,16 @@ if (this%l_constant_aspt2 ) then
    lonlat2d_anl=lonlat2d_anl*deg2rad
    if(this%mype.eq.0) then 
      open(13,file='latlon.txt',form="formatted")
-       write(13,*)"lon "
-       write(13,*)lonlat2d_anl(:,:,1)
-       write(13,*)"lat "
-       write(13,*)lonlat2d_anl(:,:,2)
+       write(13,*)"lon and lat "
+        do j = 1, this%mm
+           do i = 1, this%nm
+            write(13,'(2I5, 2ES20.10)') i, j, &
+                      lonlat2d_anl(i, j, 1), lonlat2d_anl(i, j, 2)
+            end do
+         end do
+!#       write(13,*)lonlat2d_anl(:,:,1)
+!       write(13,*)"lat "
+!       write(13,*)lonlat2d_anl(:,:,2)
     close(13)
    endif
    call interp_analysis_to_filter(lonlat2d_anl(:,:,1),this%nm,this%mm,this%im,this%jm,lonlat2d_filt(:,:,1))
@@ -1495,16 +1501,15 @@ if (this%l_constant_aspt2 ) then
     enddo
    enddo
        
-     rtem1=sqrt(this%pasp02) 
+      rtem1=this%pasp02/this%dx_a2f_ratio 
+      rtem2=this%pasp02/this%dx_a2f_ratio 
      
-       do i=1,this%im
+      do i=1,this%im
       do j=1,this%jm
-!clt      write(6,*)'thinkdebx99999 dxfm/dyfm = ',this%dxfm(i,j)
-!clt      write(6,*)'thinkdebx99999 dxfm/dyfm = ',this%dyfm(i,j)
-     this%paspx4d(1,i,j,1)=(rtem1*this%dxfmctrl/this%dxfm(i,j))**2  !
-     this%paspy4d(1,i,j,1)=(rtem1*this%dyfmctrl/this%dyfm(i,j))**2  !
+     this%paspx4d(1,i,j,1)=(rtem1/this%dxfmctrl*this%dxfm(i,j))  ! !cltthinkdeb9999
+     this%paspy4d(1,i,j,1)=(rtem1/this%dyfmctrl*this%dyfm(i,j))  !
       enddo
-       enddo
+      enddo
            
 
 

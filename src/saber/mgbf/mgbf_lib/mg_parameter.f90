@@ -176,6 +176,8 @@ real(r_kind):: lengthx,lengthy,xa0,ya0,xf0,yf0
 real(r_kind):: dxf,dyf,dxa,dya
 real(r_kind),allocatable,dimension (:,:):: dxfm,dyfm  ! actual filtering grid intervals in meters
 real(r_kind):: dxfmctrl=35000,dyfmctrl=35000  !the control filtering grid intervals corresponding to the contstant horizontal aspect tensor
+real(r_kind):: dx_a2f_ratio=1,dy_a2f_ratio=1  !ratio between analsysis grids to filtering grids in x and y
+                                             !it will be derived from other namelist parameters
 logical :: l_constant_aspt2 =.true. ! using constant horizontal aspect tensor : ampl02
 
 integer(i_kind):: npadx         ! x padding on analysis grid
@@ -804,8 +806,8 @@ logical :: l_exist
 !
   this%nm = this%nm0/this%nxm
   this%mm = this%mm0/this%nym
-  write(6,*)'thinkdeb999 2 6 ',this%l_vert_stretched_filtgrid  ,' ',"l_use",this%l_vert_stretched_filtgrid
-  call flush(6)
+  this%dx_a2f_ratio=this%nm/this%im_filt
+  this%dy_a2f_ratio=this%mm/this%jm_filt
   if(this%l_anal_sub_of_filt ) then
     if(this%im_filt.ne.this%nm.or.this%jm_filt.ne.this%mm) then
        write(6,*)'l_anal_sub_of_filter is true but the numbers of analysis/filtering grids are wrong, stop'
@@ -816,8 +818,6 @@ logical :: l_exist
        stop
     endif
   endif
-  write(6,*)'thinkdeb999 2 7 ',this%l_vert_stretched_filtgrid  ,' ',"l_use",this%l_vert_stretched_filtgrid
-  call flush(6)
 
 !***
 !***     Filter grid

@@ -196,9 +196,10 @@ endif
 
 lonlat_field = fs_sc%xy()
 call lonlat_field%data(lonlat_ptr)
-allocate(lonlat_anl(npts_total,2))
-lonlat_anl(:,1) = lonlat_ptr(1,1:npts_total)
-lonlat_anl(:,2) = lonlat_ptr(2,1:npts_total)
+!bug allocate(lonlat_anl(npts_total,2))
+allocate(lonlat_anl(npts_owned,2))
+lonlat_anl(:,1) = lonlat_ptr(1,1:npts_owned)
+lonlat_anl(:,2) = lonlat_ptr(2,1:npts_owned)
 call lonlat_field%final()
 
 write(6,*)'thinkdeb mgbf create999 4 '

@@ -347,7 +347,7 @@ integer(i_kind):: i,n
     endif
   enddo
      iref_out(1)=1; c1(1)=0.; c2(1)=1.; c3(1)=0.; c4(1)=0.
-     iref_out(nm_in)=im_in; c1(nm_in)=0.; c2(nm_in)=1.; c3(nm_in)=0.; c4(n)=0.
+     iref_out(nm_in)=im_in; c1(nm_in)=0.; c2(nm_in)=1.; c3(nm_in)=0.; c4(nm_in)=0.
 
 !-----------------------------------------------------------------------
 endsubroutine lwq_vertical_coef                            
