@@ -343,6 +343,7 @@ integer :: member_index
 integer :: iscale,jscale, ivargrp,ivargrp0,jvargrp
 integer :: total_km_a_all,ii,nvargrp
 integer :: ilev1,ilev2
+integer ::  loc(2)
        
           if(index_member_in >= 999)  then ! not set previously and should not be used,
           member_index=1  ! the privous ensemble index starts from 0)
@@ -487,6 +488,11 @@ integer :: ilev1,ilev2
                         work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d
                        endif
                     endif
+                   if( maxval(work2d_mgbf(lev1:lev1+nz-1,:)) .gt.0.5) then 
+                       write(6,*)'thinkdeb333 before  max is large 0.5'
+                       loc=maxloc(work2d_mgbf(lev1:lev1+nz-1,:)) 
+                       write(6,*)'thinkdeb333 before large 0.5 loc ',loc
+                   endif
                      
                     if(nz ==  1) then 
                       l2d_encountered=.true.
@@ -619,7 +625,9 @@ integer :: ilev1,ilev2
                      n_owned_size=0
              do isize=1,fields%size()
      
+
                 afield=fields%field(isize)  !clttodo
+                write(6,*)'thinkdeb333-2 iszie-rank ',isize,' ',afield%name(),' ',afield%rank()
                 fs= afield%functionspace()  !cltthinkfore debug
                 n_owned_size= fs%size_owned() !clt for debug
 
@@ -628,6 +636,11 @@ integer :: ilev1,ilev2
                   call afield%data(ptr_2d)
                   nz=afield%levels()
                   lev1=varvlev_index(isize,1)
+                  write(6,*)'thinkdeb333-3 leve: leve2 ',lev1,' ',lev1+nz
+                   if( maxval(work2d_mgbf(lev1:lev1+nz-1,:)) .gt.0.5) then 
+                       loc=maxloc(work2d_mgbf(lev1:lev1+nz-1,:)) 
+                       write(6,*)'thinkdeb333 max is large 0.5 loc ',loc
+                   endif
                   if(nz.gt.1) then 
                       if(n_owned_size >0 ) then 
                           ptr_2d(1:nz,1:n_owned_size)=work2d_mgbf(lev1:lev1+nz-1,:)!if nz=1, only the first level is used (like for surface pressure) 
