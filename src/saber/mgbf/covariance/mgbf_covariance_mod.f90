@@ -558,6 +558,11 @@ integer ::  loc(2)
              endif
                 call etim(mg_preprocess_time)
              ii=1
+             write(6,*)'codexdebug km2/km3/total/nvar/nz3d ', self%intstate(jscale,1)%km2, &
+     &                 self%intstate(jscale,1)%km3, total_km_a_all, nvar, nz3d
+             do i=1,min(4,nvar)
+               write(6,*)'codexdebug varvlev_index ', i, varvlev_index(i,1), varvlev_index(i,2)
+             enddo
              do ivargrp=1,nvargrp
                 allocate(vargrp_work_mgbf(nlev_vargrp(ivargrp),nxloc,nyloc))
                 allocate(vargrp_work_mgbf2(nlev_vargrp(ivargrp),nxloc,nyloc))
@@ -566,6 +571,7 @@ integer ::  loc(2)
 
                 call btim(mg_anal_to_filt_time)
                 call self%intstate(jscale,ivargrp)%anal_to_filt_allmap(vargrp_work_mgbf)
+                write(6,*)'codexdebug max_in_grp ', ivargrp, maxval(vargrp_work_mgbf)
                 call etim(mg_anal_to_filt_time)
                 call btim(mg_filtering_time)
                 call self%intstate(jscale,ivargrp)%filtering_procedure(self%intstate(jscale,ivargrp)%mgbf_proc,1)
@@ -574,6 +580,7 @@ integer ::  loc(2)
       !cltorg          call self%intstate%filt_to_anal_allmap(work_mgbf)
                 call btim(mg_filt_to_anal_time)
                 call self%intstate(jscale,ivargrp)%filt_to_anal_allmap(vargrp_work_mgbf2)
+                write(6,*)'codexdebug max_out_grp ', ivargrp, maxval(vargrp_work_mgbf2)
                 call etim(mg_filt_to_anal_time)
       !clt#        work_mgbf=999.0 !thinkdeb for debug
        
