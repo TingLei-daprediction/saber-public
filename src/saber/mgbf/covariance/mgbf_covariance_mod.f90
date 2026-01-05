@@ -157,7 +157,7 @@ if (config%has("mgbf sdl and vdl init namelist file")) then
     enddo
   enddo
   do i=1,nvargrp
-    self%ivargroup(i)=readin_ivargroup(iscale)
+    self%ivargroup(i)=readin_ivargroup(i)
   enddo
 else
 call config%get_or_die("mgbf namelist file ",  mgbf_nml)

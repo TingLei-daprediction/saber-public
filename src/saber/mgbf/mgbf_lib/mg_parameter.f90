@@ -541,6 +541,7 @@ real(r_kind):: coef_normalization_const=-9999.0 ! constant, if set, this contant
 real(r_kind):: dxfmctrl=35000,dyfmctrl=35000  !the control filtering grid intervals corresponding to the contstant horizontal aspect tensor
 logical :: l_constant_aspt2 =.true. ! using constant horizontal aspect tensor : ampl02
 character(len=256) ::file_coef_normalization="XXXX"
+character(len=256) ::dir_coef_normalization="XXXX"
 integer(i_kind):: km2           ! number of 2d variables for filtering
 integer(i_kind):: km3           ! number of 3d variables for filtering
 integer(i_kind):: n_ens=1         ! number of ensemble members
@@ -564,7 +565,9 @@ integer(i_kind):: hx,hy,hz
 integer(i_kind):: p
 logical:: l_mg_weig_readin=.false.
 integer(i_kind), parameter       :: nf=20! refinement factor for z grid,used in make_ssgrid
-integer(i_kind) :: myunit,i
+integer(i_kind) :: myunit,i,item,mype,ierr
+character*4 :: str_rank
+integer :: n_sample_levelsx4normalization
 logical :: l_exist
 
   namelist /parameters_mgbeta/ mg_ampl01,mg_ampl02,mg_ampl03            &
@@ -573,6 +576,7 @@ logical :: l_exist
                               ,mgbf_line,mgbf_proc                      &
                               ,lm_a,lm,coef_normalization               & 
                               ,coef_normalization_const & 
+                              ,dir_coef_normalization  &
                               ,file_coef_normalization  &
                               , dxfmctrl,dyfmctrl       & 
                               , l_constant_aspt2        &
@@ -629,25 +633,48 @@ logical :: l_exist
   this%lm=lm
   if (coef_normalization_const >0 ) then  ! constant, if set, this contant will be
 
-    if(trim(file_coef_normalization)=="XXXX" ) then
+    if(trim(file_coef_normalization)=="XXXX" .and. trim(dir_coef_normalization)=="XXXX" ) then
       l_exist=.false.
       coef_normalization=coef_normalization_const
     else
-      inquire(file=trim(file_coef_normalization),exist=l_exist)
-      if(l_exist) then
-        write(6,*)'the normalization profile file is ',trim(file_coef_normalization)
-!clt in the ../covairance/mgbf_covariance_mod.f90 the fldset is reversed in the vertical direction
-        open(newunit=myunit,file=trim(file_coef_normalization),status='old',action='read')
-              read(myunit,*)(coef_normalization(i),i=lm_a,1,-1)
-             close (myunit)
-             coef_normalization(1:lm_a)=coef_normalization(1:lm_a)*coef_normalization_const  !re-calc
-       else
+      if (trim(dir_coef_normalization) /= "XXXX") then  
+         call MPI_COMM_RANK(MPI_COMM_WORLD,mype,ierr)
+         write(str_rank, '(I4.4)') mype
+         this%mype=mype  
+         file_coef_normalization=trim(dir_coef_normalization)//"/profile_subdomain_"//str_rank//".txt"
+      endif
+         write(6,*)'thinkdeb888 normalization file is ',trim(file_coef_normalization)
+         inquire(file=trim(file_coef_normalization),exist=l_exist)
+         if(l_exist) then
+           open(newunit=myunit,file=trim(file_coef_normalization),status='old',action='read')
+             if(trim(dir_coef_normalization) /= "XXXX") then 
+ ! to use file slike profiles_out/profile_subdomain_0475.txt
+               read(myunit,*)
+               read(myunit,*)i,n_sample_levelsx4normalization
+               read(myunit,*)
+               do i=1,n_sample_levelsx4normalization
+                read(myunit,*)
+               enddo
+                read(myunit,*)
+               do i=1,lm_a
+                read(myunit,*)item, coef_normalization(i) !notice, the data in the file is reversed already
+               enddo
+              close (myunit)
+             else
+              write(6,*)'the normalization profile file is ',trim(file_coef_normalization)
+   !clt in the ../covairance/mgbf_covariance_mod.f90 the fldset is reversed in the vertical direction
+              open(newunit=myunit,file=trim(file_coef_normalization),status='old',action='read')
+                 read(myunit,*)(coef_normalization(i),i=lm_a,1,-1)
+              close (myunit)
+             endif 
+              coef_normalization(1:lm_a)=coef_normalization(1:lm_a)*coef_normalization_const  !re-calc
+         else
 
-              write(6,*)'the normalization profile file does not exist ,stop ',trim(file_coef_normalization)
-              call flush(6)
-              stop
-       endif
-     endif
+                 write(6,*)'the normalization profile file does not exist ,stop ',trim(file_coef_normalization)
+                 call flush(6)
+                 stop
+          endif
+        endif
   else
      coef_normalization=1.0
 
