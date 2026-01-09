@@ -716,6 +716,7 @@ integer ::  loc(2)
              deallocate( varvlev_index)
  !clt       enddo   !for iscale
           call etim(mg_multiply_time)
+        call afield%final()
         deallocate(nlev_vargrp)
 
 end subroutine multiply
