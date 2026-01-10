@@ -1124,7 +1124,6 @@ if(this%l_loc) then
 endif
 
 
-allocate(this%weig_var(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,this%gm))        ; this%weig_var=0.
 
 allocate(this%V(1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,this%lm))        ; this%V=0.
 allocate(this%VALL(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this%VALL=0.
@@ -1281,6 +1280,7 @@ character*72  tmpfilename
 real (r_kind)::rtem1,rtem2
 real (r_kind) :: dist_rad
 !-----------------------------------------------------------------------
+allocate(this%weig_var(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,this%gm))        ; this%weig_var=0.
 start_idx=Lbound(this%weig_var,4)
 end_idx=Ubound(this%weig_var,4)
 if(start_idx /=1 ) then
@@ -1649,6 +1649,7 @@ end do
    call this%upsending_normalized(this%lm,this%ssy4d(:,:,:,1),this%ssy4d(:,:,:,2))
 
 
+deallocate(this%weig_var) 
 
 
 !-----------------------------------------------------------------------
