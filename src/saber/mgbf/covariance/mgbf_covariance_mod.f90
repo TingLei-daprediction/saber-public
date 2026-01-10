@@ -315,7 +315,6 @@ real(kind=r_kind), pointer :: ptr_2d(:,:)
 real(kind=r_kind), pointer :: ptr_3d(:,:,:)
 integer(kind=i_kind):: nz,ilev,isize
 real(kind=r_kind), allocatable :: work_mgbf(:,:,:)
-real(kind=r_kind), allocatable :: work_mgbf2(:,:,:)
 real(kind=r_kind), allocatable :: vargrp_work_mgbf(:,:,:)
 real(kind=r_kind), allocatable :: vargrp_work_mgbf2(:,:,:)
 real(kind=r_kind), allocatable :: work1var_mgbf(:,:,:)
@@ -388,7 +387,6 @@ integer ::  loc(2)
              l2d_encountered=.false.
              ivargrp0=1
              allocate(work_mgbf(total_km_a_all,self%intstate(jscale,ivargrp0)%nm,self%intstate(jscale,ivargrp0)%mm))
-             allocate(work_mgbf2(total_km_a_all,self%intstate(jscale,ivargrp0)%nm,self%intstate(jscale,ivargrp0)%mm))
              allocate(work2d_mgbf(total_km_a_all,self%intstate(jscale,ivargrp0)%nm*self%intstate(jscale,ivargrp0)%mm))
              allocate(rnormalization(total_km_a_all,nvargrp))
              rnormalization=0.0
@@ -588,21 +586,19 @@ integer ::  loc(2)
                 do k=1,nlev_vargrp(ivargrp)
                  vargrp_work_mgbf2(k,:,:)=vargrp_work_mgbf2(k,:,:)/rnormalization(k,ivargrp)
                 enddo
-                work_mgbf2(ii:ii+nlev_vargrp(ivargrp)-1,:,:)=vargrp_work_mgbf2(:,:,:)
+                work_mgbf(ii:ii+nlev_vargrp(ivargrp)-1,:,:)=vargrp_work_mgbf2(:,:,:)
                 ii=ii+nlev_vargrp(ivargrp)
                 deallocate(vargrp_work_mgbf)
                 deallocate(vargrp_work_mgbf2)
              enddo ! ivargrp
-             if(.not. self%intstate(jscale,ivargrp0)%l_for_localization ) then   !clthinkdebxxx
-               work_mgbf=work_mgbf2
-             else  !  if in the multivariate localization, all output for 3d or 2d variables are 3d structures 
+             if(self%intstate(jscale,ivargrp0)%l_for_localization ) then   !clthinkdebxxx
                allocate(work1var_mgbf(nz3d,nxloc,nyloc))
                work1var_mgbf=0.0
                if(nvargrp == 1 ) then
                    do ivar=1,nvar
                      lev1=varvlev_index(ivar,1)
                      lev2=varvlev_index(ivar,2)
-                     work1var_mgbf=work1var_mgbf+work_mgbf2(lev1:lev2,:,:)
+                     work1var_mgbf=work1var_mgbf+work_mgbf(lev1:lev2,:,:)
                    enddo
                    do jvar=1,nvar
                      lev1=varvlev_index(jvar,1)
@@ -616,7 +612,7 @@ integer ::  loc(2)
                      lev1=varvlev_index(ivar,1)
                      lev2=varvlev_index(ivar,2)
                      ivargrp=self%ivar2grp(ivar)
-                     work1var_mgbf=work1var_mgbf+self%multigrp_cor(jvargrp,ivargrp)*work_mgbf2(lev1:lev2,:,:)
+                     work1var_mgbf=work1var_mgbf+self%multigrp_cor(jvargrp,ivargrp)*work_mgbf(lev1:lev2,:,:)
                    enddo
                    lev1=varvlev_index(jvar,1)
                    lev2=varvlev_index(jvar,2)
