@@ -706,7 +706,6 @@ integer ::  loc(2)
 
 
              deallocate(work_mgbf)
-             deallocate(work_mgbf2)
              deallocate(work2d_mgbf)
              deallocate(rnormalization)
              deallocate( varvlev_index)
