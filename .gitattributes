@@ -1,0 +1,9 @@
+# Default: treat files as text and normalize to LF in the repo
+* text=auto eol=lf
+
+# (Optional) common binary types
+*.png binary
+*.jpg binary
+*.pdf binary
+*.nc  binary
+

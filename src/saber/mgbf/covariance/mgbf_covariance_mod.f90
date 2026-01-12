@@ -74,29 +74,19 @@ contains
 
 ! --------------------------------------------------------------------------------------------------
 
-<<<<<<< HEAD
 subroutine create(self, comm, config, funcspace, background, firstguess)
-=======
-subroutine create(self, comm, config, background, firstguess)
->>>>>>> c95a6c96 (WIP)
 
 ! Arguments
 class(mgbf_covariance),     intent(inout) :: self
 type(fckit_mpi_comm),      intent(in)    :: comm
 type(fckit_configuration), intent(in)    :: config
-<<<<<<< HEAD
 type(atlas_functionspace), intent(in)    :: funcspace
-=======
->>>>>>> c95a6c96 (WIP)
 type(atlas_fieldset),      intent(in)    :: background
 type(atlas_fieldset),      intent(in)    :: firstguess
 
 ! Locals
-<<<<<<< HEAD
 real(r_kind) :: dist_rad, dist_m
 integer      :: ipt
-=======
->>>>>>> c95a6c96 (WIP)
 character(len=*), parameter :: myname_=myname//'*create'
 character(len=:), allocatable :: mgbf_nml,centralblockname
 logical :: central
@@ -104,7 +94,6 @@ integer :: layout(2)
 integer :: myunit
 integer :: iscale,ivargrp
 integer :: nscale=1, nvargrp=1
-<<<<<<< HEAD
 type(atlas_field) :: afield, lonlat_field
 type(atlas_functionspace_structuredcolumns) :: fs_sc
 real(r_kind), pointer :: lonlat_ptr(:,:)
@@ -113,9 +102,6 @@ integer :: npts_owned
 integer :: npts_total
 
 
-=======
-type(atlas_field) :: afield
->>>>>>> c95a6c96 (WIP)
 character(len=80) :: readin_mgbf_nml_group(99)
 real :: readin_multigrp_cor(99)=1.0
 integer :: readin_iscalegroup(99)=999
@@ -123,11 +109,8 @@ integer :: readin_ivargroup(99)=999
 integer ::i,j, ii
 namelist /parameters_mgbf_init/ nscale,nvargrp,readin_mgbf_nml_group ,readin_multigrp_cor,readin_iscalegroup,readin_ivargroup
 
-<<<<<<< HEAD
 character(len=:), allocatable :: dump_json
 
-=======
->>>>>>> c95a6c96 (WIP)
 ! Hold communicator
 ! -----------------
 !self%mp_comm_world=comm%communicator()
@@ -137,14 +120,11 @@ character(len=:), allocatable :: dump_json
 !clt call self%grid%create(config, comm)
 self%rank = comm%rank()
 
-<<<<<<< HEAD
 write(6,*)'thinkdeb mgbf create999 '
 write(6,*)'thinkdeb mgbf create999 config'
    dump_json=config%json()          ! serialize to a JSON string
 write(6,'(A)')trim(dump_json)
 call flush(6)
-=======
->>>>>>> c95a6c96 (WIP)
 call config%get_or_die("saber block name", centralblockname)
 !clt call config%get_or_die("debuggingxx bypass mgbf", self%noMGBF)
 if (config%has("mgbf sdl and vdl init namelist file")) then
@@ -177,11 +157,7 @@ if (config%has("mgbf sdl and vdl init namelist file")) then
     enddo
   enddo
   do i=1,nvargrp
-<<<<<<< HEAD
     self%ivargroup(i)=readin_ivargroup(i)
-=======
-    self%ivargroup(i)=readin_ivargroup(iscale)
->>>>>>> c95a6c96 (WIP)
   enddo
 else
 call config%get_or_die("mgbf namelist file ",  mgbf_nml)
@@ -202,7 +178,6 @@ if(nscale == 1 .and. nvargrp ==1 ) then
                                       ! the previous namelist files could be still used,correctly,
                                       ! by the current sdl/vdl enhanced version
 endif
-<<<<<<< HEAD
 
 if (trim(funcspace%name()) /= 'StructuredColumns') then
   error stop 'MGBF requires StructuredColumns function space'
@@ -227,8 +202,6 @@ lonlat_anl(:,1) = lonlat_ptr(1,1:npts_owned)
 lonlat_anl(:,2) = lonlat_ptr(2,1:npts_owned)
 call lonlat_field%final()
 
-write(6,*)'thinkdeb mgbf create999 4 '
-call flush(6)
 
 allocate(self%intstate(nscale,nvargrp))
 call flush(6)
@@ -243,17 +216,6 @@ enddo
 write(6,*)'thinkdeb mgbf create999 10 '
 call flush(6)
 if (allocated(lonlat_anl)) deallocate(lonlat_anl)
-=======
-allocate(self%intstate(nscale,nvargrp))
-do iscale=1,nscale
-  do ivargrp=1,nvargrp
-   call  self%intstate(iscale,ivargrp)%mg_initialize(self%mgbf_nml_group(iscale,ivargrp))  !mgbf_nml like mgbeta.nml
-  enddo
-enddo
->>>>>>> c95a6c96 (WIP)
-! Get background (temporary test of the functionality)
-!cltafield = background%field('air_temperature')
-!clt call afield%data(t)
 
 end subroutine create
 
@@ -348,10 +310,6 @@ real(kind=r_kind), pointer :: ptr_2d(:,:)
 real(kind=r_kind), pointer :: ptr_3d(:,:,:)
 integer(kind=i_kind):: nz,ilev,isize
 real(kind=r_kind), allocatable :: work_mgbf(:,:,:)
-<<<<<<< HEAD
-=======
-real(kind=r_kind), allocatable :: work_mgbf2(:,:,:)
->>>>>>> c95a6c96 (WIP)
 real(kind=r_kind), allocatable :: vargrp_work_mgbf(:,:,:)
 real(kind=r_kind), allocatable :: vargrp_work_mgbf2(:,:,:)
 real(kind=r_kind), allocatable :: work1var_mgbf(:,:,:)
@@ -372,20 +330,13 @@ character(len=4) :: str_rank
 integer :: n_owned_size
 integer, pointer :: ghost(:)
 !clttype(atlas_FunctionSpace) :: fs
-<<<<<<< HEAD
 type(atlas_functionspace) :: fs_generic
 type(atlas_functionspace_StructuredColumns) :: fs
 integer :: ierr
-=======
-type(atlas_functionspace_StructuredColumns) :: fs
-integer :: ierr
-real(kind=8) :: val
->>>>>>> c95a6c96 (WIP)
 integer :: member_index
 integer :: iscale,jscale, ivargrp,ivargrp0,jvargrp
 integer :: total_km_a_all,ii,nvargrp
 integer :: ilev1,ilev2
-<<<<<<< HEAD
 integer ::  loc(2)
        
           if(index_member_in >= 999)  then ! not set previously and should not be used,
@@ -394,14 +345,6 @@ integer ::  loc(2)
                                         ! namely, it is not a sdl/vdl run.
           member_index=index_member_in+1  ! the privous ensemble index starts from 0)
           endif 
-=======
-
-!clt now noly consider t
-!  afield = fields%field('air_temperature')
-!  call afield%data(t)
-!*** From the analysis to first generation of filter grid
-          member_index=index_member_in+1  ! the privous ensemble index starts from 0)
->>>>>>> c95a6c96 (WIP)
           jscale=self%imem2scale(member_index)
           nvargrp=self%nvargrp
           call btim(mg_multiply_time)
@@ -439,10 +382,6 @@ integer ::  loc(2)
              l2d_encountered=.false.
              ivargrp0=1
              allocate(work_mgbf(total_km_a_all,self%intstate(jscale,ivargrp0)%nm,self%intstate(jscale,ivargrp0)%mm))
-<<<<<<< HEAD
-=======
-             allocate(work_mgbf2(total_km_a_all,self%intstate(jscale,ivargrp0)%nm,self%intstate(jscale,ivargrp0)%mm))
->>>>>>> c95a6c96 (WIP)
              allocate(work2d_mgbf(total_km_a_all,self%intstate(jscale,ivargrp0)%nm*self%intstate(jscale,ivargrp0)%mm))
              allocate(rnormalization(total_km_a_all,nvargrp))
              rnormalization=0.0
@@ -480,13 +419,9 @@ integer ::  loc(2)
                 n_owned_size= fs%size_owned() !clt for debug
                 write(6,*)'thinkdeb333 iszie-rank ',isize,' ',afield%name(),' ',afield%rank()
                 if(afield%rank() == 2)  then
-<<<<<<< HEAD
                     write(6,*)'thinkdeb333 iszie ',isize,' ',afield%name()
                     nz=afield%levels()
                     write(6,*)'thinkdeb333 iszie-nz ',isize,' ',afield%name(),' ',nz
-=======
-                    nz=afield%levels()
->>>>>>> c95a6c96 (WIP)
                     call afield%data(ptr_2d)
                     if(nz /= 1 .and. nz /= nz3d ) then
                       write(6,*)'the vertical dimension of the input fields are not as expectd ,stop ',nz,' ',nz3d 
@@ -498,28 +433,22 @@ integer ::  loc(2)
   !clttothink                     if(self%intstate(iscale,ivargrp)%l_for_localization) then 
                         if(self%intstate(jscale,1)%l_for_localization) then 
                              if( self%l_2dvar_last_vertical_level) then  !when used for localization,2dvars are put on the last vertical level
-<<<<<<< HEAD
                                 if(ilev+nz3d-1 > total_km_a_all) then 
                                    write(6,*)'MGBF abort 1 : the dimensions are not as expected'
                                    call flush(6)
                                    stop
                                 endif
-=======
->>>>>>> c95a6c96 (WIP)
                                 if(n_owned_size >0 ) then 
                                   work2d_mgbf(ilev+nz3d-1:ilev+nz3d-1,:)=ptr_2d(:,1:n_owned_size)
                                 else
                                   work2d_mgbf(ilev+nz3d-1:ilev+nz3d-1,:)=ptr_2d 
                                 endif
                               else
-<<<<<<< HEAD
                                 if(ilev+nz-1 > total_km_a_all) then 
                                    write(6,*)'MGBF abort 2 : the dimensions are not as expected'
                                    call flush(6)
                                    stop
                                 endif
-=======
->>>>>>> c95a6c96 (WIP)
                                 if(n_owned_size >0 ) then 
                                   work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d (:,1:n_owned_size)
                                 else
@@ -529,14 +458,11 @@ integer ::  loc(2)
                             
                         
                         else
-<<<<<<< HEAD
                                 if(ilev+nz-1 > total_km_a_all) then 
                                    write(6,*)'MGBF abort 3 : the dimensions are not as expected'
                                    call flush(6)
                                    stop
                                 endif
-=======
->>>>>>> c95a6c96 (WIP)
                             if(n_owned_size >0 ) then 
                                work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d(:,1:n_owned_size) 
                             else
@@ -544,28 +470,22 @@ integer ::  loc(2)
                             endif
                         endif
                      else
-<<<<<<< HEAD
                                 if(ilev+nz-1 > total_km_a_all) then 
                                    write(6,*)'MGBF abort 4 : the dimensions are not as expected'
                                    call flush(6)
                                    stop
                                 endif
-=======
->>>>>>> c95a6c96 (WIP)
                        if(n_owned_size >0 ) then 
                         work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d(:,1:n_owned_size)
                        else
                         work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d
                        endif
                     endif
-<<<<<<< HEAD
                    if( maxval(work2d_mgbf(lev1:lev1+nz-1,:)) .gt.0.5) then 
                        write(6,*)'thinkdeb333 before  max is large 0.5'
                        loc=maxloc(work2d_mgbf(lev1:lev1+nz-1,:)) 
                        write(6,*)'thinkdeb333 before large 0.5 loc ',loc
                    endif
-=======
->>>>>>> c95a6c96 (WIP)
                      
                     if(nz ==  1) then 
                       l2d_encountered=.true.
@@ -618,10 +538,6 @@ integer ::  loc(2)
                 work_mgbf(k,:,:) =reshape(work2d_mgbf(k,:),[dim3d(2),dim3d(3)])
              enddo
                
-<<<<<<< HEAD
-=======
->>>>>>> 656ae031 (WIP)
->>>>>>> c95a6c96 (WIP)
              if(self%intstate(jscale,ivargrp0)%km2.ne.n2d.and. .not.self%intstate(jscale,ivargrp0)%l_for_localization ) then 
                 write(6,*)'The numbers of 2d variables is different from  mgbf-expected ,stop'
                 stop   ! a better exception handling is to be added
@@ -660,7 +576,6 @@ integer ::  loc(2)
                 write(6,*)'codexdebug max_out_grp ', ivargrp, maxval(vargrp_work_mgbf2)
                 call etim(mg_filt_to_anal_time)
       !clt#        work_mgbf=999.0 !thinkdeb for debug
-<<<<<<< HEAD
        
                 call btim(mg_postprocess_time)
                 do k=1,nlev_vargrp(ivargrp)
@@ -784,323 +699,14 @@ integer ::  loc(2)
 
 
 
-
-             deallocate(work_mgbf)
-             deallocate(work2d_mgbf)
-             deallocate(rnormalization)
-             deallocate( varvlev_index)
- !clt       enddo   !for iscale
-          call etim(mg_multiply_time)
-        call afield%final()
-=======
-<<<<<<< HEAD
-       
-                call btim(mg_postprocess_time)
-                do k=1,nlev_vargrp(ivargrp)
-                 vargrp_work_mgbf2(k,:,:)=vargrp_work_mgbf2(k,:,:)/rnormalization(k,ivargrp)
-                enddo
-                work_mgbf2(ii:ii+nlev_vargrp(ivargrp)-1,:,:)=vargrp_work_mgbf2(:,:,:)
-                ii=ii+nlev_vargrp(ivargrp)
-                deallocate(vargrp_work_mgbf)
-                deallocate(vargrp_work_mgbf2)
-             enddo ! ivargrp
-             if(.not. self%intstate(jscale,ivargrp0)%l_for_localization ) then   !clthinkdebxxx
-               work_mgbf=work_mgbf2
-             else  !  if in the multivariate localization, all output for 3d or 2d variables are 3d structures 
-               allocate(work1var_mgbf(nz3d,nxloc,nyloc))
-               work1var_mgbf=0.0
-               if(nvargrp == 1 ) then
-                   do ivar=1,nvar
-                     lev1=varvlev_index(ivar,1)
-                     lev2=varvlev_index(ivar,2)
-                     work1var_mgbf=work1var_mgbf+work_mgbf2(lev1:lev2,:,:)
-                   enddo
-                   do jvar=1,nvar
-                     lev1=varvlev_index(jvar,1)
-                     lev2=varvlev_index(jvar,2)
-                     work_mgbf(lev1:lev2,:,:)=work1var_mgbf
-                   enddo
-               else
-                 do jvar=1,nvar
-                   jvargrp=self%ivar2grp(jvar)
-                   do ivar=1,nvar
-                     lev1=varvlev_index(ivar,1)
-                     lev2=varvlev_index(ivar,2)
-                     ivargrp=self%ivar2grp(ivar)
-                     work1var_mgbf=work1var_mgbf+self%multigrp_cor(jvargrp,ivargrp)*work_mgbf2(lev1:lev2,:,:)
-                   enddo
-                   lev1=varvlev_index(jvar,1)
-                   lev2=varvlev_index(jvar,2)
-                   work_mgbf(lev1:lev2,:,:)=work1var_mgbf
-                 enddo
-               endif
-               deallocate(work1var_mgbf)
-             endif
-             do k=1,nzloc
-               work2d_mgbf(k,:)=reshape(work_mgbf(k,:,:),[dim2d(2)])
-             enddo
-                ilev=1
-                     n_owned_size=0
-             do isize=1,fields%size()
-     
-
-                afield=fields%field(isize)  !clttodo
-                write(6,*)'thinkdeb333-2 iszie-rank ',isize,' ',afield%name(),' ',afield%rank()
-                fs= afield%functionspace()  !cltthinkfore debug
-                n_owned_size= fs%size_owned() !clt for debug
-
-
-                if(afield%rank() == 2) then 
-                  call afield%data(ptr_2d)
-                  nz=afield%levels()
-                  lev1=varvlev_index(isize,1)
-                  write(6,*)'thinkdeb333-3 leve: leve2 ',lev1,' ',lev1+nz
-                   if( maxval(work2d_mgbf(lev1:lev1+nz-1,:)) .gt.0.5) then 
-                       loc=maxloc(work2d_mgbf(lev1:lev1+nz-1,:)) 
-                       write(6,*)'thinkdeb333 max is large 0.5 loc ',loc
-                   endif
-                  if(nz.gt.1) then 
-                      if(n_owned_size >0 ) then 
-                          ptr_2d(1:nz,1:n_owned_size)=work2d_mgbf(lev1:lev1+nz-1,:)!if nz=1, only the first level is used (like for surface pressure) 
-                       else 
-                       !cltthinkdebto now, the n_owned_size can't be got rightly for mgbf_grid using PointCloud function space
-                          ptr_2d(1:nz,:)=work2d_mgbf(lev1:lev1+nz-1,:)!if nz=1, only the first level is used (like for surface pressure) 
-                      endif
-                  else
-                     if(self%intstate(1,1)%l_for_localization) then 
-                         if( self%l_2dvar_last_vertical_level) then !when used for localization,2dvars are put on the last vertical level
-
-                              if(n_owned_size >0 ) then 
-                                ptr_2d(1,1:n_owned_size)=work2d_mgbf(lev1+nz3d-1,:)!if nz=1, only the first level is used (like for surface pressure) 
-                              else 
-                               !cltthinkdebto now, the n_owned_size can't be got rightly for mgbf_grid using PointCloud function space
-                                ptr_2d(1,:)=work2d_mgbf(lev1+nz3d-1,:)!if nz=1, only the first level is used (like for surface pressure) 
-                              endif
-                         else
-                              if(n_owned_size >0 ) then 
-                                  ptr_2d(1,1:n_owned_size)=work2d_mgbf(lev1,:)!if nz=1, only the first level is used (like for surface pressure) 
-                              else 
-                               !cltthinkdebto now, the n_owned_size can't be got rightly for mgbf_grid using PointCloud function space
-                                  ptr_2d(1,:)=work2d_mgbf(lev1,:)!if nz=1, only the first level is used (like for surface pressure) 
-                             endif
-                         endif
-                     else
-                         if(n_owned_size >0 ) then 
-                            ptr_2d(1,1:n_owned_size)=work2d_mgbf(lev1,:)!if nz=1, only the first level is used (like for surface pressure) 
-                         else 
-                         !cltthinkdebto now, the n_owned_size can't be got rightly for mgbf_grid using PointCloud function space
-                            write(6,*)'suspicous situation while n_owned_szie =0 ,stop'
-                            call flush(6)
-                            stop
-                            ptr_2d(1,:)=work2d_mgbf(lev1,:)!if nz=1, only the first level is used (like for surface pressure) 
-                        endif
-                       
-                     endif
-                  endif  !nz >1 or not
-                
-                elseif (afield%rank() == 3) then  
-                  call afield%data(ptr_3d)
-                  nz=afield%levels()
-                  write(6,*)'wrong in mgbf_covariance_mod.f90 todo ' !todo  
-                  call flush(6)
-                  stop
-                    
-
-   !clt               ptr_3d=work2d_mgbf(ilev:ilev+nz-1,:) 
-                  ilev=ilev+nz
-                else
-                  write(6,*)'wrong in mgbf_covariance_mod.f90 ' !todo  
-                  call flush(6)
-                  stop
-                endif 
-              enddo
-
-             call etim(mg_postprocess_time)
-
-
-
-
-             deallocate(work_mgbf)
-             deallocate(work_mgbf2)
-             deallocate(work2d_mgbf)
-             deallocate(rnormalization)
-             deallocate( varvlev_index)
- !clt       enddo   !for iscale
-          call etim(mg_multiply_time)
-        call afield%final()
-        deallocate(nlev_vargrp)
-
-end subroutine multiply
-
-! --------------------------------------------------------------------------------------------------
-
-subroutine multiply_ad(self, fields)
-
-! Arguments
-class(mgbf_covariance), intent(inout) :: self
-type(atlas_fieldset),  intent(inout) :: fields
-
-! This routine only needed when B = G^T G (sqrt-factored)
-
-! To do list for this method
-! 1. Convert fields (Atlas fieldsets) to MGBF bundle
-! 2. Call MGBF covariance operator adjoint (sqrt version)
-!        afield = fields%field('stream_function')
-!        call afield%data(var3d)
-!        var3d=0.0_r_kind
-
-end subroutine multiply_ad
-function imem2scale(self,imem) result(iscale)
-  class(mgbf_covariance),intent(in)::self
-  integer, intent(in)::imem
-  integer :: iscale
-     iscale=1
-    do  while (iscale.le.self%nscale-1.and.imem > self%iscalegroup(iscale) )
-       iscale=iscale+1      
-    enddo
-        
-end function imem2scale
-function ivar2grp(self,ivar) result(jvargrp)
-  class(mgbf_covariance),intent(in)::self
-  integer, intent(in)::ivar
-  integer :: jvargrp
-     jvargrp=1
-    do  while (jvargrp.le.self%nvargrp-1.and.ivar > self%ivargroup(jvargrp) )
-       jvargrp=jvargrp+1      
-    enddo
-        
-end function ivar2grp
-
-! --------------------------------------------------------------------------------------------------
-
-end module mgbf_covariance_mod
-
-=======
-       
-                call btim(mg_postprocess_time)
-                do k=1,nlev_vargrp(ivargrp)
-                 vargrp_work_mgbf2(k,:,:)=vargrp_work_mgbf2(k,:,:)/rnormalization(k,ivargrp)
-                enddo
-                work_mgbf2(ii:ii+nlev_vargrp(ivargrp)-1,:,:)=vargrp_work_mgbf2(:,:,:)
-                ii=ii+nlev_vargrp(ivargrp)
-                deallocate(vargrp_work_mgbf)
-                deallocate(vargrp_work_mgbf2)
-             enddo ! ivargrp
-             if(.not. self%intstate(jscale,ivargrp0)%l_for_localization ) then   !clthinkdebxxx
-               work_mgbf=work_mgbf2
-             else  !  if in the multivariate localization, all output for 3d or 2d variables are 3d structures 
-               allocate(work1var_mgbf(nz3d,nxloc,nyloc))
-               work1var_mgbf=0.0
-               if(nvargrp == 1 ) then
-                   do ivar=1,nvar
-                     lev1=varvlev_index(ivar,1)
-                     lev2=varvlev_index(ivar,2)
-                     work1var_mgbf=work1var_mgbf+work_mgbf2(lev1:lev2,:,:)
-                   enddo
-                   do jvar=1,nvar
-                     lev1=varvlev_index(jvar,1)
-                     lev2=varvlev_index(jvar,2)
-                     work_mgbf(lev1:lev2,:,:)=work1var_mgbf
-                   enddo
-               else
-                 do jvar=1,nvar
-                   jvargrp=self%ivar2grp(jvar)
-                   do ivar=1,nvar
-                     lev1=varvlev_index(ivar,1)
-                     lev2=varvlev_index(ivar,2)
-                     ivargrp=self%ivar2grp(ivar)
-                     work1var_mgbf=work1var_mgbf+self%multigrp_cor(jvargrp,ivargrp)*work_mgbf2(lev1:lev2,:,:)
-                   enddo
-                   lev1=varvlev_index(jvar,1)
-                   lev2=varvlev_index(jvar,2)
-                   work_mgbf(lev1:lev2,:,:)=work1var_mgbf
-                 enddo
-               endif
-               deallocate(work1var_mgbf)
-             endif
-             do k=1,nzloc
-               work2d_mgbf(k,:)=reshape(work_mgbf(k,:,:),[dim2d(2)])
-             enddo
-                ilev=1
-                     n_owned_size=0
-             do isize=1,fields%size()
-     
-                afield=fields%field(isize)  !clttodo
-                fs= afield%functionspace()  !cltthinkfore debug
-                n_owned_size= fs%size_owned() !clt for debug
-                if(afield%rank() == 2) then 
-                  call afield%data(ptr_2d)
-                  nz=afield%levels()
-                  lev1=varvlev_index(isize,1)
-                  if(nz.gt.1) then 
-                      if(n_owned_size >0 ) then 
-                          ptr_2d(1:nz,1:n_owned_size)=work2d_mgbf(lev1:lev1+nz-1,:)!if nz=1, only the first level is used (like for surface pressure) 
-                       else 
-                       !cltthinkdebto now, the n_owned_size can't be got rightly for mgbf_grid using PointCloud function space
-                          ptr_2d(1:nz,:)=work2d_mgbf(lev1:lev1+nz-1,:)!if nz=1, only the first level is used (like for surface pressure) 
-                      endif
-                  else
-                     if(self%intstate(1,1)%l_for_localization) then 
-                         if( self%l_2dvar_last_vertical_level) then !when used for localization,2dvars are put on the last vertical level
-
-                              if(n_owned_size >0 ) then 
-                                ptr_2d(1,1:n_owned_size)=work2d_mgbf(lev1+nz3d-1,:)!if nz=1, only the first level is used (like for surface pressure) 
-                              else 
-                               !cltthinkdebto now, the n_owned_size can't be got rightly for mgbf_grid using PointCloud function space
-                                ptr_2d(1,:)=work2d_mgbf(lev1+nz3d-1,:)!if nz=1, only the first level is used (like for surface pressure) 
-                              endif
-                         else
-                              if(n_owned_size >0 ) then 
-                                  ptr_2d(1,1:n_owned_size)=work2d_mgbf(lev1,:)!if nz=1, only the first level is used (like for surface pressure) 
-                              else 
-                               !cltthinkdebto now, the n_owned_size can't be got rightly for mgbf_grid using PointCloud function space
-                                  ptr_2d(1,:)=work2d_mgbf(lev1,:)!if nz=1, only the first level is used (like for surface pressure) 
-                             endif
-                         endif
-                     else
-                         if(n_owned_size >0 ) then 
-                            ptr_2d(1,1:n_owned_size)=work2d_mgbf(lev1,:)!if nz=1, only the first level is used (like for surface pressure) 
-                         else 
-                         !cltthinkdebto now, the n_owned_size can't be got rightly for mgbf_grid using PointCloud function space
-                            write(6,*)'suspicous situation while n_owned_szie =0 ,stop'
-                            call flush(6)
-                            stop
-                            ptr_2d(1,:)=work2d_mgbf(lev1,:)!if nz=1, only the first level is used (like for surface pressure) 
-                        endif
-                       
-                     endif
-                  endif  !nz >1 or not
-                
-                elseif (afield%rank() == 3) then  
-                  call afield%data(ptr_3d)
-                  nz=afield%levels()
-                  write(6,*)'wrong in mgbf_covariance_mod.f90 todo ' !todo  
-                  call flush(6)
-                  stop
-                    
-
-   !clt               ptr_3d=work2d_mgbf(ilev:ilev+nz-1,:) 
-                  ilev=ilev+nz
-                else
-                  write(6,*)'wrong in mgbf_covariance_mod.f90 ' !todo  
-                  call flush(6)
-                  stop
-                endif 
-              enddo
-
-             call etim(mg_postprocess_time)
-
              call afield%final()
 
-
              deallocate(work_mgbf)
-             deallocate(work_mgbf2)
              deallocate(work2d_mgbf)
              deallocate(rnormalization)
              deallocate( varvlev_index)
  !clt       enddo   !for iscale
           call etim(mg_multiply_time)
->>>>>>> c95a6c96 (WIP)
         deallocate(nlev_vargrp)
 
 end subroutine multiply
@@ -1147,7 +753,4 @@ end function ivar2grp
 ! --------------------------------------------------------------------------------------------------
 
 end module mgbf_covariance_mod
-<<<<<<< HEAD
 
-=======
->>>>>>> c95a6c96 (WIP)

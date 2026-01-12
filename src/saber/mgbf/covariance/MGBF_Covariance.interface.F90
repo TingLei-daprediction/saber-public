@@ -186,6 +186,7 @@ write(6,*)'thinkdeb 999 in inteface f90 star2'
 call flush(6)
 call f_self%multiply(f_fieldset,index_member_in)
 call etim(mg_interface_multiply_time)
+call f_fieldset%final()
 
 end subroutine mgbf_covariance_multiply_cpp
 
