@@ -53,8 +53,6 @@ use state_vectors,                  only: deallocate_state
 
 use constants,                      only: grav
 
-use mpi
-
 implicit none
 private
 public gsi_covariance
@@ -260,8 +258,8 @@ if (.not. self%grid%noGSI) then
        endif
      endif
      deallocate(tbdvars)
-
   endif
+
   if(jouter==1) call rf_set()
 
 endif ! noGSI
@@ -276,7 +274,7 @@ contains
 
 ! print *, 'Atlas 2-dim: ', size(rank2,2), ' gsi-vec: ', self%grid%lat2,' ', self%grid%lon2
   allocate(aux(self%grid%lat2,self%grid%lon2))
-  call atlas_to_gsi_(rank2(1,:),aux)
+  call atlas_to_gsi_(rank2(1,:),aux,self%rank,self%grid%layout)
   call gsibec_set_guess(varname,islot,aux)
   deallocate(aux)
 
@@ -294,11 +292,11 @@ contains
   allocate(aux(self%grid%lat2,self%grid%lon2,npz))
   if (self%grid%vflip) then
      do k=1,npz
-        call atlas_to_gsi_(rank2(k,:),aux(:,:,npz-k+1))
+        call atlas_to_gsi_(rank2(k,:),aux(:,:,npz-k+1),self%rank,self%grid%layout)
      enddo
   else
      do k=1,npz
-        call atlas_to_gsi_(rank2(k,:),aux(:,:,k))
+        call atlas_to_gsi_(rank2(k,:),aux(:,:,k),self%rank,self%grid%layout)
      enddo
   endif
   call gsibec_set_guess(varname,islot,aux)
@@ -432,13 +430,9 @@ type(control_vector) :: gsicv
 type(gsi_bundle),allocatable :: gsisv(:)
 integer :: isc,iec,jsc,jec,npz
 integer :: iv,k,ier,itbd,ii
-integer :: mype
-real(kind=8) :: time_beg,time_end,walltime
 
 character(len=32),allocatable :: gvars2d(:),gvars3d(:)
 character(len=30),allocatable :: tbdvars(:),needvrs(:)
-
-integer :: ierr
 
 ! afield = fields%field('air_pressure_at_surface')
 ! call afield%data(rank2)
@@ -503,7 +497,7 @@ do ii=1,ntimes
         cycle
      endif
      allocate(aux(size(gsivar2d,1),size(gsivar2d,2)))
-     call atlas_to_gsi_(rank2(1,:),aux)
+     call atlas_to_gsi_(rank2(1,:),aux,self%rank,self%grid%layout)
      gsivar2d=aux
      deallocate(aux)
    enddo
@@ -525,12 +519,12 @@ do ii=1,ntimes
      allocate(aux(size(gsivar3d,1),size(gsivar3d,2)))
      if (self%grid%vflip) then
         do k=1,npz
-           call atlas_to_gsi_(rank2(k,:),aux)
+           call atlas_to_gsi_(rank2(k,:),aux,self%rank,self%grid%layout)
            gsivar3d(:,:,npz-k+1)=aux
         enddo
      else
         do k=1,npz
-           call atlas_to_gsi_(rank2(k,:),aux)
+           call atlas_to_gsi_(rank2(k,:),aux,self%rank,self%grid%layout)
            gsivar3d(:,:,k)=aux
         enddo
      endif
@@ -555,19 +549,11 @@ endif
 
 ! Apply GSI B-error operator
 ! --------------------------
-          time_beg=MPI_Wtime()
 if (self%cv) then
    call gsibec_cv_space(gsicv,internalcv=.false.,bypassbe=self%bypassGSIbe)
 else
    call gsibec_sv_space(gsisv,internalsv=.false.,bypassbe=self%bypassGSIbe)
 endif
-          call mpi_comm_rank(mpi_comm_world,mype,ierr)
-    
-         time_end=MPI_Wtime()  !now use the existing variable
-          call MPI_Reduce(time_end-time_beg, walltime, 1, MPI_REAL8, MPI_MAX, 0, MPI_COMM_WORLD, ierr)
-           if (mype == 0) then
-             print '(A,F10.6,A)', 'thinkdeb999gsi_covariance_mod.f90 multiply time (max over ranks)',walltime
-           end if
 
 ! Convert back to Atlas Fields
 ! ----------------------------
@@ -816,11 +802,13 @@ end subroutine multiply
 
    ! copy atlas array into GSI array
    ! the atlas halos are copied as well, so it is assumed the atlas halos are up-to-date
-   subroutine atlas_to_gsi_(rank,var)
+   subroutine atlas_to_gsi_(rank,var,pe,layout)
    real(kind=kind_real),intent(in) :: rank(:)
    real(kind=kind_real),intent(inout):: var(:,:)
+   integer, intent(in), optional :: pe
+   integer, intent(in), optional :: layout(2)
    integer ii,jj,jnode
-   integer mylat2,mylon2
+   integer mylat2,mylon2,mype,nxpe,nype
    mylat2 = size(var,1)
    mylon2 = size(var,2)
    jnode=1
@@ -836,20 +824,128 @@ end subroutine multiply
    ! - all x @ ymin
    ! - pairs of (xmin, xmax) @ each y from (ymin+1, ymax-1)
    ! - all x @ ymax
-   do ii=1,mylon2
-       var(1,ii) = rank(jnode)
-       jnode = jnode + 1
-   enddo
-   do jj=2,mylat2-1
-       var(jj,1) = rank(jnode)
-       jnode = jnode + 1
-       var(jj,mylon2) = rank(jnode)
-       jnode = jnode + 1
-   enddo
-   do ii=1,mylon2
-       var(mylat2,ii) = rank(jnode)
-       jnode = jnode + 1
-   enddo
+ 
+   if(present(pe).and.present(layout)) then
+     mype = pe
+     nxpe = layout(1)
+     nype = layout(2)
+     if(mype == 0) then
+       do jj=2,mylat2-1
+           var(jj,mylon2) = rank(jnode)
+           jnode = jnode + 1
+       enddo
+       do ii=2,mylon2
+           var(mylat2,ii) = rank(jnode)
+           jnode = jnode + 1
+       enddo
+     else if(mype == nxpe-1) then
+       do jj=2,mylat2-1
+           var(jj,1) = rank(jnode)
+           jnode = jnode + 1
+       enddo
+       do ii=1,mylon2-1
+           var(mylat2,ii) = rank(jnode)
+           jnode = jnode + 1
+       enddo
+     else if(mype == nxpe*(nype-1)) then
+       do ii=2,mylon2
+           var(1,ii) = rank(jnode)
+           jnode = jnode + 1
+       enddo
+       do jj=2,mylat2-1
+           var(jj,mylon2) = rank(jnode)
+           jnode = jnode + 1
+       enddo
+     else if(mype == nxpe*nype-1) then
+       do ii=1,mylon2-1
+           var(1,ii) = rank(jnode)
+           jnode = jnode + 1
+       enddo
+       do jj=2,mylat2-1
+           var(jj,1) = rank(jnode)
+           jnode = jnode + 1
+       enddo
+     else if(mype>0 .and. mype<nxpe-1) then
+       do jj=2,mylat2-1
+           var(jj,1) = rank(jnode)
+           jnode = jnode + 1
+           var(jj,mylon2) = rank(jnode)
+           jnode = jnode + 1
+       enddo
+       do ii=1,mylon2
+           var(mylat2,ii) = rank(jnode)
+           jnode = jnode + 1
+       enddo
+     else if(mype>nxpe*(nype-1) .and. mype<nxpe*nype-1) then
+       do ii=1,mylon2
+           var(1,ii) = rank(jnode)
+           jnode = jnode + 1
+       enddo
+       do jj=2,mylat2-1
+           var(jj,1) = rank(jnode)
+           jnode = jnode + 1
+           var(jj,mylon2) = rank(jnode)
+           jnode = jnode + 1
+       enddo
+     else if(mod(mype,nxpe)==0 .and. mype>0 .and. mype<nxpe*(nype-1)) then
+       do ii=2,mylon2
+           var(1,ii) = rank(jnode)
+           jnode = jnode + 1
+       enddo
+       do jj=2,mylat2-1
+           var(jj,mylon2) = rank(jnode)
+           jnode = jnode + 1
+       enddo
+       do ii=2,mylon2
+           var(mylat2,ii) = rank(jnode)
+           jnode = jnode + 1
+       enddo
+     else if(mod(mype,nxpe)==nxpe-1 .and. mype>nxpe-1 .and. mype<nxpe*nype-1) then
+       do ii=1,mylon2-1
+           var(1,ii) = rank(jnode)
+           jnode = jnode + 1
+       enddo
+       do jj=2,mylat2-1
+           var(jj,1) = rank(jnode)
+           jnode = jnode + 1
+       enddo
+       do ii=1,mylon2-1
+           var(mylat2,ii) = rank(jnode)
+           jnode = jnode + 1
+       enddo
+     else
+       do ii=1,mylon2
+           var(1,ii) = rank(jnode)
+           jnode = jnode + 1
+       enddo
+       do jj=2,mylat2-1
+           var(jj,1) = rank(jnode)
+           jnode = jnode + 1
+           var(jj,mylon2) = rank(jnode)
+           jnode = jnode + 1
+       enddo
+       do ii=1,mylon2
+           var(mylat2,ii) = rank(jnode)
+           jnode = jnode + 1
+       enddo
+     endif
+   else
+     do ii=1,mylon2
+         var(1,ii) = rank(jnode)
+         jnode = jnode + 1
+     enddo
+     do jj=2,mylat2-1
+         var(jj,1) = rank(jnode)
+         jnode = jnode + 1
+         var(jj,mylon2) = rank(jnode)
+         jnode = jnode + 1
+     enddo
+     do ii=1,mylon2
+         var(mylat2,ii) = rank(jnode)
+         jnode = jnode + 1
+     enddo
+   endif
+
    end subroutine atlas_to_gsi_
 
    ! copy GSI array into atlas array

@@ -24,8 +24,6 @@ if( build_saber_mgbf )
     covariance/MGBF_Covariance.interface.F90
     covariance/MGBF_Covariance.interface.h
     covariance/mgbf_covariance_mod.f90
-    utils/MGBF_GeometryBridge.cc
-    utils/MGBF_GeometryBridge.h
 
 #clth    # Grid
 #     covariance/mgbf_Grid.h
