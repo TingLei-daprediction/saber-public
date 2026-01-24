@@ -1500,12 +1500,14 @@ if (this%l_constant_aspt2 ) then
       this%dyfm(i,j)=dist_rad*req
     enddo
    enddo
+      
        
-      rtem1=this%pasp02/this%dx_a2f_ratio 
-      rtem2=this%pasp02/this%dx_a2f_ratio 
+      rtem1=this%pasp02  
+      rtem2=this%pasp02
      
       do i=1,this%im
       do j=1,this%jm
+          write(6,*)'thinkdeb999 dxfm/dyfm i,j = ',i,' ',j,' ',this%dxfm(i,j),' ',this%dyfm(i,j)
      this%paspx4d(1,i,j,1)=(rtem1/this%dxfmctrl*this%dxfm(i,j))  ! !cltthinkdeb9999
      this%paspy4d(1,i,j,1)=(rtem1/this%dyfmctrl*this%dyfm(i,j))  !
       enddo
