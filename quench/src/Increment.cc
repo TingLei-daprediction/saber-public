@@ -123,10 +123,6 @@ void Increment::zero(const util::DateTime & vt) {
 
   oops::Log::trace() << classname() << "::zero done" << std::endl;
 }
-void Increment::ones() {
-    std::cerr << "Error: quench::Increment::ones called unexpectedly. This method should not be used for being now" << std::endl;
-    throw std::runtime_error("Unexpected call to quench::Increment::ones");
-}
 // -----------------------------------------------------------------------------
 
 void Increment::axpy(const double & zz,
