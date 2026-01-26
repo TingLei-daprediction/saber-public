@@ -534,9 +534,11 @@ integer ::  loc(2)
                     stop
                 endif 
              enddo
+!$omp parallel do private(k) schedule(static)
              do k=1,nzloc
-                work_mgbf(k,:,:) =reshape(work2d_mgbf(k,:),[dim3d(2),dim3d(3)])
+                work_mgbf(k,:,:) = reshape(work2d_mgbf(k,:),[dim3d(2),dim3d(3)])
              enddo
+!$omp end parallel do
                
              if(self%intstate(jscale,ivargrp0)%km2.ne.n2d.and. .not.self%intstate(jscale,ivargrp0)%l_for_localization ) then 
                 write(6,*)'The numbers of 2d variables is different from  mgbf-expected ,stop'
@@ -578,9 +580,11 @@ integer ::  loc(2)
       !clt#        work_mgbf=999.0 !thinkdeb for debug
        
                 call btim(mg_postprocess_time)
+!$omp parallel do private(k) schedule(static)
                 do k=1,nlev_vargrp(ivargrp)
-                 vargrp_work_mgbf2(k,:,:)=vargrp_work_mgbf2(k,:,:)/rnormalization(k,ivargrp)
+                 vargrp_work_mgbf2(k,:,:) = vargrp_work_mgbf2(k,:,:) / rnormalization(k,ivargrp)
                 enddo
+!$omp end parallel do
                 work_mgbf(ii:ii+nlev_vargrp(ivargrp)-1,:,:)=vargrp_work_mgbf2(:,:,:)
                 ii=ii+nlev_vargrp(ivargrp)
                 deallocate(vargrp_work_mgbf)
@@ -616,9 +620,11 @@ integer ::  loc(2)
                endif
                deallocate(work1var_mgbf)
              endif
+!$omp parallel do private(k) schedule(static)
              do k=1,nzloc
-               work2d_mgbf(k,:)=reshape(work_mgbf(k,:,:),[dim2d(2)])
+               work2d_mgbf(k,:) = reshape(work_mgbf(k,:,:),[dim2d(2)])
              enddo
+!$omp end parallel do
                 ilev=1
                      n_owned_size=0
              do isize=1,fields%size()
@@ -753,4 +759,3 @@ end function ivar2grp
 ! --------------------------------------------------------------------------------------------------
 
 end module mgbf_covariance_mod
-
