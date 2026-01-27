@@ -55,6 +55,16 @@ type :: mgbf_covariance
   real, allocatable :: multigrp_cor(:,:)
   integer, allocatable :: iscalegroup(:)
   integer, allocatable :: ivargroup(:)
+  real(kind=r_kind), allocatable, target :: work_mgbf(:,:,:)
+  real(kind=r_kind), allocatable, target :: work1var_mgbf(:,:,:)
+  real(kind=r_kind), allocatable, target :: work2d_mgbf(:,:)
+  real(kind=r_kind), allocatable, target :: rnormalization(:,:)
+  integer(kind=i_kind), allocatable, target :: nlev_vargrp(:)
+  integer(kind=i_kind), allocatable, target :: varvlev_index(:,:)
+  integer(kind=i_kind) :: ws_total_km_a_all = 0
+  integer(kind=i_kind) :: ws_nm = 0
+  integer(kind=i_kind) :: ws_mm = 0
+  integer(kind=i_kind) :: ws_nz3d = 0
   
   contains
     procedure, public :: create
@@ -100,6 +110,11 @@ real(r_kind), pointer :: lonlat_ptr(:,:)
 real(r_kind), allocatable :: lonlat_anl(:,:)
 integer :: npts_owned
 integer :: npts_total
+integer :: total_km_a_all_scale
+integer :: max_nm
+integer :: max_mm
+integer :: max_nz3d
+integer :: nvar_create
 
 
 character(len=80) :: readin_mgbf_nml_group(99)
@@ -217,6 +232,49 @@ write(6,*)'thinkdeb mgbf create999 10 '
 call flush(6)
 if (allocated(lonlat_anl)) deallocate(lonlat_anl)
 
+! Allocate persistent workspaces based on intstate sizes
+self%ws_total_km_a_all = 0
+self%ws_nm = 0
+self%ws_mm = 0
+self%ws_nz3d = 0
+max_nm = 0
+max_mm = 0
+max_nz3d = 0
+do iscale=1,nscale
+  total_km_a_all_scale = 0
+  do ivargrp=1,nvargrp
+    total_km_a_all_scale = total_km_a_all_scale + self%intstate(iscale,ivargrp)%km_a_all
+  enddo
+  if (total_km_a_all_scale > self%ws_total_km_a_all) self%ws_total_km_a_all = total_km_a_all_scale
+  if (self%intstate(iscale,1)%nm > max_nm) max_nm = self%intstate(iscale,1)%nm
+  if (self%intstate(iscale,1)%mm > max_mm) max_mm = self%intstate(iscale,1)%mm
+  if (self%intstate(iscale,1)%lm_a > max_nz3d) max_nz3d = self%intstate(iscale,1)%lm_a
+enddo
+self%ws_nm = max_nm
+self%ws_mm = max_mm
+self%ws_nz3d = max_nz3d
+
+if (.not. allocated(self%work_mgbf)) then
+  allocate(self%work_mgbf(self%ws_total_km_a_all, self%ws_nm, self%ws_mm))
+endif
+if (.not. allocated(self%work2d_mgbf)) then
+  allocate(self%work2d_mgbf(self%ws_total_km_a_all, self%ws_nm * self%ws_mm))
+endif
+if (.not. allocated(self%rnormalization)) then
+  allocate(self%rnormalization(self%ws_total_km_a_all, nvargrp))
+endif
+if (.not. allocated(self%work1var_mgbf)) then
+  allocate(self%work1var_mgbf(self%ws_nz3d, self%ws_nm, self%ws_mm))
+endif
+
+if (.not. allocated(self%nlev_vargrp)) then
+  allocate(self%nlev_vargrp(nvargrp))
+endif
+
+nvar_create = background%size()
+if (.not. allocated(self%varvlev_index)) then
+  allocate(self%varvlev_index(nvar_create,3))
+endif
 end subroutine create
 
 ! --------------------------------------------------------------------------------------------------
@@ -238,6 +296,13 @@ do iscale=1,self%nscale
   enddo
 enddo
 !clt endif
+
+if (allocated(self%work_mgbf)) deallocate(self%work_mgbf)
+if (allocated(self%work1var_mgbf)) deallocate(self%work1var_mgbf)
+if (allocated(self%work2d_mgbf)) deallocate(self%work2d_mgbf)
+if (allocated(self%rnormalization)) deallocate(self%rnormalization)
+if (allocated(self%nlev_vargrp)) deallocate(self%nlev_vargrp)
+if (allocated(self%varvlev_index)) deallocate(self%varvlev_index)
 
 ! Delete the grid
 ! ---------------
@@ -309,19 +374,19 @@ type(atlas_field) :: afield
 real(kind=r_kind), pointer :: ptr_2d(:,:)
 real(kind=r_kind), pointer :: ptr_3d(:,:,:)
 integer(kind=i_kind):: nz,ilev,isize
-real(kind=r_kind), allocatable :: work_mgbf(:,:,:)
+real(kind=r_kind), pointer :: work_mgbf(:,:,:)
 real(kind=r_kind), allocatable :: vargrp_work_mgbf(:,:,:)
 real(kind=r_kind), allocatable :: vargrp_work_mgbf2(:,:,:)
-real(kind=r_kind), allocatable :: work1var_mgbf(:,:,:)
-real(kind=r_kind), allocatable :: work2d_mgbf(:,:)
-real(kind=r_kind), allocatable :: rnormalization(:,:)
-integer(kind=i_kind), allocatable :: nlev_vargrp(:)
+real(kind=r_kind), pointer :: work1var_mgbf(:,:,:)
+real(kind=r_kind), pointer :: work2d_mgbf(:,:)
+real(kind=r_kind), pointer :: rnormalization(:,:)
+integer(kind=i_kind), pointer :: nlev_vargrp(:)
 integer(kind=i_kind) :: dim2d(2),dim3d(3)
 integer(kind=i_kind):: myrank,nxloc,nyloc,nzloc,nz3d
 integer(kind=i_kind)::nvar
 integer(kind=i_kind):: i,ivar,jvar,j,k,ij,lev1,lev2,iounit
 integer(kind=i_kind):: n2d
-integer(kind=i_kind),allocatable :: varvlev_index(:,:)
+integer(kind=i_kind), pointer :: varvlev_index(:,:)
 logical  ::  l2d_encountered  
 logical :: test_once=.false.
 integer(kind=i_kind)::itest=0
@@ -363,8 +428,14 @@ integer ::  loc(2)
             fileoutput="mgbftest_static_"//str_rank//".txt"
           endif
            
-        allocate(nlev_vargrp(nvargrp))
-        nlev_vargrp=0
+        if (.not. allocated(self%nlev_vargrp)) then
+          error stop "MGBF workspace nlev_vargrp not allocated"
+        endif
+        if (size(self%nlev_vargrp) < nvargrp) then
+          error stop "MGBF workspace nlev_vargrp too small for nvargrp"
+        endif
+        nlev_vargrp => self%nlev_vargrp
+        nlev_vargrp = 0
         total_km_a_all=0 
 !clt         do iscale=1,self%nscale
            do ivargrp=1,self%nvargrp
@@ -381,11 +452,36 @@ integer ::  loc(2)
              n2d=0
              l2d_encountered=.false.
              ivargrp0=1
-             allocate(work_mgbf(total_km_a_all,self%intstate(jscale,ivargrp0)%nm,self%intstate(jscale,ivargrp0)%mm))
-             allocate(work2d_mgbf(total_km_a_all,self%intstate(jscale,ivargrp0)%nm*self%intstate(jscale,ivargrp0)%mm))
-             allocate(rnormalization(total_km_a_all,nvargrp))
-             rnormalization=0.0
-             work2d_mgbf=0.0         
+             if (.not. allocated(self%work_mgbf)) then
+               error stop "MGBF workspace work_mgbf not allocated"
+             endif
+             if (size(self%work_mgbf,1) < total_km_a_all .or. &
+                 size(self%work_mgbf,2) < self%intstate(jscale,ivargrp0)%nm .or. &
+                 size(self%work_mgbf,3) < self%intstate(jscale,ivargrp0)%mm) then
+               error stop "MGBF workspace work_mgbf too small for current scale"
+             endif
+             work_mgbf => self%work_mgbf
+
+             if (.not. allocated(self%work2d_mgbf)) then
+               error stop "MGBF workspace work2d_mgbf not allocated"
+             endif
+             if (size(self%work2d_mgbf,1) < total_km_a_all .or. &
+                 size(self%work2d_mgbf,2) < self%intstate(jscale,ivargrp0)%nm * &
+                                           self%intstate(jscale,ivargrp0)%mm) then
+               error stop "MGBF workspace work2d_mgbf too small for current scale"
+             endif
+             work2d_mgbf => self%work2d_mgbf
+
+             if (.not. allocated(self%rnormalization)) then
+               error stop "MGBF workspace rnormalization not allocated"
+             endif
+             if (size(self%rnormalization,1) < total_km_a_all .or. &
+                 size(self%rnormalization,2) < nvargrp) then
+               error stop "MGBF workspace rnormalization too small for current scale"
+             endif
+             rnormalization => self%rnormalization
+             rnormalization = 0.0
+             work2d_mgbf = 0.0         
              ii=1
              do ivargrp=1,nvargrp
                do k=1,self%intstate(jscale,ivargrp)%km2
@@ -400,7 +496,7 @@ integer ::  loc(2)
                      ii=ii+nz3d
                enddo
              enddo
-        
+
              dim2d=shape(work2d_mgbf)
 
              dim3d=shape(work_mgbf)
@@ -408,8 +504,14 @@ integer ::  loc(2)
              nyloc=dim3d(3)
              nzloc=dim3d(1)
              nvar=fields%size() 
-             allocate( varvlev_index(nvar,3))
-             varvlev_index=0
+             if (.not. allocated(self%varvlev_index)) then
+               error stop "MGBF workspace varvlev_index not allocated"
+             endif
+             if (size(self%varvlev_index,1) < nvar .or. size(self%varvlev_index,2) /= 3) then
+               error stop "MGBF workspace varvlev_index too small for current fields"
+             endif
+             varvlev_index => self%varvlev_index
+             varvlev_index = 0
           
                 ilev=1
              do isize=1,fields%size()
@@ -561,12 +663,13 @@ integer ::  loc(2)
              do ivargrp=1,nvargrp
                 allocate(vargrp_work_mgbf(nlev_vargrp(ivargrp),nxloc,nyloc))
                 allocate(vargrp_work_mgbf2(nlev_vargrp(ivargrp),nxloc,nyloc))
-                vargrp_work_mgbf(:,:,:)=work_mgbf(ii:ii+nlev_vargrp(ivargrp)-1,:,:)
+                vargrp_work_mgbf(:,:,:) = work_mgbf(ii:ii+nlev_vargrp(ivargrp)-1,:,:)
     
 
                 call btim(mg_anal_to_filt_time)
                 call self%intstate(jscale,ivargrp)%anal_to_filt_allmap(vargrp_work_mgbf)
-                write(6,*)'codexdebug max_in_grp ', ivargrp, maxval(vargrp_work_mgbf)
+                write(6,*)'codexdebug max_in_grp ', ivargrp, &
+                  maxval(vargrp_work_mgbf)
                 call etim(mg_anal_to_filt_time)
                 call btim(mg_filtering_time)
                 call self%intstate(jscale,ivargrp)%filtering_procedure(self%intstate(jscale,ivargrp)%mgbf_proc,1)
@@ -575,7 +678,8 @@ integer ::  loc(2)
       !cltorg          call self%intstate%filt_to_anal_allmap(work_mgbf)
                 call btim(mg_filt_to_anal_time)
                 call self%intstate(jscale,ivargrp)%filt_to_anal_allmap(vargrp_work_mgbf2)
-                write(6,*)'codexdebug max_out_grp ', ivargrp, maxval(vargrp_work_mgbf2)
+                write(6,*)'codexdebug max_out_grp ', ivargrp, &
+                  maxval(vargrp_work_mgbf2)
                 call etim(mg_filt_to_anal_time)
       !clt#        work_mgbf=999.0 !thinkdeb for debug
        
@@ -585,14 +689,22 @@ integer ::  loc(2)
                  vargrp_work_mgbf2(k,:,:) = vargrp_work_mgbf2(k,:,:) / rnormalization(k,ivargrp)
                 enddo
 !$omp end parallel do
-                work_mgbf(ii:ii+nlev_vargrp(ivargrp)-1,:,:)=vargrp_work_mgbf2(:,:,:)
+                work_mgbf(ii:ii+nlev_vargrp(ivargrp)-1,:,:) = vargrp_work_mgbf2(:,:,:)
                 ii=ii+nlev_vargrp(ivargrp)
                 deallocate(vargrp_work_mgbf)
                 deallocate(vargrp_work_mgbf2)
              enddo ! ivargrp
              if(self%intstate(jscale,ivargrp0)%l_for_localization ) then   !clthinkdebxxx
-               allocate(work1var_mgbf(nz3d,nxloc,nyloc))
-               work1var_mgbf=0.0
+               if (.not. allocated(self%work1var_mgbf)) then
+                 error stop "MGBF workspace work1var_mgbf not allocated"
+               endif
+               if (size(self%work1var_mgbf,1) < nz3d .or. &
+                   size(self%work1var_mgbf,2) < nxloc .or. &
+                   size(self%work1var_mgbf,3) < nyloc) then
+                 error stop "MGBF workspace work1var_mgbf too small for current scale"
+               endif
+               work1var_mgbf => self%work1var_mgbf
+               work1var_mgbf = 0.0
                if(nvargrp == 1 ) then
                    do ivar=1,nvar
                      lev1=varvlev_index(ivar,1)
@@ -618,7 +730,7 @@ integer ::  loc(2)
                    work_mgbf(lev1:lev2,:,:)=work1var_mgbf
                  enddo
                endif
-               deallocate(work1var_mgbf)
+               nullify(work1var_mgbf)
              endif
 !$omp parallel do private(k) schedule(static)
              do k=1,nzloc
@@ -707,13 +819,13 @@ integer ::  loc(2)
 
              call afield%final()
 
-             deallocate(work_mgbf)
-             deallocate(work2d_mgbf)
-             deallocate(rnormalization)
-             deallocate( varvlev_index)
+             nullify(work_mgbf)
+             nullify(work2d_mgbf)
+             nullify(rnormalization)
+             nullify(varvlev_index)
  !clt       enddo   !for iscale
           call etim(mg_multiply_time)
-        deallocate(nlev_vargrp)
+        nullify(nlev_vargrp)
 
 end subroutine multiply
 
