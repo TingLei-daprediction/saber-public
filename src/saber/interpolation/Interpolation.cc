@@ -8,9 +8,12 @@
 #include "saber/interpolation/Interpolation.h"
 
 #include "atlas/util/Config.h"
+#include "atlas/util/Geometry.h"
+#include "atlas/util/KDTree.h"
 
 #include "oops/util/FieldSetOperations.h"
 #include "oops/util/Logger.h"
+#include "oops/util/missingValues.h"
 #include "mpi.h"  //cltthinkdeb todo
 #include <fstream> //cltthink
 
@@ -20,6 +23,83 @@ namespace interpolation {
 // -----------------------------------------------------------------------------
 
 static SaberOuterBlockMaker<Interpolation> makerInterpolation_("interpolation");
+
+// -----------------------------------------------------------------------------
+
+namespace {
+
+void fillMissingValuesNearest(const atlas::FieldSet & sourceFieldSet,
+                              atlas::FieldSet & targetFieldSet,
+                              const oops::Variables & vars,
+                              const atlas::FunctionSpace & sourceFs,
+                              const atlas::FunctionSpace & targetFs) {
+  if (vars.size() == 0) {
+    return;
+  }
+
+  const auto src_lonlat = atlas::array::make_view<double, 2>(sourceFs.lonlat());
+  const auto src_ghost = atlas::array::make_view<int, 1>(sourceFs.ghost());
+  std::vector<double> lons;
+  std::vector<double> lats;
+  std::vector<atlas::idx_t> indices;
+  lons.reserve(src_lonlat.shape(0));
+  lats.reserve(src_lonlat.shape(0));
+  indices.reserve(src_lonlat.shape(0));
+  for (atlas::idx_t jj = 0; jj < src_lonlat.shape(0); ++jj) {
+    if (src_ghost(jj) == 0) {
+      lons.push_back(src_lonlat(jj, 0));
+      lats.push_back(src_lonlat(jj, 1));
+      indices.push_back(jj);
+    }
+  }
+  if (indices.empty()) {
+    return;
+  }
+
+  const atlas::Geometry earth(atlas::util::Earth::radius());
+  atlas::util::IndexKDTree2D tree(earth);
+  tree.build(lons, lats, indices);
+
+  const auto tgt_lonlat = atlas::array::make_view<double, 2>(targetFs.lonlat());
+  const auto tgt_ghost = atlas::array::make_view<int, 1>(targetFs.ghost());
+  const double missing = oops::util::missingValue<double>();
+
+  for (const auto & var : vars) {
+    if (!targetFieldSet.has(var.name()) || !sourceFieldSet.has(var.name())) {
+      continue;
+    }
+    auto tgt_view = atlas::array::make_view<double, 2>(targetFieldSet[var.name()]);
+    const auto src_view = atlas::array::make_view<double, 2>(
+        sourceFieldSet.field(var.name()));
+
+    for (atlas::idx_t jloc = 0; jloc < tgt_view.shape(0); ++jloc) {
+      if (tgt_ghost(jloc) != 0) {
+        continue;
+      }
+      bool has_missing = false;
+      for (atlas::idx_t jlev = 0; jlev < tgt_view.shape(1); ++jlev) {
+        if (tgt_view(jloc, jlev) == missing) {
+          has_missing = true;
+          break;
+        }
+      }
+      if (!has_missing) {
+        continue;
+      }
+
+      atlas::PointLonLat pll(tgt_lonlat(jloc, 0), tgt_lonlat(jloc, 1));
+      const auto item = tree.closestPoint(pll);
+      const atlas::idx_t src_index = item.payload();
+      for (atlas::idx_t jlev = 0; jlev < tgt_view.shape(1); ++jlev) {
+        if (tgt_view(jloc, jlev) == missing) {
+          tgt_view(jloc, jlev) = src_view(src_index, jlev);
+        }
+      }
+    }
+  }
+}
+
+}  // namespace
 
 // -----------------------------------------------------------------------------
 
@@ -211,6 +291,12 @@ void Interpolation::leftInverseMultiply(oops::FieldSet3D & fieldSet) const {
       targetFieldSet.add(targetField);
     }
     inverseRegionalInterp_->execute(sourceFieldSet, targetFieldSet);
+  }
+
+  if (params_.fillMissingValues.value()) {
+    fillMissingValuesNearest(sourceFieldSet, targetFieldSet, invVars,
+                             outerGeomData_.functionSpace(),
+                             innerGeomData_->functionSpace());
   }
 
   // Reset
