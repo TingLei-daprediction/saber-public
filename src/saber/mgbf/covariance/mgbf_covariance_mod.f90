@@ -62,6 +62,7 @@ type :: mgbf_covariance
   integer(kind=i_kind), pointer :: nlev_vargrp(:)
   integer(kind=i_kind), pointer :: varvlev_index(:,:)
   integer(kind=i_kind) :: total_km_a_all = 0
+  integer(kind=i_kind) :: nvar = 0
   logical:: l_multiply_first_call=.true.
   
   contains
@@ -111,7 +112,6 @@ integer :: npts_total
 integer :: max_nm
 integer :: max_mm
 integer :: max_nz3d
-integer :: nvar_create
 
 
 
@@ -253,6 +253,10 @@ do iscale=1,nscale
     endif
   enddo
 enddo
+  self%nvar = 0
+  do ivargrp=1,nvargrp
+    self%nvar = self%nvar + self%intstate(1,ivargrp)%km2+self%intstate(1,ivargrp)%km3 
+  enddo
   nz3d=self%intstate(1,1)%lm_a 
 
   allocate(self%work_mgbf(self%total_km_a_all, self%intstate(1,1)%nm, self%intstate(1,1)%mm))
@@ -262,7 +266,7 @@ enddo
 
   allocate(self%nlev_vargrp(nvargrp))
 
-  allocate(self%varvlev_index(nvar_create,3))
+  allocate(self%varvlev_index(self%nvar,3))
   
 
 
@@ -482,6 +486,11 @@ integer ::  loc(2)
              nyloc=dim3d(3)
              nzloc=dim3d(1)
              nvar=fields%size() 
+             if(nvar /= self%nvar ) then
+               write(6,*)'wrong, local nvar is not the same as self%nvar stop'
+               call flush(6)
+               stop
+             endif
              varvlev_index => self%varvlev_index
              varvlev_index = 0
           
