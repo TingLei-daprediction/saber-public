@@ -428,10 +428,10 @@ integer ::  loc(2)
         endif
         work_mgbf => self%work_mgbf
         work2d_mgbf => self%work2d_mgbf
+        work1var_mgbf => self%work1var_mgbf
         rnormalization => self%rnormalization
 
         nlev_vargrp => self%nlev_vargrp
-        nlev_vargrp = 0
 
 !clt         do iscale=1,self%nscale
               
@@ -461,7 +461,7 @@ integer ::  loc(2)
              endif
              rnormalization = 0.0
              work2d_mgbf = 0.0         
-             work1var_mgbf => self%work1var_mgbf
+             work1var_mgbf=0
              ii=1
              if(self%l_multiply_first_call) then
                 do ivargrp=1,nvargrp
@@ -492,7 +492,7 @@ integer ::  loc(2)
                stop
              endif
              varvlev_index => self%varvlev_index
-             varvlev_index = 0
+             if (self%l_multiply_first_call)  varvlev_index = 0
           
                 ilev=1
              do isize=1,fields%size()
