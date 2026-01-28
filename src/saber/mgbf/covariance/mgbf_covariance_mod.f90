@@ -55,16 +55,14 @@ type :: mgbf_covariance
   real, allocatable :: multigrp_cor(:,:)
   integer, allocatable :: iscalegroup(:)
   integer, allocatable :: ivargroup(:)
-  real(kind=r_kind), allocatable, target :: work_mgbf(:,:,:)
-  real(kind=r_kind), allocatable, target :: work1var_mgbf(:,:,:)
-  real(kind=r_kind), allocatable, target :: work2d_mgbf(:,:)
-  real(kind=r_kind), allocatable, target :: rnormalization(:,:)
-  integer(kind=i_kind), allocatable, target :: nlev_vargrp(:)
-  integer(kind=i_kind), allocatable, target :: varvlev_index(:,:)
-  integer(kind=i_kind) :: ws_total_km_a_all = 0
-  integer(kind=i_kind) :: ws_nm = 0
-  integer(kind=i_kind) :: ws_mm = 0
-  integer(kind=i_kind) :: ws_nz3d = 0
+  real(kind=r_kind), pointer :: work_mgbf(:,:,:)
+  real(kind=r_kind), pointer:: work1var_mgbf(:,:,:)
+  real(kind=r_kind), pointer :: work2d_mgbf(:,:)
+  real(kind=r_kind), pointer :: rnormalization(:,:)
+  integer(kind=i_kind), pointer :: nlev_vargrp(:)
+  integer(kind=i_kind), pointer :: varvlev_index(:,:)
+  integer(kind=i_kind) :: total_km_a_all = 0
+  logical:: l_multiply_first_call=.true.
   
   contains
     procedure, public :: create
@@ -110,18 +108,19 @@ real(r_kind), pointer :: lonlat_ptr(:,:)
 real(r_kind), allocatable :: lonlat_anl(:,:)
 integer :: npts_owned
 integer :: npts_total
-integer :: total_km_a_all_scale
 integer :: max_nm
 integer :: max_mm
 integer :: max_nz3d
 integer :: nvar_create
 
 
+
+
 character(len=80) :: readin_mgbf_nml_group(99)
 real :: readin_multigrp_cor(99)=1.0
 integer :: readin_iscalegroup(99)=999
 integer :: readin_ivargroup(99)=999
-integer ::i,j, ii
+integer ::i,j, ii,nz3d
 namelist /parameters_mgbf_init/ nscale,nvargrp,readin_mgbf_nml_group ,readin_multigrp_cor,readin_iscalegroup,readin_ivargroup
 
 character(len=:), allocatable :: dump_json
@@ -233,48 +232,42 @@ call flush(6)
 if (allocated(lonlat_anl)) deallocate(lonlat_anl)
 
 ! Allocate persistent workspaces based on intstate sizes
-self%ws_total_km_a_all = 0
-self%ws_nm = 0
-self%ws_mm = 0
-self%ws_nz3d = 0
-max_nm = 0
-max_mm = 0
-max_nz3d = 0
 do iscale=1,nscale
-  total_km_a_all_scale = 0
+  self%total_km_a_all = 0
   do ivargrp=1,nvargrp
-    total_km_a_all_scale = total_km_a_all_scale + self%intstate(iscale,ivargrp)%km_a_all
+    self%total_km_a_all = self%total_km_a_all + self%intstate(iscale,ivargrp)%km_a_all
+    if(self%intstate(iscale,ivargrp)%nm /= self%intstate(1,1)%nm ) then   
+      write(6,*)'nm should be the same for all mgbf filters, stop'
+      call flush(6)
+      stop
+    endif
+    if(self%intstate(iscale,ivargrp)%mm /= self%intstate(1,1)%mm ) then 
+      write(6,*)'mm should be the same for all mgbf filters, stop'
+      call flush(6)
+      stop
+    endif
+    if(self%intstate(iscale,ivargrp)%lm_a /= self%intstate(1,1)%lm_a ) then  
+      write(6,*)'lm_a should be the same for all mgbf filters, stop'
+      call flush(6)
+      stop
+    endif
   enddo
-  if (total_km_a_all_scale > self%ws_total_km_a_all) self%ws_total_km_a_all = total_km_a_all_scale
-  if (self%intstate(iscale,1)%nm > max_nm) max_nm = self%intstate(iscale,1)%nm
-  if (self%intstate(iscale,1)%mm > max_mm) max_mm = self%intstate(iscale,1)%mm
-  if (self%intstate(iscale,1)%lm_a > max_nz3d) max_nz3d = self%intstate(iscale,1)%lm_a
 enddo
-self%ws_nm = max_nm
-self%ws_mm = max_mm
-self%ws_nz3d = max_nz3d
+  nz3d=self%intstate(1,1)%lm_a 
 
-if (.not. allocated(self%work_mgbf)) then
-  allocate(self%work_mgbf(self%ws_total_km_a_all, self%ws_nm, self%ws_mm))
-endif
-if (.not. allocated(self%work2d_mgbf)) then
-  allocate(self%work2d_mgbf(self%ws_total_km_a_all, self%ws_nm * self%ws_mm))
-endif
-if (.not. allocated(self%rnormalization)) then
-  allocate(self%rnormalization(self%ws_total_km_a_all, nvargrp))
-endif
-if (.not. allocated(self%work1var_mgbf)) then
-  allocate(self%work1var_mgbf(self%ws_nz3d, self%ws_nm, self%ws_mm))
-endif
+  allocate(self%work_mgbf(self%total_km_a_all, self%intstate(1,1)%nm, self%intstate(1,1)%mm))
+  allocate(self%work2d_mgbf(self%total_km_a_all, self%intstate(1,1)%nm * self%intstate(1,1)%mm))
+  allocate(self%rnormalization(self%total_km_a_all, nvargrp))
+  allocate(self%work1var_mgbf(nz3d, self%intstate(1,1)%nm, self%intstate(1,1)%mm))
 
-if (.not. allocated(self%nlev_vargrp)) then
   allocate(self%nlev_vargrp(nvargrp))
-endif
 
-nvar_create = background%size()
-if (.not. allocated(self%varvlev_index)) then
   allocate(self%varvlev_index(nvar_create,3))
-endif
+  
+
+
+
+
 end subroutine create
 
 ! --------------------------------------------------------------------------------------------------
@@ -297,12 +290,12 @@ do iscale=1,self%nscale
 enddo
 !clt endif
 
-if (allocated(self%work_mgbf)) deallocate(self%work_mgbf)
-if (allocated(self%work1var_mgbf)) deallocate(self%work1var_mgbf)
-if (allocated(self%work2d_mgbf)) deallocate(self%work2d_mgbf)
-if (allocated(self%rnormalization)) deallocate(self%rnormalization)
-if (allocated(self%nlev_vargrp)) deallocate(self%nlev_vargrp)
-if (allocated(self%varvlev_index)) deallocate(self%varvlev_index)
+if (associated(self%work_mgbf)) deallocate(self%work_mgbf)
+if (associated(self%work1var_mgbf)) deallocate(self%work1var_mgbf)
+if (associated(self%work2d_mgbf)) deallocate(self%work2d_mgbf)
+if (associated(self%rnormalization)) deallocate(self%rnormalization)
+if (associated(self%nlev_vargrp)) deallocate(self%nlev_vargrp)
+if (associated(self%varvlev_index)) deallocate(self%varvlev_index)
 
 ! Delete the grid
 ! ---------------
@@ -400,7 +393,7 @@ type(atlas_functionspace_StructuredColumns) :: fs
 integer :: ierr
 integer :: member_index
 integer :: iscale,jscale, ivargrp,ivargrp0,jvargrp
-integer :: total_km_a_all,ii,nvargrp
+integer :: ii,nvargrp
 integer :: ilev1,ilev2
 integer ::  loc(2)
        
@@ -422,80 +415,65 @@ integer ::  loc(2)
           endif
           myrank=self%rank
           write(str_rank,"(I4.4)")myrank
-          if(self%intstate(jscale,1)%l_for_localization) then
-            fileoutput="mgbftest_loc_"//str_rank//".txt"
-          else
-            fileoutput="mgbftest_static_"//str_rank//".txt"
-          endif
            
-        if (.not. allocated(self%nlev_vargrp)) then
+        if (.not. associated(self%nlev_vargrp)) then
           error stop "MGBF workspace nlev_vargrp not allocated"
         endif
         if (size(self%nlev_vargrp) < nvargrp) then
           error stop "MGBF workspace nlev_vargrp too small for nvargrp"
         endif
+        work_mgbf => self%work_mgbf
+        work2d_mgbf => self%work2d_mgbf
+        rnormalization => self%rnormalization
+
         nlev_vargrp => self%nlev_vargrp
         nlev_vargrp = 0
-        total_km_a_all=0 
+
 !clt         do iscale=1,self%nscale
-           do ivargrp=1,self%nvargrp
-            if(self%intstate(jscale,ivargrp)%nm.ne.self%intstate(jscale,1)%nm.or.  &
-               self%intstate(jscale,ivargrp)%mm.ne.self%intstate(jscale,1)%mm) then 
-               error stop "for being now, the filtering grids at the start of MGBF should be the same"
-            endif
-            total_km_a_all=self%intstate(jscale,ivargrp)%km_a_all+total_km_a_all
-            nlev_vargrp(ivargrp)=self%intstate(jscale,ivargrp)%km_a_all
-           enddo
               
              nz3d=self%intstate(jscale,1)%lm_a   !should be the same for different vargrps
          
              n2d=0
              l2d_encountered=.false.
              ivargrp0=1
-             if (.not. allocated(self%work_mgbf)) then
+             if (.not. associated(self%work_mgbf)) then
                error stop "MGBF workspace work_mgbf not allocated"
              endif
-             if (size(self%work_mgbf,1) < total_km_a_all .or. &
-                 size(self%work_mgbf,2) < self%intstate(jscale,ivargrp0)%nm .or. &
-                 size(self%work_mgbf,3) < self%intstate(jscale,ivargrp0)%mm) then
-               error stop "MGBF workspace work_mgbf too small for current scale"
+             if (size(work_mgbf,1) /= self%total_km_a_all .or. &
+                 size(work_mgbf,2) /= self%intstate(jscale,ivargrp0)%nm .or. &
+                 size(work_mgbf,3) /= self%intstate(jscale,ivargrp0)%mm) then
+               error stop "MGBF workspace work_mgbf does not match "
              endif
-             work_mgbf => self%work_mgbf
 
-             if (.not. allocated(self%work2d_mgbf)) then
-               error stop "MGBF workspace work2d_mgbf not allocated"
-             endif
-             if (size(self%work2d_mgbf,1) < total_km_a_all .or. &
-                 size(self%work2d_mgbf,2) < self%intstate(jscale,ivargrp0)%nm * &
+             if (size(work2d_mgbf,1) /=  self%total_km_a_all .or. &
+                 size(work2d_mgbf,2) /= self%intstate(jscale,ivargrp0)%nm * &
                                            self%intstate(jscale,ivargrp0)%mm) then
                error stop "MGBF workspace work2d_mgbf too small for current scale"
              endif
-             work2d_mgbf => self%work2d_mgbf
 
-             if (.not. allocated(self%rnormalization)) then
-               error stop "MGBF workspace rnormalization not allocated"
-             endif
-             if (size(self%rnormalization,1) < total_km_a_all .or. &
-                 size(self%rnormalization,2) < nvargrp) then
+             if (size(rnormalization,1) /= self%total_km_a_all .or. &
+                 size(rnormalization,2) /= nvargrp) then
                error stop "MGBF workspace rnormalization too small for current scale"
              endif
-             rnormalization => self%rnormalization
              rnormalization = 0.0
              work2d_mgbf = 0.0         
+             work1var_mgbf => self%work1var_mgbf
              ii=1
-             do ivargrp=1,nvargrp
-               do k=1,self%intstate(jscale,ivargrp)%km2
-!clt if for localization , km2=0  only for 
-!clt only for     l_2dvar_last_vertical_lev
-                 rnormalization(ii,ivargrp)=self%intstate(jscale,ivargrp)%coef_normalization(nz3d)
-                 ii=ii+1
-               enddo
-!clt if for localization , km2=0
-               do k=1,self%intstate(jscale,ivargrp)%km3
-                     rnormalization(ii:ii+nz3d-1,ivargrp)=self%intstate(jscale,ivargrp)%coef_normalization(1:nz3d)
-                     ii=ii+nz3d
-               enddo
-             enddo
+             if(self%l_multiply_first_call) then
+                do ivargrp=1,nvargrp
+                  do k=1,self%intstate(jscale,ivargrp)%km2
+   !clt if for localization , km2=0  only for 
+   !clt only for     l_2dvar_last_vertical_lev
+                    rnormalization(ii,ivargrp)=self%intstate(jscale,ivargrp)%coef_normalization(nz3d)
+                    ii=ii+1
+                  enddo
+   !clt if for localization , km2=0
+                  do k=1,self%intstate(jscale,ivargrp)%km3
+                        rnormalization(ii:ii+nz3d-1,ivargrp)=self%intstate(jscale,ivargrp)%coef_normalization(1:nz3d)
+                        ii=ii+nz3d
+                  enddo
+                enddo
+             endif
 
              dim2d=shape(work2d_mgbf)
 
@@ -504,12 +482,6 @@ integer ::  loc(2)
              nyloc=dim3d(3)
              nzloc=dim3d(1)
              nvar=fields%size() 
-             if (.not. allocated(self%varvlev_index)) then
-               error stop "MGBF workspace varvlev_index not allocated"
-             endif
-             if (size(self%varvlev_index,1) < nvar .or. size(self%varvlev_index,2) /= 3) then
-               error stop "MGBF workspace varvlev_index too small for current fields"
-             endif
              varvlev_index => self%varvlev_index
              varvlev_index = 0
           
@@ -519,11 +491,8 @@ integer ::  loc(2)
                 afield= fields%field(isize)  !clttodo
                 fs= afield%functionspace()  !cltthinkfore debug
                 n_owned_size= fs%size_owned() !clt for debug
-                write(6,*)'thinkdeb333 iszie-rank ',isize,' ',afield%name(),' ',afield%rank()
                 if(afield%rank() == 2)  then
-                    write(6,*)'thinkdeb333 iszie ',isize,' ',afield%name()
                     nz=afield%levels()
-                    write(6,*)'thinkdeb333 iszie-nz ',isize,' ',afield%name(),' ',nz
                     call afield%data(ptr_2d)
                     if(nz /= 1 .and. nz /= nz3d ) then
                       write(6,*)'the vertical dimension of the input fields are not as expectd ,stop ',nz,' ',nz3d 
@@ -532,21 +501,22 @@ integer ::  loc(2)
                     endif
 
                     if(nz == 1) then 
-  !clttothink                     if(self%intstate(iscale,ivargrp)%l_for_localization) then 
                         if(self%intstate(jscale,1)%l_for_localization) then 
                              if( self%l_2dvar_last_vertical_level) then  !when used for localization,2dvars are put on the last vertical level
-                                if(ilev+nz3d-1 > total_km_a_all) then 
+                                if(ilev+nz3d-1 > self%total_km_a_all) then 
                                    write(6,*)'MGBF abort 1 : the dimensions are not as expected'
                                    call flush(6)
                                    stop
                                 endif
                                 if(n_owned_size >0 ) then 
                                   work2d_mgbf(ilev+nz3d-1:ilev+nz3d-1,:)=ptr_2d(:,1:n_owned_size)
+                                  work2d_mgbf(ilev:ilev+nz3d-2,:)=0.0  !other levels are set to 0 and to be updated by the info spreading.
                                 else
                                   work2d_mgbf(ilev+nz3d-1:ilev+nz3d-1,:)=ptr_2d 
+                                  work2d_mgbf(ilev:ilev+nz3d-2,:)=ptr_2d 
                                 endif
                               else
-                                if(ilev+nz-1 > total_km_a_all) then 
+                                if(ilev+nz-1 > self%total_km_a_all) then 
                                    write(6,*)'MGBF abort 2 : the dimensions are not as expected'
                                    call flush(6)
                                    stop
@@ -556,11 +526,12 @@ integer ::  loc(2)
                                 else
                                   work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d 
                                 endif
+                                work2d_mgbf(ilev+nz:ilev+nz3d-1,:)=0.0
                               endif
                             
                         
                         else
-                                if(ilev+nz-1 > total_km_a_all) then 
+                                if(ilev+nz-1 > self%total_km_a_all) then 
                                    write(6,*)'MGBF abort 3 : the dimensions are not as expected'
                                    call flush(6)
                                    stop
@@ -572,7 +543,7 @@ integer ::  loc(2)
                             endif
                         endif
                      else
-                                if(ilev+nz-1 > total_km_a_all) then 
+                                if(ilev+nz-1 > self%total_km_a_all) then 
                                    write(6,*)'MGBF abort 4 : the dimensions are not as expected'
                                    call flush(6)
                                    stop
@@ -583,41 +554,37 @@ integer ::  loc(2)
                         work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d
                        endif
                     endif
-                   if( maxval(work2d_mgbf(lev1:lev1+nz-1,:)) .gt.0.5) then 
-                       write(6,*)'thinkdeb333 before  max is large 0.5'
-                       loc=maxloc(work2d_mgbf(lev1:lev1+nz-1,:)) 
-                       write(6,*)'thinkdeb333 before large 0.5 loc ',loc
-                   endif
                      
                     if(nz ==  1) then 
                       l2d_encountered=.true.
                       n2d=n2d+1
                     endif
                     if(nz > 1) then 
-                       if(l2d_encountered .and. .not.self%intstate(jscale,1)%l_for_localization ) then
-                        write(6,*)"l2d_encountered is true , 2dvariable is not put in the ending and l_for_localization=.false. , stop"
+                       if(l2d_encountered  ) then
                         call flush(6)
-                        error stop ("2dvariable is not put in the ending and l_for_localization=.false.")    !  is required 2d fields are saved consecutively,and at the ending  
+                        error stop ("2dvariable is not put in the ending stop.")    !  is required 2d fields are saved consecutively,and at the ending  
                        endif
                     endif
-                    if(isize==1) then
-                        varvlev_index(isize,1)= 1
-      !cltothink                  if(.not.self%intstate(iscale,ivargrp)%l_for_localization )then 
-                        if(.not.self%intstate(jscale,1)%l_for_localization )then 
-                          varvlev_index(isize,2)= nz
-                        else
-                          varvlev_index(isize,2)= nz3d
-                        endif
-                        varvlev_index(isize,3)= varvlev_index(isize,2) -varvlev_index(isize,1)+1 
-                    else
-     !cltorg                 varvlev_index(isize,1)= varvlev_index(isize-1,1)+nz3d
-                        varvlev_index(isize,1)= varvlev_index(isize-1,2)+1
-                        if(.not.self%intstate(jscale,ivargrp0)%l_for_localization )then 
-                          varvlev_index(isize,2)= varvlev_index(isize,1)+nz-1
-                        else
-                          varvlev_index(isize,2)= varvlev_index(isize,1)+nz3d-1
-                        endif
-                        varvlev_index(isize,3)= varvlev_index(isize,2) -varvlev_index(isize,1)+1 
+                    if(self%l_multiply_first_call) then
+                       if(isize==1) then
+                           varvlev_index(isize,1)= 1
+         !cltothink                  if(.not.self%intstate(iscale,ivargrp)%l_for_localization )then 
+                           if(.not.self%intstate(jscale,1)%l_for_localization )then 
+                             varvlev_index(isize,2)= nz
+                           else
+                             varvlev_index(isize,2)= nz3d
+                           endif
+                           varvlev_index(isize,3)= varvlev_index(isize,2) -varvlev_index(isize,1)+1 
+                       else
+        !cltorg                 varvlev_index(isize,1)= varvlev_index(isize-1,1)+nz3d
+                           varvlev_index(isize,1)= varvlev_index(isize-1,2)+1
+                           if(.not.self%intstate(jscale,ivargrp0)%l_for_localization )then 
+                             varvlev_index(isize,2)= varvlev_index(isize,1)+nz-1
+                           else
+                             varvlev_index(isize,2)= varvlev_index(isize,1)+nz3d-1
+                           endif
+                           varvlev_index(isize,3)= varvlev_index(isize,2) -varvlev_index(isize,1)+1 
+                       endif
                     endif
                     jvargrp=self%ivar2grp(isize)                      
 
@@ -647,19 +614,8 @@ integer ::  loc(2)
                 stop   ! a better exception handling is to be added
              endif
 
-             if(test_once.and..1.gt.2) then
-             open(iounit,file=trim(fileoutput), status='replace',form="formatted") 
-             write(iounit,*) work_mgbf
-             test_once=.false. 
-             close(iounit)
-             endif
                 call etim(mg_preprocess_time)
              ii=1
-             write(6,*)'codexdebug km2/km3/total/nvar/nz3d ', self%intstate(jscale,1)%km2, &
-     &                 self%intstate(jscale,1)%km3, total_km_a_all, nvar, nz3d
-             do i=1,min(4,nvar)
-               write(6,*)'codexdebug varvlev_index ', i, varvlev_index(i,1), varvlev_index(i,2)
-             enddo
              do ivargrp=1,nvargrp
                 allocate(vargrp_work_mgbf(nlev_vargrp(ivargrp),nxloc,nyloc))
                 allocate(vargrp_work_mgbf2(nlev_vargrp(ivargrp),nxloc,nyloc))
@@ -668,8 +624,6 @@ integer ::  loc(2)
 
                 call btim(mg_anal_to_filt_time)
                 call self%intstate(jscale,ivargrp)%anal_to_filt_allmap(vargrp_work_mgbf)
-                write(6,*)'codexdebug max_in_grp ', ivargrp, &
-                  maxval(vargrp_work_mgbf)
                 call etim(mg_anal_to_filt_time)
                 call btim(mg_filtering_time)
                 call self%intstate(jscale,ivargrp)%filtering_procedure(self%intstate(jscale,ivargrp)%mgbf_proc,1)
@@ -695,15 +649,6 @@ integer ::  loc(2)
                 deallocate(vargrp_work_mgbf2)
              enddo ! ivargrp
              if(self%intstate(jscale,ivargrp0)%l_for_localization ) then   !clthinkdebxxx
-               if (.not. allocated(self%work1var_mgbf)) then
-                 error stop "MGBF workspace work1var_mgbf not allocated"
-               endif
-               if (size(self%work1var_mgbf,1) < nz3d .or. &
-                   size(self%work1var_mgbf,2) < nxloc .or. &
-                   size(self%work1var_mgbf,3) < nyloc) then
-                 error stop "MGBF workspace work1var_mgbf too small for current scale"
-               endif
-               work1var_mgbf => self%work1var_mgbf
                work1var_mgbf = 0.0
                if(nvargrp == 1 ) then
                    do ivar=1,nvar
@@ -743,7 +688,6 @@ integer ::  loc(2)
      
 
                 afield=fields%field(isize)  !clttodo
-                write(6,*)'thinkdeb333-2 iszie-rank ',isize,' ',afield%name(),' ',afield%rank()
                 fs= afield%functionspace()  !cltthinkfore debug
                 n_owned_size= fs%size_owned() !clt for debug
 
@@ -752,7 +696,6 @@ integer ::  loc(2)
                   call afield%data(ptr_2d)
                   nz=afield%levels()
                   lev1=varvlev_index(isize,1)
-                  write(6,*)'thinkdeb333-3 leve: leve2 ',lev1,' ',lev1+nz
                    if( maxval(work2d_mgbf(lev1:lev1+nz-1,:)) .gt.0.5) then 
                        loc=maxloc(work2d_mgbf(lev1:lev1+nz-1,:)) 
                        write(6,*)'thinkdeb333 max is large 0.5 loc ',loc
@@ -766,7 +709,7 @@ integer ::  loc(2)
                       endif
                   else
                      if(self%intstate(1,1)%l_for_localization) then 
-                         if( self%l_2dvar_last_vertical_level) then !when used for localization,2dvars are put on the last vertical level
+                         if( self%l_2dvar_last_vertical_level) then !,2dvars are put on the last vertical level
 
                               if(n_owned_size >0 ) then 
                                 ptr_2d(1,1:n_owned_size)=work2d_mgbf(lev1+nz3d-1,:)!if nz=1, only the first level is used (like for surface pressure) 
@@ -776,9 +719,8 @@ integer ::  loc(2)
                               endif
                          else
                               if(n_owned_size >0 ) then 
-                                  ptr_2d(1,1:n_owned_size)=work2d_mgbf(lev1,:)!if nz=1, only the first level is used (like for surface pressure) 
+                                  ptr_2d(1,1:n_owned_size)=work2d_mgbf(lev1,:)! 
                               else 
-                               !cltthinkdebto now, the n_owned_size can't be got rightly for mgbf_grid using PointCloud function space
                                   ptr_2d(1,:)=work2d_mgbf(lev1,:)!if nz=1, only the first level is used (like for surface pressure) 
                              endif
                          endif
@@ -826,6 +768,7 @@ integer ::  loc(2)
  !clt       enddo   !for iscale
           call etim(mg_multiply_time)
         nullify(nlev_vargrp)
+        self%l_multiply_first_call=.false.
 
 end subroutine multiply
 
