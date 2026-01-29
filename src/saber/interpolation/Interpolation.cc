@@ -82,6 +82,11 @@ void fillMissingValuesNearest(const atlas::FieldSet & sourceFieldSet,
     std::size_t missing_before = 0;
     std::size_t missing_after = 0;
     std::size_t filled = 0;
+    std::size_t logged = 0;
+    const bool log_values = (var.name() == "air_pressure_thickness");
+    const std::size_t log_limit = 20;
+    const double small_value_threshold = 1.0e-6;
+    std::size_t small_after_fill = 0;
 
     for (atlas::idx_t jloc = 0; jloc < tgt_view.shape(0); ++jloc) {
       if (tgt_ghost(jloc) != 0) {
@@ -106,6 +111,21 @@ void fillMissingValuesNearest(const atlas::FieldSet & sourceFieldSet,
         if (tgt_view(jloc, jlev) == missing) {
           tgt_view(jloc, jlev) = src_view(src_index, jlev);
           ++filled;
+          if (std::abs(tgt_view(jloc, jlev)) < small_value_threshold) {
+            ++small_after_fill;
+          }
+          if (log_values && logged < log_limit) {
+            oops::Log::info()
+              << "fillMissingValuesNearest: var=" << var.name()
+              << " jloc=" << jloc
+              << " lev=" << jlev
+              << " lat=" << tgt_lonlat(jloc, 1)
+              << " lon=" << tgt_lonlat(jloc, 0)
+              << " src_index=" << src_index
+              << " filled_value=" << tgt_view(jloc, jlev)
+              << std::endl;
+            ++logged;
+          }
         }
       }
     }
@@ -124,7 +144,8 @@ void fillMissingValuesNearest(const atlas::FieldSet & sourceFieldSet,
     oops::Log::info() << "fillMissingValuesNearest: var=" << var.name()
                       << " missing_before=" << missing_before
                       << " filled=" << filled
-                      << " missing_after=" << missing_after << std::endl;
+                      << " missing_after=" << missing_after
+                      << " small_after_fill=" << small_after_fill << std::endl;
   }
 }
 
