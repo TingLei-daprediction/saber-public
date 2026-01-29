@@ -34,6 +34,7 @@ void fillMissingValuesNearest(const atlas::FieldSet & sourceFieldSet,
                               const atlas::FunctionSpace & sourceFs,
                               const atlas::FunctionSpace & targetFs) {
   if (vars.size() == 0) {
+    oops::Log::info() << "fillMissingValuesNearest: no variables to process" << std::endl;
     return;
   }
 
@@ -53,6 +54,7 @@ void fillMissingValuesNearest(const atlas::FieldSet & sourceFieldSet,
     }
   }
   if (indices.empty()) {
+    oops::Log::info() << "fillMissingValuesNearest: no owned source points" << std::endl;
     return;
   }
 
@@ -64,13 +66,22 @@ void fillMissingValuesNearest(const atlas::FieldSet & sourceFieldSet,
   const auto tgt_ghost = atlas::array::make_view<int, 1>(targetFs.ghost());
   const double missing = util::missingValue<double>();
 
+  oops::Log::info() << "fillMissingValuesNearest: processing vars = "
+                    << vars.variables() << std::endl;
+
   for (const auto & var : vars) {
     if (!targetFieldSet.has(var.name()) || !sourceFieldSet.has(var.name())) {
+      oops::Log::info() << "fillMissingValuesNearest: skipping var (missing in fset) "
+                        << var.name() << std::endl;
       continue;
     }
     auto tgt_view = atlas::array::make_view<double, 2>(targetFieldSet[var.name()]);
     const auto src_view = atlas::array::make_view<double, 2>(
         sourceFieldSet.field(var.name()));
+
+    std::size_t missing_before = 0;
+    std::size_t missing_after = 0;
+    std::size_t filled = 0;
 
     for (atlas::idx_t jloc = 0; jloc < tgt_view.shape(0); ++jloc) {
       if (tgt_ghost(jloc) != 0) {
@@ -80,6 +91,7 @@ void fillMissingValuesNearest(const atlas::FieldSet & sourceFieldSet,
       for (atlas::idx_t jlev = 0; jlev < tgt_view.shape(1); ++jlev) {
         if (tgt_view(jloc, jlev) == missing) {
           has_missing = true;
+          ++missing_before;
           break;
         }
       }
@@ -93,9 +105,26 @@ void fillMissingValuesNearest(const atlas::FieldSet & sourceFieldSet,
       for (atlas::idx_t jlev = 0; jlev < tgt_view.shape(1); ++jlev) {
         if (tgt_view(jloc, jlev) == missing) {
           tgt_view(jloc, jlev) = src_view(src_index, jlev);
+          ++filled;
         }
       }
     }
+
+    for (atlas::idx_t jloc = 0; jloc < tgt_view.shape(0); ++jloc) {
+      if (tgt_ghost(jloc) != 0) {
+        continue;
+      }
+      for (atlas::idx_t jlev = 0; jlev < tgt_view.shape(1); ++jlev) {
+        if (tgt_view(jloc, jlev) == missing) {
+          ++missing_after;
+        }
+      }
+    }
+
+    oops::Log::info() << "fillMissingValuesNearest: var=" << var.name()
+                      << " missing_before=" << missing_before
+                      << " filled=" << filled
+                      << " missing_after=" << missing_after << std::endl;
   }
 }
 
