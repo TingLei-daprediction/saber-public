@@ -62,7 +62,7 @@ void fillMissingValuesNearest(const atlas::FieldSet & sourceFieldSet,
 
   const auto tgt_lonlat = atlas::array::make_view<double, 2>(targetFs.lonlat());
   const auto tgt_ghost = atlas::array::make_view<int, 1>(targetFs.ghost());
-  const double missing = oops::util::missingValue<double>();
+  const double missing = util::missingValue<double>();
 
   for (const auto & var : vars) {
     if (!targetFieldSet.has(var.name()) || !sourceFieldSet.has(var.name())) {

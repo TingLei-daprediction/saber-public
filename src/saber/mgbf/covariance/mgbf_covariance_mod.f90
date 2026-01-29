@@ -138,7 +138,6 @@ write(6,*)'thinkdeb mgbf create999 '
 write(6,*)'thinkdeb mgbf create999 config'
    dump_json=config%json()          ! serialize to a JSON string
 write(6,'(A)')trim(dump_json)
-call flush(6)
 call config%get_or_die("saber block name", centralblockname)
 !clt call config%get_or_die("debuggingxx bypass mgbf", self%noMGBF)
 if (config%has("mgbf sdl and vdl init namelist file")) then
@@ -199,8 +198,6 @@ end if
 fs_sc = funcspace
 npts_owned = fs_sc%size_owned()
 npts_total   = fs_sc%size()
-write(6,*)'thinkdeb mgbf create npts_owned/_total ',npts_owned, ' ',npts_total
-call flush(6)
 if(npts_owned.ge.npts_total) then
    write(6,*)'the halo points are not present, on which the outer block interpolator would be problematic, stop'
    call flush(6)
@@ -218,17 +215,12 @@ call lonlat_field%final()
 
 
 allocate(self%intstate(nscale,nvargrp))
-call flush(6)
 do iscale=1,nscale
   do ivargrp=1,nvargrp
-   write(6,*)'the999 nml is ', trim(self%mgbf_nml_group(iscale,ivargrp))  
-   call flush(6)
    call  self%intstate(iscale,ivargrp)%mg_initialize(n_owned_anl=npts_owned, &
         anl_lonlat1d=lonlat_anl, inputfilename=self%mgbf_nml_group(iscale,ivargrp))  !mgbf_nml like mgbeta.nml
   enddo
 enddo
-write(6,*)'thinkdeb mgbf create999 10 '
-call flush(6)
 if (allocated(lonlat_anl)) deallocate(lonlat_anl)
 
 ! Allocate persistent workspaces based on intstate sizes
@@ -236,6 +228,27 @@ do iscale=1,nscale
   self%total_km_a_all = 0
   do ivargrp=1,nvargrp
     self%total_km_a_all = self%total_km_a_all + self%intstate(iscale,ivargrp)%km_a_all
+    if(self%intstate(iscale,ivargrp)%nm /= self%intstate(1,1)%nm ) then   
+      write(6,*)'nm should be the same for all mgbf filters, stop'
+      call flush(6)
+      stop
+    endif
+    if(self%intstate(iscale,ivargrp)%mm /= self%intstate(1,1)%mm ) then 
+      write(6,*)'mm should be the same for all mgbf filters, stop'
+      call flush(6)
+      stop
+    endif
+    if(self%intstate(iscale,ivargrp)%lm_a /= self%intstate(1,1)%lm_a ) then  
+      write(6,*)'lm_a should be the same for all mgbf filters, stop'
+      call flush(6)
+      stop
+    endif
+  enddo
+enddo
+self%total_km_a_all=0
+do iscale=1,nscale
+  do ivargrp=1,nvargrp
+    if (iscale == 1 ) self%total_km_a_all = self%total_km_a_all + self%intstate(iscale,ivargrp)%km_a_all
     if(self%intstate(iscale,ivargrp)%nm /= self%intstate(1,1)%nm ) then   
       write(6,*)'nm should be the same for all mgbf filters, stop'
       call flush(6)
@@ -268,7 +281,6 @@ enddo
 
   allocate(self%varvlev_index(self%nvar,3))
   
-
 
 
 
@@ -419,7 +431,6 @@ integer ::  loc(2)
           endif
           myrank=self%rank
           write(str_rank,"(I4.4)")myrank
-           
         if (.not. associated(self%nlev_vargrp)) then
           error stop "MGBF workspace nlev_vargrp not allocated"
         endif
@@ -476,6 +487,7 @@ integer ::  loc(2)
                         rnormalization(ii:ii+nz3d-1,ivargrp)=self%intstate(jscale,ivargrp)%coef_normalization(1:nz3d)
                         ii=ii+nz3d
                   enddo
+                   nlev_vargrp(ivargrp)=self%intstate(jscale,ivargrp)%km_a_all
                 enddo
              endif
 
@@ -595,7 +607,6 @@ integer ::  loc(2)
                            varvlev_index(isize,3)= varvlev_index(isize,2) -varvlev_index(isize,1)+1 
                        endif
                     endif
-                    jvargrp=self%ivar2grp(isize)                      
 
                       
                     ilev=varvlev_index(isize,2)+1
@@ -603,10 +614,6 @@ integer ::  loc(2)
                     write(6,*)'this case needs more work, stop' ! a better exption handling to be added
                     call flush(6)
                     stop 
-                    call afield%data(ptr_3d)
-                    nz=afield%levels()
-                    work_mgbf(ilev:ilev+nz-1,:,:)=ptr_3d 
-                    ilev=ilev+nz
                 else
                     write(6,*)'wrong in mgbf_covariance_mod.f90 ' !todo  
                     stop
@@ -629,7 +636,7 @@ integer ::  loc(2)
                 allocate(vargrp_work_mgbf(nlev_vargrp(ivargrp),nxloc,nyloc))
                 allocate(vargrp_work_mgbf2(nlev_vargrp(ivargrp),nxloc,nyloc))
                 vargrp_work_mgbf(:,:,:) = work_mgbf(ii:ii+nlev_vargrp(ivargrp)-1,:,:)
-    
+                
 
                 call btim(mg_anal_to_filt_time)
                 call self%intstate(jscale,ivargrp)%anal_to_filt_allmap(vargrp_work_mgbf)
@@ -641,8 +648,6 @@ integer ::  loc(2)
       !cltorg          call self%intstate%filt_to_anal_allmap(work_mgbf)
                 call btim(mg_filt_to_anal_time)
                 call self%intstate(jscale,ivargrp)%filt_to_anal_allmap(vargrp_work_mgbf2)
-                write(6,*)'codexdebug max_out_grp ', ivargrp, &
-                  maxval(vargrp_work_mgbf2)
                 call etim(mg_filt_to_anal_time)
       !clt#        work_mgbf=999.0 !thinkdeb for debug
        

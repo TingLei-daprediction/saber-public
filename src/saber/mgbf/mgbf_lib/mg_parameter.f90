@@ -569,7 +569,6 @@ integer(i_kind) :: myunit,i,item,mype,ierr
 character*4 :: str_rank
 integer :: n_sample_levelsx4normalization
 logical :: l_exist
-
   namelist /parameters_mgbeta/ mg_ampl01,mg_ampl02,mg_ampl03            &
                               ,mg_weig1,mg_weig2,mg_weig3,mg_weig4      &
                               ,hx,hy,hz,p                               &
