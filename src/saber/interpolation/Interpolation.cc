@@ -66,7 +66,10 @@ void fillMissingValuesNearest(const atlas::FieldSet & sourceFieldSet,
   const auto tgt_ghost = atlas::array::make_view<int, 1>(targetFs.ghost());
   const double missing = util::missingValue<double>();
 
-  oops::Log::info() << "fillMissingValuesNearest: processing vars = "
+  int mpirank = 0;
+  MPI_Comm_rank(MPI_COMM_WORLD, &mpirank);
+  oops::Log::info() << "rank " << mpirank
+                    << " fillMissingValuesNearest: processing vars = "
                     << vars.variables() << std::endl;
 
   for (const auto & var : vars) {
@@ -87,6 +90,7 @@ void fillMissingValuesNearest(const atlas::FieldSet & sourceFieldSet,
     const std::size_t log_limit = 20;
     const double small_value_threshold = 1.0e-6;
     std::size_t small_after_fill = 0;
+    std::size_t small_logged = 0;
 
     for (atlas::idx_t jloc = 0; jloc < tgt_view.shape(0); ++jloc) {
       if (tgt_ghost(jloc) != 0) {
@@ -113,6 +117,17 @@ void fillMissingValuesNearest(const atlas::FieldSet & sourceFieldSet,
           ++filled;
           if (std::abs(tgt_view(jloc, jlev)) < small_value_threshold) {
             ++small_after_fill;
+            if (var.name() == "air_pressure_at_surface" && small_logged < log_limit) {
+              std::cout << "rank " << mpirank
+                        << " small ps after fill: jloc=" << jloc
+                        << " lev=" << jlev
+                        << " lat=" << tgt_lonlat(jloc, 1)
+                        << " lon=" << tgt_lonlat(jloc, 0)
+                        << " src_index=" << src_index
+                        << " value=" << tgt_view(jloc, jlev)
+                        << std::endl;
+              ++small_logged;
+            }
           }
           if (log_values && logged < log_limit) {
             oops::Log::info()
@@ -141,7 +156,8 @@ void fillMissingValuesNearest(const atlas::FieldSet & sourceFieldSet,
       }
     }
 
-    oops::Log::info() << "fillMissingValuesNearest: var=" << var.name()
+    oops::Log::info() << "rank " << mpirank
+                      << " fillMissingValuesNearest: var=" << var.name()
                       << " missing_before=" << missing_before
                       << " filled=" << filled
                       << " missing_after=" << missing_after
