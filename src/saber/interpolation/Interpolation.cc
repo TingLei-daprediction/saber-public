@@ -34,7 +34,10 @@ void fillMissingValuesNearest(const atlas::FieldSet & sourceFieldSet,
                               const atlas::FunctionSpace & sourceFs,
                               const atlas::FunctionSpace & targetFs) {
   if (vars.size() == 0) {
-    oops::Log::info() << "fillMissingValuesNearest: no variables to process" << std::endl;
+    int mpirank = 0;
+    MPI_Comm_rank(MPI_COMM_WORLD, &mpirank);
+    std::cout << "rank " << mpirank
+              << " fillMissingValuesNearest: no variables to process" << std::endl;
     return;
   }
 
@@ -54,7 +57,10 @@ void fillMissingValuesNearest(const atlas::FieldSet & sourceFieldSet,
     }
   }
   if (indices.empty()) {
-    oops::Log::info() << "fillMissingValuesNearest: no owned source points" << std::endl;
+    int mpirank = 0;
+    MPI_Comm_rank(MPI_COMM_WORLD, &mpirank);
+    std::cout << "rank " << mpirank
+              << " fillMissingValuesNearest: no owned source points" << std::endl;
     return;
   }
 
@@ -68,14 +74,15 @@ void fillMissingValuesNearest(const atlas::FieldSet & sourceFieldSet,
 
   int mpirank = 0;
   MPI_Comm_rank(MPI_COMM_WORLD, &mpirank);
-  oops::Log::info() << "rank " << mpirank
-                    << " fillMissingValuesNearest: processing vars = "
-                    << vars.variables() << std::endl;
+  std::cout << "rank " << mpirank
+            << " fillMissingValuesNearest: processing vars = "
+            << vars.variables() << std::endl;
 
   for (const auto & var : vars) {
     if (!targetFieldSet.has(var.name()) || !sourceFieldSet.has(var.name())) {
-      oops::Log::info() << "fillMissingValuesNearest: skipping var (missing in fset) "
-                        << var.name() << std::endl;
+      std::cout << "rank " << mpirank
+                << " fillMissingValuesNearest: skipping var (missing in fset) "
+                << var.name() << std::endl;
       continue;
     }
     auto tgt_view = atlas::array::make_view<double, 2>(targetFieldSet[var.name()]);
@@ -130,15 +137,15 @@ void fillMissingValuesNearest(const atlas::FieldSet & sourceFieldSet,
             }
           }
           if (log_values && logged < log_limit) {
-            oops::Log::info()
-              << "fillMissingValuesNearest: var=" << var.name()
-              << " jloc=" << jloc
-              << " lev=" << jlev
-              << " lat=" << tgt_lonlat(jloc, 1)
-              << " lon=" << tgt_lonlat(jloc, 0)
-              << " src_index=" << src_index
-              << " filled_value=" << tgt_view(jloc, jlev)
-              << std::endl;
+            std::cout << "rank " << mpirank
+                      << " fillMissingValuesNearest: var=" << var.name()
+                      << " jloc=" << jloc
+                      << " lev=" << jlev
+                      << " lat=" << tgt_lonlat(jloc, 1)
+                      << " lon=" << tgt_lonlat(jloc, 0)
+                      << " src_index=" << src_index
+                      << " filled_value=" << tgt_view(jloc, jlev)
+                      << std::endl;
             ++logged;
           }
         }
@@ -156,12 +163,12 @@ void fillMissingValuesNearest(const atlas::FieldSet & sourceFieldSet,
       }
     }
 
-    oops::Log::info() << "rank " << mpirank
-                      << " fillMissingValuesNearest: var=" << var.name()
-                      << " missing_before=" << missing_before
-                      << " filled=" << filled
-                      << " missing_after=" << missing_after
-                      << " small_after_fill=" << small_after_fill << std::endl;
+    std::cout << "rank " << mpirank
+              << " fillMissingValuesNearest: var=" << var.name()
+              << " missing_before=" << missing_before
+              << " filled=" << filled
+              << " missing_after=" << missing_after
+              << " small_after_fill=" << small_after_fill << std::endl;
   }
 }
 
@@ -341,6 +348,42 @@ void Interpolation::leftInverseMultiply(oops::FieldSet3D & fieldSet) const {
     sourceFieldSet.add(fieldSet[var.name()]);
   }
 
+  // Debug check: model-grid ps before inverse interpolation
+  if (sourceFieldSet.has("air_pressure_at_surface")) {
+    const atlas::Field & psField = sourceFieldSet["air_pressure_at_surface"];
+    const auto psView = atlas::array::make_view<double, 2>(psField);
+    const auto psGhost = atlas::array::make_view<int, 1>(psField.functionspace().ghost());
+    const double missing = util::missingValue<double>();
+    std::size_t psMissingOwned = 0;
+    std::size_t psMissingHalo = 0;
+    double psMinOwned = std::numeric_limits<double>::max();
+    double psMaxOwned = -std::numeric_limits<double>::max();
+    for (atlas::idx_t jloc = 0; jloc < psView.shape(0); ++jloc) {
+      const bool isHalo = (psGhost(jloc) != 0);
+      for (atlas::idx_t jlev = 0; jlev < psView.shape(1); ++jlev) {
+        const double v = psView(jloc, jlev);
+        if (v == missing) {
+          if (isHalo) {
+            ++psMissingHalo;
+          } else {
+            ++psMissingOwned;
+          }
+        } else if (!isHalo) {
+          psMinOwned = std::min(psMinOwned, v);
+          psMaxOwned = std::max(psMaxOwned, v);
+        }
+      }
+    }
+    int mpirank = 0;
+    MPI_Comm_rank(MPI_COMM_WORLD, &mpirank);
+    std::cout << "rank " << mpirank
+              << " leftInverseMultiply: model ps missing owned=" << psMissingOwned
+              << " halo=" << psMissingHalo
+              << " minOwned=" << psMinOwned
+              << " maxOwned=" << psMaxOwned
+              << std::endl;
+  }
+
   // Interpolate to target/inner grid
   atlas::FieldSet targetFieldSet;
   if (inverseGlobalInterp_) {
@@ -363,6 +406,44 @@ void Interpolation::leftInverseMultiply(oops::FieldSet3D & fieldSet) const {
     fillMissingValuesNearest(sourceFieldSet, targetFieldSet, invVars,
                              outerGeomData_.functionSpace(),
                              innerGeomData_->functionSpace());
+    // Update halos after filling missing values so boundary points are consistent
+    targetFieldSet.haloExchange();
+  }
+
+  // Debug check: filtering-grid ps after inverse interpolation + halo exchange
+  if (targetFieldSet.has("air_pressure_at_surface")) {
+    const atlas::Field & psField = targetFieldSet["air_pressure_at_surface"];
+    const auto psView = atlas::array::make_view<double, 2>(psField);
+    const auto psGhost = atlas::array::make_view<int, 1>(psField.functionspace().ghost());
+    const double missing = util::missingValue<double>();
+    std::size_t psMissingOwned = 0;
+    std::size_t psMissingHalo = 0;
+    double psMinOwned = std::numeric_limits<double>::max();
+    double psMaxOwned = -std::numeric_limits<double>::max();
+    for (atlas::idx_t jloc = 0; jloc < psView.shape(0); ++jloc) {
+      const bool isHalo = (psGhost(jloc) != 0);
+      for (atlas::idx_t jlev = 0; jlev < psView.shape(1); ++jlev) {
+        const double v = psView(jloc, jlev);
+        if (v == missing) {
+          if (isHalo) {
+            ++psMissingHalo;
+          } else {
+            ++psMissingOwned;
+          }
+        } else if (!isHalo) {
+          psMinOwned = std::min(psMinOwned, v);
+          psMaxOwned = std::max(psMaxOwned, v);
+        }
+      }
+    }
+    int mpirank = 0;
+    MPI_Comm_rank(MPI_COMM_WORLD, &mpirank);
+    std::cout << "rank " << mpirank
+              << " leftInverseMultiply: filtering ps missing owned=" << psMissingOwned
+              << " halo=" << psMissingHalo
+              << " minOwned=" << psMinOwned
+              << " maxOwned=" << psMaxOwned
+              << std::endl;
   }
 
   // Reset
