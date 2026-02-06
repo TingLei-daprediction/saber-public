@@ -275,6 +275,8 @@ enddo
   allocate(self%work_mgbf(self%total_km_a_all, self%intstate(1,1)%nm, self%intstate(1,1)%mm))
   allocate(self%work2d_mgbf(self%total_km_a_all, self%intstate(1,1)%nm * self%intstate(1,1)%mm))
   allocate(self%rnormalization(self%total_km_a_all, nvargrp))
+  self%rnormalization(self%total_km_a_all, nvargrp)=0.0
+  
   allocate(self%work1var_mgbf(nz3d, self%intstate(1,1)%nm, self%intstate(1,1)%mm))
 
   allocate(self%nlev_vargrp(nvargrp))
@@ -470,22 +472,22 @@ integer ::  loc(2)
                  size(rnormalization,2) /= nvargrp) then
                error stop "MGBF workspace rnormalization too small for current scale"
              endif
-             rnormalization = 0.0
              work2d_mgbf = 0.0         
              work1var_mgbf=0
-             ii=1
              if(self%l_multiply_first_call) then
+                ii=1
                 do ivargrp=1,nvargrp
+   !clt if for localization , km2=0
+                  do k=1,self%intstate(jscale,ivargrp)%km3
+                        rnormalization(ii:ii+nz3d-1,ivargrp)=self%intstate(jscale,ivargrp)%coef_normalization(1:nz3d)
+                        ii=ii+nz3d
+                
+                  enddo
                   do k=1,self%intstate(jscale,ivargrp)%km2
    !clt if for localization , km2=0  only for 
    !clt only for     l_2dvar_last_vertical_lev
                     rnormalization(ii,ivargrp)=self%intstate(jscale,ivargrp)%coef_normalization(nz3d)
                     ii=ii+1
-                  enddo
-   !clt if for localization , km2=0
-                  do k=1,self%intstate(jscale,ivargrp)%km3
-                        rnormalization(ii:ii+nz3d-1,ivargrp)=self%intstate(jscale,ivargrp)%coef_normalization(1:nz3d)
-                        ii=ii+nz3d
                   enddo
                    nlev_vargrp(ivargrp)=self%intstate(jscale,ivargrp)%km_a_all
                 enddo
