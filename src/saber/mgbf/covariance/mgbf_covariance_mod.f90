@@ -475,8 +475,8 @@ integer ::  loc(2)
              work2d_mgbf = 0.0         
              work1var_mgbf=0
              if(self%l_multiply_first_call) then
-                ii=1
                 do ivargrp=1,nvargrp
+                  ii=1
    !clt if for localization , km2=0
                   do k=1,self%intstate(jscale,ivargrp)%km3
                         rnormalization(ii:ii+nz3d-1,ivargrp)=self%intstate(jscale,ivargrp)%coef_normalization(1:nz3d)
@@ -490,6 +490,10 @@ integer ::  loc(2)
                     ii=ii+1
                   enddo
                    nlev_vargrp(ivargrp)=self%intstate(jscale,ivargrp)%km_a_all
+                  if (any(rnormalization(1:nlev_vargrp(ivargrp), ivargrp) == 0.0_r_kind)) then
+                    write(6,*) 'DBG zero normalization in group', ivargrp, &
+                      ' nlev=', nlev_vargrp(ivargrp), ' jscale=', jscale, ' rank=', self%rank
+                  endif
                 enddo
              endif
 
