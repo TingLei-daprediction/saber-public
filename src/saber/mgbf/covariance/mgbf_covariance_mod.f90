@@ -676,10 +676,10 @@ integer ::  loc(2)
              ii=1
              do ivargrp=1,nvargrp
                 vargrp_work_mgbf(1:nlev_vargrp(ivargrp),:,:) = work_mgbf(ii:ii+nlev_vargrp(ivargrp)-1,:,:)
-                
 
                 call btim(mg_anal_to_filt_time)
-                call self%intstate(jscale,ivargrp)%anal_to_filt_allmap(vargrp_work_mgbf)
+                call self%intstate(jscale,ivargrp)%anal_to_filt_allmap \
+                (vargrp_work_mgbf(1:nlev_vargrp(ivargrp),:,:))
                 call etim(mg_anal_to_filt_time)
                 call btim(mg_filtering_time)
                 call self%intstate(jscale,ivargrp)%filtering_procedure(self%intstate(jscale,ivargrp)%mgbf_proc,1)
@@ -687,7 +687,8 @@ integer ::  loc(2)
                
       !cltorg          call self%intstate%filt_to_anal_allmap(work_mgbf)
                 call btim(mg_filt_to_anal_time)
-                call self%intstate(jscale,ivargrp)%filt_to_anal_allmap(vargrp_work_mgbf2)
+                call self%intstate(jscale,ivargrp)%filt_to_anal_allmap \
+               (vargrp_work_mgbf2(1:nlev_vargrp(ivargrp),:,:))
                 call etim(mg_filt_to_anal_time)
       !clt#        work_mgbf=999.0 !thinkdeb for debug
        
