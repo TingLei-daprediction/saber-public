@@ -275,7 +275,7 @@ enddo
   allocate(self%work_mgbf(self%total_km_a_all, self%intstate(1,1)%nm, self%intstate(1,1)%mm))
   allocate(self%work2d_mgbf(self%total_km_a_all, self%intstate(1,1)%nm * self%intstate(1,1)%mm))
   allocate(self%rnormalization(self%total_km_a_all, nvargrp))
-  self%rnormalization(self%total_km_a_all, nvargrp)=0.0
+  self%rnormalization(1:self%total_km_a_all,1:nvargrp)=0.0
   
   allocate(self%work1var_mgbf(nz3d, self%intstate(1,1)%nm, self%intstate(1,1)%mm))
 
@@ -472,7 +472,6 @@ integer ::  loc(2)
                  size(rnormalization,2) /= nvargrp) then
                error stop "MGBF workspace rnormalization too small for current scale"
              endif
-             work2d_mgbf = 0.0         
              work1var_mgbf=0
              if(self%l_multiply_first_call) then
 !$omp parallel do private(ivargrp,ii,k) schedule(static)

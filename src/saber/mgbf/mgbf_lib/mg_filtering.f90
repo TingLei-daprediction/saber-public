@@ -1111,7 +1111,7 @@ include "type_intstat_point2this.inc"
         do k=1,km2
           lev1=lev2+1
           lev2=lev1
-          call this%rbetaT(1,hx,1,im,this%paspx4d(lm:lm,1:im,j,1),this%ssx4d(lm:lm,1:im,j,1),VALL(lev1:lev2,:,j))
+          call this%rbeta(1,hx,1,im,this%paspx4d(lm:lm,1:im,j,1),this%ssx4d(lm:lm,1:im,j,1),VALL(lev1:lev2,:,j))
           lev1=lev1+1
           lev2=lev2+1
         enddo
