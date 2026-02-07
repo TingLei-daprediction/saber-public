@@ -1530,6 +1530,7 @@ if (this%l_constant_aspt2 ) then
 #endif
   
 endif
+!$omp parallel do private(i,j) schedule(static)
 do j=1,this%jm
 do i=1,this%im
    this%pasp2(1,1,i,j)=this%pasp02*(1.+this%p_del(i,j))
@@ -1538,7 +1539,9 @@ do i=1,this%im
    this%pasp2(2,1,i,j)=this%pasp02*this%p_eps(i,j)     
 end do
 end do
+!$omp end parallel do
 
+!$omp parallel do private(i,j,l) schedule(static)
 do L=1,this%lm
    do j=1,this%jm
    do i=1,this%im
@@ -1556,6 +1559,7 @@ do L=1,this%lm
 
 
 end do
+!$omp end parallel do
 
 
 !cltorg  if(.not.this%mgbf_line) then

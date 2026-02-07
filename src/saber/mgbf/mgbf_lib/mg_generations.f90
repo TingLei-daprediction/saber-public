@@ -1079,17 +1079,22 @@ real(r_kind),dimension(this%km,1:this%im ,0:this%jm):: DIFYH
 integer(i_kind):: i,j,l,k,imx,jmx
 !-----------------------------------------------------------------------
 
+!$omp parallel do private(i,j) schedule(static)
      do j=1,this%jm
      do i=0,this%im
        DIFX(:,i,j)=V(:,i+1,j)-V(:,i,j)
      enddo
      enddo
+!$omp end parallel do
+!$omp parallel do private(i,j) schedule(static)
      do j=0,this%jm
      do i=1,this%im
        DIFY(:,i,j)=V(:,i,j+1)-V(:,i,j)
      enddo
      enddo
+!$omp end parallel do
 
+!$omp parallel do private(i,j) schedule(static)
      do j=1,this%jm
      do i=1,this%im
        V(:,i,j)=this%a_diff_f(:,i,j)*V(:,i,j)                      &
@@ -1097,6 +1102,7 @@ integer(i_kind):: i,j,l,k,imx,jmx
                                      +DIFY(:,i,j)-DIFY(:,i,j-1))   
      enddo
      enddo
+!$omp end parallel do
 
 if(this%l_hgen) then
 
@@ -1106,17 +1112,22 @@ if(this%l_hgen) then
    imx = this%im
    jmx = this%jm
 
+!$omp parallel do private(i,j) schedule(static)
      do j=1,jmx
      do i=0,imx
        DIFXH(:,i,j)=H(:,i+1,j)-H(:,i,j)
      enddo
      enddo
+!$omp end parallel do
+!$omp parallel do private(i,j) schedule(static)
      do j=0,jmx
      do i=1,imx
        DIFYH(:,i,j)=H(:,i,j+1)-H(:,i,j)
      enddo
      enddo
+!$omp end parallel do
 
+!$omp parallel do private(i,j) schedule(static)
      do j=1,jmx
      do i=1,imx
         H(:,i,j)=this%a_diff_h(:,i,j)*H(:,i,j)                          &
@@ -1124,6 +1135,7 @@ if(this%l_hgen) then
                                       +DIFYH(:,i,j)-DIFYH(:,i,j-1))  
      enddo
      enddo
+!$omp end parallel do
 
 endif
 
@@ -1146,22 +1158,26 @@ real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%
 integer(i_kind):: i,j,l,k,imx,jmx
 !-----------------------------------------------------------------------
 
+!$omp parallel do private(i,j) schedule(static)
      do j=1,this%jm
      do i=1,this%im
        V(:,i,j)=this%a_diff_f(:,i,j)*V(:,i,j)                      
      enddo
      enddo
+!$omp end parallel do
 
 if(this%l_hgen) then
 
    imx = this%im
    jmx = this%jm
 
+!$omp parallel do private(i,j) schedule(static)
      do j=1,jmx
      do i=1,imx
         H(:,i,j)=this%a_diff_h(:,i,j)*H(:,i,j)                          
      enddo
      enddo
+!$omp end parallel do
 
 endif
 

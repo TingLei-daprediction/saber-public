@@ -115,9 +115,11 @@ include "type_parameter_point2this.inc"
 !
 !  Create a new group out of exising group
 !
+!$omp parallel do private(nf) schedule(static)
      do nf = 1,npes_filt
        out_ranks(nf)=nf-1
      enddo 
+!$omp end parallel do
 
      call MPI_GROUP_INCL(group_world,npes_filt,out_ranks,group_work,ierr)
 !
@@ -187,4 +189,3 @@ endsubroutine finishMPI
 
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 end submodule mg_mppstuff
-

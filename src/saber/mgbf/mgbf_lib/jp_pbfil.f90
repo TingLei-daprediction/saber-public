@@ -80,7 +80,9 @@ real(dp),dimension(1,1,lx:mx),intent(inout):: el
 !-----------------------------------------------------------------------------
 integer :: ix
 !=============================================================================
+!$omp parallel do private(ix) schedule(static)
 do ix=lx,mx; el(1,1,ix)=u1/sqrt(el(1,1,ix)); enddo
+!$omp end parallel do
 end subroutine cholaspect1
 !=============================================================================
 module subroutine cholaspect2(lx,mx, ly,my, el)                 ! [cholaspect]
@@ -1238,4 +1240,3 @@ a=b
 end subroutine vrbeta3t
 
 end submodule jp_pbfil
-

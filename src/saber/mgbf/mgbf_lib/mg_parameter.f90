@@ -960,9 +960,11 @@ logical :: l_exist
 
   write(6,*)'thinkdeb999 2 9 ',this%l_vert_stretched_filtgrid  ,' ',"l_use",this%l_vert_stretched_filtgrid
   call flush(6)
+!$omp parallel do private(g) schedule(static)
   do g=1,this%gm
     this%nxy(g)=this%ixm(g)*this%jym(g)
   enddo
+!$omp end parallel do
 
     this%maxpe_fgen(0)= 0
   do g=1,this%gm
@@ -982,15 +984,19 @@ logical :: l_exist
     this%jm0(g)=this%jm0(g-1)/2
   enddo
 
+!$omp parallel do private(g) schedule(static)
   do g=1,this%gm
     this%Fimax(g)=this%im0(g)-this%im*(this%ixm(g)-1)
     this%Fjmax(g)=this%jm0(g)-this%jm*(this%jym(g)-1)
   enddo
+!$omp end parallel do
 
+!$omp parallel do private(g) schedule(static)
   do g=1,this%gm
     this%FimaxL(g)=this%Fimax(g)/2
     this%FjmaxL(g)=this%Fjmax(g)/2
   enddo
+!$omp end parallel do
 
 !***
 !*** Filter related parameters

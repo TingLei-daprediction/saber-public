@@ -186,11 +186,13 @@ include "type_intstat_point2this.inc"
 
             allocate( sBuf_S(1:km_in,1:imax,nby), stat = iaerr )
 
+!$omp parallel do private(i,j) schedule(static)
                 do j=1,nby
                   do i=1,imax
                     sBuf_S(:,i,j) = W(:,i,j)
                   enddo
                 enddo
+!$omp end parallel do
 
               call MPI_ISEND( sBuf_S, ndatay, dtype, nebpe, mype,  &
                               mpi_comm_comp, sHandle(3), isend)
@@ -203,11 +205,13 @@ include "type_intstat_point2this.inc"
 
             allocate( sBuf_N(1:km_in,1:imax,nby), stat = iaerr )
 
+!$omp parallel do private(i,j) schedule(static)
                 do j=1,nby
                   do i=1,imax
                     sBuf_N(:,i,j)=W(:,i,jmax-nby+j)
                   enddo
                 enddo
+!$omp end parallel do
 
               call MPI_ISEND( sBuf_N, ndatay, dtype, nebpe, mype,        &
                               mpi_comm_comp, sHandle(1), isend)
@@ -247,19 +251,23 @@ include "type_intstat_point2this.inc"
 
    if(lsouth) then
 
+!$omp parallel do private(i,j) schedule(static)
      do j=1,nby
      do i=1,imax
        W(:,i,-nby+j)=W(:,i,nby+1-j)
      end do
      end do
+!$omp end parallel do
 
    else
 
+!$omp parallel do private(i,j) schedule(static)
      do j=1,nby
      do i=1,imax
        W(:,i,-nby+j)=rBuf_S(:,i,j)
      enddo
      enddo
+!$omp end parallel do
 
    endif
 
@@ -268,19 +276,23 @@ include "type_intstat_point2this.inc"
 
    if( lnorth) then
 
+!$omp parallel do private(i,j) schedule(static)
      do j=1,nby
      do i=1,imax
        W(:,i,jmax+j)=W(:,i,jmax+1-j)
      enddo
      enddo
+!$omp end parallel do
 
    else
 
+!$omp parallel do private(i,j) schedule(static)
      do j=1,nby
      do i=1,imax
        W(:,i,jmax+j)=rBuf_N(:,i,j)
      enddo
      enddo
+!$omp end parallel do
 
    endif
 

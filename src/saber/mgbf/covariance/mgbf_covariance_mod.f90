@@ -475,6 +475,7 @@ integer ::  loc(2)
              work2d_mgbf = 0.0         
              work1var_mgbf=0
              if(self%l_multiply_first_call) then
+!$omp parallel do private(ivargrp,ii,k) schedule(static)
                 do ivargrp=1,nvargrp
                   ii=1
    !clt if for localization , km2=0
@@ -495,6 +496,7 @@ integer ::  loc(2)
                       ' nlev=', nlev_vargrp(ivargrp), ' jscale=', jscale, ' rank=', self%rank
                   endif
                 enddo
+!$omp end parallel do
              endif
 
              dim2d=shape(work2d_mgbf)
@@ -676,12 +678,15 @@ integer ::  loc(2)
                      lev2=varvlev_index(ivar,2)
                      work1var_mgbf=work1var_mgbf+work_mgbf(lev1:lev2,:,:)
                    enddo
+!$omp parallel do private(jvar,lev1,lev2) schedule(static)
                    do jvar=1,nvar
                      lev1=varvlev_index(jvar,1)
                      lev2=varvlev_index(jvar,2)
                      work_mgbf(lev1:lev2,:,:)=work1var_mgbf
                    enddo
+!$omp end parallel do
                else
+!clttodo, further optimizaiton
                  do jvar=1,nvar
                    jvargrp=self%ivar2grp(jvar)
                    do ivar=1,nvar

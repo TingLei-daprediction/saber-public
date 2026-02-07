@@ -138,18 +138,22 @@ if(2.gt.3) then
   else
 !clttothink
 
+!$omp parallel do private(L) schedule(static)
     do L=1,lm
       F3D(:,:,:,L)=A3D(:,:,:,L)
     enddo
+!$omp end parallel do
 
   endif
 
       call this%C2S_ens(F3D,WORK,1,nm,1,mm,lm,km,km_all)
 endif !2.gt.3 
      if(lm_a>lm) then
+!$omp parallel do private(ivar) schedule(static)
       do ivar=1,this%km2 !2dvar is directly passed
         work(this%km_all-ivar+1,:,:)=worka(this%km_all-ivar+1,:,:)
       enddo
+!$omp end parallel do
       
       do ivar=1,this%km3
          lev1_a=1+(ivar-1)*this%lm_a
@@ -204,9 +208,11 @@ include "type_intstat_point2this.inc"
      allocate(WORK(km_all,1:nm,1:mm))
     call this%filt_to_anal(WORK)  !cltadded
      if(lm_a>lm) then
+!$omp parallel do private(ivar) schedule(static)
       do ivar=1,this%km2 !2dvar is directly passed
         worka(this%km_a_all-ivar+1,:,:)=work(this%km_all-ivar+1,:,:)
       enddo
+!$omp end parallel do
       
       do ivar=1,this%km3
          lev1_a=1+(ivar-1)*this%lm_a
