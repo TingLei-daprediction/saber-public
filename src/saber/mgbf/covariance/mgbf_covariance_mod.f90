@@ -449,10 +449,10 @@ integer ::  loc(2)
           endif
           myrank=self%rank
           write(str_rank,"(I4.4)")myrank
-        nlev_vargrp=>self%nlev_vargrp(:,jscale)
-        if (.not. associated(nlev_vargrp)) then
+        if (.not. associated(self%nlev_vargrp)) then
           error stop "MGBF workspace nlev_vargrp not allocated"
         endif
+        nlev_vargrp=>self%nlev_vargrp(:,jscale)
         if (size(nlev_vargrp) < nvargrp) then
           error stop "MGBF workspace nlev_vargrp too small for nvargrp"
         endif
