@@ -38,6 +38,7 @@ private
 public mgbf_covariance
 
 ! Fortran class header
+integer(kind=i_kind),parameter:: max_scales=100
 type :: mgbf_covariance
   type(mg_intstate_type),allocatable :: intstate(:,:) 
   integer :: nscale=1
@@ -59,11 +60,13 @@ type :: mgbf_covariance
   real(kind=r_kind), pointer:: work1var_mgbf(:,:,:)
   real(kind=r_kind), pointer :: work2d_mgbf(:,:)
   real(kind=r_kind), pointer :: rnormalization(:,:)
+  real(kind=r_kind), pointer :: vargrp_work_mgbf(:,:,:)
+  real(kind=r_kind), pointer :: vargrp_work_mgbf2(:,:,:)
   integer(kind=i_kind), pointer :: nlev_vargrp(:)
   integer(kind=i_kind), pointer :: varvlev_index(:,:)
   integer(kind=i_kind) :: total_km_a_all = 0
   integer(kind=i_kind) :: nvar = 0
-  logical:: l_multiply_first_call=.true.
+  logical:: l_multiply_first_call(max_scales)=.true.
   
   contains
     procedure, public :: create
@@ -109,9 +112,6 @@ real(r_kind), pointer :: lonlat_ptr(:,:)
 real(r_kind), allocatable :: lonlat_anl(:,:)
 integer :: npts_owned
 integer :: npts_total
-integer :: max_nm
-integer :: max_mm
-integer :: max_nz3d
 
 
 
@@ -120,10 +120,11 @@ character(len=80) :: readin_mgbf_nml_group(99)
 real :: readin_multigrp_cor(99)=1.0
 integer :: readin_iscalegroup(99)=999
 integer :: readin_ivargroup(99)=999
-integer ::i,j, ii,nz3d
+integer ::i,j,k, ii,nz3d
 namelist /parameters_mgbf_init/ nscale,nvargrp,readin_mgbf_nml_group ,readin_multigrp_cor,readin_iscalegroup,readin_ivargroup
 
 character(len=:), allocatable :: dump_json
+integer(i_kind):: max_nlevs
 
 ! Hold communicator
 ! -----------------
@@ -276,12 +277,41 @@ enddo
   allocate(self%work2d_mgbf(self%total_km_a_all, self%intstate(1,1)%nm * self%intstate(1,1)%mm))
   allocate(self%rnormalization(self%total_km_a_all, nvargrp))
   self%rnormalization(1:self%total_km_a_all,1:nvargrp)=0.0
+  allocate(self%varvlev_index(self%nvar,3))
+  allocate(self%nlev_vargrp(nvargrp))
+! Note, for different scales, they should have the sma esetup (using the same "zero level"  filtering grids from the atlas  )
+!$omp parallel do private(ivargrp,ii,k) schedule(static)
+                do ivargrp=1,nvargrp
+                  ii=1
+   !clt if for localization , km2=0
+                  do k=1,self%intstate(1,ivargrp)%km3
+                        self%rnormalization(ii:ii+nz3d-1,ivargrp)=self%intstate(1,ivargrp)%coef_normalization(1:nz3d)
+                        ii=ii+nz3d
+                
+                  enddo
+                  do k=1,self%intstate(1,ivargrp)%km2
+   !clt if for localization , km2=0  only for 
+   !clt only for     l_2dvar_last_vertical_lev
+                    self%rnormalization(ii,ivargrp)=self%intstate(1,ivargrp)%coef_normalization(nz3d)
+                    ii=ii+1
+                  enddo
+                   self%nlev_vargrp(ivargrp)=self%intstate(1,ivargrp)%km_a_all
+                  if (any(self%rnormalization(1:self%nlev_vargrp(ivargrp), ivargrp) == 0.0_r_kind)) then
+                    write(6,*) 'DBG zero normalization in group', ivargrp, &
+                      ' nlev=', self%nlev_vargrp(ivargrp), ' rank=', self%rank
+                  endif
+                enddo
+!$omp end parallel do
+  max_nlevs=1
+  do ivargrp=1,nvargrp
+   max_nlevs=max(max_nlevs,self%nlev_vargrp(ivargrp))
+  enddo
+  allocate(self%vargrp_work_mgbf(max_nlevs, self%intstate(1,1)%nm, self%intstate(1,1)%mm))
+  allocate(self%vargrp_work_mgbf2(max_nlevs, self%intstate(1,1)%nm, self%intstate(1,1)%mm))
   
   allocate(self%work1var_mgbf(nz3d, self%intstate(1,1)%nm, self%intstate(1,1)%mm))
 
-  allocate(self%nlev_vargrp(nvargrp))
 
-  allocate(self%varvlev_index(self%nvar,3))
   
 
 
@@ -314,6 +344,7 @@ if (associated(self%work2d_mgbf)) deallocate(self%work2d_mgbf)
 if (associated(self%rnormalization)) deallocate(self%rnormalization)
 if (associated(self%nlev_vargrp)) deallocate(self%nlev_vargrp)
 if (associated(self%varvlev_index)) deallocate(self%varvlev_index)
+  deallocate(self%vargrp_work_mgbf,self%vargrp_work_mgbf2)
 
 ! Delete the grid
 ! ---------------
@@ -386,8 +417,8 @@ real(kind=r_kind), pointer :: ptr_2d(:,:)
 real(kind=r_kind), pointer :: ptr_3d(:,:,:)
 integer(kind=i_kind):: nz,ilev,isize
 real(kind=r_kind), pointer :: work_mgbf(:,:,:)
-real(kind=r_kind), allocatable :: vargrp_work_mgbf(:,:,:)
-real(kind=r_kind), allocatable :: vargrp_work_mgbf2(:,:,:)
+real(kind=r_kind), pointer :: vargrp_work_mgbf(:,:,:)
+real(kind=r_kind), pointer :: vargrp_work_mgbf2(:,:,:)
 real(kind=r_kind), pointer :: work1var_mgbf(:,:,:)
 real(kind=r_kind), pointer :: work2d_mgbf(:,:)
 real(kind=r_kind), pointer :: rnormalization(:,:)
@@ -443,6 +474,8 @@ integer ::  loc(2)
         work2d_mgbf => self%work2d_mgbf
         work1var_mgbf => self%work1var_mgbf
         rnormalization => self%rnormalization
+        vargrp_work_mgbf=> self%vargrp_work_mgbf
+        vargrp_work_mgbf2=> self%vargrp_work_mgbf2
 
         nlev_vargrp => self%nlev_vargrp
 
@@ -473,7 +506,7 @@ integer ::  loc(2)
                error stop "MGBF workspace rnormalization too small for current scale"
              endif
              work1var_mgbf=0
-             if(self%l_multiply_first_call) then
+             if(self%l_multiply_first_call(jscale)) then
 !$omp parallel do private(ivargrp,ii,k) schedule(static)
                 do ivargrp=1,nvargrp
                   ii=1
@@ -511,7 +544,7 @@ integer ::  loc(2)
                stop
              endif
              varvlev_index => self%varvlev_index
-             if (self%l_multiply_first_call)  varvlev_index = 0
+             if (self%l_multiply_first_call(jscale))  varvlev_index = 0
           
                 ilev=1
              do isize=1,fields%size()
@@ -593,7 +626,7 @@ integer ::  loc(2)
                         error stop ("2dvariable is not put in the ending stop.")    !  is required 2d fields are saved consecutively,and at the ending  
                        endif
                     endif
-                    if(self%l_multiply_first_call) then
+                    if(self%l_multiply_first_call(jscale)) then
                        if(isize==1) then
                            varvlev_index(isize,1)= 1
          !cltothink                  if(.not.self%intstate(iscale,ivargrp)%l_for_localization )then 
@@ -640,9 +673,7 @@ integer ::  loc(2)
                 call etim(mg_preprocess_time)
              ii=1
              do ivargrp=1,nvargrp
-                allocate(vargrp_work_mgbf(nlev_vargrp(ivargrp),nxloc,nyloc))
-                allocate(vargrp_work_mgbf2(nlev_vargrp(ivargrp),nxloc,nyloc))
-                vargrp_work_mgbf(:,:,:) = work_mgbf(ii:ii+nlev_vargrp(ivargrp)-1,:,:)
+                vargrp_work_mgbf(1:nlev_vargrp(ivargrp),:,:) = work_mgbf(ii:ii+nlev_vargrp(ivargrp)-1,:,:)
                 
 
                 call btim(mg_anal_to_filt_time)
@@ -664,10 +695,8 @@ integer ::  loc(2)
                  vargrp_work_mgbf2(k,:,:) = vargrp_work_mgbf2(k,:,:) / rnormalization(k,ivargrp)
                 enddo
 !$omp end parallel do
-                work_mgbf(ii:ii+nlev_vargrp(ivargrp)-1,:,:) = vargrp_work_mgbf2(:,:,:)
+                work_mgbf(ii:ii+nlev_vargrp(ivargrp)-1,:,:) = vargrp_work_mgbf2(1:nlev_vargrp(ivargrp),:,:)
                 ii=ii+nlev_vargrp(ivargrp)
-                deallocate(vargrp_work_mgbf)
-                deallocate(vargrp_work_mgbf2)
              enddo ! ivargrp
              if(self%intstate(jscale,ivargrp0)%l_for_localization ) then   !clthinkdebxxx
                work1var_mgbf = 0.0
@@ -792,7 +821,7 @@ integer ::  loc(2)
  !clt       enddo   !for iscale
           call etim(mg_multiply_time)
         nullify(nlev_vargrp)
-        self%l_multiply_first_call=.false.
+        self%l_multiply_first_call(jscale)=.false.
 
 end subroutine multiply
 
