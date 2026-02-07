@@ -62,8 +62,8 @@ type :: mgbf_covariance
   real(kind=r_kind), pointer :: rnormalization(:,:,:)
   real(kind=r_kind), pointer :: vargrp_work_mgbf(:,:,:)
   real(kind=r_kind), pointer :: vargrp_work_mgbf2(:,:,:)
-  integer(kind=i_kind), pointer :: nlev_vargrp(:)
-  integer(kind=i_kind), pointer :: varvlev_index(:,:)
+  integer(kind=i_kind), pointer :: nlev_vargrp(:,:)
+  integer(kind=i_kind), pointer :: varvlev_index(:,:,:)
   integer(kind=i_kind) :: total_km_a_all = 0
   integer(kind=i_kind) :: nvar = 0
   logical:: l_multiply_first_call(max_scales)=.true.
@@ -277,15 +277,19 @@ enddo
   allocate(self%work2d_mgbf(self%total_km_a_all, self%intstate(1,1)%nm * self%intstate(1,1)%mm))
   allocate(self%rnormalization(self%total_km_a_all, nvargrp,nscale))
   self%rnormalization(1:self%total_km_a_all,1:nvargrp,1:nscale)=0.0
-  allocate(self%varvlev_index(self%nvar,3))
-  allocate(self%nlev_vargrp(nvargrp))
+  allocate(self%varvlev_index(self%nvar,3,nscale))
+  allocate(self%nlev_vargrp(nvargrp,nscale))
+  do iscale=1,nscale
   do ivargrp=1,nvargrp
-    self%nlev_vargrp(ivargrp)=self%intstate(1,ivargrp)%km_a_all
+    self%nlev_vargrp(ivargrp,iscale)=self%intstate(iscale,ivargrp)%km_a_all
+  enddo
   enddo
 ! Note, for different scales, they should have the sma esetup (using the same "zero level"  filtering grids from the atlas  )
   max_nlevs=1
+  do iscale=1,nscale
   do ivargrp=1,nvargrp
-   max_nlevs=max(max_nlevs,self%nlev_vargrp(ivargrp))
+   max_nlevs=max(max_nlevs,self%nlev_vargrp(ivargrp,iscale))
+  enddo
   enddo
   allocate(self%vargrp_work_mgbf(max_nlevs, self%intstate(1,1)%nm, self%intstate(1,1)%mm))
   allocate(self%vargrp_work_mgbf2(max_nlevs, self%intstate(1,1)%nm, self%intstate(1,1)%mm))
@@ -445,10 +449,11 @@ integer ::  loc(2)
           endif
           myrank=self%rank
           write(str_rank,"(I4.4)")myrank
-        if (.not. associated(self%nlev_vargrp)) then
+        nlev_vargrp=>self%nlev_vargrp(:,jscale)
+        if (.not. associated(nlev_vargrp)) then
           error stop "MGBF workspace nlev_vargrp not allocated"
         endif
-        if (size(self%nlev_vargrp) < nvargrp) then
+        if (size(nlev_vargrp) < nvargrp) then
           error stop "MGBF workspace nlev_vargrp too small for nvargrp"
         endif
         work_mgbf => self%work_mgbf
@@ -458,7 +463,6 @@ integer ::  loc(2)
         vargrp_work_mgbf=> self%vargrp_work_mgbf
         vargrp_work_mgbf2=> self%vargrp_work_mgbf2
 
-        nlev_vargrp => self%nlev_vargrp
         
 !clt         do iscale=1,self%nscale
               
@@ -503,7 +507,6 @@ integer ::  loc(2)
                     rnormalization(ii,ivargrp)=self%intstate(jscale,ivargrp)%coef_normalization(nz3d)
                     ii=ii+1
                   enddo
-                   nlev_vargrp(ivargrp)=self%intstate(jscale,ivargrp)%km_a_all
                   if (any(rnormalization(1:nlev_vargrp(ivargrp), ivargrp) == 0.0_r_kind)) then
                     write(6,*) 'DBG zero normalization in group', ivargrp, &
                       ' nlev=', nlev_vargrp(ivargrp), ' jscale=', jscale, ' rank=', self%rank
@@ -524,7 +527,7 @@ integer ::  loc(2)
                call flush(6)
                stop
              endif
-             varvlev_index => self%varvlev_index
+             varvlev_index => self%varvlev_index(:,:,jscale)
              if (self%l_multiply_first_call(jscale))  varvlev_index = 0
           
                 ilev=1
@@ -811,7 +814,7 @@ end subroutine multiply
 
 subroutine multiply_ad(self, fields)
 
-! Arguments
+! Arguments(:,:,jscale)
 class(mgbf_covariance), intent(inout) :: self
 type(atlas_fieldset),  intent(inout) :: fields
 
