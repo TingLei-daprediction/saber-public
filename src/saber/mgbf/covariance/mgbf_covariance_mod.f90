@@ -280,28 +280,6 @@ enddo
   allocate(self%varvlev_index(self%nvar,3))
   allocate(self%nlev_vargrp(nvargrp))
 ! Note, for different scales, they should have the sma esetup (using the same "zero level"  filtering grids from the atlas  )
-!$omp parallel do private(ivargrp,ii,k) schedule(static)
-                do ivargrp=1,nvargrp
-                  ii=1
-   !clt if for localization , km2=0
-                  do k=1,self%intstate(1,ivargrp)%km3
-                        self%rnormalization(ii:ii+nz3d-1,ivargrp)=self%intstate(1,ivargrp)%coef_normalization(1:nz3d)
-                        ii=ii+nz3d
-                
-                  enddo
-                  do k=1,self%intstate(1,ivargrp)%km2
-   !clt if for localization , km2=0  only for 
-   !clt only for     l_2dvar_last_vertical_lev
-                    self%rnormalization(ii,ivargrp)=self%intstate(1,ivargrp)%coef_normalization(nz3d)
-                    ii=ii+1
-                  enddo
-                   self%nlev_vargrp(ivargrp)=self%intstate(1,ivargrp)%km_a_all
-                  if (any(self%rnormalization(1:self%nlev_vargrp(ivargrp), ivargrp) == 0.0_r_kind)) then
-                    write(6,*) 'DBG zero normalization in group', ivargrp, &
-                      ' nlev=', self%nlev_vargrp(ivargrp), ' rank=', self%rank
-                  endif
-                enddo
-!$omp end parallel do
   max_nlevs=1
   do ivargrp=1,nvargrp
    max_nlevs=max(max_nlevs,self%nlev_vargrp(ivargrp))
@@ -478,7 +456,31 @@ integer ::  loc(2)
         vargrp_work_mgbf2=> self%vargrp_work_mgbf2
 
         nlev_vargrp => self%nlev_vargrp
+        
+        if(self%l_multiply_first_call(jscale)) then
+!$omp parallel do private(ivargrp,ii,k) schedule(static)
+                do ivargrp=1,nvargrp
+                  ii=1
+   !clt if for localization , km2=0
+                  do k=1,self%intstate(1,ivargrp)%km3
+                        rnormalization(ii:ii+nz3d-1,ivargrp)=self%intstate(jscale,ivargrp)%coef_normalization(1:nz3d)
+                        ii=ii+nz3d
+                
+                  enddo
+                  do k=1,self%intstate(jscale,ivargrp)%km2
+   !clt if for localization , km2=0  only for 
+   !clt only for     l_2dvar_last_vertical_lev
+                    rnormalization(ii,ivargrp)=self%intstate(jscale,ivargrp)%coef_normalization(nz3d)
+                    ii=ii+1
+                  enddo
+                   self%nlev_vargrp(ivargrp)=self%intstate(1,ivargrp)%km_a_all
+                  if (any(rnormalization(1:self%nlev_vargrp(ivargrp), ivargrp) == 0.0_r_kind)) then
+                    write(6,*) 'DBG zero normalization in group', ivargrp, &
+                      ' nlev=', self%nlev_vargrp(ivargrp), ' rank=', self%rank
+                  endif
+                enddo
 
+            endif
 !clt         do iscale=1,self%nscale
               
              nz3d=self%intstate(jscale,1)%lm_a   !should be the same for different vargrps
