@@ -242,16 +242,6 @@ include "type_intstat_point2this.inc"
                        mpi_comm_comp, rHandle(3), irecv)
 
       end if
-!
-! Make sure receives are complete before using rBuf_N / rBuf_S
-!
-      if( itarg_n >= 0 ) then
-        call MPI_WAIT( rHandle(1), istat, ierr )
-      end if
-      if( itarg_s >= 0 ) then
-        call MPI_WAIT( rHandle(3), istat, ierr )
-      end if
-!
 ! Assign received values from NORTH and SOUTH
 !
 ! From SOUTH
@@ -268,6 +258,7 @@ include "type_intstat_point2this.inc"
 
    else
 
+      if( itarg_s >= 0 ) call MPI_WAIT( rHandle(3), istat, ierr )
 !$omp parallel do private(i,j) schedule(static)
      do j=1,nby
      do i=1,imax
@@ -293,6 +284,7 @@ include "type_intstat_point2this.inc"
 
    else
 
+      if( itarg_n >= 0 ) call MPI_WAIT( rHandle(1), istat, ierr )
 !$omp parallel do private(i,j) schedule(static)
      do j=1,nby
      do i=1,imax
@@ -370,14 +362,6 @@ include "type_intstat_point2this.inc"
 
       end if
 
-! Make sure receives are complete before using rBuf_E / rBuf_W
-      if( itarg_e >= 0 ) then
-        call MPI_WAIT( rHandle(2), istat, ierr )
-      end if
-      if( itarg_w >= 0 ) then
-        call MPI_WAIT( rHandle(4), istat, ierr )
-      end if
-
 !
 ! Assign received values from EAST and WEST
 !
@@ -394,9 +378,10 @@ include "type_intstat_point2this.inc"
 
    else 
 
-     do j=1-nby,jmax+nby
-     do i=1,nbx
-       W(:,-nbx+i,j)= rBuf_W(:,i,j)
+      if( itarg_w >= 0 ) call MPI_WAIT( rHandle(4), istat, ierr )
+      do j=1-nby,jmax+nby
+      do i=1,nbx
+        W(:,-nbx+i,j)= rBuf_W(:,i,j)
      enddo
      enddo
 
@@ -415,9 +400,10 @@ include "type_intstat_point2this.inc"
 
    else 
 
-     do j=1-nby,jmax+nby
-     do i=1,nbx
-       W(:,imax+i,j)=rBuf_E(:,i,j)
+      if( itarg_e >= 0 ) call MPI_WAIT( rHandle(2), istat, ierr )
+      do j=1-nby,jmax+nby
+      do i=1,nbx
+        W(:,imax+i,j)=rBuf_E(:,i,j)
      enddo
      enddo
 
@@ -428,6 +414,10 @@ include "type_intstat_point2this.inc"
 !
 !                           DEALLOCATE rBufferes
 !
+      if( lsouth .and. itarg_s >= 0 ) call MPI_WAIT( rHandle(3), istat, ierr )
+      if( lnorth .and. itarg_n >= 0 ) call MPI_WAIT( rHandle(1), istat, ierr )
+      if( least  .and. itarg_e >= 0 ) call MPI_WAIT( rHandle(2), istat, ierr )
+      if( lwest  .and. itarg_w >= 0 ) call MPI_WAIT( rHandle(4), istat, ierr )
 
       if( itarg_s >= 0 ) then
         deallocate( rBuf_S, stat = iderr)
@@ -620,14 +610,6 @@ FILT_GRID:    if(l_sidesend) then
 
       end if
 
-! Make sure receives are complete before using rBuf_N / rBuf_S
-      if( itarg_n >= 0 ) then
-        call MPI_WAIT( rHandle(1), istat, ierr )
-      end if
-      if( itarg_s >= 0 ) then
-        call MPI_WAIT( rHandle(3), istat, ierr )
-      end if
-
 !
 ! Assign received values from NORTH and SOUTH
 !
@@ -645,9 +627,10 @@ FILT_GRID:    if(l_sidesend) then
 
    else
 
-     do j=1,nby
-     do i=1,imax
-       W(:,i,-nby+j)=rBuf_S(:,i,j)
+      if( itarg_s >= 0 ) call MPI_WAIT( rHandle(3), istat, ierr )
+      do j=1,nby
+      do i=1,imax
+        W(:,i,-nby+j)=rBuf_S(:,i,j)
      enddo
      enddo
 
@@ -666,9 +649,10 @@ FILT_GRID:    if(l_sidesend) then
 
    else
 
-     do j=1,nby
-     do i=1,imax
-       W(:,i,jmax+j)=rBuf_N(:,i,j)
+      if( itarg_n >= 0 ) call MPI_WAIT( rHandle(1), istat, ierr )
+      do j=1,nby
+      do i=1,imax
+        W(:,i,jmax+j)=rBuf_N(:,i,j)
      enddo
      enddo
 
@@ -740,14 +724,6 @@ FILT_GRID:    if(l_sidesend) then
 
       end if
 
-! Make sure receives are complete before using rBuf_E / rBuf_W
-      if( itarg_e >= 0 ) then
-        call MPI_WAIT( rHandle(2), istat, ierr )
-      end if
-      if( itarg_w >= 0 ) then
-        call MPI_WAIT( rHandle(4), istat, ierr )
-      end if
-
 !
 ! Assign received values from  WEST and EAST
 !
@@ -764,9 +740,10 @@ FILT_GRID:    if(l_sidesend) then
 
    else 
 
-     do j=1-nby,jmax+nby
-     do i=1,nbx
-       W(:,-nbx+i,j)= rBuf_W(:,i,j)
+      if( itarg_w >= 0 ) call MPI_WAIT( rHandle(4), istat, ierr )
+      do j=1-nby,jmax+nby
+      do i=1,nbx
+        W(:,-nbx+i,j)= rBuf_W(:,i,j)
      enddo
      enddo
 
@@ -785,9 +762,10 @@ FILT_GRID:    if(l_sidesend) then
 
    else 
 
-     do j=1-nby,jmax+nby
-     do i=1,nbx
-       W(:,imax+i,j)=rBuf_E(:,i,j)
+      if( itarg_e >= 0 ) call MPI_WAIT( rHandle(2), istat, ierr )
+      do j=1-nby,jmax+nby
+      do i=1,nbx
+        W(:,imax+i,j)=rBuf_E(:,i,j)
      enddo
      enddo
 
@@ -797,6 +775,10 @@ FILT_GRID:    if(l_sidesend) then
 !
 !                           DEALLOCATE rBufferes
 !
+      if( lsouth .and. itarg_s >= 0 ) call MPI_WAIT( rHandle(3), istat, ierr )
+      if( lnorth .and. itarg_n >= 0 ) call MPI_WAIT( rHandle(1), istat, ierr )
+      if( least  .and. itarg_e >= 0 ) call MPI_WAIT( rHandle(2), istat, ierr )
+      if( lwest  .and. itarg_w >= 0 ) call MPI_WAIT( rHandle(4), istat, ierr )
       if( itarg_w >= 0 ) then
         deallocate( rBuf_W, stat = iderr)
       end if
