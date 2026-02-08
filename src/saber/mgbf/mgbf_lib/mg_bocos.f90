@@ -890,6 +890,7 @@ integer(i_kind) sHandle(4),rHandle(4),ISTAT(MPI_STATUS_SIZE)
 integer(i_kind) iaerr,ierr,iderr,L,i,j
 integer(i_kind) isend,irecv,nebpe
 integer(i_kind) ndatax,ndatay
+integer(i_kind) rWait(2),nwait,istatall(MPI_STATUS_SIZE,2)
 logical l_sidesend
 integer(i_kind) g_ind,g,k
 !-----------------------------------------------------------------------
@@ -1211,6 +1212,7 @@ integer(i_kind) sHandle(4),rHandle(4),ISTAT(MPI_STATUS_SIZE)
 integer(i_kind) iaerr,ierr,iderr,L,i,j
 integer(i_kind) isend,irecv,nebpe
 integer(i_kind) ndatax,ndatay
+integer(i_kind) rWait(2),nwait,istatall(MPI_STATUS_SIZE,2)
 logical l_sidesend
 integer(i_kind) g_ind,g,k
 !-----------------------------------------------------------------------
@@ -2347,6 +2349,7 @@ integer(i_kind) sHandle(4),rHandle(4),ISTAT(MPI_STATUS_SIZE)
 integer(i_kind) iaerr,ierr,iderr,L,i,j
 integer(i_kind) isend,irecv,nebpe
 integer(i_kind) ndatax,ndatay
+integer(i_kind) rWait(2),nwait,istatall(MPI_STATUS_SIZE,2)
 logical l_sidesend
 integer(i_kind) g_ind,g,k
 include "type_parameter_locpointer.inc"
@@ -2450,6 +2453,18 @@ include "type_intstat_point2this.inc"
 
 
       end if
+
+! Complete EAST/WEST receives as a group
+      nwait=0
+      if( itarg_e >= 0 ) then
+        nwait=nwait+1
+        rWait(nwait)=rHandle(2)
+      end if
+      if( itarg_w >= 0 ) then
+        nwait=nwait+1
+        rWait(nwait)=rHandle(4)
+      end if
+      if( nwait > 0 ) call MPI_WAITALL( nwait, rWait, istatall, ierr )
 !
 ! Assign received extended halos from WEST and EAST to interior of domains
 !
@@ -2465,7 +2480,6 @@ include "type_intstat_point2this.inc"
      end do
      end do
    else
-      if( itarg_w >= 0 ) call MPI_WAIT( rHandle(4), istat, ierr )
       do L=1,lm_in
       do j=1-nby,jmax+nby
       do i=1,nbx
@@ -2486,7 +2500,6 @@ include "type_intstat_point2this.inc"
      end do
      end do
    else 
-      if( itarg_e >= 0 ) call MPI_WAIT( rHandle(2), istat, ierr )
       do L=1,lm_in
       do j=1-nby,jmax+nby
       do i=1,nbx  
@@ -2568,6 +2581,18 @@ include "type_intstat_point2this.inc"
 
       end if
 
+! Complete NORTH/SOUTH receives as a group
+      nwait=0
+      if( itarg_n >= 0 ) then
+        nwait=nwait+1
+        rWait(nwait)=rHandle(1)
+      end if
+      if( itarg_s >= 0 ) then
+        nwait=nwait+1
+        rWait(nwait)=rHandle(3)
+      end if
+      if( nwait > 0 ) call MPI_WAITALL( nwait, rWait, istatall, ierr )
+
 !
 ! Assign received values from SOUTH and NORTH
 !
@@ -2583,7 +2608,6 @@ include "type_intstat_point2this.inc"
      end do
      end do
    else
-      if( itarg_s >= 0 ) call MPI_WAIT( rHandle(3), istat, ierr )
       do L=1,lm_in
       do j=1,nby
       do i=1,imax
@@ -2604,7 +2628,6 @@ include "type_intstat_point2this.inc"
      enddo
      enddo
    else
-      if( itarg_n >= 0 ) call MPI_WAIT( rHandle(1), istat, ierr )
       do L=1,lm_in
       do j=1,nby
       do i=1,imax
@@ -2653,11 +2676,6 @@ include "type_intstat_point2this.inc"
 !
 !                           DEALLOCATE rBufferes
 !
-      if( lwest  .and. itarg_w >= 0 ) call MPI_WAIT( rHandle(4), istat, ierr )
-      if( least  .and. itarg_e >= 0 ) call MPI_WAIT( rHandle(2), istat, ierr )
-      if( lsouth .and. itarg_s >= 0 ) call MPI_WAIT( rHandle(3), istat, ierr )
-      if( lnorth .and. itarg_n >= 0 ) call MPI_WAIT( rHandle(1), istat, ierr )
-
       if( itarg_w >= 0 ) then
         deallocate( rBuf_W, stat = iderr)
       endif 
@@ -2708,6 +2726,7 @@ integer(i_kind) sHandle(4),rHandle(4),ISTAT(MPI_STATUS_SIZE)
 integer(i_kind) iaerr,ierr,iderr,L,i,j
 integer(i_kind) isend,irecv,nebpe
 integer(i_kind) ndatax,ndatay
+integer(i_kind) rWait(2),nwait,istatall(MPI_STATUS_SIZE,2)
 logical l_sidesend
 integer(i_kind) g_ind,g,k
 include "type_parameter_locpointer.inc"
@@ -2834,6 +2853,18 @@ FILT_GRID:    if(l_sidesend) then
 
       end if
 
+! Complete EAST/WEST receives as a group
+      nwait=0
+      if( itarg_e >= 0 ) then
+        nwait=nwait+1
+        rWait(nwait)=rHandle(2)
+      end if
+      if( itarg_w >= 0 ) then
+        nwait=nwait+1
+        rWait(nwait)=rHandle(4)
+      end if
+      if( nwait > 0 ) call MPI_WAITALL( nwait, rWait, istatall, ierr )
+
 !
 ! Assign received extended halos from WEST and EAST
 !
@@ -2849,7 +2880,6 @@ FILT_GRID:    if(l_sidesend) then
      end do
      end do
    else
-      if( itarg_w >= 0 ) call MPI_WAIT( rHandle(4), istat, ierr )
       do L=1,lm_in
       do j=1-nby,jmax+nby
       do i=1,nbx
@@ -2870,7 +2900,6 @@ FILT_GRID:    if(l_sidesend) then
      end do
      end do
    else 
-      if( itarg_e >= 0 ) call MPI_WAIT( rHandle(2), istat, ierr )
       do L=1,lm_in
       do j=1-nby,jmax+nby
       do i=1,nbx  
@@ -2952,6 +2981,18 @@ FILT_GRID:    if(l_sidesend) then
 
       end if
 
+! Complete NORTH/SOUTH receives as a group
+      nwait=0
+      if( itarg_n >= 0 ) then
+        nwait=nwait+1
+        rWait(nwait)=rHandle(1)
+      end if
+      if( itarg_s >= 0 ) then
+        nwait=nwait+1
+        rWait(nwait)=rHandle(3)
+      end if
+      if( nwait > 0 ) call MPI_WAITALL( nwait, rWait, istatall, ierr )
+
 !-----------------------------------------------------------------------
 !
 ! Assign received halos from SOUTH and NORTH
@@ -2966,7 +3007,6 @@ FILT_GRID:    if(l_sidesend) then
      end do
      end do
    else
-      if( itarg_s >= 0 ) call MPI_WAIT( rHandle(3), istat, ierr )
       do L=1,lm_in
       do j=1,nby
       do i=1,imax
@@ -2987,7 +3027,6 @@ FILT_GRID:    if(l_sidesend) then
      enddo
      enddo
    else
-      if( itarg_n >= 0 ) call MPI_WAIT( rHandle(1), istat, ierr )
       do L=1,lm_in
       do j=1,nby
       do i=1,imax
@@ -3031,11 +3070,6 @@ FILT_GRID:    if(l_sidesend) then
 !
 !                           DEALLOCATE rBufferes
 !
-      if( lwest  .and. itarg_w >= 0 ) call MPI_WAIT( rHandle(4), istat, ierr )
-      if( least  .and. itarg_e >= 0 ) call MPI_WAIT( rHandle(2), istat, ierr )
-      if( lsouth .and. itarg_s >= 0 ) call MPI_WAIT( rHandle(3), istat, ierr )
-      if( lnorth .and. itarg_n >= 0 ) call MPI_WAIT( rHandle(1), istat, ierr )
-
       if( itarg_w >= 0 ) then
         deallocate( rBuf_W, stat = iderr)
       endif
