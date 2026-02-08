@@ -93,11 +93,9 @@ enddo
 call logintgrid(nz,nzf,zofzf,u1/sigofz, sigiofzf)
 ! Integrate sigiofzf
 s=0; ssofzf(0)=s
-!$omp parallel do private(izf) schedule(static)
 do izf=1,nzf
    s=s+sigiofzf(izf-1)+sigiofzf(izf); ssofzf(izf)=s
 enddo
-!$omp end parallel do
 ssofzf=ssofzf*dzf*o2
 end subroutine make_ssf
 
