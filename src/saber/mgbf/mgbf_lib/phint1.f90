@@ -149,6 +149,7 @@ real(r_kind)                   :: r,s,z,dzf
 integer(i_kind)               :: iz,izf,izfm,izfp,is,nzf
 !============================================================================
 ! Interpolate the log of the sigofz distribution to a finer grid:
+write(6,*)'thinkdeb555 nz.. ',nz,nf,ns
 dzf=u1/nf
 nzf=nz*nf
 call make_ssf(nz,nf,sigofz,ssf)
@@ -177,6 +178,7 @@ do is=1,ns-1
    izf=izfp-1
    r=(s-ssf(izf))/(ssf(izfp)-ssf(izf))
    zofs(is)=(izf+r)/nf
+  write(6,*)'thinkdeb555 zofs = ',is , ' ',zofs(is)
 enddo
 end subroutine make_ssgrid
 

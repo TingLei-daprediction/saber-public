@@ -1055,7 +1055,9 @@ subroutine convert_vert_varied_aspt
   integer(i_kind):: user_mpi_real
   real (r_kind) :: mg_ampl01_org
   
-  allocate(this%aspect_vert_profile_angrid(lm_a),this%aspect_vert_profile_filtgrid(lm))
+  if( .not. allocated(this%aspect_vert_profile_angrid )) then 
+           allocate(this%aspect_vert_profile_angrid(lm_a),this%aspect_vert_profile_filtgrid(lm))
+  endif
   allocate(sigofz(lm_a),sigofis(lm))
   call MPI_COMM_RANK(MPI_COMM_WORLD,mype,ierr)
   write(6,*)'thinkdeb999 2.0 ',this%l_vert_stretched_filtgrid  ,' ',"l_use",this%l_vert_stretched_filtgrid
@@ -1109,19 +1111,11 @@ subroutine convert_vert_varied_aspt
 ! these scales sig to each of the new s-grid points:
 !clt    call logintgrid(nz,ns,zofis,sigofz,sigofis)
     call zsigtossig(lm_a-1,nf,lm-1,this%zofis,sigofz,sigofis)
-    print'('' list the profile coordinates of zofis,sigofis, for each is:'')'
-!    if(this%l_use_aspt_nml) then
-!j       sigofis=sqrt(mg_amp01)
-!    else
        mg_ampl01_org=mg_ampl01
        mg_ampl01=(sum(sigofis**2)/size(sigofis))
     if(.not.this%l_vert_stretched_filtgrid) then !the former could be only true when the latter is in effect
        write(6,*)' suggested and actual/original ampl01 is ',mg_ampl01,' ' ,mg_ampl01_org
        mg_ampl01=mg_ampl01_org
-!      if (abs(mg_ampl01_org-mg_ampl01)/mg_ampl01_org .gt.0.001) then
-!       write(6,*)'thinkdeb the new ampl01 is too much difference from the original one ,when this%l_use_aspt_nml'
-!       stop
-!      endif
     endif
        write(6,*)' the original and final  ampl01 is ',mg_ampl01_org,' ' ,mg_ampl01
       
