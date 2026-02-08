@@ -2105,8 +2105,8 @@ FILT_GRID:    if(l_sidesend) then
 
           allocate( rBuf_W(1:km3_in,nbx,1-nby:jmax+nby,1:Lm_in), stat = iaerr )
           call MPI_IRECV( rBuf_W, ndatax, dtype, nebpe, nebpe,  &
-                       mpi_comm_work, rHandle(2), irecv)
-          call MPI_WAIT( rHandle(2), istat, ierr )
+                       mpi_comm_work, rHandle(4), irecv)
+          call MPI_WAIT( rHandle(4), istat, ierr )
 
       end if
 

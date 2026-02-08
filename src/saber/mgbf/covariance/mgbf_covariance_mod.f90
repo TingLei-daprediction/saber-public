@@ -814,7 +814,6 @@ end subroutine multiply
 
 subroutine multiply_ad(self, fields)
 
-! Arguments(:,:,jscale)
 class(mgbf_covariance), intent(inout) :: self
 type(atlas_fieldset),  intent(inout) :: fields
 
