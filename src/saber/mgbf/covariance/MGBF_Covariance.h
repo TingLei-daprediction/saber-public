@@ -125,15 +125,10 @@ MGBF_Covariance::MGBF_Covariance(const oops::GeometryData & geometryData,
   activeVars_ = getActiveVars(params, centralVars);
 
   util::Timer timer(classname(), "Covariance");
-  std::cout<<"thinkdebconfig0 ifhas -1 "<<std::endl;
   eckit::LocalConfiguration mgbf_config = params.toConfiguration();
-  std::cout<<"thinkdebconfig0 ifhas "<<mgbf_config<<std::endl;
   if (params.doCalibration()) {
 throw eckit::UserError("doCalibration=.true. is not implemented ", Here());
   }
-//  std::cout<<"thinkdebconfig0 ifhas "<<mgbf_config.has("background error")<<std::endl;
-//  std::cout<<"thinkdebconfig0 ifhas "<<mgbf_config.has("test")<<std::endl;
-//  std::cout<<"thinkdebconfig "<<mgbf_config.getString("test")<<std::endl;
   
   
   
@@ -210,17 +205,13 @@ void MGBF_Covariance::multiply(oops::FieldSet3D & fset) const {
      index_member=9999;
   }
   
-  oops::Log::trace()<<"thinkdeb999 sdl multiply index_member "<<index_member<<std::endl;
-  std::cout<<"thinkdeb999cout sdl multiply index_member "<<index_member<<std::endl;
   mgbf_covariance_multiply_f90(keySelf_, fset.get(),index_member);
-  std::cout<<"thinkdeb999cout sdl multiply index_member after fortran multiple"<<std::endl;
     // Mark all fields as having dirty halos after modification
     for (const auto & fieldname : fset.field_names()) {
         atlas::Field field = fset[fieldname];
         field.set_dirty();  // Mark field as having dirty halos that need to be synchronized
     }
        // Perform the actual halo exchange
-  std::cout<<"thinkdeb999cout sdl multiply index_member after fortran multiple2"<<std::endl;
     fset.fieldSet().haloExchange();
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
