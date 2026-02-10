@@ -988,8 +988,7 @@ include "type_intstat_point2this.inc"
 !*** Apply adjoint of Beta filter at all generations 
 !***
                                                  call btim(hfiltT_tim)
-!$omp parallel private(i,j,k,lev1,lev2)
-!$omp do schedule(static)
+!$omp parallel do private(i,k,lev1,lev2) schedule(static)
      do i=im,1,-1
         do k=1,km3
            lev1=(k-1)*lm+1
@@ -1007,15 +1006,13 @@ include "type_intstat_point2this.inc"
           lev2=lev2+1
         enddo
      enddo
-!$omp end do
-!$omp single
+!$omp end parallel do
                                                  call etim(hfiltT_tim)
                                                  call btim(bocoT_tim)
         call this%bocoTy(VALL,km,im,jm,hx,hy)
                                                  call etim(bocoT_tim)
                                                  call btim(hfiltT_tim)
-!$omp end single
-!$omp do schedule(static)
+!$omp parallel do private(j,k,lev1,lev2) schedule(static)
      do j=jm,1,-1
         do k=1,km3
            lev1=(k-1)*lm+1
@@ -1033,18 +1030,14 @@ include "type_intstat_point2this.inc"
           lev2=lev2+1
         enddo
      enddo
-!$omp end do
-!$omp single
+!$omp end parallel do
                                                  call etim(hfiltT_tim)
                                                  call btim(bocoT_tim)
         call this%bocoTx(VALL,km,im,jm,hx,hy)
                                                  call etim(bocoT_tim)
-!$omp end single
   if(l_hgen) then
-!$omp single
                                                  call btim(hfiltT_tim)
-!$omp end single
-!$omp do schedule(static)
+!$omp parallel do private(i,k,lev1,lev2) schedule(static)
      do i=im,1,-1
         do k=1,km3
            lev1=(k-1)*lm+1
@@ -1061,21 +1054,16 @@ include "type_intstat_point2this.inc"
           lev2=lev2+1
         enddo
      enddo
-!$omp end do
-!$omp single
+!$omp end parallel do
+
                                                  call etim(hfiltT_tim)
-!$omp end single
   endif
-!$omp single
                                                  call btim(bocoT_tim)
         call this%bocoTy(HALL,km,im,jm,hx,hy,Fimax,Fjmax,2,gm)
                                                  call etim(bocoT_tim)
-!$omp end single
   if(l_hgen) then
-!$omp single
                                                  call btim(hfiltT_tim)
-!$omp end single
-!$omp do schedule(static)
+!$omp parallel do private(j,k,lev1,lev2) schedule(static)
      do j=jm,1,-1
         do k=1,km3
            lev1=(k-1)*lm+1
@@ -1092,12 +1080,9 @@ include "type_intstat_point2this.inc"
           lev2=lev2+1
         enddo
      enddo
-!$omp end do
-!$omp single
+!$omp end parallel do
                                                  call etim(hfiltT_tim)
-!$omp end single
   endif
-!$omp single
                                                  call btim(bocoT_tim)
         call this%bocoTx(HALL,km,im,jm,hx,hy,Fimax,Fjmax,2,gm)
                                                  call etim(bocoT_tim)
@@ -1114,8 +1099,7 @@ include "type_intstat_point2this.inc"
         call this%bocox(VALL,km,im,jm,hx,hy)
                                                  call etim(boco_tim)
                                                  call btim(hfilt_tim)
-!$omp end single
-!$omp do schedule(static)
+!$omp parallel do private(j,k,lev1,lev2) schedule(static)
      do j=1,jm
         do k=1,km3
            lev1=(k-1)*lm+1
@@ -1132,15 +1116,13 @@ include "type_intstat_point2this.inc"
           lev2=lev2+1
         enddo
      enddo
-!$omp end do
-!$omp single
+!$omp end parallel do
                                                  call etim(hfilt_tim)
                                                  call btim(boco_tim)
         call this%bocoy(VALL,km,im,jm,hx,hy)
                                                  call etim(boco_tim)
                                                  call btim(hfilt_tim)
-!$omp end single
-!$omp do schedule(static)
+!$omp parallel do private(i,k,lev1,lev2) schedule(static)
      do i=1,im
         do k=1,km3
            lev1=(k-1)*lm+1
@@ -1158,18 +1140,14 @@ include "type_intstat_point2this.inc"
           lev2=lev2+1
         enddo
      enddo
-!$omp end do
-!$omp single
+!$omp end parallel do
                                                  call etim(hfilt_tim)
                                                  call btim(boco_tim)
         call this%bocox(HALL,km,im,jm,hx,hy,Fimax,Fjmax,2,gm)
                                                  call etim(boco_tim)
-!$omp end single
   if(l_hgen)  then
-!$omp single
                                                  call btim(hfilt_tim)
-!$omp end single
-!$omp do schedule(static)
+!$omp parallel do private(j,k,lev1,lev2) schedule(static)
      do j=1,jm
         do k=1,km3
            lev1=(k-1)*lm+1
@@ -1186,21 +1164,15 @@ include "type_intstat_point2this.inc"
           lev2=lev2+1
         enddo
      enddo
-!$omp end do
-!$omp single
+!$omp end parallel do
                                                  call etim(hfilt_tim)
-!$omp end single
   endif
-!$omp single
                                                  call btim(boco_tim)
         call this%bocoy(HALL,km,im,jm,hx,hy,Fimax,Fjmax,2,gm)
                                                  call etim(boco_tim)
-!$omp end single
   if(l_hgen)  then
-!$omp single
                                                  call btim(hfilt_tim)
-!$omp end single
-!$omp do schedule(static)
+!$omp parallel do private(i,k,lev1,lev2) schedule(static)
      do i=1,im
         do k=1,km3
            lev1=(k-1)*lm+1
@@ -1218,12 +1190,9 @@ include "type_intstat_point2this.inc"
           lev2=lev2+1
         enddo
      enddo
-!$omp end do
-!$omp single
+!$omp end parallel do
                                                  call etim(hfilt_tim)
-!$omp end single
   endif
-!$omp end parallel
 !*** 
 !*** Downsend, interpolate and add, then zero high generations 
 !*** 
