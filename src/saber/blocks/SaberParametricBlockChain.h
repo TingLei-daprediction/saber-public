@@ -72,6 +72,8 @@ class SaberParametricBlockChain : public SaberBlockChainBase {
                             const oops::Variables & outerVars,
                             oops::FieldSet4D & fset4dXb,
                             oops::FieldSet4D & fset4dFg,
+                            oops::FieldSets & fsetEns,
+                            const eckit::LocalConfiguration & covarConf,
                             const eckit::Configuration & conf);
   /// @brief Simpler, limited constructor using only generic GeometryData
   SaberParametricBlockChain(const oops::GeometryData & outerGeometryData,
@@ -136,6 +138,10 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
                        const oops::Variables & outerVars,
                        oops::FieldSet4D & fset4dXb,
                        oops::FieldSet4D & fset4dFg,
+                       // TODO(AS): read inside the block so there is no need to pass
+                       // as non-const
+                       oops::FieldSets & fsetEns,
+                       const eckit::LocalConfiguration & covarConf,
                        const eckit::Configuration & conf)
   : outerFunctionSpace_(geom.functionSpace()), outerVariables_(outerVars),
   timeComm_(fset4dXb.commTime()), size4D_(fset4dXb.size()) {
@@ -172,6 +178,7 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
                           fsetEns, centralDirectCalibration);
   }
 
+  oops::Log::trace() << "SaberParametricBlockChain ctor starting outerblockchain finished" << std::endl;
   // Set outer geometry data for central block
   const oops::GeometryData & currentOuterGeom = outerBlockChain_ ?
                              outerBlockChain_->innerGeometryData() : geom.generic();
@@ -187,9 +194,13 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
                                  saberCentralBlockParams,
                                  fset4dXb,
                                  fset4dFg);
+  oops::Log::trace() << "in SaberParametricBlockChain.h after initCenteraBlock "<<std::endl;
 
   // Read and add model fields
+  // //clttothink
+  oops::Log::trace() << "in SaberParametricBlockChain.h before centralBlock_->read "<<std::endl;
   centralBlock_->read(geom, currentOuterVars);
+  oops::Log::trace() << "in SaberParametricBlockChain.h after centralBlock_->read "<<std::endl;
 
   // Iterative ensemble loading flag
   const bool iterativeEnsembleLoading = fullConf.getBool("iterative ensemble loading");

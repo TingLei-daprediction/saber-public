@@ -1,0 +1,19 @@
+&PARAMETERS_MGBETA
+  mg_ampl01=4.0,mg_ampl02=5.0,mg_ampl03=2.0,
+   mg_weig1=16.,mg_weig2=248.,mg_weig3=128.,mg_weig4=1.,
+  hx=6,hy=6,hz=6,p=2,
+  mgbf_line=.true., mgbf_proc=4,
+  lm_a=8,lm=8,km2=0,km3=1,
+  coef_normalization_const=7.81173466
+!
+   nxPE=2,nyPE=2,im_filt=12,jm_filt=12,
+!
+!GSI - REDUCED DOMAIN
+    nm0 = 24,
+    mm0 = 24,
+
+    l_vertical_filter=.true.
+    l_for_localization=.false.,
+/
+~
+

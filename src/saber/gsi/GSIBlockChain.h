@@ -49,6 +49,8 @@ class SaberGSIBlockChain : public SaberBlockChainBase {
                      const oops::Variables & outerVars,
                      oops::FieldSet4D & fset4dXb,
                      oops::FieldSet4D & fset4dFg,
+                     oops::FieldSets & fsetEns,
+                     const eckit::LocalConfiguration & covarConf,
                      const eckit::Configuration & conf);
   ~SaberGSIBlockChain();
 
@@ -97,6 +99,8 @@ SaberGSIBlockChain::SaberGSIBlockChain(const oops::Geometry<MODEL> & geom,
                        const oops::Variables & outerVars,
                        oops::FieldSet4D & fset4dXb,
                        oops::FieldSet4D & fset4dFg,
+                       oops::FieldSets & fsetEns,
+                       const eckit::LocalConfiguration & covarConf,
                        const eckit::Configuration & conf)
   : outerFunctionSpace_(geom.functionSpace()), outerVariables_(outerVars) {
   oops::Log::trace() << "SaberGSIBlockChain ctor starting" << std::endl;

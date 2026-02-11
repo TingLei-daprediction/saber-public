@@ -65,16 +65,16 @@ geometry:
 
 background error:
   covariance model: SABER
-  covariance type: hybrid
-  run components recursively: true
-  run in parallel: false
   adjoint test: false
-  components:
+  saber central block:
+    saber block name: Hybrid
+    run components recursively: true
+    run in parallel: false
+    components:
     # ===========================================================
     # Waveband 1
     # ===========================================================
     - covariance:
-        covariance type: ensemble
         ensemble geometry:
           function space: StructuredColumns
           grid:
@@ -99,7 +99,9 @@ background error:
               - eastward_wind
               - northward_wind
               parallel IO: true
-        localization:
+        saber central block:
+          saber block name: Ensemble
+          localization:
             saber central block:
               saber block name: ID
             saber outer blocks:
@@ -139,7 +141,6 @@ background error:
     # Waveband 2
     # ===========================================================
     - covariance:
-        covariance type: ensemble
         ensemble geometry:
           function space: StructuredColumns
           grid:
@@ -164,7 +165,9 @@ background error:
               - eastward_wind
               - northward_wind
               parallel IO: true
-        localization:
+        saber central block:
+          saber block name: Ensemble
+          localization:
             saber central block:
               saber block name: ID
             saber outer blocks:
@@ -204,7 +207,6 @@ background error:
     # Waveband 3
     # ===========================================================
     - covariance:
-        covariance type: ensemble
         ensemble geometry:
           function space: StructuredColumns
           grid:
@@ -227,7 +229,9 @@ background error:
               variables:
               - eastward_wind
               - northward_wind
-        localization:
+        saber central block:
+          saber block name: Ensemble
+          localization:
             saber central block:
               saber block name: ID
             saber outer blocks:

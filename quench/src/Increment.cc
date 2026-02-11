@@ -14,6 +14,9 @@
 
 #include "oops/util/Logger.h"
 
+//clt##include "src/Fields.h"
+#include <iostream>
+#include <stdexcept>
 #include "src/Geometry.h"
 
 namespace quench {
@@ -120,7 +123,6 @@ void Increment::zero(const util::DateTime & vt) {
 
   oops::Log::trace() << classname() << "::zero done" << std::endl;
 }
-
 // -----------------------------------------------------------------------------
 
 void Increment::axpy(const double & zz,

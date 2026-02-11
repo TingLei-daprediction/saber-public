@@ -86,6 +86,8 @@ class SaberEnsembleBlockChain : public SaberBlockChainBase {
                           const oops::Variables & outerVars,
                           oops::FieldSet4D & fset4dXb,
                           oops::FieldSet4D & fset4dFg,
+                          oops::FieldSets & fsetEns,
+                          const eckit::LocalConfiguration & covarConf,
                           const eckit::Configuration & conf);
   ~SaberEnsembleBlockChain() = default;
 
@@ -131,6 +133,10 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
                        const oops::Variables & outerVars,
                        oops::FieldSet4D & fset4dXb,
                        oops::FieldSet4D & fset4dFg,
+                       // TODO(AS): remove as argument: this should be read inside the
+                       // block.
+                       oops::FieldSets & fsetEns,
+                       const eckit::LocalConfiguration & covarConf,
                        const eckit::Configuration & conf)
   : outerFunctionSpace_(geom.functionSpace()), outerVariables_(outerVars), ctlVecSize_(0) {
   oops::Log::trace() << "SaberEnsembleBlockChain ctor starting" << std::endl;
@@ -244,9 +250,9 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
     // Right inverse of ensemble transform on ensemble members
     oops::Log::info() << "Info     : Right inverse of ensemble transform on ensemble members"
                       << std::endl;
-    for (size_t itime = 0; itime < ensemble_->local_time_size(); ++itime) {
-      for (size_t iens = 0; iens < ensemble_->local_ens_size(); ++iens) {
-        ensTransBlockChain->rightInverseMultiply((*ensemble_)(itime, iens));
+    for (size_t itime = 0; itime < ensemble_.local_time_size(); ++itime) {
+      for (size_t iens = 0; iens < ensemble_.local_ens_size(); ++iens) {
+        ensTransBlockChain->rightInverseMultiply(ensemble_(itime, iens));
       }
     }
 
@@ -305,7 +311,9 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
                                                                    currentOuterVars,
                                                                    fset4dXb,
                                                                    fset4dFg,
-                                                                   locMergedConf);
+                                                                   ensemble_,
+                                                                   covarConfUpdated,
+                                                                   *locConf);
     }
   }
   // Direct calibration

@@ -22,7 +22,14 @@ background error:
   run components recursively: true
   adjoint test: true
   square-root test: true
+<<<<<<< HEAD
   components:
+=======
+  saber central block:
+    saber block name: Hybrid
+    run components recursively: true
+    components:
+>>>>>>> myfork-release
     - covariance:
         saber central block:
           saber block name: BUMP_NICAS
