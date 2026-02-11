@@ -41,6 +41,7 @@ if( ENABLE_QUENCH )
       set( SABER_TEST_BUMP 1 )
   endif()
   set( SABER_TEST_GSI_GEOS 0 )
+  set( SABER_TEST_MGBF_REG 1 )
   if( gsibec_FOUND )
       set( SABER_TEST_GSI_GEOS 1 )
   endif()
@@ -163,6 +164,11 @@ if( ENABLE_QUENCH )
          file( STRINGS testlist/saber_test_tier1-spectralb-vader.txt saber_test )
          list( APPEND saber_test_full ${saber_test} )
       endif()
+  endif()
+  if( SABER_TEST_MGBF_REG )
+      message( STATUS "  - TIER 1 MGBF-REG" )
+      file( STRINGS testlist/saber_test_tier1-mgbf_reg.txt saber_test )
+      list( APPEND saber_test_full ${saber_test} )
   endif()
 
   # TIER > 1
@@ -292,8 +298,15 @@ if( ENABLE_QUENCH )
                       set (parallelHybridCheck false CACHE BOOL "" FORCE )
                     endif()
                   endif()
+                  # check for MGBF, it will be dealt with seperately for them to require more mpi ranks
+                  string( FIND ${test} "mgbf" mgbf_result )
+                  if( mgbf_result EQUAL -1  )
+                      set( mgbfCheck true CACHE BOOL "" FORCE )
+                  else()
+                      set( mgbfCheck false CACHE BOOL "" FORCE )
+                  endif()
 
-                  if( docTutorialCheck AND gsiGfsCheck AND 4dCheck AND parallelHybridCheck )
+                  if( docTutorialCheck AND gsiGfsCheck AND 4dCheck AND parallelHybridCheck AND mgbfCheck )
                       # Get dependencies
                       file( STRINGS testdeps/${test}.txt deps )
                       set( deps_list "" )
@@ -365,6 +378,30 @@ if( ENABLE_QUENCH )
           endif()
       endforeach()
   endforeach()
+# mgbf 
+foreach( test ${saber_test_full} )
+    string( FIND ${test} "mgbf" result )
+    if( NOT result EQUAL -1  )
+        # Get dependencies
+        file( STRINGS testdeps/${test}.txt deps )
+        set( deps_list "" )
+        list( APPEND deps_list ${deps} )
+        list( LENGTH deps_list deps_length )
+        if( ${deps_length} GREATER 0 )
+            list( TRANSFORM deps_list PREPEND saber_test_ )
+            list( TRANSFORM deps_list APPEND _${mpi}-${omp} )
+        endif()
+
+        # Add test
+        ecbuild_add_test( TARGET saber_test_${test}_${mpi}-${omp}
+                          MPI 4 
+                          OMP 1 
+                          COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                          ARGS testinput/${yaml_prefix}${test}.yaml
+                          DEPENDS saber_quench_error_covariance_toolbox.x
+                           )
+    endif()
+endforeach()
 else()
   # Tests deactivated
   message( STATUS "SABER-QUENCH tests deactivated" )

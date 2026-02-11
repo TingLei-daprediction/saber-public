@@ -90,7 +90,8 @@ Localization<MODEL>::Localization(const Geometry_ & geom,
 
   // Initialize localization blockchain
   loc_ = std::make_unique<SaberParametricBlockChain>(geom,
-              incVars, xb4d, fg4d, conf);
+              incVars, xb4d, fg4d,
+              emptyFsetEns, covarConf, conf);
 
   oops::Log::trace() << "Localization:Localization done" << std::endl;
 }

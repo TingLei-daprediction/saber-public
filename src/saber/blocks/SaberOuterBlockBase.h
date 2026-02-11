@@ -250,6 +250,7 @@ class SaberOuterBlockMaker : public SaberOuterBlockFactory {
                                             const SaberBlockParametersBase & params,
                                             const oops::FieldSet3D & xb,
                                             const oops::FieldSet3D & fg) override {
+    oops::Log::trace() << "SaberOuterBlockMaker::make starting" << std::endl;
     const auto &stronglyTypedParams = dynamic_cast<const Parameters_&>(params);
     return std::make_unique<T>(outerGeometryData, outerVars,
                                covarConf, stronglyTypedParams, xb, fg);

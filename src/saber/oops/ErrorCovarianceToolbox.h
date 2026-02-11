@@ -52,6 +52,10 @@
 #include "saber/oops/Utilities.h"
 #include "saber/util/HorizontalProfiles.h"
 
+#include "oops/base/PostProcessor.h"
+#include "oops/base/StructuredGridPostProcessor.h"
+#include  "oops/base/StructuredGridWriter.h"
+
 namespace saber {
 
 // -----------------------------------------------------------------------------
@@ -373,13 +377,17 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
              const State4D_ & xx,
              const Increment4D_ & dxi) const {
     // Define output increment
+    // tothinkdo
+    oops::Log::trace() <<  "dirac starting" << std::endl;
     Increment4D_ dxo(dxi, false);
 
     // Covariance
+    oops::Log::trace() <<  "dirac Bmat being created" << std::endl;
     std::unique_ptr<CovarianceBase_> Bmat(CovarianceFactory_::create(
                                           geom, vars, covarConf, xx, xx));
 
     // Multiply
+    oops::Log::trace() <<  "dirac Bmat 's multiply to be invoked" << std::endl;
     Bmat->multiply(dxi, dxo);
 
     // Update ID
@@ -417,6 +425,10 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
 
     // Seek and replace %id% with id, recursively
     util::seekAndReplace(outputBConf, "%id%", id);
+     for (auto& fld:dxo[0].fieldSet() ) {
+    oops::Log::trace()<<"thinkdeb dxo 0 input fld is "<<fld<<std::endl;
+//clt    fld.dump(std::cout);
+   };
 
     // Write output increment
     dxo.write(outputBConf);
@@ -446,24 +458,18 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
       }
     }
     if (covarianceModel == "SABER") {
-      const std::string covarianceType =
-        covarConf.getString("covariance type", "parametric");
-      if (covarianceType == "hybrid") {
-        bool runComponentsRecursively =
-          covarConf.has("run components recursively") ?
-          covarConf.getBool("run components recursively") :
-          false;
+      const std::string saberCentralBlockName =
+        covarConf.getString("saber central block.saber block name");
+      bool runComponentsRecursively =
+        covarConf.has("saber central block.run components recursively") ?
+        covarConf.getBool("saber central block.run components recursively") :
+        false;
+      if (saberCentralBlockName == "Hybrid") {
         // Check for outer blocks (can't pass the correct geometry/variables in that case)
         if (!covarConf.has("saber outer blocks") && (runComponentsRecursively)) {
-          // Deserialize base parameters
-          ErrorCovarianceParametersBase paramsBase;
-          paramsBase.deserialize(covarConf);
-
-          // Get components configurations list
           std::vector<eckit::LocalConfiguration> confs;
-          covarConf.get("components", confs);
+          covarConf.get("saber central block.components", confs);
 
-          // Initialize component index
           size_t componentIndex(1);
 
           for (const auto & conf : confs) {

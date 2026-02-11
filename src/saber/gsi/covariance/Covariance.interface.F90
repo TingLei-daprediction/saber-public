@@ -23,6 +23,7 @@ use fckit_configuration_module, only: fckit_configuration
 ! saber
 use gsi_covariance_mod,         only: gsi_covariance
 
+use mpi
 
 implicit none
 private
@@ -186,6 +187,10 @@ type(c_ptr),        intent(in) :: c_inc(c_ntimes)
 type(gsi_covariance), pointer :: f_self
 type(atlas_fieldset), dimension(:), allocatable :: f_inc
 integer :: ntimes, itime
+integer :: mype
+real(kind=8) :: time_beg,time_end,walltime
+integer:: ierr
+
 
 ! LinkedList
 ! ----------
@@ -201,7 +206,14 @@ enddo
 
 ! Call implementation
 ! -------------------
-call f_self%multiply(ntimes, f_inc)
+          call mpi_comm_rank(mpi_comm_world,mype,ierr)
+          time_beg=MPI_Wtime()  
+         call f_self%multiply(ntimes, f_inc)
+            time_end=MPI_Wtime()  !now use the existing variable
+          call MPI_Reduce(time_end-time_beg, walltime, 1, MPI_REAL8, MPI_MAX, 0, MPI_COMM_WORLD, ierr)
+           if (mype == 0) then
+                   print '(A,F10.6,A)', 'thinkdeb999GSIBEC interface  time (max over ranks)',walltime
+           end if
 
 ! Release memory
 ! --------------

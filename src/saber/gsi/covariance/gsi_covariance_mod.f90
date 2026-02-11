@@ -282,7 +282,7 @@ contains
 
 ! print *, 'Atlas 2-dim: ', size(rank2,2), ' gsi-vec: ', self%grid%lat2,' ', self%grid%lon2
   allocate(aux(self%grid%lat2,self%grid%lon2))
-    call atlas_to_gsi_(rank2(1,:),aux,self%rank,self%grid%layout)
+  call atlas_to_gsi_(rank2(1,:),aux,self%rank,self%grid%layout)
   call gsibec_set_guess(varname,islot,aux)
   deallocate(aux)
 
@@ -810,7 +810,6 @@ end subroutine multiply
    ! copy atlas array into GSI array
    ! the atlas halos are copied as well, so it is assumed the atlas halos are up-to-date
    subroutine atlas_to_gsi_(rank,var,pe,layout)
-!cltorg   real(kind=kind_real),intent(in) :: rank(:)
    real(kind=kind_real),intent(in) :: rank(:)
    real(kind=kind_real),intent(inout):: var(:,:)
    integer, intent(in), optional :: pe

@@ -111,22 +111,15 @@ void allocateMissingFields(oops::FieldSet3D & fset,
 
 // -----------------------------------------------------------------------------
 
-size_t getNensFromConfig(const eckit::Configuration & conf) {
+size_t getNensFromConfig(const eckit::LocalConfiguration & conf) {
+  // expecting either `members` (list) or `members from template` (object with nmembers/template).
   size_t nens = 0;
-  for (const auto & ensType : {"ensemble", "ensemble pert", "ensemble base",
-    "ensemble pert on other geometry"}) {
-    if (conf.has(ensType)) {
-      eckit::LocalConfiguration ensTypeConf = conf.getSubConfiguration(ensType);
-
-      ASSERT(ensTypeConf.has("members from template") || ensTypeConf.has("members"));
-      ASSERT(!(ensTypeConf.has("members from template") && ensTypeConf.has("members")));
-      nens = getNensFromConfig(ensTypeConf);
-    }
-  }
+  ASSERT(conf.has("members from template") || conf.has("members"));
+  ASSERT(!(conf.has("members from template") && conf.has("members")));
   if (conf.has("members")) {
     const auto members = conf.getSubConfigurations("members");
     nens = members.size();
-  } else if (conf.has("members from template")) {
+  } else {
     const auto members = conf.getSubConfiguration("members from template");
     ASSERT(members.has("nmembers"));
     ASSERT(members.has("pattern"));
@@ -138,7 +131,7 @@ size_t getNensFromConfig(const eckit::Configuration & conf) {
 
 // -----------------------------------------------------------------------------
 
-eckit::LocalConfiguration getEnsSubconfig(const eckit::Configuration & conf, size_t iens) {
+eckit::LocalConfiguration getEnsSubconfig(const eckit::LocalConfiguration & conf, size_t iens) {
   // expecting either `members` (list) or `members from template` (object with nmembers/template).
   eckit::LocalConfiguration memConf;
   if (conf.has("members")) {

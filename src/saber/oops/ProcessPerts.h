@@ -212,6 +212,17 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
       incVars[i].setLevels(vlevs[i]);
     }
 
+    std::vector<util::DateTime> dates;
+    std::vector<int> ensmems;
+    oops::FieldSets fsetEns(dates, oops::mpi::myself(), ensmems, oops::mpi::myself());
+    eckit::LocalConfiguration covarConf;
+    covarConf.set("iterative ensemble loading", false);
+    covarConf.set("inverse test", false);
+    covarConf.set("adjoint test", false);
+    covarConf.set("square-root test", false);
+    covarConf.set("covariance model", "SABER");
+    covarConf.set("time covariance", "");
+
     // Yaml validation
     // TODO(Mayeul): Move this do an override of deserialize
     if (((params.ensemble.value() == boost::none) &&
@@ -283,7 +294,9 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
       saberFilterBlocks.push_back(
         std::make_unique<SaberParametricBlockChain>(geom,
                                                     incVars, fsetXb, fsetFg,
-                                                    conf));
+                                                    fsetEns,
+                                                    covarConf,
+                                                    value));
     }
 
     std::vector<std::unique_ptr<SaberParametricBlockChain>> saberDiagnosticBlocks;
@@ -294,7 +307,9 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
       saberDiagnosticBlocks.push_back(
         std::make_unique<SaberParametricBlockChain>(geom,
                                                     incVars, fsetXb, fsetFg,
-                                                    conf));
+                                                    fsetEns,
+                                                    covarConf,
+                                                    value));
     }
 
     //  Loop over perturbations

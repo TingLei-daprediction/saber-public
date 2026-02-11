@@ -18,9 +18,10 @@ increment variables: *vars
 
 background error:
   covariance model: SABER
-  covariance type: hybrid
-  run components recursively: true
-  components:
+  saber central block:
+    saber block name: Hybrid
+    run components recursively: true
+    components:
     - weight:
         value: 1.0
       covariance:
