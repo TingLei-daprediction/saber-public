@@ -869,9 +869,6 @@ endif
       var(mylat2,1)=var(mylat2-1,2)
       var(mylat2,mylon2)=var(mylat2-1,mylon2-1)
    endif
-   write(6,*)'thinkdeb88 mylat/lon sizeofrank =',mylat2,mylon2,sizeofrank
-   write(6,*)'thinkdeb88 max rank =',minval(rank),maxval(rank)
-   write(6,*)'thinkdeb88 max var =',minval(var),maxval(var)
 
    end subroutine atlas_to_gsi_
 
