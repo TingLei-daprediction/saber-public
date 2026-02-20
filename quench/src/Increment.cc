@@ -14,7 +14,6 @@
 
 #include "oops/util/Logger.h"
 
-//clt##include "src/Fields.h"
 #include <iostream>
 #include <stdexcept>
 #include "src/Geometry.h"

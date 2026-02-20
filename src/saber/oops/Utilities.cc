@@ -16,33 +16,6 @@ namespace saber {
 
 // -----------------------------------------------------------------------------
 
-oops::Variables getActiveVars(const SaberBlockParametersBase & params,
-                              const oops::Variables & defaultVars) {
-  oops::Log::trace() << "getActiveVars starting" << std::endl;
-  oops::Variables activeVars_nomd;
-  if (params.mandatoryActiveVars().size() == 0) {
-    // No mandatory active variables for this block
-    activeVars_nomd = params.activeVars.value().get_value_or(defaultVars);
-  } else {
-    // Block with mandatory active variables
-    activeVars_nomd = params.activeVars.value().get_value_or(params.mandatoryActiveVars());
-    ASSERT(params.mandatoryActiveVars() <= activeVars_nomd);
-  }
-  // Copy the variables that exist in defaultVars from defaultVars (they have metadata
-  // associated with them)
-  oops::Variables activeVars;
-  for (auto & var : activeVars_nomd) {
-    if (defaultVars.has(var.name())) {
-      activeVars.push_back(defaultVars[var.name()]);
-    } else {
-      activeVars.push_back(var);
-    }
-  }
-  return activeVars;
-}
-
-// -----------------------------------------------------------------------------
-
 // Return inner variables as outer variables + inner active variables
 // Can be used to help define innerVars_ member in SABER outer blocks
 oops::Variables getUnionOfInnerActiveAndOuterVars(const SaberBlockParametersBase & params,
@@ -111,15 +84,22 @@ void allocateMissingFields(oops::FieldSet3D & fset,
 
 // -----------------------------------------------------------------------------
 
-size_t getNensFromConfig(const eckit::LocalConfiguration & conf) {
-  // expecting either `members` (list) or `members from template` (object with nmembers/template).
+size_t getNensFromConfig(const eckit::Configuration & conf) {
   size_t nens = 0;
-  ASSERT(conf.has("members from template") || conf.has("members"));
-  ASSERT(!(conf.has("members from template") && conf.has("members")));
+  for (const auto & ensType : {"ensemble", "ensemble pert", "ensemble base",
+    "ensemble pert on other geometry"}) {
+    if (conf.has(ensType)) {
+      eckit::LocalConfiguration ensTypeConf = conf.getSubConfiguration(ensType);
+
+      ASSERT(ensTypeConf.has("members from template") || ensTypeConf.has("members"));
+      ASSERT(!(ensTypeConf.has("members from template") && ensTypeConf.has("members")));
+      nens = getNensFromConfig(ensTypeConf);
+    }
+  }
   if (conf.has("members")) {
     const auto members = conf.getSubConfigurations("members");
     nens = members.size();
-  } else {
+  } else if (conf.has("members from template")) {
     const auto members = conf.getSubConfiguration("members from template");
     ASSERT(members.has("nmembers"));
     ASSERT(members.has("pattern"));
@@ -131,7 +111,7 @@ size_t getNensFromConfig(const eckit::LocalConfiguration & conf) {
 
 // -----------------------------------------------------------------------------
 
-eckit::LocalConfiguration getEnsSubconfig(const eckit::LocalConfiguration & conf, size_t iens) {
+eckit::LocalConfiguration getEnsSubconfig(const eckit::Configuration & conf, size_t iens) {
   // expecting either `members` (list) or `members from template` (object with nmembers/template).
   eckit::LocalConfiguration memConf;
   if (conf.has("members")) {
