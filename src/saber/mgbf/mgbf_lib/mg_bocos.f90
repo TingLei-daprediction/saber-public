@@ -3947,6 +3947,7 @@ include "type_intstat_point2this.inc"
 !
 ! Define generational flags
 !
+    Harray(:,:,:) = 0.0d0
     mygen_up=2
     mygen_dn=1
 

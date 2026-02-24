@@ -306,6 +306,7 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
                                                                    currentOuterVars,
                                                                    fset4dXb,
                                                                    fset4dFg,
+                                                                   locMergedConf);
     }
   }
   // Direct calibration

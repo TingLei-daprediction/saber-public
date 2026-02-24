@@ -283,6 +283,7 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
       saberFilterBlocks.push_back(
         std::make_unique<SaberParametricBlockChain>(geom,
                                                     incVars, fsetXb, fsetFg,
+                                                    conf));
     }
 
     std::vector<std::unique_ptr<SaberParametricBlockChain>> saberDiagnosticBlocks;

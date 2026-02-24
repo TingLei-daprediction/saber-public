@@ -162,7 +162,6 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
                           fsetEns, centralDirectCalibration);
   }
 
-  oops::Log::trace() << "SaberParametricBlockChain ctor starting outerblockchain finished" << std::endl;
   // Set outer geometry data for central block
   const oops::GeometryData & currentOuterGeom = outerBlockChain_ ?
                              outerBlockChain_->innerGeometryData() : geom.generic();
@@ -177,10 +176,7 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
                                                  fset4dFg);
 
   // Read and add model fields
-  // //clttothink
-  oops::Log::trace() << "in SaberParametricBlockChain.h before centralBlock_->read "<<std::endl;
   centralBlock_->read(geom, currentOuterVars);
-  oops::Log::trace() << "in SaberParametricBlockChain.h after centralBlock_->read "<<std::endl;
 
   if (centralBlock_->doCalibration()) {
     // Calibration
@@ -199,93 +195,15 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
     centralBlock_->read();
   }
 
+  if (centralBlock_->forceWrite() || centralBlock_->doCalibration()) {
     // Write data
     oops::Log::info() << "Info     : Write data" << std::endl;
     centralBlock_->write(geom);
     centralBlock_->write();
   }
 
-  // Write final ensemble
-  if (covarConf.has("output ensemble")) {
-    // Get output parameters configuration
-    const eckit::LocalConfiguration outputEnsembleConf(covarConf, "output ensemble");
-
-    // Check whether geometry grid is similar to the last outer block inner geometry
-    const bool useModelWriter = (util::getGridUid(geom.functionSpace())
-      == util::getGridUid(currentOuterGeom.functionSpace()));
-
-    // Get ensemble size
-    size_t ensembleSize = ensembleConf.getInt("ensemble size");
-
-    // Estimate mean
-    oops::FieldSet3D fsetMean(fset4dXb[0].validTime(), geom.getComm());
-    if (iterativeEnsembleLoading) {
-      for (size_t ie = 0; ie < ensembleSize; ++ie) {
-        // Read member
-        oops::FieldSet3D fsetMem(fset4dXb[0].validTime(), geom.getComm());
-        readEnsembleMember(geom, activeVars, ensembleConf, ie, fsetMem);
-
-        // Update mean
-        if (ie == 0) {
-          fsetMean.deepCopy(fsetMem);
-        } else {
-          fsetMean += fsetMem;
-        }
-      }
-
-      // Normalize mean
-      fsetMean *= 1.0/static_cast<double>(ensembleSize);
-    }
-
-    // Write first member only
-    const bool firstMemberOnly = outputEnsembleConf.getBool("first member only", false);
-    if (firstMemberOnly) {
-      ensembleSize = 1;
-    }
-
-    for (size_t ie = 0; ie < ensembleSize; ++ie) {
-      oops::Log::info() << "Info     : Write member " << ie << std::endl;
-
-      // Increment pointer
-      oops::Increment<MODEL> dx(geom, activeVars, fset4dXb[0].validTime());
-
-      // Get ensemble member
-      if (iterativeEnsembleLoading) {
-        // Read ensemble member
-        oops::FieldSet3D fset(fset4dXb[0].validTime(), geom.getComm());
-        readEnsembleMember(geom, activeVars, ensembleConf, ie, fset);
-
-        // Remove mean
-        fset -= fsetMean;
-
-        // Apply outer blocks inverse
-        if (outerBlockChain_) outerBlockChain_->leftInverseMultiply(fset);
-
-        // ATLAS fieldset to Increment_
-        dx.fromFieldSet(fset.fieldSet());
-      } else {
-        // ATLAS fieldset to Increment_
-        dx.fromFieldSet(fsetEns[ie].fieldSet());
-      }
-
-      if (useModelWriter) {
-        // Use model writer
-
-        // Set member index
-        eckit::LocalConfiguration outputMemberConf(outputEnsembleConf);
-        util::setMember(outputMemberConf, ie+1);
-
-        // Write Increment
-        dx.write(outputMemberConf);
-        oops::Log::test() << "Norm of ensemble member " << ie << ": " << dx.norm() << std::endl;
-      } else {
-        // Use generic ATLAS writer
-        throw eckit::NotImplemented("generic output ensemble write not implemented yet", Here());
-      }
-    }
-  }
-
-  testCentralBlock(covarConf, saberCentralBlockParams, currentOuterGeom, activeVars);
+  // Test central block
+  testCentralBlock(fullConf);
 
   oops::Log::trace() << "SaberParametricBlockChain ctor done" << std::endl;
 }
