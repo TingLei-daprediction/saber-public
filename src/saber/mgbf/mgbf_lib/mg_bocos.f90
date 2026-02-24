@@ -3948,6 +3948,10 @@ include "type_intstat_point2this.inc"
 ! Define generational flags
 !
     Harray(:,:,:) = 0.0d0
+    dBuf_SW=0.0d0   !brutal forced to zero to avoid undefined values in the output 
+    dBuf_SE=0.0d0
+    dBuf_NW=0.0d0
+    dBuf_NE=0.0d0
     mygen_up=2
     mygen_dn=1
 
