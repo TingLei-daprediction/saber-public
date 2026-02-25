@@ -103,7 +103,6 @@ MGBF_Covariance(const oops::GeometryData & geometryData,
   std::vector<std::string> variables_;
   // Function space
   atlas::FunctionSpace mgbfGridFuncSpace_;
-  oops::Variables activeVars_;
   const eckit::mpi::Comm * comm_;
 };
 
@@ -116,13 +115,11 @@ MGBF_Covariance::MGBF_Covariance(const oops::GeometryData & geometryData,
         const Parameters_ & params,
         const oops::FieldSet3D & xb,
         const oops::FieldSet3D & fg)
-  :  SaberCentralBlockBase(params, xb.validTime()),
+  :  SaberCentralBlockBase(params, xb.validTime(),geometryData, centralVars),
      params_(params), variables_(params.activeVars.value().get_value_or(centralVars).variables()),
      mgbfGridFuncSpace_(geometryData.functionSpace()), comm_(&geometryData.comm())   
 {
   oops::Log::trace() << classname() << "MGBF::Covariance starting" << std::endl;
-  // Get active variables
-  activeVars_ = getActiveVars(params, centralVars);
 
   util::Timer timer(classname(), "Covariance");
   eckit::LocalConfiguration mgbf_config = params.toConfiguration();
