@@ -808,7 +808,7 @@ end subroutine multiply
    integer, intent(in), optional :: pe
    integer, intent(in), optional :: layout(2)
    integer ii,jj,jnode
-   integer mylat2,mylon2,mype,nxpe,nype
+   integer mylat2,mylon2,mype,nxpe,nype,sizeofrank
    mylat2 = size(var,1)
    mylon2 = size(var,2)
    jnode=1
@@ -819,131 +819,43 @@ end subroutine multiply
          jnode = jnode + 1
       enddo
    enddo
+ 
+   if(mylon2*mylat2.le.sizeofrank) then  !in global domain, or regional, the subdomains are of the laterary boundaries
+                                         ! and the halo points are not "complete"/absent along the laterary boundies of the whole
+                                         ! domain
+                                         !for simplicity, in that situation, the halo points would be defined by adjacent inner
+                                         !points
    ! fill in halos
    ! atlas inserts halos in this order:
    ! - all x @ ymin
    ! - pairs of (xmin, xmax) @ each y from (ymin+1, ymax-1)
    ! - all x @ ymax
- 
-   if(present(pe).and.present(layout)) then
-     mype = pe
-     nxpe = layout(1)
-     nype = layout(2)
-     if(mype == 0) then
-       do jj=2,mylat2-1
-           var(jj,mylon2) = rank(jnode)
-           jnode = jnode + 1
-       enddo
-       do ii=2,mylon2
-           var(mylat2,ii) = rank(jnode)
-           jnode = jnode + 1
-       enddo
-     else if(mype == nxpe-1) then
-       do jj=2,mylat2-1
-           var(jj,1) = rank(jnode)
-           jnode = jnode + 1
-       enddo
-       do ii=1,mylon2-1
-           var(mylat2,ii) = rank(jnode)
-           jnode = jnode + 1
-       enddo
-     else if(mype == nxpe*(nype-1)) then
-       do ii=2,mylon2
-           var(1,ii) = rank(jnode)
-           jnode = jnode + 1
-       enddo
-       do jj=2,mylat2-1
-           var(jj,mylon2) = rank(jnode)
-           jnode = jnode + 1
-       enddo
-     else if(mype == nxpe*nype-1) then
-       do ii=1,mylon2-1
-           var(1,ii) = rank(jnode)
-           jnode = jnode + 1
-       enddo
-       do jj=2,mylat2-1
-           var(jj,1) = rank(jnode)
-           jnode = jnode + 1
-       enddo
-     else if(mype>0 .and. mype<nxpe-1) then
-       do jj=2,mylat2-1
-           var(jj,1) = rank(jnode)
-           jnode = jnode + 1
-           var(jj,mylon2) = rank(jnode)
-           jnode = jnode + 1
-       enddo
-       do ii=1,mylon2
-           var(mylat2,ii) = rank(jnode)
-           jnode = jnode + 1
-       enddo
-     else if(mype>nxpe*(nype-1) .and. mype<nxpe*nype-1) then
-       do ii=1,mylon2
-           var(1,ii) = rank(jnode)
-           jnode = jnode + 1
-       enddo
-       do jj=2,mylat2-1
-           var(jj,1) = rank(jnode)
-           jnode = jnode + 1
-           var(jj,mylon2) = rank(jnode)
-           jnode = jnode + 1
-       enddo
-     else if(mod(mype,nxpe)==0 .and. mype>0 .and. mype<nxpe*(nype-1)) then
-       do ii=2,mylon2
-           var(1,ii) = rank(jnode)
-           jnode = jnode + 1
-       enddo
-       do jj=2,mylat2-1
-           var(jj,mylon2) = rank(jnode)
-           jnode = jnode + 1
-       enddo
-       do ii=2,mylon2
-           var(mylat2,ii) = rank(jnode)
-           jnode = jnode + 1
-       enddo
-     else if(mod(mype,nxpe)==nxpe-1 .and. mype>nxpe-1 .and. mype<nxpe*nype-1) then
-       do ii=1,mylon2-1
-           var(1,ii) = rank(jnode)
-           jnode = jnode + 1
-       enddo
-       do jj=2,mylat2-1
-           var(jj,1) = rank(jnode)
-           jnode = jnode + 1
-       enddo
-       do ii=1,mylon2-1
-           var(mylat2,ii) = rank(jnode)
-           jnode = jnode + 1
-       enddo
-     else
-       do ii=1,mylon2
-           var(1,ii) = rank(jnode)
-           jnode = jnode + 1
-       enddo
-       do jj=2,mylat2-1
-           var(jj,1) = rank(jnode)
-           jnode = jnode + 1
-           var(jj,mylon2) = rank(jnode)
-           jnode = jnode + 1
-       enddo
-       do ii=1,mylon2
-           var(mylat2,ii) = rank(jnode)
-           jnode = jnode + 1
-       enddo
-     endif
+      do ii=1,mylon2
+          var(1,ii) = rank(jnode)
+          jnode = jnode + 1
+      enddo
+      do jj=2,mylat2-1
+          var(jj,1) = rank(jnode)
+          jnode = jnode + 1
+          var(jj,mylon2) = rank(jnode)
+          jnode = jnode + 1
+      enddo
+      do ii=1,mylon2
+          var(mylat2,ii) = rank(jnode)
+          jnode = jnode + 1
+      enddo
    else
-     do ii=1,mylon2
-         var(1,ii) = rank(jnode)
-         jnode = jnode + 1
-     enddo
-     do jj=2,mylat2-1
-         var(jj,1) = rank(jnode)
-         jnode = jnode + 1
-         var(jj,mylon2) = rank(jnode)
-         jnode = jnode + 1
-     enddo
-     do ii=1,mylon2
-         var(mylat2,ii) = rank(jnode)
-         jnode = jnode + 1
-     enddo
+      do ii=2,mylon2-1
+          var(1,ii) = var(2,ii)
+          var(mylat2,ii) = var(mylat2-1,ii)
+      enddo
+      do jj=2,mylat2-1
+          var(jj,1) = var(jj,2)
+          var(jj,mylon2) = var(jj,mylon2-1)
+      enddo
+      var(1,1)=var(2,2);var(1,mylon2)=var(2,mylon2-1)
+      var(mylat2,1)=var(mylat2-1,2)
+      var(mylat2,mylon2)=var(mylat2-1,mylon2-1)
    endif
 
    end subroutine atlas_to_gsi_
