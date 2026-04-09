@@ -46,7 +46,7 @@ if( ENABLE_QUENCH )
       set( SABER_TEST_GSI_GEOS 1 )
   endif()
   set( SABER_TEST_GSI_GFS 0 )
-  if( gsibec_FOUND AND sp_FOUND )
+  if( gsibec_FOUND AND ip_FOUND )
       set( SABER_TEST_GSI_GFS 1 )
   endif()
   set( SABER_TEST_SPECTRALB 0 )
@@ -54,6 +54,10 @@ if( ENABLE_QUENCH )
       set( SABER_TEST_SPECTRALB 1 )
   endif()
   set( SABER_TEST_VADER 1 )
+  set( SABER_TEST_TORCHBALANCE 0 )
+  if( Torch_FOUND )
+      set( SABER_TEST_TORCHBALANCE 1 )
+  endif()
 
   # Override test selection variables using environment variables
   if( DEFINED ENV{SABER_TEST_MPI} )
@@ -80,7 +84,7 @@ if( ENABLE_QUENCH )
       if( DEFINED ENV{SABER_TEST_GSI_GEOS} )
           set( SABER_TEST_GSI_GEOS $ENV{SABER_TEST_GSI_GEOS} )
       endif()
-      if( sp_FOUND )
+      if( ip_FOUND )
           if( DEFINED ENV{SABER_TEST_GSI_GFS} )
               set( SABER_TEST_GSI_GFS $ENV{SABER_TEST_GSI_GFS} )
           endif()
@@ -168,6 +172,10 @@ if( ENABLE_QUENCH )
   if( SABER_TEST_MGBF_REG )
       message( STATUS "  - TIER 1 MGBF-REG" )
       file( STRINGS testlist/saber_test_tier1-mgbf_reg.txt saber_test )
+  endif()
+  if( SABER_TEST_TORCHBALANCE )
+      message( STATUS "  - TIER 1 TorchBalance-specific" )
+      file( STRINGS testlist/saber_test_tier1-torchbalance.txt saber_test )
       list( APPEND saber_test_full ${saber_test} )
   endif()
 
@@ -181,6 +189,44 @@ if( ENABLE_QUENCH )
   # Input data
   file( STRINGS testlist/saber_data.txt saber_data )
 
+  # Setup virtual environment for TorchBalance test emulator generation
+  if( SABER_TEST_TORCHBALANCE )
+      # Find Python3 for venv creation
+      if(NOT Python3_EXECUTABLE)
+          find_package(Python3 COMPONENTS Interpreter REQUIRED)
+      endif()
+
+      # Create virtual environment only during CMake configuration
+      set(VENV_DIR ${CMAKE_CURRENT_BINARY_DIR}/torchbalance_venv)
+      set(VENV_PYTHON ${VENV_DIR}/bin/python)
+
+      if(NOT EXISTS ${VENV_PYTHON})
+          message( STATUS "Creating virtual environment for TorchBalance tests..." )
+          execute_process(
+              COMMAND ${Python3_EXECUTABLE} -m venv ${VENV_DIR}
+              RESULT_VARIABLE VENV_RESULT
+          )
+          if(NOT VENV_RESULT EQUAL 0)
+              message( FATAL_ERROR "Failed to create virtual environment" )
+          endif()
+
+          execute_process(
+              COMMAND ${VENV_DIR}/bin/pip install torch
+              RESULT_VARIABLE PIP_RESULT
+          )
+          if(NOT PIP_RESULT EQUAL 0)
+              message( FATAL_ERROR "Failed to install PyTorch in virtual environment" )
+          endif()
+      endif()
+
+      # Add test to generate emulator (runs before torchbalance tests)
+      ecbuild_add_test( TARGET generate_torchbalance_test_emulator
+                        TYPE SCRIPT
+                        COMMAND ${VENV_PYTHON}
+                        ARGS ${CMAKE_SOURCE_DIR}/saber/src/saber/torchbalance/create_test_emulator.py
+                             ${CMAKE_CURRENT_BINARY_DIR}/testdata/air_temperature_emulator.ts )
+  endif()
+
   # Setup SABER directories and links
   message( STATUS "Setup SABER directories and links" )
   file( REMOVE_RECURSE ${CMAKE_CURRENT_BINARY_DIR}/testdata )
@@ -189,19 +235,8 @@ if( ENABLE_QUENCH )
   file( MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testdata )
   file( MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testinput )
   file( MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testref )
+  
   foreach( test ${saber_test_full} )
-
-      # Hack to disable certain interpolation tests.
-      # Remove as soon at Atlas version is upgraded to >= 0.38.0
-      if ((${test} MATCHES "dirac_interpolation_[23]") AND (atlas_VERSION VERSION_LESS 0.38.0))
-        message(WARNING "Atlas version is ${atlas_VERSION}. "
-                "Some interpolation features are not supported. "
-                "Use 0.38.0 or greater to enable these features and the following test: "
-                "${test}")
-        list(REMOVE_ITEM saber_test_full ${test})
-        continue()
-      endif()
-
       # Make test-specific data directory
       file( MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testdata/${test} )
 
@@ -313,19 +348,25 @@ if( ENABLE_QUENCH )
                       list( APPEND deps_list ${deps} )
                       list( LENGTH deps_list deps_length )
                       if( ${deps_length} GREATER 0 )
-                          list( TRANSFORM deps_list PREPEND saber_test_ )
+                          list( TRANSFORM deps_list PREPEND saber_ )
                           list( TRANSFORM deps_list APPEND _${mpi}-${omp} )
                           if( ${mpi} GREATER 1 )
                               set( deps_list_1 "" )
                               list( APPEND deps_list_1 ${deps} )
-                              list( TRANSFORM deps_list_1 PREPEND saber_test_ )
+                              list( TRANSFORM deps_list_1 PREPEND saber_ )
                               list( TRANSFORM deps_list_1 APPEND _1-1 )
                               list( APPEND deps_list ${deps_list_1} )
                           endif()
                       endif()
 
+                      # Add emulator generation dependency for torchbalance tests
+                      string( FIND ${test} "torchbalance" torchbalance_result )
+                      if( torchbalance_result GREATER_EQUAL 0 )
+                          list( APPEND deps_list generate_torchbalance_test_emulator )
+                      endif()
+
                       # Add test
-                      ecbuild_add_test( TARGET saber_test_${test}_${mpi}-${omp}
+                      ecbuild_add_test( TARGET saber_${test}_${mpi}-${omp}
                                         MPI ${mpi}
                                         OMP ${omp}
                                         COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_${exename}.x
@@ -348,12 +389,12 @@ if( ENABLE_QUENCH )
                   list( APPEND deps_list ${deps} )
                   list( LENGTH deps_list deps_length )
                   if( ${deps_length} GREATER 0 )
-                      list( TRANSFORM deps_list PREPEND saber_test_ )
+                      list( TRANSFORM deps_list PREPEND saber_ )
                       list( TRANSFORM deps_list APPEND _${mpi}-${omp} )
                   endif()
 
                   # Add test
-                  ecbuild_add_test( TARGET saber_test_${test}_${mpi}-${omp}
+                  ecbuild_add_test( TARGET saber_${test}_${mpi}-${omp}
                                     MPI ${mpi}
                                     OMP ${omp}
                                     COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
@@ -370,7 +411,7 @@ if( ENABLE_QUENCH )
           if( result MATCHES 0 )
               if ( ${mpi} EQUAL 1 AND ${omp} EQUAL 1 )
                   # Add test
-                  ecbuild_add_test( TARGET saber_test_${test}
+                  ecbuild_add_test( TARGET saber_${test}
                                     TYPE SCRIPT
                                     COMMAND ${CMAKE_BINARY_DIR}/bin/saber_compare_dirac_diagnostics.py
                                     ARGS testinput/${test}.yaml )
@@ -411,7 +452,7 @@ if( SABER_TEST_BUMP )
     # NICAS square-root test
     set( mpi 2 )
     set( omp 1 )
-    add_fctest( TARGET          saber_test_nicas_sqrt
+    add_fctest( TARGET          saber_nicas_sqrt
                 MPI             ${mpi}
                 OMP             ${omp}
                 LINKER_LANGUAGE ${FORTRAN_LINKER_LANGUAGE}
@@ -422,7 +463,7 @@ endif()
 # A bespoke test for parallel B
 set( mpi 5 )
 set( omp 1 )
-ecbuild_add_test( TARGET saber_test_dirac_parallel_hybrid_ratio_stddev_5-1
+ecbuild_add_test( TARGET saber_dirac_parallel_hybrid_ratio_stddev_5-1
                   MPI ${mpi}
                   OMP ${omp}
                   COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
