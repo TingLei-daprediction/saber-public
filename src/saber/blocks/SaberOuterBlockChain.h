@@ -243,7 +243,7 @@ SaberOuterBlockChain::SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
                        std::shared_ptr<oops::FieldSets> fsetEns,
                        const bool & centralDirectCalibration) {
   oops::Log::trace() << "SaberOuterBlockChain ctor starting" << std::endl;
-  oops::Log::info() << "Info xx    : Creating outer blocks" << std::endl;
+  oops::Log::info() << "Info     : Creating outer blocks" << std::endl;
 
   // In addition to other configuration option pass model data information for vader
   // TODO(AS): check whether conf needs to be passed to the blocks (ideally not)
@@ -266,7 +266,6 @@ SaberOuterBlockChain::SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
       geom.generic() : innerGeometryData();
 
     // Initialize outer block
-    oops::Log::trace() << "SaberOuterBlockChain before initBlock" << std::endl;
     const auto[saberOuterBlockParams,
                currentOuterVars,
                activeVars]
@@ -276,12 +275,6 @@ SaberOuterBlockChain::SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
                           outerVars,
                           fset4dXb,
                           fset4dFg);
-  oops::Log::trace() << "SaberOuterBlockChain after initBlock" << std::endl;
-
-    // Update MODEL geometry validity, by checking whether the inner geometry data returned by
-    // the last outer block shares the same reference as its own outer geometry data
-    validModelGeom = validModelGeom &&
-      (&(outerBlocks_.back()->innerGeometryData()) == &currentOuterGeometryData);
 
     // Update MODEL geometry validity, by checking whether the inner geometry data returned by
     // the last outer block shares the same reference as its own outer geometry data
