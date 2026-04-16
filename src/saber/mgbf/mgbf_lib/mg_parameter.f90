@@ -638,7 +638,6 @@ logical :: l_exist
          this%mype=mype  
          file_coef_normalization=trim(dir_coef_normalization)//"/profile_subdomain_"//str_rank//".txt"
       endif
-         write(6,*)'thinkdeb888 normalization file is ',trim(file_coef_normalization)
          inquire(file=trim(file_coef_normalization),exist=l_exist)
          if(l_exist) then
            open(newunit=myunit,file=trim(file_coef_normalization),status='old',action='read')
@@ -779,12 +778,9 @@ logical :: l_exist
 !
 
   this%km_a = this%km2+this%lm_a*this%km3
-!  write(6,*)'thinkdeb255 lm_a,km3,km2 ',this%km2,this%lm_a,this%km3
-!  write(6,*)'thinkdeb255 km_a ',this%km_a
   this%km   = this%km2+this%lm  *this%km3
 
   this%km_a_all = this%km_a * this%n_ens
-!  write(6,*)'thinkdeb255 km_a_all ',this%km_a_all
   this%km_all   = this%km   * this%n_ens
 
   this%km2_all = this%km2 * this%n_ens
@@ -951,8 +947,6 @@ logical :: l_exist
   call def_ngens(this%ixm,this%gm,this%nxm)
   call def_ngens(this%jym,this%gm,this%nym)
 
-  write(6,*)'thinkdeb999 2 9 ',this%l_vert_stretched_filtgrid  ,' ',"l_use",this%l_vert_stretched_filtgrid
-  call flush(6)
 !$omp parallel do private(g) schedule(static)
   do g=1,this%gm
     this%nxy(g)=this%ixm(g)*this%jym(g)
@@ -1034,8 +1028,6 @@ logical :: l_exist
   this%rmom2_3=u1/sqrt(this%pee2+5)
   this%rmom2_4=u1/sqrt(this%pee2+6)
 
-  write(6,*)'thinkdeb999 2 10 ',this%l_vert_stretched_filtgrid  ,' ',"l_use",this%l_vert_stretched_filtgrid
-  call flush(6)
 contains
 
 subroutine convert_vert_varied_aspt
@@ -1052,8 +1044,6 @@ subroutine convert_vert_varied_aspt
   endif
   allocate(sigofz(lm_a),sigofis(lm))
   call MPI_COMM_RANK(MPI_COMM_WORLD,mype,ierr)
-  write(6,*)'thinkdeb999 2.0 ',this%l_vert_stretched_filtgrid  ,' ',"l_use",this%l_vert_stretched_filtgrid
-  call flush(6)
   if(this%l_vert_stretched_filtgrid) then 
       if(mype.eq.0) then 
         open(newunit=myunit,file="mgbf_vert_aspt_profile.txt",status='old',iostat=ierr)
@@ -1085,8 +1075,6 @@ subroutine convert_vert_varied_aspt
          enddo
          endif
   else
-  write(6,*)'thinkdeb999 2 0.1 ',this%l_vert_stretched_filtgrid  ,' '
-  call flush(6)
       sigofz=sqrt(mg_ampl01)
       
   endif 
