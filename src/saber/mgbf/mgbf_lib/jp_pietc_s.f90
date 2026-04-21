@@ -32,7 +32,7 @@ logical ,parameter:: T=.true.,F=.false. !<- for pain-relief in logical ops
 real(sp),parameter:: &
      u0=0_sp,u1=1_sp,mu1=-u1,u2=2_sp,mu2=-u2,u3=3_sp,mu3=-u3,u4=4_sp, &
      mu4=-u4,u5=5_sp,mu5=-u5,u6=6_sp,mu6=-u6,o2=u1/u2,o3=u1/u3,o4=u1/u4, &
-     o5=u1/u5,o6=u1/u6,mo2=-o2,mo3=-o3,mo4=-o4,mo5=-o5,mo6=-06, &
+     o5=u1/u5,o6=u1/u6,mo2=-o2,mo3=-o3,mo4=-o4,mo5=-o5,mo6=-o6, &
      pi =3.1415926535897932384626433832795028841971693993751058209749e0_sp, &
      pi2=6.2831853071795864769252867665590057683943387987502116419498e0_sp, &
      pih=1.5707963267948966192313216916397514420985846996875529104874e0_sp, &

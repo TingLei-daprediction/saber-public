@@ -125,6 +125,7 @@ namelist /parameters_mgbf_init/ nscale,nvargrp,readin_mgbf_nml_group ,readin_mul
 
 character(len=:), allocatable :: dump_json
 integer(i_kind):: max_nlevs
+logical l_debug_print
 
 ! Hold communicator
 ! -----------------
@@ -135,10 +136,13 @@ integer(i_kind):: max_nlevs
 !clt call self%grid%create(config, comm)
 self%rank = comm%rank()
 
-write(6,*)'thinkdeb mgbf create999 '
-write(6,*)'thinkdeb mgbf create999 config'
-   dump_json=config%json()          ! serialize to a JSON string
-write(6,'(A)')trim(dump_json)
+l_debug_print = .false.
+if (config%has("debug print")) call config%get_or_die("debug print", l_debug_print)
+
+if (l_debug_print .and. self%rank == 0) then
+  dump_json = config%json()
+  write(6,'(A)') trim(dump_json)
+endif
 call config%get_or_die("saber block name", centralblockname)
 !clt call config%get_or_die("debuggingxx bypass mgbf", self%noMGBF)
 if (config%has("mgbf sdl and vdl init namelist file")) then
