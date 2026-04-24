@@ -89,7 +89,7 @@ interface rcalib
    module procedure rcalib1,rcalib2,rcalib3,rcalib4
 end interface rcalib
 interface rbetat
-   module procedure rbeta1t,vrbeta1t, rbeta2t,vrbeta2t, rbeta3t,vrbeta3t, rbeta4t,vrbeta4t
+   module procedure rbeta1t,rbeta3d_1t,vrbeta1t, rbeta2t,vrbeta2t, rbeta3t,vrbeta3t, rbeta4t,vrbeta4t
 end interface
 interface flipt
    module procedure flip1t,vflip1t,   flip2t,vflip2t,   flip3t,vflip3t,   flip4t,vflip4t
@@ -98,7 +98,7 @@ interface flip
    module procedure flip1,vflip1,     flip2,vflip2,     flip3,vflip3,     flip4,vflip4
 end interface
 interface rbeta
-   module procedure rbeta1,vrbeta1,   rbeta2,vrbeta2,   rbeta3,vrbeta3,   rbeta4,vrbeta4
+   module procedure rbeta1,rbeta3d_1,vrbeta1,   rbeta2,vrbeta2,   rbeta3,vrbeta3,   rbeta4,vrbeta4
 end interface
 contains
 
@@ -908,6 +908,33 @@ do ix=Lx,Mx
    enddo
 enddo
 end subroutine rbeta1t
+!======================================================================[rbetat]
+subroutine rbeta3d_1T(nz, hx,Lx,mx, el, a,b)
+!=============================================================================
+! 3D version of rbeta1t, filtering nz independent fields at once.
+!=============================================================================
+integer(spi),                         intent(in   ):: nz,hx,Lx,mx
+real(dp),dimension(0:1,   Lx:mx   ), intent(in   ):: el
+real(dp),dimension(nz,    Lx:mx   ), intent(in   ):: a
+real(dp),dimension(nz,-hx+Lx:mx+hx), intent(  out):: b
+!-----------------------------------------------------------------------------
+real(dp),dimension(nz) :: tafrow,tas
+real(dp)               :: exx,rrc
+integer(spi)           :: ix,ixp,ixm,gx
+!=============================================================================
+b=0
+do ix=Lx,Mx
+   exx=el(1,ix)
+   tas=a(:,ix)*el(0,ix)
+   b(:,ix)=b(:,ix)+tas
+   do gx=ceiling(-u1/exx),-1; ixp=ix+gx; ixm=ix-gx
+      rrc=u1-(gx*exx)**2
+      tafrow=tas*rrc**p
+      b(:,ixp)=b(:,ixp)+tafrow
+      b(:,ixm)=b(:,ixm)+tafrow
+   enddo
+enddo
+end subroutine rbeta3d_1t
 !======================================================================[rbetat]
 subroutine vrbeta1T(nv, hx,lx,mx, el, a,b)
 !=============================================================================
@@ -1901,6 +1928,31 @@ do ix=Lx,Mx
    b(ix)=tb*el(0,ix)
 enddo
 end subroutine rbeta1
+!===================================================================[rbeta]
+subroutine rbeta3d_1(nz,hx,Lx,mx, el, a,b)
+!===============================================================================
+! 3D version of rbeta1, filtering nz independent fields at once.
+!===============================================================================
+integer(spi),                         intent(in   ):: nz,hx,Lx,mx
+real(dp),dimension(0:1,   Lx:mx   ), intent(in   ):: el
+real(dp),dimension(nz,-hx+Lx:mx+hx), intent(in   ):: a
+real(dp),dimension(nz,    Lx:mx   ), intent(  out):: b
+!-------------------------------------------------------------------------------
+real(dp),dimension(nz) :: tb
+real(dp)               :: exx,rrc
+integer(spi)           :: gx,ix,ixp,ixm
+!===============================================================================
+b=0
+do ix=Lx,Mx
+   exx=el(1,ix)
+   tb=a(:,ix)
+   do gx=ceiling(-u1/exx),-1; ixp=ix+gx; ixm=ix-gx
+      rrc=u1-(gx*exx)**2
+      tb=tb+rrc**p*(a(:,ixp)+a(:,ixm))
+   enddo
+   b(:,ix)=tb*el(0,ix)
+enddo
+end subroutine rbeta3d_1
 !===================================================================[rbeta]
 subroutine vrbeta1(nv,hx,lx,mx, el, a,b)
 !================================================================================
