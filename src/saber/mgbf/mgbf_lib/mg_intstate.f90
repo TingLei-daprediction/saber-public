@@ -69,8 +69,12 @@ real(r_kind), allocatable,dimension(:,:):: p_rho
 
 real(r_kind), allocatable,dimension(:,:,:):: paspx
 real(r_kind), allocatable,dimension(:,:,:,:):: paspx4d
+! codex debug/develop for new jim's calibrated function
+real(r_kind), allocatable,dimension(:,:,:,:,:):: paspx4d_jim_new
 real(r_kind), allocatable,dimension(:,:,:):: paspy
 real(r_kind), allocatable,dimension(:,:,:,:):: paspy4d
+! codex debug/develop for new jim's calibrated function
+real(r_kind), allocatable,dimension(:,:,:,:,:):: paspy4d_jim_new
 real(r_kind), allocatable,dimension(:,:,:):: pasp1
 real(r_kind), allocatable,dimension(:,:,:,:):: pasp2
 real(r_kind), allocatable,dimension(:,:,:,:,:):: pasp3
@@ -190,7 +194,7 @@ contains
 !from mg_filtering.f90
   procedure :: filtering_procedure
   procedure :: filtering_rad3,filtering_lin3
-  procedure :: filtering_rad2_bkg,filtering_lin2_bkg,filtering_fast_bkg
+  procedure :: filtering_rad2_bkg,filtering_lin2_bkg,filtering_fast_bkg,filtering_fast_bkg_new_jim
   procedure :: filtering_rad2,filtering_lin2
   procedure :: filtering_rad2_ens,filtering_lin2_ens,filtering_fast_ens
   procedure :: filtering_rad_highest
@@ -943,6 +947,9 @@ interface
    module subroutine filtering_fast_bkg(this)
      class(mg_intstate_type),target::this
    end subroutine
+   module subroutine filtering_fast_bkg_new_jim(this)
+     class(mg_intstate_type),target::this
+   end subroutine
    module subroutine filtering_rad2_ens(this,mg_filt_flag)
      class(mg_intstate_type),target::this
      integer(i_kind),intent(in):: mg_filt_flag
@@ -1141,8 +1148,12 @@ allocate(this%p_rho(1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this
 
 allocate(this%paspx(1,1,1:this%im)) ; this%paspx=0.
 allocate(this%paspx4d(this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,2)) ; this%paspx4d=0.
+! codex debug/develop for new jim's calibrated function
+allocate(this%paspx4d_jim_new(0:1,this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,2)) ; this%paspx4d_jim_new=0.
 allocate(this%paspy(1,1,1:this%jm)) ; this%paspy=0.
 allocate(this%paspy4d(this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,2)) ; this%paspy4d=0.
+! codex debug/develop for new jim's calibrated function
+allocate(this%paspy4d_jim_new(0:1,this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,2)) ; this%paspy4d_jim_new=0.
 
 allocate(this%pasp1(1,1,1:this%lm))                     ; this%pasp1=0.
 allocate(this%pasp2(2,2,1:this%im,1:this%jm))           ; this%pasp2=0.
@@ -1259,8 +1270,12 @@ integer(i_kind),optional,intent(in)::n_owned_anl
 real(r_kind),optional,intent(in)::lonlat1d_anl(:,:)
 !***********************************************************************
 integer(i_kind):: i,j,k,L
+! codex debug/develop for new jim's calibrated function
+integer(i_kind),allocatable :: hwork_jim(:)
 
 real(r_kind):: gen_fac
+! codex debug/develop for new jim's calibrated function
+real(r_kind):: asL_jim,asR_jim
 real(r_kind),allocatable, dimension(:,:,:,:):: weig_g
 real(r_kind),allocatable, dimension(:,:,:,:):: loc_a 
 real(r_kind),allocatable, dimension(:,:,:):: weigh_tmp 
@@ -1530,6 +1545,27 @@ if (this%l_constant_aspt2 ) then
 #endif
   
 endif
+! codex debug/develop for new jim's calibrated function
+! codex debug/develop for new jim's calibrated function: use the edge-cell aspect
+! values as the boundary-aspect inputs to rcalib1_jim_new until a separate
+! boundary aspect field is identified in the current mgbf_lib path.
+allocate(hwork_jim(max(this%im,this%jm)))
+do k=1,this%lm
+  do j=1,this%jm
+    asL_jim=this%paspx4d(k,1,j,1)
+    asR_jim=this%paspx4d(k,this%im,j,1)
+    call this%rcalib1_jim_new(1,this%im,this%Flwest(1),this%Fleast(1),asL_jim,asR_jim, &
+         this%paspx4d(k,1:this%im,j,1),this%paspx4d_jim_new(:,k,1:this%im,j,1),hwork_jim(1:this%im))
+  enddo
+enddo
+do k=1,this%lm
+  do i=1,this%im
+    asL_jim=this%paspy4d(k,i,1,1)
+    asR_jim=this%paspy4d(k,i,this%jm,1)
+    call this%rcalib1_jim_new(1,this%jm,this%Flsouth(1),this%Flnorth(1),asL_jim,asR_jim, &
+         this%paspy4d(k,i,1:this%jm,1),this%paspy4d_jim_new(:,k,i,1:this%jm,1),hwork_jim(1:this%jm))
+  enddo
+enddo
 !$omp parallel do private(i,j) schedule(static)
 do j=1,this%jm
 do i=1,this%im
@@ -1647,6 +1683,21 @@ end do
 
    call this%boco_2d(this%paspy4d(1:this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,1),this%lm,this%im,this%jm,this%hx,this%hy)
    call this%upsending_normalized(this%lm,this%paspy4d(:,:,:,1),this%paspy4d(:,:,:,2))
+
+   call this%boco_2d(this%paspx4d_jim_new(0,1:this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,1), &
+                     this%lm,this%im,this%jm,this%hx,this%hy)
+   call this%upsending_normalized(this%lm,this%paspx4d_jim_new(0,:,:,:,1),this%paspx4d_jim_new(0,:,:,:,2))
+   call this%boco_2d(this%paspx4d_jim_new(1,1:this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,1), &
+                     this%lm,this%im,this%jm,this%hx,this%hy)
+   call this%upsending_normalized(this%lm,this%paspx4d_jim_new(1,:,:,:,1),this%paspx4d_jim_new(1,:,:,:,2))
+
+   call this%boco_2d(this%paspy4d_jim_new(0,1:this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,1), &
+                     this%lm,this%im,this%jm,this%hx,this%hy)
+   call this%upsending_normalized(this%lm,this%paspy4d_jim_new(0,:,:,:,1),this%paspy4d_jim_new(0,:,:,:,2))
+   call this%boco_2d(this%paspy4d_jim_new(1,1:this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,1), &
+                     this%lm,this%im,this%jm,this%hx,this%hy)
+   call this%upsending_normalized(this%lm,this%paspy4d_jim_new(1,:,:,:,1),this%paspy4d_jim_new(1,:,:,:,2))
+deallocate(hwork_jim)
 
    call this%boco_2d(this%ssx4d(1:this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,1),this%lm,this%im,this%jm,this%hx,this%hy)
    call this%upsending_normalized(this%lm,this%ssx4d(:,:,:,1),this%ssx4d(:,:,:,2))

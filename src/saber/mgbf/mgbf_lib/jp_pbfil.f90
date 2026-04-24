@@ -63,6 +63,32 @@ use mgbf_kinds, only: dp=>r_kind
 use jp_pietc, only: u1
 use, intrinsic :: iso_fortran_env, only: output_unit, error_unit
 implicit none
+! codex debug/develop for new jim's calibrated function
+integer,parameter :: nsres_jim_new=50
+real(dp),parameter :: deltabi_jim_new=10.0_dp
+real(dp),parameter :: om0_jim_new=1.170561_dp
+real(dp),parameter :: om1_jim_new=-4.345418_dp
+real(dp),parameter :: om2_jim_new=2.583651_dp
+real(dp),parameter :: sres2_jim_new(0:nsres_jim_new) = (/ &
+0.9999999_dp,0.8390_dp,0.6805_dp,0.5256_dp,0.3757_dp,0.2328_dp, &
+0.1004_dp,-0.01556_dp,-0.1031_dp,-0.1345_dp,-0.02307_dp,0.09016_dp, &
+0.03778_dp,-0.01302_dp,-0.04396_dp,-0.03795_dp,0.02998_dp,0.03412_dp, &
+0.006966_dp,-0.01677_dp,-0.02450_dp,-0.005024_dp,0.02284_dp,0.01201_dp, &
+-0.004674_dp,-0.01482_dp,-0.01056_dp,0.01156_dp,0.01199_dp,0.001285_dp, &
+-0.008219_dp,-0.009839_dp,0.001731_dp,0.009906_dp,0.004143_dp,-0.003733_dp, &
+-0.007635_dp,-0.003235_dp,0.006907_dp,0.005222_dp,-0.0007235_dp,-0.005267_dp, &
+-0.004615_dp,0.003483_dp,0.005193_dp,0.001212_dp,-0.003152_dp,-0.004450_dp, &
+-0.00001756_dp,0.004429_dp,0.002340_dp /)
+real(dp),parameter :: sres3_jim_new(0:nsres_jim_new) = (/ &
+0.9999999_dp,0.8637_dp,0.7058_dp,0.5476_dp,0.3934_dp,0.2467_dp, &
+0.1123_dp,-0.001744_dp,-0.08045_dp,-0.08895_dp,0.03107_dp,0.03997_dp, &
+0.008750_dp,-0.01796_dp,-0.02029_dp,0.007223_dp,0.01323_dp,0.002605_dp, &
+-0.007944_dp,-0.006694_dp,0.004073_dp,0.005567_dp,0.0002230_dp,-0.004496_dp, &
+-0.002143_dp,0.002710_dp,0.002604_dp,-0.0006152_dp,-0.002734_dp,-0.0004276_dp, &
+0.001852_dp,0.001211_dp,-0.0008620_dp,-0.001619_dp,0.0002304_dp,0.001253_dp, &
+0.0004811_dp,-0.0008617_dp,-0.0008482_dp,0.0004500_dp,0.0008209_dp,0.00008178_dp, &
+-0.0007499_dp,-0.0003567_dp,0.0004787_dp,0.0005061_dp,-0.0001339_dp,-0.0005853_dp, &
+-0.00006824_dp,0.0004252_dp,0.0002775_dp /)
 
 contains
 
@@ -375,6 +401,80 @@ enddo;  enddo;  enddo;  enddo! ix, iy, iz, iw
 end subroutine getlinesum4
 
 !=============================================================================
+! codex debug/develop for new jim's calibrated function
+module subroutine rcalib1_jim_new(this,Lx,mx,Lbx,mbx,asLbx,asmbx,as,el,hxm)
+!=============================================================================
+class(mg_parameter_type)::this
+integer,                      intent(in   ):: Lx,mx
+logical,                      intent(in   ):: Lbx,mbx
+real(dp),                     intent(in   ):: asLbx,asmbx
+real(dp),dimension(Lx:Mx),    intent(in   ):: as
+real(dp),dimension(0:1,Lx:Mx),intent(  out):: el
+integer,dimension(Lx:Mx),     intent(  out):: hxm
+real(dp),dimension(Lx-mx:mx-Lx)          :: fs
+real(dp)                                  :: b,exx,f,r,rc,rrc,s,x,xLb,xmb
+real(dp)                                  :: rpp3o2_jim_new
+integer                                   :: ib,ix,ixp,ixm,gx,gxm,gxn,Lxmix,mxmix
+!=============================================================================
+xLb=0.0_dp
+xmb=0.0_dp
+if(Lbx .and. asLbx>0.0_dp) xLb=u1/sqrt(asLbx)
+if(mbx .and. asmbx>0.0_dp) xmb=u1/sqrt(asmbx)
+rpp3o2_jim_new=sqrt(real(this%p,dp)+1.5_dp)
+do ix=Lx,mx
+   b=sqrt(max(as(ix),tiny(1.0_dp)))
+   s=rpp3o2_jim_new*b
+   r=b*deltabi_jim_new
+   ib=int(r)
+   if(ib<nsres_jim_new)then
+      r=r-ib; rc=u1-r
+      if    (this%p==2)then
+         s=s+rc*sres2_jim_new(ib)+r*sres2_jim_new(ib+1)
+      elseif(this%p==3)then
+         s=s+rc*sres3_jim_new(ib)+r*sres3_jim_new(ib+1)
+      endif
+   endif
+   exx=u1/max(s,tiny(1.0_dp))
+   el(1,ix)=exx
+   gxm=floor(u1/exx)
+   hxm(ix)=gxm
+   fs(-gxm:gxm)=0.0_dp
+   fs(0)=u1
+   do gx=-gxm,-1
+      rrc=u1-(gx*exx)**2
+      f=rrc**this%p
+      fs(-gx)=f
+      fs(gx)=f
+   enddo
+   if(Lbx)then
+      Lxmix=Lx-ix
+      gxn=gxm+Lxmix
+      do gx=1,gxn
+         x=gx*xLb
+         if(x>0.0_dp)x=om0_jim_new+x*(om1_jim_new+x*om2_jim_new)
+         ixm=Lxmix-gx
+         ixp=Lxmix+gx-1
+         fs(ixp)=fs(ixp)+x*fs(ixm)
+         fs(ixm)=0.0_dp
+      enddo
+   endif
+   if(mbx)then
+      mxmix=mx-ix
+      gxn=gxm-mxmix
+      do gx=1,gxn
+         x=gx*xmb
+         if(x>0.0_dp)x=om0_jim_new+x*(om1_jim_new+x*om2_jim_new)
+         ixp=mxmix+gx
+         ixm=mxmix-gx+1
+         fs(ixm)=fs(ixm)+x*fs(ixp)
+         fs(ixp)=0.0_dp
+      enddo
+   endif
+   el(0,ix)=u1/sqrt(sum(fs(-gxm:gxm)**2))
+enddo
+end subroutine rcalib1_jim_new
+
+!=============================================================================
 module subroutine rbeta1(this,hx,lx,mx, el,ss, a)                    ! [rbeta]
 !=============================================================================
 ! Perform a radial beta-function filter in 1D.
@@ -412,6 +512,32 @@ do ix=Lx,Mx
 enddo
 a=b
 end subroutine rbeta1
+!=============================================================================
+! codex debug/develop for new jim's calibrated function
+module subroutine rbeta1_jim_new(this,hx,lx,mx, el, a)
+!=============================================================================
+class(mg_parameter_type)::this
+integer,                        intent(in   ):: hx,Lx,mx
+real(dp),dimension(0:1,Lx:Mx),  intent(in   ):: el
+real(dp),dimension(lx-hx:mx+hx),intent(inout):: a
+real(dp),dimension(lx-hx:mx+hx):: b
+real(dp)                       :: tb,exx,rrc
+integer                        :: gx,ix,ixp,ixm
+!=============================================================================
+b=0
+do ix=Lx,Mx
+   exx=el(1,ix)
+   tb=a(ix)
+   do gx=ceiling(-u1/exx),-1
+      ixp=ix+gx
+      ixm=ix-gx
+      rrc=u1-(gx*exx)**2
+      tb=tb+rrc**this%p*(a(ixp)+a(ixm))
+   enddo
+   b(ix)=tb*el(0,ix)
+enddo
+a=b
+end subroutine rbeta1_jim_new
 module subroutine rbeta3d_1(this,nz,hx,lx,mx, el,ss, a)                    ! [rbeta]
 !=============================================================================
 !clt modified from rbeta1 to treat files of vertical dimension nz
@@ -452,6 +578,34 @@ enddo
 enddo
 a=b
 end subroutine rbeta3d_1
+!=============================================================================
+! codex debug/develop for new jim's calibrated function
+module subroutine rbeta3d_1_jim_new(this,nz,hx,lx,mx, el, a)
+!=============================================================================
+class(mg_parameter_type)::this
+integer,                           intent(in   ):: nz,hx,Lx,mx
+real(dp),dimension(0:1,nz,Lx:Mx),  intent(in   ):: el
+real(dp),dimension(nz,lx-hx:mx+hx),intent(inout):: a
+real(dp),dimension(nz,lx-hx:mx+hx):: b
+real(dp)                          :: tb,exx,rrc
+integer                           :: gx,ix,ixp,ixm,k
+!=============================================================================
+b=0
+do k=1,nz
+do ix=Lx,Mx
+   exx=el(1,k,ix)
+   tb=a(k,ix)
+   do gx=ceiling(-u1/exx),-1
+      ixp=ix+gx
+      ixm=ix-gx
+      rrc=u1-(gx*exx)**2
+      tb=tb+rrc**this%p*(a(k,ixp)+a(k,ixm))
+   enddo
+   b(k,ix)=tb*el(0,k,ix)
+enddo
+enddo
+a=b
+end subroutine rbeta3d_1_jim_new
 !=============================================================================
 module subroutine rbeta2(this,hx,lx,mx, hy,ly,my, el,ss, a)          ! [rbeta]
 !=============================================================================
@@ -721,6 +875,33 @@ do ix=Lx,Mx
 enddo
 a=b
 end subroutine rbeta1t
+!=============================================================================
+! codex debug/develop for new jim's calibrated function
+module subroutine rbeta1T_jim_new(this,hx,lx,mx, el, a)
+!=============================================================================
+class(mg_parameter_type)::this
+integer,                        intent(in   ):: hx,Lx,mx
+real(dp),dimension(0:1,Lx:Mx),  intent(in   ):: el
+real(dp),dimension(lx-hx:mx+hx),intent(inout):: a
+real(dp),dimension(lx-hx:mx+hx):: b
+real(dp)                       :: ta,exx,rrc,tafrow
+integer                        :: ix,jx,gx
+!=============================================================================
+b=0
+do ix=Lx,Mx
+   ta=a(ix)*el(0,ix)
+   exx=el(1,ix)
+   b(ix)=b(ix)+ta
+   do gx=ceiling(-u1/exx),-1
+      jx=ix+gx
+      rrc=u1-(gx*exx)**2
+      tafrow=ta*rrc**this%p
+      b(jx)=b(jx)+tafrow
+      b(ix-gx)=b(ix-gx)+tafrow
+   enddo
+enddo
+a=b
+end subroutine rbeta1T_jim_new
 module subroutine rbeta3d_1T(this,nz,hx,lx,mx, el,ss, a)                  ! [rbetat]
 !clt modified from rbeta1T to add a vertical dimension
 !=============================================================================
@@ -759,6 +940,35 @@ enddo
 enddo
 a=b
 end subroutine rbeta3d_1t
+!=============================================================================
+! codex debug/develop for new jim's calibrated function
+module subroutine rbeta3d_1T_jim_new(this,nz,hx,lx,mx, el, a)
+!=============================================================================
+class(mg_parameter_type)::this
+integer,                           intent(in   ):: nz,hx,Lx,mx
+real(dp),dimension(0:1,nz,Lx:Mx),  intent(in   ):: el
+real(dp),dimension(nz,lx-hx:mx+hx),intent(inout):: a
+real(dp),dimension(nz,lx-hx:mx+hx):: b
+real(dp)                          :: ta,exx,rrc,tafrow
+integer                           :: ix,jx,gx,k
+!=============================================================================
+b=0
+do k=1,nz
+do ix=Lx,Mx
+   ta=a(k,ix)*el(0,k,ix)
+   exx=el(1,k,ix)
+   b(k,ix)=b(k,ix)+ta
+   do gx=ceiling(-u1/exx),-1
+      jx=ix+gx
+      rrc=u1-(gx*exx)**2
+      tafrow=ta*rrc**this%p
+      b(k,jx)=b(k,jx)+tafrow
+      b(k,ix-gx)=b(k,ix-gx)+tafrow
+   enddo
+enddo
+enddo
+a=b
+end subroutine rbeta3d_1T_jim_new
 !=============================================================================
 module subroutine rbeta2T(this,hx,lx,mx, hy,ly,my, el,ss, a)        ! [rbetat]
 !=============================================================================
