@@ -607,6 +607,80 @@ enddo
 a=b
 end subroutine rbeta3d_1_jim_new
 !=============================================================================
+! codex debug/develop for new jim's calibrated function
+module subroutine rflip1_jim_new(this,hx,lx,mx,Lb,mb,asLb,asmb,a)
+!=============================================================================
+class(mg_parameter_type)::this
+integer,                        intent(in   ):: hx,Lx,mx
+logical,                        intent(in   ):: Lb,mb
+real(dp),                       intent(in   ):: asLb,asmb
+real(dp),dimension(lx-hx:mx+hx),intent(inout):: a
+real(dp)                                    :: r,xLb,xmb
+integer                                     :: gx,ixp,ixm,Lxm,mxp
+!=============================================================================
+xLb=0.0_dp
+xmb=0.0_dp
+if(Lb .and. asLb>0.0_dp) xLb=u1/sqrt(asLb)
+if(mb .and. asmb>0.0_dp) xmb=u1/sqrt(asmb)
+if(Lb)then
+   Lxm=Lx-1
+   do gx=1,hx
+      ixm=Lx-gx
+      ixp=Lxm+gx
+      r=gx*xLb
+      if(r>0.0_dp) r=om0_jim_new+r*(om1_jim_new+r*om2_jim_new)
+      a(ixm)=r*a(ixp)
+   enddo
+endif
+if(mb)then
+   mxp=mx+1
+   do gx=1,hx
+      ixp=mx+gx
+      ixm=mxp-gx
+      r=gx*xmb
+      if(r>0.0_dp) r=om0_jim_new+r*(om1_jim_new+r*om2_jim_new)
+      a(ixp)=r*a(ixm)
+   enddo
+endif
+end subroutine rflip1_jim_new
+!=============================================================================
+! codex debug/develop for new jim's calibrated function
+module subroutine rflip3d_1_jim_new(this,nz,hx,lx,mx,Lb,mb,asLb,asmb,a)
+!=============================================================================
+class(mg_parameter_type)::this
+integer,                           intent(in   ):: nz,hx,Lx,mx
+logical,                           intent(in   ):: Lb,mb
+real(dp),                          intent(in   ):: asLb,asmb
+real(dp),dimension(nz,lx-hx:mx+hx),intent(inout):: a
+real(dp)                                       :: r,xLb,xmb
+integer                                        :: gx,ixp,ixm,Lxm,mxp
+!=============================================================================
+xLb=0.0_dp
+xmb=0.0_dp
+if(Lb .and. asLb>0.0_dp) xLb=u1/sqrt(asLb)
+if(mb .and. asmb>0.0_dp) xmb=u1/sqrt(asmb)
+if(Lb)then
+   Lxm=Lx-1
+   do gx=1,hx
+      ixm=Lx-gx
+      ixp=Lxm+gx
+      r=gx*xLb
+      if(r>0.0_dp) r=om0_jim_new+r*(om1_jim_new+r*om2_jim_new)
+      a(:,ixm)=r*a(:,ixp)
+   enddo
+endif
+if(mb)then
+   mxp=mx+1
+   do gx=1,hx
+      ixp=mx+gx
+      ixm=mxp-gx
+      r=gx*xmb
+      if(r>0.0_dp) r=om0_jim_new+r*(om1_jim_new+r*om2_jim_new)
+      a(:,ixp)=r*a(:,ixm)
+   enddo
+endif
+end subroutine rflip3d_1_jim_new
+!=============================================================================
 module subroutine rbeta2(this,hx,lx,mx, hy,ly,my, el,ss, a)          ! [rbeta]
 !=============================================================================
 ! Perform a radial beta-function filter in 2D.
@@ -969,6 +1043,84 @@ enddo
 enddo
 a=b
 end subroutine rbeta3d_1T_jim_new
+!=============================================================================
+! codex debug/develop for new jim's calibrated function
+module subroutine rflip1T_jim_new(this,hx,lx,mx,Lb,mb,asLb,asmb,a)
+!=============================================================================
+class(mg_parameter_type)::this
+integer,                        intent(in   ):: hx,Lx,mx
+logical,                        intent(in   ):: Lb,mb
+real(dp),                       intent(in   ):: asLb,asmb
+real(dp),dimension(lx-hx:mx+hx),intent(inout):: a
+real(dp)                                    :: r,xLb,xmb
+integer                                     :: gx,ixp,ixm,Lxm,mxp
+!=============================================================================
+xLb=0.0_dp
+xmb=0.0_dp
+if(Lb .and. asLb>0.0_dp) xLb=u1/sqrt(asLb)
+if(mb .and. asmb>0.0_dp) xmb=u1/sqrt(asmb)
+if(Lb)then
+   Lxm=Lx-1
+   do gx=1,hx
+      ixm=Lx-gx
+      ixp=Lxm+gx
+      r=gx*xLb
+      if(r>0.0_dp) r=om0_jim_new+r*(om1_jim_new+r*om2_jim_new)
+      a(ixp)=a(ixp)+r*a(ixm)
+      a(ixm)=0.0_dp
+   enddo
+endif
+if(mb)then
+   mxp=mx+1
+   do gx=1,hx
+      ixp=mx+gx
+      ixm=mxp-gx
+      r=gx*xmb
+      if(r>0.0_dp) r=om0_jim_new+r*(om1_jim_new+r*om2_jim_new)
+      a(ixm)=a(ixm)+r*a(ixp)
+      a(ixp)=0.0_dp
+   enddo
+endif
+end subroutine rflip1T_jim_new
+!=============================================================================
+! codex debug/develop for new jim's calibrated function
+module subroutine rflip3d_1T_jim_new(this,nz,hx,lx,mx,Lb,mb,asLb,asmb,a)
+!=============================================================================
+class(mg_parameter_type)::this
+integer,                           intent(in   ):: nz,hx,Lx,mx
+logical,                           intent(in   ):: Lb,mb
+real(dp),                          intent(in   ):: asLb,asmb
+real(dp),dimension(nz,lx-hx:mx+hx),intent(inout):: a
+real(dp)                                       :: r,xLb,xmb
+integer                                        :: gx,ixp,ixm,Lxm,mxp
+!=============================================================================
+xLb=0.0_dp
+xmb=0.0_dp
+if(Lb .and. asLb>0.0_dp) xLb=u1/sqrt(asLb)
+if(mb .and. asmb>0.0_dp) xmb=u1/sqrt(asmb)
+if(Lb)then
+   Lxm=Lx-1
+   do gx=1,hx
+      ixm=Lx-gx
+      ixp=Lxm+gx
+      r=gx*xLb
+      if(r>0.0_dp) r=om0_jim_new+r*(om1_jim_new+r*om2_jim_new)
+      a(:,ixp)=a(:,ixp)+r*a(:,ixm)
+      a(:,ixm)=0.0_dp
+   enddo
+endif
+if(mb)then
+   mxp=mx+1
+   do gx=1,hx
+      ixp=mx+gx
+      ixm=mxp-gx
+      r=gx*xmb
+      if(r>0.0_dp) r=om0_jim_new+r*(om1_jim_new+r*om2_jim_new)
+      a(:,ixm)=a(:,ixm)+r*a(:,ixp)
+      a(:,ixp)=0.0_dp
+   enddo
+endif
+end subroutine rflip3d_1T_jim_new
 !=============================================================================
 module subroutine rbeta2T(this,hx,lx,mx, hy,ly,my, el,ss, a)        ! [rbetat]
 !=============================================================================

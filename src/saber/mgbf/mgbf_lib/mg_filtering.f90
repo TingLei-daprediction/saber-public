@@ -1271,6 +1271,24 @@ include "type_intstat_point2this.inc"
                                                  call btim(bocoT_tim)
         call this%bocoTy(VALL,km,im,jm,hx,hy)
                                                  call etim(bocoT_tim)
+!$omp parallel do private(i,k,lev1,lev2) schedule(static)
+     do i=im,1,-1
+        do k=1,km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
+          call this%rflip3d_1T_jim_new(lm,hy,1,jm,this%Flsouth(1),this%Flnorth(1), &
+               this%paspy4d(k,i,1,1),this%paspy4d(k,i,jm,1),VALL(lev1:lev2,i,:))
+        enddo
+        do k=1,km2
+          lev1=lev2+1
+          lev2=lev1
+          call this%rflip3d_1T_jim_new(1,hy,1,jm,this%Flsouth(1),this%Flnorth(1), &
+               this%paspy4d(lm,i,1,1),this%paspy4d(lm,i,jm,1),VALL(lev1:lev2,i,:))
+          lev1=lev1+1
+          lev2=lev2+1
+        enddo
+     enddo
+!$omp end parallel do
                                                  call btim(hfiltT_tim)
 !$omp parallel do private(j,k,lev1,lev2) schedule(static)
      do j=jm,1,-1
@@ -1295,6 +1313,24 @@ include "type_intstat_point2this.inc"
                                                  call btim(bocoT_tim)
         call this%bocoTx(VALL,km,im,jm,hx,hy)
                                                  call etim(bocoT_tim)
+!$omp parallel do private(j,k,lev1,lev2) schedule(static)
+     do j=jm,1,-1
+        do k=1,km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
+          call this%rflip3d_1T_jim_new(lm,hx,1,im,this%Flwest(1),this%Fleast(1), &
+               this%paspx4d(k,1,j,1),this%paspx4d(k,im,j,1),VALL(lev1:lev2,:,j))
+        enddo
+        do k=1,km2
+          lev1=lev2+1
+          lev2=lev1
+          call this%rflip3d_1T_jim_new(1,hx,1,im,this%Flwest(1),this%Fleast(1), &
+               this%paspx4d(lm,1,j,1),this%paspx4d(lm,im,j,1),VALL(lev1:lev2,:,j))
+          lev1=lev1+1
+          lev2=lev2+1
+        enddo
+     enddo
+!$omp end parallel do
   if(l_hgen) then
                                                  call btim(hfiltT_tim)
 !$omp parallel do private(i,k,lev1,lev2) schedule(static)
@@ -1322,6 +1358,26 @@ include "type_intstat_point2this.inc"
         call this%bocoTy(HALL,km,im,jm,hx,hy,Fimax,Fjmax,2,gm)
                                                  call etim(bocoT_tim)
   if(l_hgen) then
+!$omp parallel do private(i,k,lev1,lev2) schedule(static)
+     do i=im,1,-1
+        do k=1,km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
+          call this%rflip3d_1T_jim_new(lm,hy,1,jm,this%Flsouth(2),this%Flnorth(2), &
+               this%paspy4d(k,i,1,2),this%paspy4d(k,i,jm,2),HALL(lev1:lev2,i,:))
+        enddo
+        do k=1,km2
+          lev1=lev2+1
+          lev2=lev1
+          call this%rflip3d_1T_jim_new(1,hy,1,jm,this%Flsouth(2),this%Flnorth(2), &
+               this%paspy4d(lm,i,1,2),this%paspy4d(lm,i,jm,2),HALL(lev1:lev2,i,:))
+          lev1=lev1+1
+          lev2=lev2+1
+        enddo
+     enddo
+!$omp end parallel do
+  endif
+  if(l_hgen) then
                                                  call btim(hfiltT_tim)
 !$omp parallel do private(j,k,lev1,lev2) schedule(static)
      do j=jm,1,-1
@@ -1346,6 +1402,26 @@ include "type_intstat_point2this.inc"
                                                  call btim(bocoT_tim)
         call this%bocoTx(HALL,km,im,jm,hx,hy,Fimax,Fjmax,2,gm)
                                                  call etim(bocoT_tim)
+  if(l_hgen) then
+!$omp parallel do private(j,k,lev1,lev2) schedule(static)
+     do j=jm,1,-1
+        do k=1,km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
+          call this%rflip3d_1T_jim_new(lm,hx,1,im,this%Flwest(2),this%Fleast(2), &
+               this%paspx4d(k,1,j,2),this%paspx4d(k,im,j,2),HALL(lev1:lev2,:,j))
+        enddo
+        do k=1,km2
+          lev1=lev2+1
+          lev2=lev1
+          call this%rflip3d_1T_jim_new(1,hx,1,im,this%Flwest(2),this%Fleast(2), &
+               this%paspx4d(lm,1,j,2),this%paspx4d(lm,im,j,2),HALL(lev1:lev2,:,j))
+          lev1=lev1+1
+          lev2=lev2+1
+        enddo
+     enddo
+!$omp end parallel do
+  endif
 !***
 !*** Apply (a-b\nabla^2)
 !***
@@ -1365,12 +1441,16 @@ include "type_intstat_point2this.inc"
            lev1=(k-1)*lm+1
            lev2=k*lm
         
+          call this%rflip3d_1_jim_new(lm,hx,1,im,this%Flwest(1),this%Fleast(1), &
+               this%paspx4d(k,1,j,1),this%paspx4d(k,im,j,1),VALL(lev1:lev2,:,j))
           call this%rbeta3d_1_jim_new(lm,hx,1,im,this%paspx4d_jim_new(:,:,1:im,j,1),VALL(lev1:lev2,:,j))
         enddo
 !cltorg        call this%rbeta(km,hx,1,im,paspx,ssx,VALL(:,:,j))
         do k=1,km2
           lev1=lev2+1
           lev2=lev1
+          call this%rflip3d_1_jim_new(1,hx,1,im,this%Flwest(1),this%Fleast(1), &
+               this%paspx4d(lm,1,j,1),this%paspx4d(lm,im,j,1),VALL(lev1:lev2,:,j))
           call this%rbeta3d_1_jim_new(1,hx,1,im,this%paspx4d_jim_new(:,lm:lm,1:im,j,1),VALL(lev1:lev2,:,j))
           lev1=lev1+1
           lev2=lev2+1
@@ -1388,6 +1468,8 @@ include "type_intstat_point2this.inc"
            lev1=(k-1)*lm+1
            lev2=k*lm
         
+          call this%rflip3d_1_jim_new(lm,hy,1,jm,this%Flsouth(1),this%Flnorth(1), &
+               this%paspy4d(k,i,1,1),this%paspy4d(k,i,jm,1),VALL(lev1:lev2,i,:))
           call this%rbeta3d_1_jim_new(lm,hy,1,jm,this%paspy4d_jim_new(:,:,i,1:jm,1),VALL(lev1:lev2,i,:))
         enddo
 !cltorg        call this%rbeta(km,hy,1,jm,paspy,ssy,VALL(:,i,:))
@@ -1395,6 +1477,8 @@ include "type_intstat_point2this.inc"
         do k=1,km2
           lev1=lev2+1
           lev2=lev1
+          call this%rflip3d_1_jim_new(1,hy,1,jm,this%Flsouth(1),this%Flnorth(1), &
+               this%paspy4d(lm,i,1,1),this%paspy4d(lm,i,jm,1),VALL(lev1:lev2,i,:))
           call this%rbeta3d_1_jim_new(1,hy,1,jm,this%paspy4d_jim_new(:,lm:lm,i,1:jm,1),VALL(lev1:lev2,i,:))
           lev1=lev1+1
           lev2=lev2+1
@@ -1413,12 +1497,16 @@ include "type_intstat_point2this.inc"
            lev1=(k-1)*lm+1
            lev2=k*lm
         
+          call this%rflip3d_1_jim_new(lm,hx,1,im,this%Flwest(2),this%Fleast(2), &
+               this%paspx4d(k,1,j,2),this%paspx4d(k,im,j,2),HALL(lev1:lev2,:,j))
           call this%rbeta3d_1_jim_new(lm,hx,1,im,this%paspx4d_jim_new(:,:,1:im,j,2),HALL(lev1:lev2,:,j))
         enddo
 !cltorg        call this%rbeta(km,hx,1,im,paspx,ssx,HALL(:,:,j))
         do k=1,km2
           lev1=lev2+1
           lev2=lev1
+          call this%rflip3d_1_jim_new(1,hx,1,im,this%Flwest(2),this%Fleast(2), &
+               this%paspx4d(lm,1,j,2),this%paspx4d(lm,im,j,2),HALL(lev1:lev2,:,j))
           call this%rbeta3d_1_jim_new(1,hx,1,im,this%paspx4d_jim_new(:,lm:lm,1:im,j,2),HALL(lev1:lev2,:,j))
           lev1=lev1+1
           lev2=lev2+1
@@ -1438,6 +1526,8 @@ include "type_intstat_point2this.inc"
            lev1=(k-1)*lm+1
            lev2=k*lm
         
+          call this%rflip3d_1_jim_new(lm,hy,1,jm,this%Flsouth(2),this%Flnorth(2), &
+               this%paspy4d(k,i,1,2),this%paspy4d(k,i,jm,2),HALL(lev1:lev2,i,:))
           call this%rbeta3d_1_jim_new(lm,hy,1,jm,this%paspy4d_jim_new(:,:,i,1:jm,2),HALL(lev1:lev2,i,:))
         enddo
 !cltorg        call this%rbeta(km,hy,1,jm,paspy,ssy,HALL(:,i,:))
@@ -1445,6 +1535,8 @@ include "type_intstat_point2this.inc"
         do k=1,km2
           lev1=lev2+1
           lev2=lev1
+          call this%rflip3d_1_jim_new(1,hy,1,jm,this%Flsouth(2),this%Flnorth(2), &
+               this%paspy4d(lm,i,1,2),this%paspy4d(lm,i,jm,2),HALL(lev1:lev2,i,:))
           call this%rbeta3d_1_jim_new(1,hy,1,jm,this%paspy4d_jim_new(:,lm:lm,i,1:jm,2),HALL(lev1:lev2,i,:))
           lev1=lev1+1
           lev2=lev2+1

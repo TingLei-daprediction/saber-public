@@ -52,3 +52,33 @@ Not used by filtering_fast_bkg:
 - Consider guarding allocation of line-operator arrays when only filtering_fast_bkg is used.
 - Consider scoping weig_var allocation to def_mg_weights and deallocating after use.
 - Add deallocation of mg_parameter allocatables (ixm/jym/nxy/im0/jm0/Fimax/Fjmax/FimaxL/FjmaxL/zofis/isofz) if reinit happens.
+
+## Jim new beta-function integration
+Invocation hint: "continue our work on using Jim's new function".
+
+Current patch status:
+- Added MGBF-local copies of Jim's 1D calibrated beta-filter constants and routines in `src/saber/mgbf/mgbf_lib/jp_pbfil.f90`.
+- `sres2_jim_new` and `sres3_jim_new` correspond to Jim's `sres2` and `sres3` in `../dr-jim/ybfil.f90`; these tables were corrected to match Jim's source values.
+- Added type-bound declarations/interfaces in `src/saber/mgbf/mgbf_lib/mg_parameter.f90` for:
+  - `rcalib1_jim_new`
+  - `rbeta1_jim_new`, `rbeta3d_1_jim_new`
+  - `rbeta1T_jim_new`, `rbeta3d_1T_jim_new`
+- Added `paspx4d_jim_new` and `paspy4d_jim_new` in `src/saber/mgbf/mgbf_lib/mg_intstate.f90` with shape `(0:1,lm,x,y,2)`.
+- Generation-1 Jim coefficients are computed from `paspx4d(:,:,:,1)` / `paspy4d(:,:,:,1)` by `rcalib1_jim_new`.
+- Higher-generation Jim coefficients are transferred from generation 1, following the existing `paspx4d` / `paspy4d` pattern: `boco_2d` then `upsending_normalized`, separately for coefficient index `0` and `1`.
+- Added missing type-bound procedure/interface for `filtering_fast_bkg_new_jim` in `mg_intstate.f90`.
+- In `src/saber/mgbf/mgbf_lib/mg_filtering.f90`, `case(15)` now calls `filtering_fast_bkg_new_jim`.
+- Inside `filtering_fast_bkg_new_jim`, horizontal old `rbeta` / `rbetaT` calls were replaced by Jim versions:
+  - adjoint: `rbeta3d_1T_jim_new`
+  - direct: `rbeta3d_1_jim_new`
+  - using `paspx4d_jim_new` / `paspy4d_jim_new`
+- After Jim's boundary-condition guidance, added local `FLIPT`/`FLIP` equivalents:
+  - `rflip1T_jim_new`, `rflip3d_1T_jim_new`
+  - `rflip1_jim_new`, `rflip3d_1_jim_new`
+- `filtering_fast_bkg_new_jim` now calls `rflip3d_1T_jim_new` after the adjoint y/x halo side exchanges and calls `rflip3d_1_jim_new` after the direct y/x halo preparation, immediately before the direct beta filters.
+- Boundary control uses the existing `Flwest/Fleast/Flsouth/Flnorth` flags. Boundary aspect inputs are taken from the corresponding edge values of `paspx4d` / `paspy4d`; if a boundary aspect is `0.0`, the flip routines implement Jim's truncate/zero-reflectivity option.
+- The original `filtering_fast_bkg` path was intentionally left unchanged.
+
+Verification so far:
+- `git diff --check` passes.
+- No compile/test run yet; no existing CMake/build tree was found under or above `saber-public`.
