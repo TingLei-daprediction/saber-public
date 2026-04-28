@@ -738,10 +738,10 @@ integer ::  loc(2)
                   call afield%data(ptr_2d)
                   nz=afield%levels()
                   lev1=varvlev_index(isize,1)
-                   if( maxval(work2d_mgbf(lev1:lev1+nz-1,:)) .gt.0.5) then 
-                       loc=maxloc(work2d_mgbf(lev1:lev1+nz-1,:)) 
-                       write(6,*)'thinkdeb333 max is large 0.5 loc ',loc
-                   endif
+!clt                   if( maxval(work2d_mgbf(lev1:lev1+nz-1,:)) .gt.0.5) then 
+!clt                       loc=maxloc(work2d_mgbf(lev1:lev1+nz-1,:)) 
+!clt                       write(6,*)'thinkdeb333 max is large 0.5 loc ',loc
+!lct                   endif
                   if(nz.gt.1) then 
                       if(n_owned_size >0 ) then 
                           ptr_2d(1:nz,1:n_owned_size)=work2d_mgbf(lev1:lev1+nz-1,:)!if nz=1, only the first level is used (like for surface pressure) 
