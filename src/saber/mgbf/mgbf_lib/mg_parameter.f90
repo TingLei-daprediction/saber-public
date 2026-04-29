@@ -684,14 +684,12 @@ logical :: l_exist
   allocate(this%isofz(lm_a))
   write(6,*)"thinkdeb999 filgrid is ",l_vert_stretched_filtgrid
   this%l_vert_stretched_filtgrid=l_vert_stretched_filtgrid 
-#if 1 
    
   if(lm_a .ne. lm ) then
     write(6,*)'thinkdeb999 l_vert_stretched_filtgrid ',this%l_vert_stretched_filtgrid 
    call convert_vert_varied_aspt 
 !in which the mg_ampl01 will be re-defined
   endif
-#endif
 !-----------------------------------------------------------------
 !for safety, copy all namelist loc vars to them of this object
   this%mg_ampl01=mg_ampl01
@@ -709,6 +707,8 @@ logical :: l_exist
   this%mgbf_proc=mgbf_proc          
   this%lm_a=lm_a
   this%lm=lm
+  call MPI_COMM_RANK(MPI_COMM_WORLD,mype,ierr)
+  this%mype=mype  
   if (coef_normalization_const >0 ) then  ! constant, if set, this contant will be
 
     if(trim(file_coef_normalization)=="XXXX" .and. trim(dir_coef_normalization)=="XXXX" ) then
@@ -716,9 +716,7 @@ logical :: l_exist
       coef_normalization=coef_normalization_const
     else
       if (trim(dir_coef_normalization) /= "XXXX") then  
-         call MPI_COMM_RANK(MPI_COMM_WORLD,mype,ierr)
          write(str_rank, '(I4.4)') mype
-         this%mype=mype  
          file_coef_normalization=trim(dir_coef_normalization)//"/profile_subdomain_"//str_rank//".txt"
       endif
          write(6,*)'thinkdeb888 normalization file is ',trim(file_coef_normalization)
