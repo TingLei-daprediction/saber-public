@@ -1225,11 +1225,17 @@ module subroutine filtering_fast_bkg_new_jim(this)
 implicit none
 class (mg_intstate_type),target::this
 integer(i_kind) L,i,j,k,lev1,lev2
+real(r_kind):: aspx_jim_avg(2),aspy_jim_avg(2),as_jim_norm
 include "type_parameter_locpointer.inc"
 include "type_intstat_locpointer.inc"
 include "type_parameter_point2this.inc"
 include "type_intstat_point2this.inc"
 !-----------------------------------------------------------------------
+as_jim_norm=real(lm*im*jm,r_kind)
+aspx_jim_avg(1)=sum(this%paspx4d(1:lm,1:im,1:jm,1))/as_jim_norm
+aspy_jim_avg(1)=sum(this%paspy4d(1:lm,1:im,1:jm,1))/as_jim_norm
+aspx_jim_avg(2)=sum(this%paspx4d(1:lm,1:im,1:jm,2))/as_jim_norm
+aspy_jim_avg(2)=sum(this%paspy4d(1:lm,1:im,1:jm,2))/as_jim_norm
 !***
 !*** Adjoint of beta filter in vertical direction
 !***
@@ -1277,13 +1283,13 @@ include "type_intstat_point2this.inc"
            lev1=(k-1)*lm+1
            lev2=k*lm
           call this%rflip3d_1T_jim_new(lm,hy,1,jm,this%Flsouth(1),this%Flnorth(1), &
-               this%paspy4d(k,i,1,1),this%paspy4d(k,i,jm,1),VALL(lev1:lev2,i,:))
+               aspy_jim_avg(1),aspy_jim_avg(1),VALL(lev1:lev2,i,:))
         enddo
         do k=1,km2
           lev1=lev2+1
           lev2=lev1
           call this%rflip3d_1T_jim_new(1,hy,1,jm,this%Flsouth(1),this%Flnorth(1), &
-               this%paspy4d(lm,i,1,1),this%paspy4d(lm,i,jm,1),VALL(lev1:lev2,i,:))
+               aspy_jim_avg(1),aspy_jim_avg(1),VALL(lev1:lev2,i,:))
           lev1=lev1+1
           lev2=lev2+1
         enddo
@@ -1319,13 +1325,13 @@ include "type_intstat_point2this.inc"
            lev1=(k-1)*lm+1
            lev2=k*lm
           call this%rflip3d_1T_jim_new(lm,hx,1,im,this%Flwest(1),this%Fleast(1), &
-               this%paspx4d(k,1,j,1),this%paspx4d(k,im,j,1),VALL(lev1:lev2,:,j))
+               aspx_jim_avg(1),aspx_jim_avg(1),VALL(lev1:lev2,:,j))
         enddo
         do k=1,km2
           lev1=lev2+1
           lev2=lev1
           call this%rflip3d_1T_jim_new(1,hx,1,im,this%Flwest(1),this%Fleast(1), &
-               this%paspx4d(lm,1,j,1),this%paspx4d(lm,im,j,1),VALL(lev1:lev2,:,j))
+               aspx_jim_avg(1),aspx_jim_avg(1),VALL(lev1:lev2,:,j))
           lev1=lev1+1
           lev2=lev2+1
         enddo
@@ -1364,13 +1370,13 @@ include "type_intstat_point2this.inc"
            lev1=(k-1)*lm+1
            lev2=k*lm
           call this%rflip3d_1T_jim_new(lm,hy,1,jm,this%Flsouth(2),this%Flnorth(2), &
-               this%paspy4d(k,i,1,2),this%paspy4d(k,i,jm,2),HALL(lev1:lev2,i,:))
+               aspy_jim_avg(2),aspy_jim_avg(2),HALL(lev1:lev2,i,:))
         enddo
         do k=1,km2
           lev1=lev2+1
           lev2=lev1
           call this%rflip3d_1T_jim_new(1,hy,1,jm,this%Flsouth(2),this%Flnorth(2), &
-               this%paspy4d(lm,i,1,2),this%paspy4d(lm,i,jm,2),HALL(lev1:lev2,i,:))
+               aspy_jim_avg(2),aspy_jim_avg(2),HALL(lev1:lev2,i,:))
           lev1=lev1+1
           lev2=lev2+1
         enddo
@@ -1409,13 +1415,13 @@ include "type_intstat_point2this.inc"
            lev1=(k-1)*lm+1
            lev2=k*lm
           call this%rflip3d_1T_jim_new(lm,hx,1,im,this%Flwest(2),this%Fleast(2), &
-               this%paspx4d(k,1,j,2),this%paspx4d(k,im,j,2),HALL(lev1:lev2,:,j))
+               aspx_jim_avg(2),aspx_jim_avg(2),HALL(lev1:lev2,:,j))
         enddo
         do k=1,km2
           lev1=lev2+1
           lev2=lev1
           call this%rflip3d_1T_jim_new(1,hx,1,im,this%Flwest(2),this%Fleast(2), &
-               this%paspx4d(lm,1,j,2),this%paspx4d(lm,im,j,2),HALL(lev1:lev2,:,j))
+               aspx_jim_avg(2),aspx_jim_avg(2),HALL(lev1:lev2,:,j))
           lev1=lev1+1
           lev2=lev2+1
         enddo
@@ -1442,7 +1448,7 @@ include "type_intstat_point2this.inc"
            lev2=k*lm
         
           call this%rflip3d_1_jim_new(lm,hx,1,im,this%Flwest(1),this%Fleast(1), &
-               this%paspx4d(k,1,j,1),this%paspx4d(k,im,j,1),VALL(lev1:lev2,:,j))
+               aspx_jim_avg(1),aspx_jim_avg(1),VALL(lev1:lev2,:,j))
           call this%rbeta3d_1_jim_new(lm,hx,1,im,this%paspx4d_jim_new(:,:,1:im,j,1),VALL(lev1:lev2,:,j))
         enddo
 !cltorg        call this%rbeta(km,hx,1,im,paspx,ssx,VALL(:,:,j))
@@ -1450,7 +1456,7 @@ include "type_intstat_point2this.inc"
           lev1=lev2+1
           lev2=lev1
           call this%rflip3d_1_jim_new(1,hx,1,im,this%Flwest(1),this%Fleast(1), &
-               this%paspx4d(lm,1,j,1),this%paspx4d(lm,im,j,1),VALL(lev1:lev2,:,j))
+               aspx_jim_avg(1),aspx_jim_avg(1),VALL(lev1:lev2,:,j))
           call this%rbeta3d_1_jim_new(1,hx,1,im,this%paspx4d_jim_new(:,lm:lm,1:im,j,1),VALL(lev1:lev2,:,j))
           lev1=lev1+1
           lev2=lev2+1
@@ -1469,7 +1475,7 @@ include "type_intstat_point2this.inc"
            lev2=k*lm
         
           call this%rflip3d_1_jim_new(lm,hy,1,jm,this%Flsouth(1),this%Flnorth(1), &
-               this%paspy4d(k,i,1,1),this%paspy4d(k,i,jm,1),VALL(lev1:lev2,i,:))
+               aspy_jim_avg(1),aspy_jim_avg(1),VALL(lev1:lev2,i,:))
           call this%rbeta3d_1_jim_new(lm,hy,1,jm,this%paspy4d_jim_new(:,:,i,1:jm,1),VALL(lev1:lev2,i,:))
         enddo
 !cltorg        call this%rbeta(km,hy,1,jm,paspy,ssy,VALL(:,i,:))
@@ -1478,7 +1484,7 @@ include "type_intstat_point2this.inc"
           lev1=lev2+1
           lev2=lev1
           call this%rflip3d_1_jim_new(1,hy,1,jm,this%Flsouth(1),this%Flnorth(1), &
-               this%paspy4d(lm,i,1,1),this%paspy4d(lm,i,jm,1),VALL(lev1:lev2,i,:))
+               aspy_jim_avg(1),aspy_jim_avg(1),VALL(lev1:lev2,i,:))
           call this%rbeta3d_1_jim_new(1,hy,1,jm,this%paspy4d_jim_new(:,lm:lm,i,1:jm,1),VALL(lev1:lev2,i,:))
           lev1=lev1+1
           lev2=lev2+1
@@ -1498,7 +1504,7 @@ include "type_intstat_point2this.inc"
            lev2=k*lm
         
           call this%rflip3d_1_jim_new(lm,hx,1,im,this%Flwest(2),this%Fleast(2), &
-               this%paspx4d(k,1,j,2),this%paspx4d(k,im,j,2),HALL(lev1:lev2,:,j))
+               aspx_jim_avg(2),aspx_jim_avg(2),HALL(lev1:lev2,:,j))
           call this%rbeta3d_1_jim_new(lm,hx,1,im,this%paspx4d_jim_new(:,:,1:im,j,2),HALL(lev1:lev2,:,j))
         enddo
 !cltorg        call this%rbeta(km,hx,1,im,paspx,ssx,HALL(:,:,j))
@@ -1506,7 +1512,7 @@ include "type_intstat_point2this.inc"
           lev1=lev2+1
           lev2=lev1
           call this%rflip3d_1_jim_new(1,hx,1,im,this%Flwest(2),this%Fleast(2), &
-               this%paspx4d(lm,1,j,2),this%paspx4d(lm,im,j,2),HALL(lev1:lev2,:,j))
+               aspx_jim_avg(2),aspx_jim_avg(2),HALL(lev1:lev2,:,j))
           call this%rbeta3d_1_jim_new(1,hx,1,im,this%paspx4d_jim_new(:,lm:lm,1:im,j,2),HALL(lev1:lev2,:,j))
           lev1=lev1+1
           lev2=lev2+1
@@ -1527,7 +1533,7 @@ include "type_intstat_point2this.inc"
            lev2=k*lm
         
           call this%rflip3d_1_jim_new(lm,hy,1,jm,this%Flsouth(2),this%Flnorth(2), &
-               this%paspy4d(k,i,1,2),this%paspy4d(k,i,jm,2),HALL(lev1:lev2,i,:))
+               aspy_jim_avg(2),aspy_jim_avg(2),HALL(lev1:lev2,i,:))
           call this%rbeta3d_1_jim_new(lm,hy,1,jm,this%paspy4d_jim_new(:,:,i,1:jm,2),HALL(lev1:lev2,i,:))
         enddo
 !cltorg        call this%rbeta(km,hy,1,jm,paspy,ssy,HALL(:,i,:))
@@ -1536,7 +1542,7 @@ include "type_intstat_point2this.inc"
           lev1=lev2+1
           lev2=lev1
           call this%rflip3d_1_jim_new(1,hy,1,jm,this%Flsouth(2),this%Flnorth(2), &
-               this%paspy4d(lm,i,1,2),this%paspy4d(lm,i,jm,2),HALL(lev1:lev2,i,:))
+               aspy_jim_avg(2),aspy_jim_avg(2),HALL(lev1:lev2,i,:))
           call this%rbeta3d_1_jim_new(1,hy,1,jm,this%paspy4d_jim_new(:,lm:lm,i,1:jm,2),HALL(lev1:lev2,i,:))
           lev1=lev1+1
           lev2=lev2+1
