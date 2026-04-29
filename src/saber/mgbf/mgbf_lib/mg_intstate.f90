@@ -1545,27 +1545,6 @@ if (this%l_constant_aspt2 ) then
 #endif
   
 endif
-! codex debug/develop for new jim's calibrated function
-! codex debug/develop for new jim's calibrated function: use the edge-cell aspect
-! values as the boundary-aspect inputs to rcalib1_jim_new until a separate
-! boundary aspect field is identified in the current mgbf_lib path.
-allocate(hwork_jim(max(this%im,this%jm)))
-do k=1,this%lm
-  do j=1,this%jm
-    asL_jim=this%paspx4d(k,1,j,1)
-    asR_jim=this%paspx4d(k,this%im,j,1)
-    call this%rcalib1_jim_new(1,this%im,this%Flwest(1),this%Fleast(1),asL_jim,asR_jim, &
-         this%paspx4d(k,1:this%im,j,1),this%paspx4d_jim_new(:,k,1:this%im,j,1),hwork_jim(1:this%im))
-  enddo
-enddo
-do k=1,this%lm
-  do i=1,this%im
-    asL_jim=this%paspy4d(k,i,1,1)
-    asR_jim=this%paspy4d(k,i,this%jm,1)
-    call this%rcalib1_jim_new(1,this%jm,this%Flsouth(1),this%Flnorth(1),asL_jim,asR_jim, &
-         this%paspy4d(k,i,1:this%jm,1),this%paspy4d_jim_new(:,k,i,1:this%jm,1),hwork_jim(1:this%jm))
-  enddo
-enddo
 !$omp parallel do private(i,j) schedule(static)
 do j=1,this%jm
 do i=1,this%im
@@ -1684,19 +1663,41 @@ end do
    call this%boco_2d(this%paspy4d(1:this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,1),this%lm,this%im,this%jm,this%hx,this%hy)
    call this%upsending_normalized(this%lm,this%paspy4d(:,:,:,1),this%paspy4d(:,:,:,2))
 
-   call this%boco_2d(this%paspx4d_jim_new(0,1:this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,1), &
-                     this%lm,this%im,this%jm,this%hx,this%hy)
-   call this%upsending_normalized(this%lm,this%paspx4d_jim_new(0,:,:,:,1),this%paspx4d_jim_new(0,:,:,:,2))
-   call this%boco_2d(this%paspx4d_jim_new(1,1:this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,1), &
-                     this%lm,this%im,this%jm,this%hx,this%hy)
-   call this%upsending_normalized(this%lm,this%paspx4d_jim_new(1,:,:,:,1),this%paspx4d_jim_new(1,:,:,:,2))
 
-   call this%boco_2d(this%paspy4d_jim_new(0,1:this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,1), &
-                     this%lm,this%im,this%jm,this%hx,this%hy)
-   call this%upsending_normalized(this%lm,this%paspy4d_jim_new(0,:,:,:,1),this%paspy4d_jim_new(0,:,:,:,2))
-   call this%boco_2d(this%paspy4d_jim_new(1,1:this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,1), &
-                     this%lm,this%im,this%jm,this%hx,this%hy)
-   call this%upsending_normalized(this%lm,this%paspy4d_jim_new(1,:,:,:,1),this%paspy4d_jim_new(1,:,:,:,2))
+
+! codex debug/develop for new jim's calibrated function
+! codex debug/develop for new jim's calibrated function: use the edge-cell aspect
+! values as the boundary-aspect inputs to rcalib1_jim_new until a separate
+! boundary aspect field is identified in the current mgbf_lib path.
+allocate(hwork_jim(max(this%im,this%jm)))
+!cltthinkdeb should their halo points be defined too?
+do igbin=1,2
+   do k=1,this%lm
+     do j=1,this%jm
+       asL_jim=this%paspx4d(k,1,j,igbin)
+       asR_jim=this%paspx4d(k,this%im,j,igbin)
+       call this%rcalib1_jim_new(1,this%im,this%Flwest(igbin),this%Fleast(igbin),asL_jim,asR_jim, &
+            this%paspx4d(k,1:this%im,j,igbin),this%paspx4d_jim_new(:,k,1:this%im,j,igbin),hwork_jim(1:this%im))
+     enddo
+   enddo
+   do k=1,this%lm
+     do i=1,this%im
+       asL_jim=this%paspy4d(k,i,1,igbin)
+       asR_jim=this%paspy4d(k,i,this%jm,igbin)
+       call this%rcalib1_jim_new(1,this%jm,this%Flsouth(igbin),this%Flnorth(igbin),asL_jim,asR_jim, &
+            this%paspy4d(k,i,1:this%jm,igbin),this%paspy4d_jim_new(:,k,i,1:this%jm,igbin),hwork_jim(1:this%jm))
+     enddo
+   enddo
+enddo
+
+
+
+
+
+
+
+
+
 deallocate(hwork_jim)
 
    call this%boco_2d(this%ssx4d(1:this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,1),this%lm,this%im,this%jm,this%hx,this%hy)
