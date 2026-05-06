@@ -89,6 +89,13 @@ module mg_timers
   type(timer),save,public ::     mg_anal_to_filt_time
   type(timer),save,public ::     mg_filt_to_anal_time
   type(timer),save,public ::     mg_filtering_time
+  type(timer),save,public ::     mg_pack_fields_time
+  type(timer),save,public ::     mg_reshape_to_mgbf_time
+  type(timer),save,public ::     mg_group_copy_time
+  type(timer),save,public ::     mg_normalize_copy_time
+  type(timer),save,public ::     mg_localization_mix_time
+  type(timer),save,public ::     mg_reshape_to_fields_time
+  type(timer),save,public ::     mg_unpack_fields_time
 
   integer, parameter, public :: print_clock = 1,                        &
                                 print_cpu   = 2,                        &
@@ -168,7 +175,7 @@ contains
        buffer1=' '; buffer2=' ';buffer3=' ';buffer4=' '
 !cltj#    if ( print_type == print_clock ) then
 !    write(6,*)'thinkdebxxx icound is ',mg_interface_multiply_time%icount
-    write(buffer1,"(I6,25(',',F10.4),',',I10)") mype,                            &
+    write(buffer1,"(I6,32(',',F10.4),',',I10)") mype,                            &
                                        init_tim%time_clock,             &
                                        upsend_tim%time_clock,           &
                                        dnsend_tim%time_clock,           &
@@ -195,8 +202,15 @@ contains
                                        mg_filtering_time%time_clock,   &
                                        mg_filt_to_anal_time%time_clock,   &
                                        mg_postprocess_time%time_clock  , &
+                                       mg_pack_fields_time%time_clock  , &
+                                       mg_reshape_to_mgbf_time%time_clock  , &
+                                       mg_group_copy_time%time_clock  , &
+                                       mg_normalize_copy_time%time_clock  , &
+                                       mg_localization_mix_time%time_clock  , &
+                                       mg_reshape_to_fields_time%time_clock  , &
+                                       mg_unpack_fields_time%time_clock  , &
                                   mg_interface_multiply_time%icount 
-    write(buffer2,"(I6,25(',',F10.4),',',I10)") mype,                            &
+    write(buffer2,"(I6,32(',',F10.4),',',I10)") mype,                            &
                                        init_tim%time_cpu,             &
                                        upsend_tim%time_cpu,           &
                                        dnsend_tim%time_cpu,           &
@@ -222,6 +236,13 @@ contains
                                        mg_filtering_time%time_cpu,   &
                                        mg_filt_to_anal_time%time_cpu,   &
                                        mg_postprocess_time%time_cpu, &   
+                                       mg_pack_fields_time%time_cpu, &
+                                       mg_reshape_to_mgbf_time%time_cpu, &
+                                       mg_group_copy_time%time_cpu, &
+                                       mg_normalize_copy_time%time_cpu, &
+                                       mg_localization_mix_time%time_cpu, &
+                                       mg_reshape_to_fields_time%time_cpu, &
+                                       mg_unpack_fields_time%time_cpu, &
                                   mg_interface_multiply_time%icount 
 !clt#    else if ( print_type == print_cpu ) then
 !    end if
@@ -231,7 +252,7 @@ contains
     buffer1(bufsize1:bufsize1) = NEW_LINE(' ')
     buffer2(bufsize2:bufsize2) = NEW_LINE(' ')
 
-    write(header1,"(A6,26(',',A10))") "mype",                            &
+    write(header1,"(A6,33(',',A10))") "mype",                            &
                                      "init",                            &
                                      "upsend",                          &
                                      "dnsend",                          &
@@ -257,6 +278,13 @@ contains
                                      "filtering",                          &
                                      "filt_to_anal",                         &
                                      "postprocess"  ,   &                      
+                                     "pack_fld",   &
+                                     "to_mgbf",   &
+                                     "grp_copy",   &
+                                     "norm_copy",   &
+                                     "loc_mix",   &
+                                     "to_fld",   &
+                                     "unpack",   &
                                      "icount"                         
 
     header1(bufsize1:bufsize1) = NEW_LINE(' ')
