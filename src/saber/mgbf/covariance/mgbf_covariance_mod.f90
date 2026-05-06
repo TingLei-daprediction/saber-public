@@ -494,7 +494,6 @@ integer ::  loc(2)
                  size(rnormalization,2) /= nvargrp) then
                error stop "MGBF workspace rnormalization too small for current scale"
              endif
-             work1var_mgbf=0
              if(self%l_multiply_first_call(jscale)) then
 !$omp parallel do private(ivargrp,ii,k) schedule(static)
                 do ivargrp=1,nvargrp
@@ -688,8 +687,8 @@ integer ::  loc(2)
                 ii=ii+nlev_vargrp(ivargrp)
              enddo ! ivargrp
              if(self%intstate(jscale,ivargrp0)%l_for_localization ) then   !clthinkdebxxx
-               work1var_mgbf = 0.0
                if(nvargrp == 1 ) then
+                   work1var_mgbf = 0.0
                    do ivar=1,nvar
                      lev1=varvlev_index(ivar,1)
                      lev2=varvlev_index(ivar,2)
@@ -705,6 +704,7 @@ integer ::  loc(2)
                else
 !clttodo, further optimizaiton
                  do jvar=1,nvar
+                   work1var_mgbf = 0.0
                    jvargrp=self%ivar2grp(jvar)
                    do ivar=1,nvar
                      lev1=varvlev_index(ivar,1)
