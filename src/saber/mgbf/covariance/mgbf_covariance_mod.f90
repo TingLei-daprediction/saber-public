@@ -57,6 +57,7 @@ type :: mgbf_covariance
   integer, allocatable :: iscalegroup(:)
   integer, allocatable :: ivargroup(:)
   real(kind=r_kind), pointer :: work_mgbf(:,:,:)
+  real(kind=r_kind), pointer :: work_mgbf_tmp(:,:,:)
   real(kind=r_kind), pointer:: work1var_mgbf(:,:,:)
   real(kind=r_kind), pointer :: work2d_mgbf(:,:)
   real(kind=r_kind), pointer :: rnormalization(:,:,:)
@@ -278,6 +279,7 @@ enddo
   nz3d=self%intstate(1,1)%lm_a 
 
   allocate(self%work_mgbf(self%total_km_a_all, self%intstate(1,1)%nm, self%intstate(1,1)%mm))
+  allocate(self%work_mgbf_tmp(self%total_km_a_all, self%intstate(1,1)%nm, self%intstate(1,1)%mm))
   allocate(self%work2d_mgbf(self%total_km_a_all, self%intstate(1,1)%nm * self%intstate(1,1)%mm))
   allocate(self%rnormalization(self%total_km_a_all, nvargrp,nscale))
   self%rnormalization(1:self%total_km_a_all,1:nvargrp,1:nscale)=0.0
@@ -328,6 +330,7 @@ enddo
 !clt endif
 
 if (associated(self%work_mgbf)) deallocate(self%work_mgbf)
+if (associated(self%work_mgbf_tmp)) deallocate(self%work_mgbf_tmp)
 if (associated(self%work1var_mgbf)) deallocate(self%work1var_mgbf)
 if (associated(self%work2d_mgbf)) deallocate(self%work2d_mgbf)
 if (associated(self%rnormalization)) deallocate(self%rnormalization)
@@ -406,6 +409,7 @@ real(kind=r_kind), pointer :: ptr_2d(:,:)
 real(kind=r_kind), pointer :: ptr_3d(:,:,:)
 integer(kind=i_kind):: nz,ilev,isize
 real(kind=r_kind), pointer :: work_mgbf(:,:,:)
+real(kind=r_kind), pointer :: work_mgbf_tmp(:,:,:)
 real(kind=r_kind), pointer :: vargrp_work_mgbf(:,:,:)
 real(kind=r_kind), pointer :: vargrp_work_mgbf2(:,:,:)
 real(kind=r_kind), pointer :: work1var_mgbf(:,:,:)
@@ -461,6 +465,7 @@ integer ::  loc(2)
           error stop "MGBF workspace nlev_vargrp too small for nvargrp"
         endif
         work_mgbf => self%work_mgbf
+        work_mgbf_tmp => self%work_mgbf_tmp
         work2d_mgbf => self%work2d_mgbf
         work1var_mgbf => self%work1var_mgbf
         rnormalization => self%rnormalization(:,:,jscale)
@@ -478,13 +483,21 @@ integer ::  loc(2)
              if (.not. associated(self%work_mgbf)) then
                error stop "MGBF workspace work_mgbf not allocated"
              endif
-             if (size(work_mgbf,1) /= self%total_km_a_all .or. &
-                 size(work_mgbf,2) /= self%intstate(jscale,ivargrp0)%nm .or. &
-                 size(work_mgbf,3) /= self%intstate(jscale,ivargrp0)%mm) then
-               error stop "MGBF workspace work_mgbf does not match "
-             endif
+            if (size(work_mgbf,1) /= self%total_km_a_all .or. &
+                size(work_mgbf,2) /= self%intstate(jscale,ivargrp0)%nm .or. &
+                size(work_mgbf,3) /= self%intstate(jscale,ivargrp0)%mm) then
+              error stop "MGBF workspace work_mgbf does not match "
+            endif
+            if (.not. associated(self%work_mgbf_tmp)) then
+              error stop "MGBF workspace work_mgbf_tmp not allocated"
+            endif
+            if (size(work_mgbf_tmp,1) /= self%total_km_a_all .or. &
+                size(work_mgbf_tmp,2) /= self%intstate(jscale,ivargrp0)%nm .or. &
+                size(work_mgbf_tmp,3) /= self%intstate(jscale,ivargrp0)%mm) then
+              error stop "MGBF workspace work_mgbf_tmp does not match "
+            endif
 
-             if (size(work2d_mgbf,1) /=  self%total_km_a_all .or. &
+            if (size(work2d_mgbf,1) /=  self%total_km_a_all .or. &
                  size(work2d_mgbf,2) /= self%intstate(jscale,ivargrp0)%nm * &
                                            self%intstate(jscale,ivargrp0)%mm) then
                error stop "MGBF workspace work2d_mgbf too small for current scale"
@@ -703,6 +716,7 @@ integer ::  loc(2)
 !$omp end parallel do
                else
 !clttodo, further optimizaiton
+                work_mgbf_tmp = work_mgbf
                  do jvar=1,nvar
                    work1var_mgbf = 0.0
                    jvargrp=self%ivar2grp(jvar)
@@ -710,7 +724,7 @@ integer ::  loc(2)
                      lev1=varvlev_index(ivar,1)
                      lev2=varvlev_index(ivar,2)
                      ivargrp=self%ivar2grp(ivar)
-                     work1var_mgbf=work1var_mgbf+self%multigrp_cor(jvargrp,ivargrp)*work_mgbf(lev1:lev2,:,:)
+                    work1var_mgbf=work1var_mgbf+self%multigrp_cor(jvargrp,ivargrp)*work_mgbf_tmp(lev1:lev2,:,:)
                    enddo
                    lev1=varvlev_index(jvar,1)
                    lev2=varvlev_index(jvar,2)
@@ -803,8 +817,9 @@ integer ::  loc(2)
 
              call afield%final()
 
-             nullify(work_mgbf)
-             nullify(work2d_mgbf)
+            nullify(work_mgbf)
+            nullify(work_mgbf_tmp)
+            nullify(work2d_mgbf)
              nullify(rnormalization)
              nullify(varvlev_index)
  !clt       enddo   !for iscale
