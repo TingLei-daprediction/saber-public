@@ -603,16 +603,12 @@ logical :: l_exist
 !
   allocate(this%zofis(lm))
   allocate(this%isofz(lm_a))
-  write(6,*)"thinkdeb999 filgrid is ",l_vert_stretched_filtgrid
   this%l_vert_stretched_filtgrid=l_vert_stretched_filtgrid 
-#if 1 
    
   if(lm_a .ne. lm ) then
-    write(6,*)'thinkdeb999 l_vert_stretched_filtgrid ',this%l_vert_stretched_filtgrid 
    call convert_vert_varied_aspt 
 !in which the mg_ampl01 will be re-defined
   endif
-#endif
 !-----------------------------------------------------------------
 !for safety, copy all namelist loc vars to them of this object
   this%mg_ampl01=mg_ampl01
@@ -685,7 +681,6 @@ logical :: l_exist
 
   this%coef_normalization=coef_normalization
   this%dxfmctrl=dxfmctrl; this%dyfmctrl=dyfmctrl 
-  write(6,*)'thinkdeb999 readin l_constant_aspt2  ',l_constant_aspt2
   this%l_constant_aspt2 = l_constant_aspt2
   this%km2=km2
   this%km3=km3
@@ -942,8 +937,6 @@ logical :: l_exist
 ! Set number of processors at higher generations
 !
 
-  write(6,*)'thinkdeb999 2 8 ',this%l_vert_stretched_filtgrid  ,' ',"l_use",this%l_vert_stretched_filtgrid
-  call flush(6)
   allocate(this%ixm(this%gm))
   allocate(this%jym(this%gm))
   allocate(this%nxy(this%gm))
@@ -1040,7 +1033,6 @@ logical :: l_exist
   this%rmom2_2=u1/sqrt(this%pee2+4)
   this%rmom2_3=u1/sqrt(this%pee2+5)
   this%rmom2_4=u1/sqrt(this%pee2+6)
-#if 1 
 
   write(6,*)'thinkdeb999 2 10 ',this%l_vert_stretched_filtgrid  ,' ',"l_use",this%l_vert_stretched_filtgrid
   call flush(6)
@@ -1118,7 +1110,7 @@ subroutine convert_vert_varied_aspt
        mg_ampl01=mg_ampl01_org
     endif
        write(6,*)' the original and final  ampl01 is ',mg_ampl01_org,' ' ,mg_ampl01
-      
+  if(1.gt.2) then  
     do is=1,lm
       write(6,*)is,this%zofis(is),(sigofis(is))**2
     enddo
@@ -1129,6 +1121,7 @@ subroutine convert_vert_varied_aspt
      enddo
      close(myunit)
     endif
+  endif !1>2 
 !clt    if(this%l_2dvar_last_vertical_level == .true. ) then !the fieldset passed into mgbf will be top-down,so
 !clttodo need to access this from mgbf lib too     
      this%zofis=this%zofis(lm:1:-1)
@@ -1140,7 +1133,6 @@ subroutine convert_vert_varied_aspt
   deallocate(sigofz,sigofis)
 end subroutine convert_vert_varied_aspt
 
-#endif
   
 
 !----------------------------------------------------------------------
