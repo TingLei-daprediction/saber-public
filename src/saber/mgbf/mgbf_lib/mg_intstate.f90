@@ -1294,6 +1294,9 @@ integer(i_kind):: ig,igbin
 character*72  tmpfilename
 real (r_kind)::rtem1,rtem2
 real (r_kind) :: dist_rad
+real(r_kind), allocatable,dimension(:,:,:,:):: loc_paspx4d
+real(r_kind), allocatable,dimension(:,:,:,:):: loc_paspy4d
+
 !-----------------------------------------------------------------------
 allocate(this%weig_var(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,this%gm))        ; this%weig_var=0.
 start_idx=Lbound(this%weig_var,4)
@@ -1666,24 +1669,29 @@ end do
 ! boundary aspect field is identified in the current mgbf_lib path.
 allocate(hwork_jim(max(this%im,this%jm)))
 !cltthinkdeb should their halo points be defined too?
+allocate(loc_paspx4d(this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,2)) 
+allocate(loc_paspy4d(this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,2)) 
+loc_paspx4d=(1/this%paspx4d)**2  ! back to the square (L**2) definition
+loc_paspy4d=(1/this%paspy4d)**2  ! back to the square (L**2) definition
 do igbin=1,2
    do k=1,this%lm
      do j=1,this%jm
-       asL_jim=this%paspx4d(k,1,j,igbin)
-       asR_jim=this%paspx4d(k,this%im,j,igbin)
+       asL_jim=loc_paspx4d(k,1,j,igbin)
+       asR_jim=loc_paspx4d(k,this%im,j,igbin)
        call this%rcalib1_jim_new(1,this%im,this%Flwest(igbin),this%Fleast(igbin),asL_jim,asR_jim, &
-            this%paspx4d(k,1:this%im,j,igbin),this%paspx4d_jim_new(:,k,1:this%im,j,igbin),hwork_jim(1:this%im))
+            loc_paspx4d(k,1:this%im,j,igbin),this%paspx4d_jim_new(:,k,1:this%im,j,igbin),hwork_jim(1:this%im))
      enddo
    enddo
    do k=1,this%lm
      do i=1,this%im
-       asL_jim=this%paspy4d(k,i,1,igbin)
-       asR_jim=this%paspy4d(k,i,this%jm,igbin)
+       asL_jim=loc_paspy4d(k,i,1,igbin)
+       asR_jim=loc_paspy4d(k,i,this%jm,igbin)
        call this%rcalib1_jim_new(1,this%jm,this%Flsouth(igbin),this%Flnorth(igbin),asL_jim,asR_jim, &
-            this%paspy4d(k,i,1:this%jm,igbin),this%paspy4d_jim_new(:,k,i,1:this%jm,igbin),hwork_jim(1:this%jm))
+            loc_paspy4d(k,i,1:this%jm,igbin),this%paspy4d_jim_new(:,k,i,1:this%jm,igbin),hwork_jim(1:this%jm))
      enddo
    enddo
 enddo
+deallocate(loc_paspx4d,loc_paspy4d)
 
 
 
