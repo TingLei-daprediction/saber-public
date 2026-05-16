@@ -1225,7 +1225,8 @@ module subroutine filtering_fast_bkg_new_jim(this)
 implicit none
 class (mg_intstate_type),target::this
 integer(i_kind) L,i,j,k,lev1,lev2
-real(r_kind):: aspx_jim_avg(2),aspy_jim_avg(2),as_jim_norm
+real(r_kind):: aspx_jim_avg(2),aspy_jim_avg(2),xLb_jim_x(2),xmb_jim_x(2), &
+               xLb_jim_y(2),xmb_jim_y(2),as_jim_norm
 include "type_parameter_locpointer.inc"
 include "type_intstat_locpointer.inc"
 include "type_parameter_point2this.inc"
@@ -1236,22 +1237,24 @@ aspx_jim_avg(1)=sum(this%paspx4d(1:lm,1:im,1:jm,1))/as_jim_norm
 aspy_jim_avg(1)=sum(this%paspy4d(1:lm,1:im,1:jm,1))/as_jim_norm
 aspx_jim_avg(2)=sum(this%paspx4d(1:lm,1:im,1:jm,2))/as_jim_norm
 aspy_jim_avg(2)=sum(this%paspy4d(1:lm,1:im,1:jm,2))/as_jim_norm
+xLb_jim_x=0.0_r_kind
+xmb_jim_x=0.0_r_kind
+xLb_jim_y=0.0_r_kind
+xmb_jim_y=0.0_r_kind
+where(aspx_jim_avg>0.0_r_kind)
+   xLb_jim_x=1.0_r_kind/sqrt(aspx_jim_avg)
+   xmb_jim_x=1.0_r_kind/sqrt(aspx_jim_avg)
+endwhere
+where(aspy_jim_avg>0.0_r_kind)
+   xLb_jim_y=1.0_r_kind/sqrt(aspy_jim_avg)
+   xmb_jim_y=1.0_r_kind/sqrt(aspy_jim_avg)
+endwhere
 !***
 !*** Adjoint of beta filter in vertical direction
 !***
   if(l_vertical_filter) then
                                                  call btim(vfiltT_tim)
-     do i=im,1,-1
-     do j=jm,1,-1
-        do k=1,km3
-           lev1=(k-1)*lm+1
-           lev2=k*lm
- !clrog    call this%sup_vrbeta1T_bkg(km,km3,hx,hy,hz,im,jm,lm,pasp1,ss1,VALL)
-           call this%rbeta1T_jim_new(hz,1,lm,,this%pasp1_jim_new(1:lm),VALL(lev1:lev2,i,j))
-        enddo   
-     enddo
-     enddo
- 
+     call this%sup_vrbeta1T_bkg_new_jim(km,km3,hx,hy,hz,im,jm,lm,pasp1,pasp1_jim_new,VALL)
                                                  call etim(vfiltT_tim)
   endif
 !***
@@ -1293,13 +1296,13 @@ aspy_jim_avg(2)=sum(this%paspy4d(1:lm,1:im,1:jm,2))/as_jim_norm
            lev1=(k-1)*lm+1
            lev2=k*lm
           call this%rflip3d_1T_jim_new(lm,hy,1,jm,this%Flsouth(1),this%Flnorth(1), &
-               aspy_jim_avg(1),aspy_jim_avg(1),VALL(lev1:lev2,i,:))
+               xLb_jim_y(1),xmb_jim_y(1),VALL(lev1:lev2,i,:))
         enddo
         do k=1,km2
           lev1=lev2+1
           lev2=lev1
           call this%rflip3d_1T_jim_new(1,hy,1,jm,this%Flsouth(1),this%Flnorth(1), &
-               aspy_jim_avg(1),aspy_jim_avg(1),VALL(lev1:lev2,i,:))
+               xLb_jim_y(1),xmb_jim_y(1),VALL(lev1:lev2,i,:))
           lev1=lev1+1
           lev2=lev2+1
         enddo
@@ -1335,13 +1338,13 @@ aspy_jim_avg(2)=sum(this%paspy4d(1:lm,1:im,1:jm,2))/as_jim_norm
            lev1=(k-1)*lm+1
            lev2=k*lm
           call this%rflip3d_1T_jim_new(lm,hx,1,im,this%Flwest(1),this%Fleast(1), &
-               aspx_jim_avg(1),aspx_jim_avg(1),VALL(lev1:lev2,:,j))
+               xLb_jim_x(1),xmb_jim_x(1),VALL(lev1:lev2,:,j))
         enddo
         do k=1,km2
           lev1=lev2+1
           lev2=lev1
           call this%rflip3d_1T_jim_new(1,hx,1,im,this%Flwest(1),this%Fleast(1), &
-               aspx_jim_avg(1),aspx_jim_avg(1),VALL(lev1:lev2,:,j))
+               xLb_jim_x(1),xmb_jim_x(1),VALL(lev1:lev2,:,j))
           lev1=lev1+1
           lev2=lev2+1
         enddo
@@ -1380,13 +1383,13 @@ aspy_jim_avg(2)=sum(this%paspy4d(1:lm,1:im,1:jm,2))/as_jim_norm
            lev1=(k-1)*lm+1
            lev2=k*lm
           call this%rflip3d_1T_jim_new(lm,hy,1,jm,this%Flsouth(2),this%Flnorth(2), &
-               aspy_jim_avg(2),aspy_jim_avg(2),HALL(lev1:lev2,i,:))
+               xLb_jim_y(2),xmb_jim_y(2),HALL(lev1:lev2,i,:))
         enddo
         do k=1,km2
           lev1=lev2+1
           lev2=lev1
           call this%rflip3d_1T_jim_new(1,hy,1,jm,this%Flsouth(2),this%Flnorth(2), &
-               aspy_jim_avg(2),aspy_jim_avg(2),HALL(lev1:lev2,i,:))
+               xLb_jim_y(2),xmb_jim_y(2),HALL(lev1:lev2,i,:))
           lev1=lev1+1
           lev2=lev2+1
         enddo
@@ -1425,13 +1428,13 @@ aspy_jim_avg(2)=sum(this%paspy4d(1:lm,1:im,1:jm,2))/as_jim_norm
            lev1=(k-1)*lm+1
            lev2=k*lm
           call this%rflip3d_1T_jim_new(lm,hx,1,im,this%Flwest(2),this%Fleast(2), &
-               aspx_jim_avg(2),aspx_jim_avg(2),HALL(lev1:lev2,:,j))
+               xLb_jim_x(2),xmb_jim_x(2),HALL(lev1:lev2,:,j))
         enddo
         do k=1,km2
           lev1=lev2+1
           lev2=lev1
           call this%rflip3d_1T_jim_new(1,hx,1,im,this%Flwest(2),this%Fleast(2), &
-               aspx_jim_avg(2),aspx_jim_avg(2),HALL(lev1:lev2,:,j))
+               xLb_jim_x(2),xmb_jim_x(2),HALL(lev1:lev2,:,j))
           lev1=lev1+1
           lev2=lev2+1
         enddo
@@ -1458,7 +1461,7 @@ aspy_jim_avg(2)=sum(this%paspy4d(1:lm,1:im,1:jm,2))/as_jim_norm
            lev2=k*lm
         
           call this%rflip3d_1_jim_new(lm,hx,1,im,this%Flwest(1),this%Fleast(1), &
-               aspx_jim_avg(1),aspx_jim_avg(1),VALL(lev1:lev2,:,j))
+               xLb_jim_x(1),xmb_jim_x(1),VALL(lev1:lev2,:,j))
           call this%rbeta3d_1_jim_new(lm,hx,1,im,this%paspx4d_jim_new(:,:,1:im,j,1),VALL(lev1:lev2,:,j))
         enddo
 !cltorg        call this%rbeta(km,hx,1,im,paspx,ssx,VALL(:,:,j))
@@ -1466,7 +1469,7 @@ aspy_jim_avg(2)=sum(this%paspy4d(1:lm,1:im,1:jm,2))/as_jim_norm
           lev1=lev2+1
           lev2=lev1
           call this%rflip3d_1_jim_new(1,hx,1,im,this%Flwest(1),this%Fleast(1), &
-               aspx_jim_avg(1),aspx_jim_avg(1),VALL(lev1:lev2,:,j))
+               xLb_jim_x(1),xmb_jim_x(1),VALL(lev1:lev2,:,j))
           call this%rbeta3d_1_jim_new(1,hx,1,im,this%paspx4d_jim_new(:,lm:lm,1:im,j,1),VALL(lev1:lev2,:,j))
           lev1=lev1+1
           lev2=lev2+1
@@ -1485,7 +1488,7 @@ aspy_jim_avg(2)=sum(this%paspy4d(1:lm,1:im,1:jm,2))/as_jim_norm
            lev2=k*lm
         
           call this%rflip3d_1_jim_new(lm,hy,1,jm,this%Flsouth(1),this%Flnorth(1), &
-               aspy_jim_avg(1),aspy_jim_avg(1),VALL(lev1:lev2,i,:))
+               xLb_jim_y(1),xmb_jim_y(1),VALL(lev1:lev2,i,:))
           call this%rbeta3d_1_jim_new(lm,hy,1,jm,this%paspy4d_jim_new(:,:,i,1:jm,1),VALL(lev1:lev2,i,:))
         enddo
 !cltorg        call this%rbeta(km,hy,1,jm,paspy,ssy,VALL(:,i,:))
@@ -1494,7 +1497,7 @@ aspy_jim_avg(2)=sum(this%paspy4d(1:lm,1:im,1:jm,2))/as_jim_norm
           lev1=lev2+1
           lev2=lev1
           call this%rflip3d_1_jim_new(1,hy,1,jm,this%Flsouth(1),this%Flnorth(1), &
-               aspy_jim_avg(1),aspy_jim_avg(1),VALL(lev1:lev2,i,:))
+               xLb_jim_y(1),xmb_jim_y(1),VALL(lev1:lev2,i,:))
           call this%rbeta3d_1_jim_new(1,hy,1,jm,this%paspy4d_jim_new(:,lm:lm,i,1:jm,1),VALL(lev1:lev2,i,:))
           lev1=lev1+1
           lev2=lev2+1
@@ -1514,7 +1517,7 @@ aspy_jim_avg(2)=sum(this%paspy4d(1:lm,1:im,1:jm,2))/as_jim_norm
            lev2=k*lm
         
           call this%rflip3d_1_jim_new(lm,hx,1,im,this%Flwest(2),this%Fleast(2), &
-               aspx_jim_avg(2),aspx_jim_avg(2),HALL(lev1:lev2,:,j))
+               xLb_jim_x(2),xmb_jim_x(2),HALL(lev1:lev2,:,j))
           call this%rbeta3d_1_jim_new(lm,hx,1,im,this%paspx4d_jim_new(:,:,1:im,j,2),HALL(lev1:lev2,:,j))
         enddo
 !cltorg        call this%rbeta(km,hx,1,im,paspx,ssx,HALL(:,:,j))
@@ -1522,7 +1525,7 @@ aspy_jim_avg(2)=sum(this%paspy4d(1:lm,1:im,1:jm,2))/as_jim_norm
           lev1=lev2+1
           lev2=lev1
           call this%rflip3d_1_jim_new(1,hx,1,im,this%Flwest(2),this%Fleast(2), &
-               aspx_jim_avg(2),aspx_jim_avg(2),HALL(lev1:lev2,:,j))
+               xLb_jim_x(2),xmb_jim_x(2),HALL(lev1:lev2,:,j))
           call this%rbeta3d_1_jim_new(1,hx,1,im,this%paspx4d_jim_new(:,lm:lm,1:im,j,2),HALL(lev1:lev2,:,j))
           lev1=lev1+1
           lev2=lev2+1
@@ -1543,7 +1546,7 @@ aspy_jim_avg(2)=sum(this%paspy4d(1:lm,1:im,1:jm,2))/as_jim_norm
            lev2=k*lm
         
           call this%rflip3d_1_jim_new(lm,hy,1,jm,this%Flsouth(2),this%Flnorth(2), &
-               aspy_jim_avg(2),aspy_jim_avg(2),HALL(lev1:lev2,i,:))
+               xLb_jim_y(2),xmb_jim_y(2),HALL(lev1:lev2,i,:))
           call this%rbeta3d_1_jim_new(lm,hy,1,jm,this%paspy4d_jim_new(:,:,i,1:jm,2),HALL(lev1:lev2,i,:))
         enddo
 !cltorg        call this%rbeta(km,hy,1,jm,paspy,ssy,HALL(:,i,:))
@@ -1552,7 +1555,7 @@ aspy_jim_avg(2)=sum(this%paspy4d(1:lm,1:im,1:jm,2))/as_jim_norm
           lev1=lev2+1
           lev2=lev1
           call this%rflip3d_1_jim_new(1,hy,1,jm,this%Flsouth(2),this%Flnorth(2), &
-               aspy_jim_avg(2),aspy_jim_avg(2),HALL(lev1:lev2,i,:))
+               xLb_jim_y(2),xmb_jim_y(2),HALL(lev1:lev2,i,:))
           call this%rbeta3d_1_jim_new(1,hy,1,jm,this%paspy4d_jim_new(:,lm:lm,i,1:jm,2),HALL(lev1:lev2,i,:))
           lev1=lev1+1
           lev2=lev2+1
@@ -1573,16 +1576,7 @@ aspy_jim_avg(2)=sum(this%paspy4d(1:lm,1:im,1:jm,2))/as_jim_norm
 !  write(6,*)'thinkdeb l_vertical_filter is ',l_vertical_filter
   if(l_vertical_filter) then
                                                  call btim(vfilt_tim)
-!clt     call this%sup_vrbeta1_bkg(km,km3,hx,hy,hz,im,jm,lm,pasp1,ss1,VALL)
-     do i=im,1,-1
-     do j=jm,1,-1
-        do k=1,km3
-           lev1=(k-1)*lm+1
-           lev2=k*lm
-           call this%rbeta1_jim_new(hz,1,lm,,this%paspy1_jim_new(1:lm),VALL(lev1:lev2,i,j))
-        enddo   
-     enddo
-     enddo
+     call this%sup_vrbeta1_bkg_new_jim(km,km3,hx,hy,hz,im,jm,lm,pasp1,pasp1_jim_new,VALL)
                                                  call etim(vfilt_tim)
   endif
 !-----------------------------------------------------------------------
@@ -2432,6 +2426,106 @@ integer(i_kind):: i,j,L,k,k_ind,kloc
 
 !----------------------------------------------------------------------
 endsubroutine sup_vrbeta1_bkg
+
+!&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+module subroutine sup_vrbeta1_bkg_new_jim &
+!**********************************************************************
+!                                                                     *
+!     conversion of vrbeta1 using Jim's calibrated 1D beta filter      *
+!                                                                     *
+!**********************************************************************
+(this,km,km3,hx,hy,hz,im,jm,lm,pasp,elp,VALL)
+!----------------------------------------------------------------------
+implicit none
+class(mg_intstate_type),target::this
+integer(i_kind),intent(in):: km,km3,hx,hy,hz,im,jm,lm
+real(r_kind),dimension(1:km,1-hx:im+hx,1-hy:jm+hy),intent(inout):: VALL
+real(r_kind),dimension(1,1,1:lm), intent(in):: pasp
+real(r_kind),dimension(0:1,1:lm), intent(in):: elp
+real(r_kind),dimension(1-hz:lm+hz,1:km3):: W
+real(r_kind):: xLb,xmb
+integer(i_kind):: i,j,L,k,k_ind,kloc
+!----------------------------------------------------------------------
+
+    xLb=0.0_r_kind
+    xmb=0.0_r_kind
+    if(pasp(1,1,1)>0.0_r_kind) xLb=1.0_r_kind/sqrt(pasp(1,1,1))
+    if(pasp(1,1,lm)>0.0_r_kind) xmb=1.0_r_kind/sqrt(pasp(1,1,lm))
+
+    do j=1,jm
+    do i=1,im
+      W=0.0_r_kind
+      do k=1,km3
+        k_ind=(k-1)*lm
+        do L=1,lm
+          kloc=k_ind+L
+          W(L,k)=VALL(kloc,i,j)
+        enddo
+        call this%rflip1_jim_new(hz,1,lm,.true.,.true.,xLb,xmb,W(1-hz:lm+hz,k))
+        call this%rbeta1_jim_new(hz,1,lm,elp,W(1-hz:lm+hz,k))
+      enddo
+      do k=1,km3
+        k_ind=(k-1)*lm
+        do L=1,lm
+          kloc=k_ind+L
+          VALL(kloc,i,j)=W(L,k)
+        enddo
+      enddo
+    enddo
+    enddo
+
+!----------------------------------------------------------------------
+endsubroutine sup_vrbeta1_bkg_new_jim
+
+!&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+module subroutine sup_vrbeta1T_bkg_new_jim &
+!**********************************************************************
+!                                                                     *
+!     Adjoint of sup_vrbeta1_bkg_new_jim                              *
+!                                                                     *
+!**********************************************************************
+(this,km,km3,hx,hy,hz,im,jm,lm,pasp,elp,VALL)
+!----------------------------------------------------------------------
+implicit none
+class(mg_intstate_type),target::this
+integer(i_kind),intent(in):: km,km3,hx,hy,hz,im,jm,lm
+real(r_kind),dimension(1:km,1-hx:im+hx,1-hy:jm+hy),intent(inout):: VALL
+real(r_kind),dimension(1,1,1:lm), intent(in):: pasp
+real(r_kind),dimension(0:1,1:lm), intent(in):: elp
+real(r_kind),dimension(1-hz:lm+hz,1:km3):: W
+real(r_kind):: xLb,xmb
+integer(i_kind):: i,j,L,k,k_ind,kloc
+!----------------------------------------------------------------------
+
+    xLb=0.0_r_kind
+    xmb=0.0_r_kind
+    if(pasp(1,1,1)>0.0_r_kind) xLb=1.0_r_kind/sqrt(pasp(1,1,1))
+    if(pasp(1,1,lm)>0.0_r_kind) xmb=1.0_r_kind/sqrt(pasp(1,1,lm))
+
+    do j=1,jm
+    do i=1,im
+      W=0.0_r_kind
+      do k=1,km3
+        k_ind=(k-1)*lm
+        do L=1,lm
+          kloc=k_ind+L
+          W(L,k)=VALL(kloc,i,j)
+        enddo
+        call this%rbeta1T_jim_new(hz,1,lm,elp,W(1-hz:lm+hz,k))
+        call this%rflip1T_jim_new(hz,1,lm,.true.,.true.,xLb,xmb,W(1-hz:lm+hz,k))
+      enddo
+      do k=1,km3
+        k_ind=(k-1)*lm
+        do L=1,lm
+          kloc=k_ind+L
+          VALL(kloc,i,j)=W(L,k)
+        enddo
+      enddo
+    enddo
+    enddo
+
+!----------------------------------------------------------------------
+endsubroutine sup_vrbeta1T_bkg_new_jim
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine sup_vrbeta1T_bkg &

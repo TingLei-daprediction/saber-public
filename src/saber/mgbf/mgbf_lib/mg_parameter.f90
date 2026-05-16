@@ -367,13 +367,13 @@ interface
      real(dp),dimension(    lx:mx,ly:my,lz:mz,Lw:Mw),intent(  out):: ss
    end subroutine
    ! codex debug/develop for new jim's calibrated function
-   module subroutine rcalib1_jim_new(this,Lx,mx,Lbx,mbx,asLbx,asmbx,as,el,hxm)
+   module subroutine rcalib1_jim_new(this,hx,Lx,mx,Lbx,mbx,as,xLb,xmb,el,hxm)
      use mgbf_kinds, only: dp=>r_kind
      class(mg_parameter_type)::this
-     integer,                      intent(in   ):: Lx,mx
+     integer,                      intent(in   ):: hx,Lx,mx
      logical,                      intent(in   ):: Lbx,mbx
-     real(dp),                     intent(in   ):: asLbx,asmbx
      real(dp),dimension(Lx:Mx),    intent(in   ):: as
+     real(dp),                     intent(  out):: xLb,xmb
      real(dp),dimension(0:1,Lx:Mx),intent(  out):: el
      integer,dimension(Lx:Mx),     intent(  out):: hxm
    end subroutine
@@ -408,20 +408,20 @@ interface
      real(dp),dimension(0:1,nz,Lx:Mx),  intent(in   ):: el
      real(dp),dimension(nz,lx-hx:mx+hx),intent(inout):: a
    end subroutine
-   module subroutine rflip1_jim_new(this,hx,lx,mx,Lb,mb,asLb,asmb,a)
+   module subroutine rflip1_jim_new(this,hx,lx,mx,Lb,mb,xLb,xmb,a)
      use mgbf_kinds, only: dp=>r_kind
      class(mg_parameter_type)::this
      integer,                        intent(in   ):: hx,Lx,mx
      logical,                        intent(in   ):: Lb,mb
-     real(dp),                       intent(in   ):: asLb,asmb
+     real(dp),                       intent(in   ):: xLb,xmb
      real(dp),dimension(lx-hx:mx+hx),intent(inout):: a
    end subroutine
-   module subroutine rflip3d_1_jim_new(this,nz,hx,lx,mx,Lb,mb,asLb,asmb,a)
+   module subroutine rflip3d_1_jim_new(this,nz,hx,lx,mx,Lb,mb,xLb,xmb,a)
      use mgbf_kinds, only: dp=>r_kind
      class(mg_parameter_type)::this
      integer,                           intent(in   ):: nz,hx,Lx,mx
      logical,                           intent(in   ):: Lb,mb
-     real(dp),                          intent(in   ):: asLb,asmb
+     real(dp),                          intent(in   ):: xLb,xmb
      real(dp),dimension(nz,lx-hx:mx+hx),intent(inout):: a
    end subroutine
    module subroutine rbeta2(this,hx,lx,mx, hy,ly,my, el,ss, a)
@@ -479,20 +479,20 @@ interface
      real(dp),dimension(0:1,nz,Lx:Mx),  intent(in   ):: el
      real(dp),dimension(nz,lx-hx:mx+hx),intent(inout):: a
    end subroutine
-   module subroutine rflip1T_jim_new(this,hx,lx,mx,Lb,mb,asLb,asmb,a)
+   module subroutine rflip1T_jim_new(this,hx,lx,mx,Lb,mb,xLb,xmb,a)
      use mgbf_kinds, only: dp=>r_kind
      class(mg_parameter_type)::this
      integer,                        intent(in   ):: hx,Lx,mx
      logical,                        intent(in   ):: Lb,mb
-     real(dp),                       intent(in   ):: asLb,asmb
+     real(dp),                       intent(in   ):: xLb,xmb
      real(dp),dimension(lx-hx:mx+hx),intent(inout):: a
    end subroutine
-   module subroutine rflip3d_1T_jim_new(this,nz,hx,lx,mx,Lb,mb,asLb,asmb,a)
+   module subroutine rflip3d_1T_jim_new(this,nz,hx,lx,mx,Lb,mb,xLb,xmb,a)
      use mgbf_kinds, only: dp=>r_kind
      class(mg_parameter_type)::this
      integer,                           intent(in   ):: nz,hx,Lx,mx
      logical,                           intent(in   ):: Lb,mb
-     real(dp),                          intent(in   ):: asLb,asmb
+     real(dp),                          intent(in   ):: xLb,xmb
      real(dp),dimension(nz,lx-hx:mx+hx),intent(inout):: a
    end subroutine
    module subroutine rbeta2T(this,hx,lx,mx, hy,ly,my, el,ss, a)

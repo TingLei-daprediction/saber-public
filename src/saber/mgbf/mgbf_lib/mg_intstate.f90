@@ -202,6 +202,7 @@ contains
   procedure :: sup_vrbeta1T,sup_vrbeta1,sup_vrbeta3T,sup_vrbeta3
   procedure :: sup_vrbeta1_ens,sup_vrbeta1T_ens
   procedure :: sup_vrbeta1_bkg,sup_vrbeta1T_bkg
+  procedure :: sup_vrbeta1_bkg_new_jim,sup_vrbeta1T_bkg_new_jim
 !from mg_transfer.f90
   procedure :: anal_to_filt_allmap,filt_to_anal_allmap
   procedure :: anal_to_filt_all,filt_to_anal_all
@@ -1036,6 +1037,24 @@ interface
      real(r_kind),dimension(1,1,1:lm), intent(in):: pasp
      real(r_kind),dimension(1:lm), intent(in):: ss
    end subroutine
+   module subroutine sup_vrbeta1_bkg_new_jim &
+        (this,km,km3,hx,hy,hz,im,jm,lm,pasp,elp,VALL)
+     implicit none
+     class(mg_intstate_type),target::this
+     integer(i_kind),intent(in):: km,km3,hx,hy,hz,im,jm,lm
+     real(r_kind),dimension(1:km,1-hx:im+hx,1-hy:jm+hy),intent(inout):: VALL
+     real(r_kind),dimension(1,1,1:lm), intent(in):: pasp
+     real(r_kind),dimension(0:1,1:lm), intent(in):: elp
+   end subroutine
+   module subroutine sup_vrbeta1T_bkg_new_jim &
+        (this,km,km3,hx,hy,hz,im,jm,lm,pasp,elp,VALL)
+     implicit none
+     class(mg_intstate_type),target::this
+     integer(i_kind),intent(in):: km,km3,hx,hy,hz,im,jm,lm
+     real(r_kind),dimension(1:km,1-hx:im+hx,1-hy:jm+hy),intent(inout):: VALL
+     real(r_kind),dimension(1,1,1:lm), intent(in):: pasp
+     real(r_kind),dimension(0:1,1:lm), intent(in):: elp
+   end subroutine
 !from mg_transfer.f90
    module subroutine anal_to_filt_allmap(this,WORKA)
      class(mg_intstate_type),target::this
@@ -1277,7 +1296,7 @@ integer(i_kind),allocatable :: hwork_jim(:)
 
 real(r_kind):: gen_fac
 ! codex debug/develop for new jim's calibrated function
-real(r_kind):: asL_jim,asR_jim
+real(r_kind):: xLb_jim,xmb_jim
 real(r_kind),allocatable, dimension(:,:,:,:):: weig_g
 real(r_kind),allocatable, dimension(:,:,:,:):: loc_a 
 real(r_kind),allocatable, dimension(:,:,:):: weigh_tmp 
@@ -1673,27 +1692,24 @@ allocate(hwork_jim(max(this%im,this%jm,this%lm)))
 !cltthinkdeb should their halo points be defined too?
 allocate(loc_paspx4d(this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,2)) 
 allocate(loc_paspy4d(this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,2)) 
-!cltthinkdeb tothink the asL* definition
-  asLjim=this%pasp1(1,1,1) ; asR_jim=this%pasp1(1,1,this%lm)
- call this%rcalib1_jim_new(1,this%lm,.true.,.true.,asL_jim,asR_jim, &
-            this%pasp1(1,1,1:this%lm),this%paspsp1_jim_new(:,1:,1:this%lm),hwork1_jim(1:this%lm))
+call this%rcalib1_jim_new(this%hz,1,this%lm,.true.,.true., &
+     this%pasp1(1,1,1:this%lm),xLb_jim,xmb_jim, &
+     this%pasp1_jim_new(:,1:this%lm),hwork_jim(1:this%lm))
 loc_paspx4d=(1/this%paspx4d)**2  ! back to the square (L**2) definition
 loc_paspy4d=(1/this%paspy4d)**2  ! back to the square (L**2) definition
 do igbin=1,2
    do k=1,this%lm
      do j=1,this%jm
-       asL_jim=loc_paspx4d(k,1,j,igbin)
-       asR_jim=loc_paspx4d(k,this%im,j,igbin)
-       call this%rcalib1_jim_new(1,this%im,this%Flwest(igbin),this%Fleast(igbin),asL_jim,asR_jim, &
-            loc_paspx4d(k,1:this%im,j,igbin),this%paspx4d_jim_new(:,k,1:this%im,j,igbin),hwork_jim(1:this%im))
+       call this%rcalib1_jim_new(this%hx,1,this%im,this%Flwest(igbin),this%Fleast(igbin), &
+            loc_paspx4d(k,1:this%im,j,igbin),xLb_jim,xmb_jim, &
+            this%paspx4d_jim_new(:,k,1:this%im,j,igbin),hwork_jim(1:this%im))
      enddo
    enddo
    do k=1,this%lm
      do i=1,this%im
-       asL_jim=loc_paspy4d(k,i,1,igbin)
-       asR_jim=loc_paspy4d(k,i,this%jm,igbin)
-       call this%rcalib1_jim_new(1,this%jm,this%Flsouth(igbin),this%Flnorth(igbin),asL_jim,asR_jim, &
-            loc_paspy4d(k,i,1:this%jm,igbin),this%paspy4d_jim_new(:,k,i,1:this%jm,igbin),hwork_jim(1:this%jm))
+       call this%rcalib1_jim_new(this%hy,1,this%jm,this%Flsouth(igbin),this%Flnorth(igbin), &
+            loc_paspy4d(k,i,1:this%jm,igbin),xLb_jim,xmb_jim, &
+            this%paspy4d_jim_new(:,k,i,1:this%jm,igbin),hwork_jim(1:this%jm))
      enddo
    enddo
 enddo

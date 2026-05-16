@@ -402,25 +402,24 @@ end subroutine getlinesum4
 
 !=============================================================================
 ! codex debug/develop for new jim's calibrated function
-module subroutine rcalib1_jim_new(this,Lx,mx,Lbx,mbx,asLbx,asmbx,as,el,hxm)
-!cltthinkbug how was this generated
+module subroutine rcalib1_jim_new(this,hx,Lx,mx,Lbx,mbx,as,xLb,xmb,el,hxm)
 !=============================================================================
 class(mg_parameter_type)::this
-integer,                      intent(in   ):: Lx,mx
+integer,                      intent(in   ):: hx,Lx,mx
 logical,                      intent(in   ):: Lbx,mbx
-real(dp),                     intent(in   ):: asLbx,asmbx
 real(dp),dimension(Lx:Mx),    intent(in   ):: as
+real(dp),                     intent(  out):: xLb,xmb
 real(dp),dimension(0:1,Lx:Mx),intent(  out):: el
 integer,dimension(Lx:Mx),     intent(  out):: hxm
-real(dp),dimension(Lx-mx:mx-Lx)          :: fs
-real(dp)                                  :: b,exx,f,r,rc,rrc,s,x,xLb,xmb
+real(dp),dimension(-hx:hx)                :: fs
+real(dp)                                  :: b,exx,f,r,rc,rrc,s,x
 real(dp)                                  :: rpp3o2_jim_new
 integer                                   :: ib,ix,ixp,ixm,gx,gxm,gxn,Lxmix,mxmix
 !=============================================================================
 xLb=0.0_dp
 xmb=0.0_dp
-if(Lbx .and. asLbx>0.0_dp) xLb=u1/sqrt(asLbx)
-if(mbx .and. asmbx>0.0_dp) xmb=u1/sqrt(asmbx)
+if(Lbx .and. as(Lx)>0.0_dp) xLb=u1/sqrt(as(Lx))
+if(mbx .and. as(mx)>0.0_dp) xmb=u1/sqrt(as(mx))
 rpp3o2_jim_new=sqrt(real(this%p,dp)+1.5_dp)
 do ix=Lx,mx
    b=sqrt(max(as(ix),tiny(1.0_dp)))
@@ -609,27 +608,23 @@ a=b
 end subroutine rbeta3d_1_jim_new
 !=============================================================================
 ! codex debug/develop for new jim's calibrated function
-module subroutine rflip1_jim_new(this,hx,lx,mx,Lb,mb,asLb,asmb,a)
+module subroutine rflip1_jim_new(this,hx,lx,mx,Lb,mb,xLb,xmb,a)
 !=============================================================================
 class(mg_parameter_type)::this
 integer,                        intent(in   ):: hx,Lx,mx
 logical,                        intent(in   ):: Lb,mb
-real(dp),                       intent(in   ):: asLb,asmb
+real(dp),                       intent(in   ):: xLb,xmb
 real(dp),dimension(lx-hx:mx+hx),intent(inout):: a
-real(dp)                                    :: r,xLb,xmb
+real(dp)                                    :: r
 integer                                     :: gx,ixp,ixm,Lxm,mxp
 !=============================================================================
-xLb=0.0_dp
-xmb=0.0_dp
-if(Lb .and. asLb>0.0_dp) xLb=u1/sqrt(asLb)
-if(mb .and. asmb>0.0_dp) xmb=u1/sqrt(asmb)
 if(Lb)then
    Lxm=Lx-1
    do gx=1,hx
       ixm=Lx-gx
       ixp=Lxm+gx
       r=gx*xLb
-      if(r>0.0_dp) r=om0_jim_new+r*(om1_jim_new+r*om2_jim_new)
+      r=om0_jim_new+r*(om1_jim_new+r*om2_jim_new)
       a(ixm)=r*a(ixp)
    enddo
 endif
@@ -639,34 +634,30 @@ if(mb)then
       ixp=mx+gx
       ixm=mxp-gx
       r=gx*xmb
-      if(r>0.0_dp) r=om0_jim_new+r*(om1_jim_new+r*om2_jim_new)
+      r=om0_jim_new+r*(om1_jim_new+r*om2_jim_new)
       a(ixp)=r*a(ixm)
    enddo
 endif
 end subroutine rflip1_jim_new
 !=============================================================================
 ! codex debug/develop for new jim's calibrated function
-module subroutine rflip3d_1_jim_new(this,nz,hx,lx,mx,Lb,mb,asLb,asmb,a)
+module subroutine rflip3d_1_jim_new(this,nz,hx,lx,mx,Lb,mb,xLb,xmb,a)
 !=============================================================================
 class(mg_parameter_type)::this
 integer,                           intent(in   ):: nz,hx,Lx,mx
 logical,                           intent(in   ):: Lb,mb
-real(dp),                          intent(in   ):: asLb,asmb
+real(dp),                          intent(in   ):: xLb,xmb
 real(dp),dimension(nz,lx-hx:mx+hx),intent(inout):: a
-real(dp)                                       :: r,xLb,xmb
+real(dp)                                       :: r
 integer                                        :: gx,ixp,ixm,Lxm,mxp
 !=============================================================================
-xLb=0.0_dp
-xmb=0.0_dp
-if(Lb .and. asLb>0.0_dp) xLb=u1/sqrt(asLb)
-if(mb .and. asmb>0.0_dp) xmb=u1/sqrt(asmb)
 if(Lb)then
    Lxm=Lx-1
    do gx=1,hx
       ixm=Lx-gx
       ixp=Lxm+gx
       r=gx*xLb
-      if(r>0.0_dp) r=om0_jim_new+r*(om1_jim_new+r*om2_jim_new)
+      r=om0_jim_new+r*(om1_jim_new+r*om2_jim_new)
       a(:,ixm)=r*a(:,ixp)
    enddo
 endif
@@ -676,7 +667,7 @@ if(mb)then
       ixp=mx+gx
       ixm=mxp-gx
       r=gx*xmb
-      if(r>0.0_dp) r=om0_jim_new+r*(om1_jim_new+r*om2_jim_new)
+      r=om0_jim_new+r*(om1_jim_new+r*om2_jim_new)
       a(:,ixp)=r*a(:,ixm)
    enddo
 endif
@@ -1046,27 +1037,23 @@ a=b
 end subroutine rbeta3d_1T_jim_new
 !=============================================================================
 ! codex debug/develop for new jim's calibrated function
-module subroutine rflip1T_jim_new(this,hx,lx,mx,Lb,mb,asLb,asmb,a)
+module subroutine rflip1T_jim_new(this,hx,lx,mx,Lb,mb,xLb,xmb,a)
 !=============================================================================
 class(mg_parameter_type)::this
 integer,                        intent(in   ):: hx,Lx,mx
 logical,                        intent(in   ):: Lb,mb
-real(dp),                       intent(in   ):: asLb,asmb
+real(dp),                       intent(in   ):: xLb,xmb
 real(dp),dimension(lx-hx:mx+hx),intent(inout):: a
-real(dp)                                    :: r,xLb,xmb
+real(dp)                                    :: r
 integer                                     :: gx,ixp,ixm,Lxm,mxp
 !=============================================================================
-xLb=0.0_dp
-xmb=0.0_dp
-if(Lb .and. asLb>0.0_dp) xLb=u1/sqrt(asLb)
-if(mb .and. asmb>0.0_dp) xmb=u1/sqrt(asmb)
 if(Lb)then
    Lxm=Lx-1
    do gx=1,hx
       ixm=Lx-gx
       ixp=Lxm+gx
       r=gx*xLb
-      if(r>0.0_dp) r=om0_jim_new+r*(om1_jim_new+r*om2_jim_new)
+      r=om0_jim_new+r*(om1_jim_new+r*om2_jim_new)
       a(ixp)=a(ixp)+r*a(ixm)
       a(ixm)=0.0_dp
    enddo
@@ -1077,7 +1064,7 @@ if(mb)then
       ixp=mx+gx
       ixm=mxp-gx
       r=gx*xmb
-      if(r>0.0_dp) r=om0_jim_new+r*(om1_jim_new+r*om2_jim_new)
+      r=om0_jim_new+r*(om1_jim_new+r*om2_jim_new)
       a(ixm)=a(ixm)+r*a(ixp)
       a(ixp)=0.0_dp
    enddo
@@ -1085,27 +1072,23 @@ endif
 end subroutine rflip1T_jim_new
 !=============================================================================
 ! codex debug/develop for new jim's calibrated function
-module subroutine rflip3d_1T_jim_new(this,nz,hx,lx,mx,Lb,mb,asLb,asmb,a)
+module subroutine rflip3d_1T_jim_new(this,nz,hx,lx,mx,Lb,mb,xLb,xmb,a)
 !=============================================================================
 class(mg_parameter_type)::this
 integer,                           intent(in   ):: nz,hx,Lx,mx
 logical,                           intent(in   ):: Lb,mb
-real(dp),                          intent(in   ):: asLb,asmb
+real(dp),                          intent(in   ):: xLb,xmb
 real(dp),dimension(nz,lx-hx:mx+hx),intent(inout):: a
-real(dp)                                       :: r,xLb,xmb
+real(dp)                                       :: r
 integer                                        :: gx,ixp,ixm,Lxm,mxp
 !=============================================================================
-xLb=0.0_dp
-xmb=0.0_dp
-if(Lb .and. asLb>0.0_dp) xLb=u1/sqrt(asLb)
-if(mb .and. asmb>0.0_dp) xmb=u1/sqrt(asmb)
 if(Lb)then
    Lxm=Lx-1
    do gx=1,hx
       ixm=Lx-gx
       ixp=Lxm+gx
       r=gx*xLb
-      if(r>0.0_dp) r=om0_jim_new+r*(om1_jim_new+r*om2_jim_new)
+      r=om0_jim_new+r*(om1_jim_new+r*om2_jim_new)
       a(:,ixp)=a(:,ixp)+r*a(:,ixm)
       a(:,ixm)=0.0_dp
    enddo
@@ -1116,7 +1099,7 @@ if(mb)then
       ixp=mx+gx
       ixm=mxp-gx
       r=gx*xmb
-      if(r>0.0_dp) r=om0_jim_new+r*(om1_jim_new+r*om2_jim_new)
+      r=om0_jim_new+r*(om1_jim_new+r*om2_jim_new)
       a(:,ixm)=a(:,ixm)+r*a(:,ixp)
       a(:,ixp)=0.0_dp
    enddo
