@@ -403,6 +403,7 @@ end subroutine getlinesum4
 !=============================================================================
 ! codex debug/develop for new jim's calibrated function
 module subroutine rcalib1_jim_new(this,Lx,mx,Lbx,mbx,asLbx,asmbx,as,el,hxm)
+!cltthinkbug how was this generated
 !=============================================================================
 class(mg_parameter_type)::this
 integer,                      intent(in   ):: Lx,mx

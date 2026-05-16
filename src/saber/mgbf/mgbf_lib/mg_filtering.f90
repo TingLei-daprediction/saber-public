@@ -1241,7 +1241,17 @@ aspy_jim_avg(2)=sum(this%paspy4d(1:lm,1:im,1:jm,2))/as_jim_norm
 !***
   if(l_vertical_filter) then
                                                  call btim(vfiltT_tim)
-     call this%sup_vrbeta1T_bkg(km,km3,hx,hy,hz,im,jm,lm,pasp1,ss1,VALL)
+     do i=im,1,-1
+     do j=jm,1,-1
+        do k=1,km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
+ !clrog    call this%sup_vrbeta1T_bkg(km,km3,hx,hy,hz,im,jm,lm,pasp1,ss1,VALL)
+           call this%rbeta1T_jim_new(hz,1,lm,,this%pasp1_jim_new(1:lm),VALL(lev1:lev2,i,j))
+        enddo   
+     enddo
+     enddo
+ 
                                                  call etim(vfiltT_tim)
   endif
 !***
@@ -1563,7 +1573,16 @@ aspy_jim_avg(2)=sum(this%paspy4d(1:lm,1:im,1:jm,2))/as_jim_norm
 !  write(6,*)'thinkdeb l_vertical_filter is ',l_vertical_filter
   if(l_vertical_filter) then
                                                  call btim(vfilt_tim)
-     call this%sup_vrbeta1_bkg(km,km3,hx,hy,hz,im,jm,lm,pasp1,ss1,VALL)
+!clt     call this%sup_vrbeta1_bkg(km,km3,hx,hy,hz,im,jm,lm,pasp1,ss1,VALL)
+     do i=im,1,-1
+     do j=jm,1,-1
+        do k=1,km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
+           call this%rbeta1_jim_new(hz,1,lm,,this%paspy1_jim_new(1:lm),VALL(lev1:lev2,i,j))
+        enddo   
+     enddo
+     enddo
                                                  call etim(vfilt_tim)
   endif
 !-----------------------------------------------------------------------
@@ -2066,9 +2085,45 @@ integer(i_kind):: i,j,L
   
 !----------------------------------------------------------------------
 endsubroutine sup_vrbeta1
+module subroutine sup_vrbeta1_new_jim &
+!**********************************************************************
+!                                                                     *
+!     conversion of vrbeta1                                           *
+!                                                                     *
+!**********************************************************************
+(this,kmax,hx,hy,hz,im,jm,lm,pasp,ss,V)
+!----------------------------------------------------------------------
+implicit none
+class(mg_intstate_type),target::this
+integer(i_kind),intent(in):: kmax,hx,hy,hz,im,jm,lm
+real(r_kind),dimension(1:kmax,1-hx:im+hx,1-hy:jm+hy,1:lm),intent(inout):: V
+real(r_kind),dimension(1,1,1:lm), intent(in):: pasp
+real(r_kind),dimension(1:lm), intent(in):: ss
+real(r_kind),dimension(1:kmax,1-hz:lm+hz):: W
+integer(i_kind):: i,j,L
+!----------------------------------------------------------------------
+
+        do j=1,jm
+        do i=1,im
+          do L=1,Lm
+            W(:,L)=V(:,i,j,L)
+          end do
+          do L=1,hz
+            W(:,1-L)=W(:,1+L)
+            W(:,LM+L)=W(:,LM-L)
+          end do
+             call this%rbeta(kmax,hz,1,lm,  pasp,ss,W)
+          do l=1,Lm
+            V(:,i,j,L)=W(:,L)
+          end do
+        end do
+        end do
+  
+!----------------------------------------------------------------------
+endsubroutine sup_vrbeta1_new_jim
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-module subroutine sup_vrbeta1T &
+module subroutine sup_vrbeta1T_new_jim &
 !**********************************************************************
 !                                                                     *
 !     Adjoint of sup_vrbeta1                                          *
@@ -2110,7 +2165,7 @@ integer(i_kind):: i,j,L
         end do
 
 !----------------------------------------------------------------------
-endsubroutine sup_vrbeta1T
+endsubroutine sup_vrbeta1T_new_jim
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine sup_vrbeta3 &

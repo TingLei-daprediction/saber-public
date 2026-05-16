@@ -76,6 +76,7 @@ real(r_kind), allocatable,dimension(:,:,:,:):: paspy4d
 ! codex debug/develop for new jim's calibrated function
 real(r_kind), allocatable,dimension(:,:,:,:,:):: paspy4d_jim_new
 real(r_kind), allocatable,dimension(:,:,:):: pasp1
+real(r_kind), allocatable,dimension(:,:):: pasp1_jim_new
 real(r_kind), allocatable,dimension(:,:,:,:):: pasp2
 real(r_kind), allocatable,dimension(:,:,:,:,:):: pasp3
 
@@ -1156,6 +1157,7 @@ allocate(this%paspy4d(this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%h
 allocate(this%paspy4d_jim_new(0:1,this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,2)) ; this%paspy4d_jim_new=0.
 
 allocate(this%pasp1(1,1,1:this%lm))                     ; this%pasp1=0.
+allocate(this%pasp1_jim_new(0:1,1:this%lm))                     ; this%pasp1_jim_new=0.
 allocate(this%pasp2(2,2,1:this%im,1:this%jm))           ; this%pasp2=0.
 allocate(this%pasp3(3,3,1:this%im,1:this%jm,1:this%lm)) ; this%pasp3=0.
 
@@ -1667,10 +1669,14 @@ end do
 ! codex debug/develop for new jim's calibrated function: use the edge-cell aspect
 ! values as the boundary-aspect inputs to rcalib1_jim_new until a separate
 ! boundary aspect field is identified in the current mgbf_lib path.
-allocate(hwork_jim(max(this%im,this%jm)))
+allocate(hwork_jim(max(this%im,this%jm,this%lm)))
 !cltthinkdeb should their halo points be defined too?
 allocate(loc_paspx4d(this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,2)) 
 allocate(loc_paspy4d(this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,2)) 
+!cltthinkdeb tothink the asL* definition
+  asLjim=this%pasp1(1,1,1) ; asR_jim=this%pasp1(1,1,this%lm)
+ call this%rcalib1_jim_new(1,this%lm,.true.,.true.,asL_jim,asR_jim, &
+            this%pasp1(1,1,1:this%lm),this%paspsp1_jim_new(:,1:,1:this%lm),hwork1_jim(1:this%lm))
 loc_paspx4d=(1/this%paspx4d)**2  ! back to the square (L**2) definition
 loc_paspy4d=(1/this%paspy4d)**2  ! back to the square (L**2) definition
 do igbin=1,2
