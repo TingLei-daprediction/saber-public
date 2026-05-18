@@ -90,6 +90,9 @@ self%regional = .false.
 if (conf%has("regional mode")) then
   call conf%get_or_die("regional mode", self%regional)
 end if
+if (self%regional .and. self%noGSI) then
+  call abor1_ftn("GSI grid: regional mode is not supported with noGSI")
+endif
 
 ! Domain decomposition
 ! --------------------
@@ -205,7 +208,7 @@ contains
   ! If debugging, read the latitude and longitude from file
   ! and compare with those from GSIbec
   ! ---------------------------------------------
-  if (self%debug .and. comm%rank() == 0) then
+  if (self%debug .and. comm%rank() == 0 .and. .not. self%regional) then
 
     allocate(mylons(self%npx))
     allocate(mylats(self%npy))
@@ -340,10 +343,12 @@ subroutine delete(self)
 class(gsi_grid), intent(inout) :: self
 
 ! Deallocate arrays
-deallocate(self%lons)
-deallocate(self%lats)
-deallocate(self%grid_lons)
-deallocate(self%grid_lats)
+if (allocated(self%lons)) deallocate(self%lons)
+if (allocated(self%lats)) deallocate(self%lats)
+if (allocated(self%lons2)) deallocate(self%lons2)
+if (allocated(self%lats2)) deallocate(self%lats2)
+if (allocated(self%grid_lons)) deallocate(self%grid_lons)
+if (allocated(self%grid_lats)) deallocate(self%grid_lats)
 call self%comm%final()
 
 ! Set grid to zero
@@ -385,11 +390,11 @@ if (self%debug) then
                         ' jsc = ', self%jsc, ' jec = ', self%jec
 
   ! Print latlon
-  write(*,'(A10, F10.3, A10, F10.3, A10, F10.3, A10, F10.3)')  &
-        "  Lat min ", minval(self%grid_lats), &
-        "  Lat max ", maxval(self%grid_lats), &
-        "  Lon min ", minval(self%grid_lons), &
-        "  Lon max ", maxval(self%grid_lons)
+    write(*,'(A10, F10.3, A10, F10.3, A10, F10.3, A10, F10.3)')  &
+	  "  Lat min ", minval(self%grid_lats), &
+	  "  Lat max ", maxval(self%grid_lats), &
+	  "  Lon min ", minval(self%grid_lons), &
+	  "  Lon max ", maxval(self%grid_lons)
 endif
 
 end subroutine print
