@@ -808,30 +808,19 @@ end subroutine multiply
    integer, intent(in), optional :: pe
    integer, intent(in), optional :: layout(2)
    integer ii,jj,jnode
-   integer mylat2,mylon2,mype,nxpe,nype,sizeofrank
+   integer mylat2,mylon2,sizeofrank
    sizeofrank=size(rank)
    mylat2 = size(var,1)
    mylon2 = size(var,2)
-   jnode=1
    var = missing_value(1.0_kind_real)  ! debug: this should be overwritten with physical values
+   
+   jnode=1
    do jj=2,mylat2-1
       do ii=2,mylon2-1
          var(jj,ii) = rank(jnode)
          jnode = jnode + 1
       enddo
    enddo
- 
-   if(mylon2*mylat2.le.sizeofrank) then  !in global domain, or regional, the subdomains are of the laterary boundaries
-                                         ! and the halo points are not "complete"/absent along the laterary boundies of the whole
-                                         ! domain
-                                         !for simplicity, in that situation, the halo points would be defined by adjacent inner
-                                         !points
-   ! fill in halos
-   ! atlas inserts halos in this order:
-   ! - all x @ ymin
-   ! - pairs of (xmin, xmax) @ each y from (ymin+1, ymax-1)
-   ! - all x @ ymax
- 
    if(mylon2*mylat2.le.sizeofrank) then  !in global domain, or regional, the subdomains are of the laterary boundaries
                                          ! and the halo points are not "complete"/absent along the laterary boundies of the whole
                                          ! domain
@@ -868,8 +857,7 @@ end subroutine multiply
       var(1,1)=var(2,2);var(1,mylon2)=var(2,mylon2-1)
       var(mylat2,1)=var(mylat2-1,2)
       var(mylat2,mylon2)=var(mylat2-1,mylon2-1)
-   endif 
-
+   endif
    end subroutine atlas_to_gsi_
 
    ! copy GSI array into atlas array
