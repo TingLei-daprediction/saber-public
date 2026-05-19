@@ -76,6 +76,7 @@ real(r_kind), allocatable,dimension(:,:,:,:):: paspy4d
 ! codex debug/develop for new jim's calibrated function
 real(r_kind), allocatable,dimension(:,:,:,:,:):: paspy4d_jim_new
 real(r_kind), allocatable,dimension(:,:,:):: pasp1
+real(r_kind), allocatable,dimension(:,:,:):: pasp1_store
 real(r_kind), allocatable,dimension(:,:):: pasp1_jim_new
 real(r_kind), allocatable,dimension(:,:,:,:):: pasp2
 real(r_kind), allocatable,dimension(:,:,:,:,:):: pasp3
@@ -1019,6 +1020,17 @@ interface
      real(r_kind),dimension(1,1,1:lm), intent(in):: pasp
      real(r_kind),dimension(1:lm), intent(in):: ss
    end subroutine
+   module subroutine sup_vrbeta1_jim_new &
+   (this,km,km3,hx,hy,hz,im,jm,lm,pasp,elp,VALL)
+     implicit none
+     class(mg_intstate_type),target::this
+     integer(i_kind),intent(in):: km,km3,hx,hy,hz,im,jm,lm
+     real(r_kind),dimension(1:km,1-hx:im+hx,1-hy:jm+hy),intent(inout):: VALL
+     real(r_kind),dimension(1,1,1:lm), intent(in):: pasp
+     real(r_kind),dimension(0:1,1:lm), intent(in):: elp
+     real(r_kind),dimension(1-hz:lm+hz,1:km3):: W
+
+   end subroutine
    module subroutine sup_vrbeta1_bkg &
         (this,km,km3,hx,hy,hz,im,jm,lm,pasp,ss,VALL)
      implicit none
@@ -1176,6 +1188,7 @@ allocate(this%paspy4d(this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%h
 allocate(this%paspy4d_jim_new(0:1,this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,2)) ; this%paspy4d_jim_new=0.
 
 allocate(this%pasp1(1,1,1:this%lm))                     ; this%pasp1=0.
+allocate(this%pasp1_store(1,1,1:this%lm))                     ; this%pasp1_store=0.
 allocate(this%pasp1_jim_new(0:1,1:this%lm))                     ; this%pasp1_jim_new=0.
 allocate(this%pasp2(2,2,1:this%im,1:this%jm))           ; this%pasp2=0.
 allocate(this%pasp3(3,3,1:this%im,1:this%jm,1:this%lm)) ; this%pasp3=0.
@@ -1481,6 +1494,8 @@ endif
 do L=1,this%lm
    this%pasp1(1,1,L)=this%pasp01
 enddo
+   this%pasp1_store=this%pasp1
+
 
 !tothink
 !cltorg do i=1,this%im
@@ -1693,7 +1708,7 @@ allocate(hwork_jim(max(this%im,this%jm,this%lm)))
 allocate(loc_paspx4d(this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,2)) 
 allocate(loc_paspy4d(this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,2)) 
 call this%rcalib1_jim_new(this%hz,1,this%lm,.true.,.true., &
-     this%pasp1(1,1,1:this%lm),xLb_jim,xmb_jim, &
+     this%pasp1_store(1,1,1:this%lm),xLb_jim,xmb_jim, &
      this%pasp1_jim_new(:,1:this%lm),hwork_jim(1:this%lm))
 loc_paspx4d=(1/this%paspx4d)**2  ! back to the square (L**2) definition
 loc_paspy4d=(1/this%paspy4d)**2  ! back to the square (L**2) definition
