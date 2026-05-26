@@ -1254,7 +1254,7 @@ endwhere
 !***
   if(l_vertical_filter) then
                                                  call btim(vfiltT_tim)
-     call this%sup_vrbeta1T_bkg_new_jim(km,km3,hx,hy,hz,im,jm,lm,pasp1,this%pasp1_jim_new,VALL)
+     call this%sup_vrbeta1T_bkg_new_jim(km,km3,hx,hy,hz,im,jm,lm,this%pasp1_store,this%pasp1_jim_new,VALL)
                                                  call etim(vfiltT_tim)
   endif
 !***
@@ -1576,7 +1576,7 @@ endwhere
 !  write(6,*)'thinkdeb l_vertical_filter is ',l_vertical_filter
   if(l_vertical_filter) then
                                                  call btim(vfilt_tim)
-     call this%sup_vrbeta1_bkg_new_jim(km,km3,hx,hy,hz,im,jm,lm,pasp1,this%pasp1_jim_new,VALL)
+     call this%sup_vrbeta1_bkg_new_jim(km,km3,hx,hy,hz,im,jm,lm,this%pasp1_store,this%pasp1_jim_new,VALL)
                                                  call etim(vfilt_tim)
   endif
 !-----------------------------------------------------------------------
@@ -2396,13 +2396,13 @@ module subroutine sup_vrbeta1_bkg_new_jim &
 !     conversion of vrbeta1 using Jim's calibrated 1D beta filter      *
 !                                                                     *
 !**********************************************************************
-(this,km,km3,hx,hy,hz,im,jm,lm,pasp,elp,VALL)
+(this,km,km3,hx,hy,hz,im,jm,lm,pasp1_store,elp,VALL)
 !----------------------------------------------------------------------
 implicit none
 class(mg_intstate_type),target::this
 integer(i_kind),intent(in):: km,km3,hx,hy,hz,im,jm,lm
 real(r_kind),dimension(1:km,1-hx:im+hx,1-hy:jm+hy),intent(inout):: VALL
-real(r_kind),dimension(1,1,1:lm), intent(in):: pasp
+real(r_kind),dimension(1,1,1:lm), intent(in):: pasp1_store
 real(r_kind),dimension(0:1,1:lm), intent(in):: elp
 real(r_kind),dimension(1-hz:lm+hz,1:km3):: W
 real(r_kind):: xLb,xmb
@@ -2411,8 +2411,8 @@ integer(i_kind):: i,j,L,k,k_ind,kloc
 
     xLb=0.0_r_kind
     xmb=0.0_r_kind
-    if(pasp(1,1,1)>0.0_r_kind) xLb=1.0_r_kind/sqrt(pasp(1,1,1))
-    if(pasp(1,1,lm)>0.0_r_kind) xmb=1.0_r_kind/sqrt(pasp(1,1,lm))
+    if(pasp1_store(1,1,1)>0.0_r_kind) xLb=1.0_r_kind/sqrt(pasp1_store(1,1,1))
+    if(pasp1_store(1,1,lm)>0.0_r_kind) xmb=1.0_r_kind/sqrt(pasp1_store(1,1,lm))
 
     do j=1,jm
     do i=1,im
@@ -2446,13 +2446,13 @@ module subroutine sup_vrbeta1T_bkg_new_jim &
 !     Adjoint of sup_vrbeta1_bkg_new_jim                              *
 !                                                                     *
 !**********************************************************************
-(this,km,km3,hx,hy,hz,im,jm,lm,pasp,elp,VALL)
+(this,km,km3,hx,hy,hz,im,jm,lm,pasp1_store,elp,VALL)
 !----------------------------------------------------------------------
 implicit none
 class(mg_intstate_type),target::this
 integer(i_kind),intent(in):: km,km3,hx,hy,hz,im,jm,lm
 real(r_kind),dimension(1:km,1-hx:im+hx,1-hy:jm+hy),intent(inout):: VALL
-real(r_kind),dimension(1,1,1:lm), intent(in):: pasp
+real(r_kind),dimension(1,1,1:lm), intent(in):: pasp1_store
 real(r_kind),dimension(0:1,1:lm), intent(in):: elp
 real(r_kind),dimension(1-hz:lm+hz,1:km3):: W
 real(r_kind):: xLb,xmb
@@ -2461,8 +2461,8 @@ integer(i_kind):: i,j,L,k,k_ind,kloc
 
     xLb=0.0_r_kind
     xmb=0.0_r_kind
-    if(pasp(1,1,1)>0.0_r_kind) xLb=1.0_r_kind/sqrt(pasp(1,1,1))
-    if(pasp(1,1,lm)>0.0_r_kind) xmb=1.0_r_kind/sqrt(pasp(1,1,lm))
+    if(pasp1_store(1,1,1)>0.0_r_kind) xLb=1.0_r_kind/sqrt(pasp1_store(1,1,1))
+    if(pasp1_store(1,1,lm)>0.0_r_kind) xmb=1.0_r_kind/sqrt(pasp1_store(1,1,lm))
 
     do j=1,jm
     do i=1,im

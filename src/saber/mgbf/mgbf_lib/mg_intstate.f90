@@ -1050,21 +1050,21 @@ interface
      real(r_kind),dimension(1:lm), intent(in):: ss
    end subroutine
    module subroutine sup_vrbeta1_bkg_new_jim &
-        (this,km,km3,hx,hy,hz,im,jm,lm,pasp,elp,VALL)
+        (this,km,km3,hx,hy,hz,im,jm,lm,pasp1_store,elp,VALL)
      implicit none
      class(mg_intstate_type),target::this
      integer(i_kind),intent(in):: km,km3,hx,hy,hz,im,jm,lm
      real(r_kind),dimension(1:km,1-hx:im+hx,1-hy:jm+hy),intent(inout):: VALL
-     real(r_kind),dimension(1,1,1:lm), intent(in):: pasp
+     real(r_kind),dimension(1,1,1:lm), intent(in):: pasp1_store
      real(r_kind),dimension(0:1,1:lm), intent(in):: elp
    end subroutine
    module subroutine sup_vrbeta1T_bkg_new_jim &
-        (this,km,km3,hx,hy,hz,im,jm,lm,pasp,elp,VALL)
+        (this,km,km3,hx,hy,hz,im,jm,lm,pasp1_store,elp,VALL)
      implicit none
      class(mg_intstate_type),target::this
      integer(i_kind),intent(in):: km,km3,hx,hy,hz,im,jm,lm
      real(r_kind),dimension(1:km,1-hx:im+hx,1-hy:jm+hy),intent(inout):: VALL
-     real(r_kind),dimension(1,1,1:lm), intent(in):: pasp
+     real(r_kind),dimension(1,1,1:lm), intent(in):: pasp1_store
      real(r_kind),dimension(0:1,1:lm), intent(in):: elp
    end subroutine
 !from mg_transfer.f90
