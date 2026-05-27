@@ -1,6 +1,5 @@
 /*
- * (C) Copyright 2022 United States Government as represented by the Administrator of the National
- *     Aeronautics and Space Administration
+ * (C) Copyright 2024 DOC/NOAA
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -57,27 +56,22 @@ class MGBF_Covariance : public SaberCentralBlockBase {
   static const std::string classname() {return "saber::mgbf::Covariance";}
   typedef MGBF_CovarianceParameters Parameters_;
 
-
-MGBF_Covariance(const oops::GeometryData & geometryData,
-        const oops::Variables & centralVars,
-        const eckit::Configuration & covarConf, 
-        const Parameters_ & params,
-        const oops::FieldSet3D & xb,
-        const oops::FieldSet3D & fg
-        );
+  MGBF_Covariance(const oops::GeometryData & geometryData,
+                  const oops::Variables & centralVars,
+                  const eckit::Configuration & covarConf,
+                  const Parameters_ & params,
+                  const oops::FieldSet3D & xb,
+                  const oops::FieldSet3D & fg);
 
   virtual ~MGBF_Covariance();
   void randomize(oops::FieldSet3D &) const override;
   void multiply(oops::FieldSet3D &) const override;
-
-
 
   void directCalibration(const oops::FieldSets &) override {};
 
   void iterativeCalibrationInit() override {};
   void iterativeCalibrationUpdate(const oops::FieldSet3D &) override{};
   void iterativeCalibrationFinal() override{};
-
 
   void write() const override {};
   std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> fieldsToWrite() const
@@ -91,7 +85,7 @@ MGBF_Covariance(const oops::GeometryData & geometryData,
   void print(std::ostream &) const override ;
   // Fortran LinkedList key
   MGBF_CovarianceKey keySelf_;
- // Parameter
+  // Parameter
   Parameters_ params_;
   // Variables
   std::vector<std::string> variables_;
@@ -104,26 +98,23 @@ MGBF_Covariance(const oops::GeometryData & geometryData,
 
 
 MGBF_Covariance::MGBF_Covariance(const oops::GeometryData & geometryData,
-        const oops::Variables & centralVars,
-        const eckit::Configuration & covarConf, 
-        const Parameters_ & params,
-        const oops::FieldSet3D & xb,
-        const oops::FieldSet3D & fg)
-  :  SaberCentralBlockBase(params, xb.validTime(),geometryData, centralVars),
+                                 const oops::Variables & centralVars,
+                                 const eckit::Configuration & covarConf,
+                                 const Parameters_ & params,
+                                 const oops::FieldSet3D & xb,
+                                 const oops::FieldSet3D & fg)
+  : SaberCentralBlockBase(params, xb.validTime(), geometryData, centralVars),
      params_(params), variables_(params.activeVars.value().get_value_or(centralVars).variables()),
-     mgbfGridFuncSpace_(geometryData.functionSpace()), comm_(&geometryData.comm())   
+     mgbfGridFuncSpace_(geometryData.functionSpace()), comm_(&geometryData.comm())
 {
   oops::Log::trace() << classname() << "MGBF::Covariance starting" << std::endl;
 
   util::Timer timer(classname(), "Covariance");
   eckit::LocalConfiguration mgbf_config = params.toConfiguration();
   if (params.doCalibration()) {
-throw eckit::UserError("doCalibration=.true. is not implemented ", Here());
+    throw eckit::UserError("doCalibration=.true. is not implemented ", Here());
   }
-  
-  
-  
- 
+
   // Assert that there is no variable change in this block
 
   // Function space
@@ -154,20 +145,20 @@ void MGBF_Covariance::randomize(oops::FieldSet3D & fset) const {
 
   // Ignore incoming fields and create new ones based on the block function space
   // ----------------------------------------------------------------------------
- // atlas::FieldSet newFields = atlas::FieldSet();
+  // atlas::FieldSet newFields = atlas::FieldSet();
 
   // Loop over saber (model) fields and create corresponding fields on mgbf grid
   for (auto sabField : fset) {
-      // Get the name
-      const auto fieldName = name(sabField.name());
+    // Get the name
+    const auto fieldName = name(sabField.name());
 
-      // Ensure that the field name is in the input/output list
-      const std::string fieldNameStr = fieldName.getString("name");
-      if (std::find(variables_.begin(), variables_.end(), fieldNameStr) == variables_.end()) {
-        ABORT("Field " + fieldNameStr + " not found in the " + classname() + " variables.");
-      }
+    // Ensure that the field name is in the input/output list
+    const std::string fieldNameStr = fieldName.getString("name");
+    if (std::find(variables_.begin(), variables_.end(), fieldNameStr) == variables_.end()) {
+      ABORT("Field " + fieldNameStr + " not found in the " + classname() + " variables.");
+    }
 
-      // Create the mgbf grid field and add to Fieldset
+    // Create the mgbf grid field and add to Fieldset
   }
 
   // Replace whatever fields are coming in with the mgbf grid fields
@@ -182,21 +173,20 @@ void MGBF_Covariance::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   util::Timer timer(classname(), "multiply");
   int index_member;
-  if (fset.fieldSet().metadata().has("ensemble member index")){
-     index_member=fset.fieldSet().metadata().get<int>("ensemble member index");
+  if (fset.fieldSet().metadata().has("ensemble member index")) {
+    index_member = fset.fieldSet().metadata().get<int>("ensemble member index");
+  } else {
+    index_member = 9999;
   }
-  else {
-     index_member=9999;
+
+  mgbf_covariance_multiply_f90(keySelf_, fset.get(), index_member);
+  // Mark all fields as having dirty halos after modification
+  for (const auto & fieldname : fset.field_names()) {
+    atlas::Field field = fset[fieldname];
+    field.set_dirty();  // Mark field as having dirty halos that need to be synchronized
   }
-  
-  mgbf_covariance_multiply_f90(keySelf_, fset.get(),index_member);
-    // Mark all fields as having dirty halos after modification
-    for (const auto & fieldname : fset.field_names()) {
-        atlas::Field field = fset[fieldname];
-        field.set_dirty();  // Mark field as having dirty halos that need to be synchronized
-    }
-       // Perform the actual halo exchange
-    fset.fieldSet().haloExchange();
+  // Perform the actual halo exchange
+  fset.fieldSet().haloExchange();
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
