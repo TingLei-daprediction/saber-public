@@ -919,6 +919,7 @@ end subroutine multiply
       ! from first guess ...
       call gsi_bundlegetpointer(gsi_metguess_bundle(ii),'q' ,q ,ier)
       call gsi_bundlegetpointer(gsi_metguess_bundle(ii),'tv',tv,ier)
+      call gsi_bundlegetpointer(gsi_metguess_bundle(ii),'tsen',t,ier)
       ! from GSI cv ...
       call gsi_bundlegetpointer(gsicv%step(ii),'q' ,q_pt ,ier)
       call gsi_bundlegetpointer(gsicv%step(ii),'tv',tv_pt,ier)
@@ -1018,7 +1019,7 @@ end subroutine multiply
 !
    real(kind=kind_real), allocatable :: t_pt(:,:,:)
    real(kind=kind_real), pointer ::       tv(:,:,:)=>NULL()
-   real(kind=kind_real), pointer ::     t(:,:,:)=>NULL()
+   real(kind=kind_real), pointer ::       t(:,:,:)=>NULL()
    real(kind=kind_real), pointer ::    tv_pt(:,:,:)=>NULL()
    real(kind=kind_real), pointer ::        q(:,:,:)=>NULL()
    real(kind=kind_real), pointer ::     q_pt(:,:,:)=>NULL()
@@ -1047,6 +1048,7 @@ end subroutine multiply
       ! from first guess ...
       call gsi_bundlegetpointer(gsi_metguess_bundle(ii),'q' ,q ,ier)
       call gsi_bundlegetpointer(gsi_metguess_bundle(ii),'tv',tv,ier)
+      call gsi_bundlegetpointer(gsi_metguess_bundle(ii),'tsen',t,ier)
       ! from GSI cv ...
       call gsi_bundlegetpointer(gsisv(ii),'q' ,q_pt ,ier)
       call gsi_bundlegetpointer(gsisv(ii),'tv',tv_pt,ier)
