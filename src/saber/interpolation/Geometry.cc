@@ -120,7 +120,6 @@ void setupGsiMatchingGrid(const eckit::Configuration & config,
                                 config.getDouble(GsiGridKey + ".north_pole_lat") : 0.0;
   const double north_pole_lon = config.has(GsiGridKey + ".north_pole_lon") ?
                                 config.getDouble(GsiGridKey + ".north_pole_lon") : 0.0;
-#the above >>>>>>> be92e953 (To use GSIbec for regional fv3jedi and mpasjedi analysis (#1088))
 
 
   const auto gsi_gaussian_points = [](const int N) -> std::vector<double> {
@@ -175,7 +174,6 @@ void setupGsiMatchingGrid(const eckit::Configuration & config,
 
   const auto build_projection_config = [&](const std::string & grid_type) ->
                                        eckit::LocalConfiguration {
-/clt the aove >>>>>>> be92e953 (To use GSIbec for regional fv3jedi and mpasjedi analysis (#1088))
     eckit::LocalConfiguration lc{};
     lc.set("type", "rotated_lonlat");
     lc.set("north_pole", std::vector<double>{{north_pole_lon, north_pole_lat}});
