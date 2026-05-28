@@ -11,26 +11,7 @@ if( ENABLE_QUENCH )
   # Use find_branch function in jedi-cmake
   include( git_functions )
 
-  # Default SABER_TEST_TIER
-  set( SABER_TEST_TIER 1 )
-
-  # Override SABER_TEST_TIER using environment variable
-  if( DEFINED ENV{SABER_TEST_TIER} )
-      set( SABER_TEST_TIER $ENV{SABER_TEST_TIER} )
-  endif()
-
-  # Default test selection variables (TIER-dependent)
-  set( SABER_TEST_MPI 1 )
-  if( SABER_TEST_TIER EQUAL 1 )
-      set( SABER_TEST_OMP 0 )
-  elseif( SABER_TEST_TIER EQUAL 2 )
-      set( SABER_TEST_OMP 1 )
-  else()
-      message( FATAL_ERROR "SABER_TEST_TIER should be 1 or 2, not ${SABER_TEST_TIER}" )
-  endif()
-
   # Default test selection variables (TIER-independent)
-  set( SABER_TEST_VALGRIND 0 )
   set( SABER_TEST_FASTLAM 1 )
   set( SABER_TEST_BIFOURIER 0 )
   if ( FFTW_FOUND OR (ECTRANS_FOUND AND ectrans_HAVE_ETRANS AND ectrans_HAVE_TRANSI ) )
@@ -60,15 +41,6 @@ if( ENABLE_QUENCH )
   endif()
 
   # Override test selection variables using environment variables
-  if( DEFINED ENV{SABER_TEST_MPI} )
-      set( SABER_TEST_MPI $ENV{SABER_TEST_MPI} )
-  endif()
-  if( DEFINED ENV{SABER_TEST_OMP} )
-      set( SABER_TEST_OMP $ENV{SABER_TEST_OMP} )
-  endif()
-  if( DEFINED ENV{SABER_TEST_VALGRIND} )
-      set( SABER_TEST_VALGRIND $ENV{SABER_TEST_VALGRIND} )
-  endif()
   if( DEFINED ENV{SABER_TEST_FASTLAM} )
       set( SABER_TEST_FASTLAM $ENV{SABER_TEST_FASTLAM} )
   endif()
@@ -229,34 +201,53 @@ if( ENABLE_QUENCH )
                              ${CMAKE_CURRENT_BINARY_DIR}/testdata/air_temperature_emulator.ts )
   endif()
 
-  # Setup SABER directories and links
-  message( STATUS "Setup SABER directories and links" )
+  # Setup SABER top-level directories
   file( REMOVE_RECURSE ${CMAKE_CURRENT_BINARY_DIR}/testdata )
   file( REMOVE_RECURSE ${CMAKE_CURRENT_BINARY_DIR}/testinput )
   file( REMOVE_RECURSE ${CMAKE_CURRENT_BINARY_DIR}/testref )
   file( MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testdata )
   file( MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testinput )
   file( MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testref )
-  
-  foreach( test ${saber_test_full} )
-      # Make test-specific data directory
-      file( MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testdata/${test} )
 
-      # Link to yaml file
+  # Wrapper around ecbuild_add_test that also creates the per-test testdata/
+  # directory and symlinks the yaml input and reference files into testinput/
+  # and testref/. The test name is derived from TARGET by stripping the
+  # "saber_" prefix and the trailing "_<mpi>-<omp>" suffix.
+  macro( saber_add_test )
+    cmake_parse_arguments( _SAT "" "TARGET" "" ${ARGN} )
+
+    # Extract test name: strip saber_ prefix and optional _N-N config suffix
+    string( REGEX REPLACE "^saber_" "" _sat_name "${_SAT_TARGET}" )
+    string( REGEX REPLACE "_[0-9]+-[0-9]+$" "" _sat_name "${_sat_name}" )
+
+    # Only perform filesystem setup once per unique test name
+    if( NOT DEFINED _SABER_SETUP_DONE_${_sat_name} )
+
+      set( _SABER_SETUP_DONE_${_sat_name} TRUE )
+      # Create test-specific data directory
+      file( MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testdata/${_sat_name} )
+
+      # Symlink yaml input file
       execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
-                       ${CMAKE_CURRENT_SOURCE_DIR}/testinput/${test}.yaml
-                       ${CMAKE_CURRENT_BINARY_DIR}/testinput/${test}.yaml )
+                       ${CMAKE_CURRENT_SOURCE_DIR}/testinput/${_sat_name}.yaml
+                       ${CMAKE_CURRENT_BINARY_DIR}/testinput/${_sat_name}.yaml )
 
-      # Link to reference file
-      if( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/testref/${test}.ref )
-          execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
-                           ${CMAKE_CURRENT_SOURCE_DIR}/testref/${test}.ref
-                           ${CMAKE_CURRENT_BINARY_DIR}/testref/${test}.ref )
+      # Symlink reference file if it exists
+      if( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/testref/${_sat_name}.ref )
+        execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
+                         ${CMAKE_CURRENT_SOURCE_DIR}/testref/${_sat_name}.ref
+                         ${CMAKE_CURRENT_BINARY_DIR}/testref/${_sat_name}.ref )
       endif()
-  endforeach()
+    endif()
+
+    ecbuild_add_test( ${ARGN} )
+  endmacro()
 
   # Path to the saber test files
   set (jedi_model_data_tier_1_saber "${CMAKE_SOURCE_DIR}/jedi-model-data/testinput_tier_1/saber")
+
+  # Input data
+  file( STRINGS testlist/saber_data.txt saber_data )
 
   foreach( data ${saber_data} )
       # Link to input data file
@@ -265,65 +256,57 @@ if( ENABLE_QUENCH )
                        ${CMAKE_CURRENT_BINARY_DIR}/testdata/${data} )
   endforeach()
 
-  # List of MPI/OpenMP configurations to test
-  list( APPEND mpi_list 1)
-  list( APPEND omp_list 1)
-  if( SABER_TEST_MPI )
-      list( APPEND mpi_list 2)
-      list( APPEND mpi_list 4)
-      list( APPEND omp_list 1)
-      list( APPEND omp_list 1)
+  # --- Base tests ---
+  include( ${CMAKE_CURRENT_LIST_DIR}/testlist/saber_base.cmake )
+
+  # --- Coupled tests ---
+  include( ${CMAKE_CURRENT_LIST_DIR}/testlist/saber_coupled.cmake)
+
+  # --- Fast LAM tests ---
+  if( SABER_TEST_FASTLAM )
+    include( ${CMAKE_CURRENT_LIST_DIR}/testlist/saber_fastlam.cmake )
+    include( ${CMAKE_CURRENT_LIST_DIR}/testlist/saber_fastlam-regional_interpolation.cmake )
+    if( FFTW_FOUND )
+      include( ${CMAKE_CURRENT_LIST_DIR}/testlist/saber_fastlam-fftw.cmake )
+    endif()
   endif()
-  if( SABER_TEST_OMP )
-      list( APPEND mpi_list 1)
-      list( APPEND omp_list 2)
+
+  # --- Bifourier tests ---
+  if( SABER_TEST_BIFOURIER )
+    include( ${CMAKE_CURRENT_LIST_DIR}/testlist/saber_bifourier.cmake )
+    if( ECTRANS_FOUND AND ectrans_HAVE_ETRANS AND ectrans_HAVE_TRANSI )
+      include( ${CMAKE_CURRENT_LIST_DIR}/testlist/saber_bifourier-ectrans.cmake )
+    endif()
   endif()
 
-  # Executables list
-  list( APPEND exe_list convertcov convertstate randomization error_covariance_training process_perts dirac coupled )
+  # --- BUMP tests ---
+  if( SABER_TEST_BUMP )
+    include( ${CMAKE_CURRENT_LIST_DIR}/testlist/saber_bump.cmake )
+  endif()
 
-  # Loop over MPI/OpenMP configurations
-  foreach( mpi omp IN ZIP_LISTS mpi_list omp_list )
-      message( STATUS "Tests parallel configuration: MPI: ${mpi} / OMP: ${omp}" )
+  # --- GSI tests ---
+  if( SABER_TEST_GSI_GEOS )
+    include( ${CMAKE_CURRENT_LIST_DIR}/testlist/saber_gsi-geos.cmake )
+  endif()
+  if( SABER_TEST_GSI_GFS )
+    include( ${CMAKE_CURRENT_LIST_DIR}/testlist/saber_gsi-gfs.cmake )
+  endif()
 
-      # Loop over executables
-      foreach( exe ${exe_list} )
-          if( "${exe}" STREQUAL "convertstate" )
-              set( exename "convertstate" )
-          elseif ("${exe}" STREQUAL "process_perts" )
-              set( exename "process_perts" )
-          elseif ("${exe}" STREQUAL "coupled" )
-              set( exename "coupled_error_covariance_toolbox" )
-          else()
-              set( exename "error_covariance_toolbox" )
-          endif()
-          foreach( test ${saber_test_full} )
-              string( FIND ${test} ${exe} result )
-              if( result MATCHES 0 )
-                  # Special check for doc and tutorial, only run with 1 MPI / 1 OMP
-                  string( FIND ${test} "doc_" doc_result )
-                  string( FIND ${test} "tutorial_" tutorial_result )
-                  if( ( doc_result EQUAL -1 AND tutorial_result EQUAL -1 ) OR ( ${mpi} EQUAL 1 AND ${omp} EQUAL 1 ) )
-                      set( docTutorialCheck true CACHE BOOL "" FORCE )
-                  else()
-                      set( docTutorialCheck false CACHE BOOL "" FORCE )
-                  endif()
+  # --- SpectralB tests ---
+  if( SABER_TEST_SPECTRALB )
+    include( ${CMAKE_CURRENT_LIST_DIR}/testlist/saber_spectralb.cmake )
+  endif()
 
-                  # Special check for GSI GFS, only run with 1 MPI / 1 OMP (TODO: should be removed at some point)
-                  string( FIND ${test} "gsi_gfs" gsi_gfs_result )
-                  if( gsi_gfs_result EQUAL -1 OR ( ${mpi} EQUAL 1 AND ${omp} EQUAL 1 ) )
-                      set( gsiGfsCheck true CACHE BOOL "" FORCE )
-                  else()
-                      set( gsiGfsCheck false CACHE BOOL "" FORCE )
-                  endif()
-
-                  # Special check for 4D tests
-                  string( FIND ${test} "_4d" found_result )
-                  if( found_result EQUAL -1 OR ( found_result GREATER_EQUAL 0 AND ${mpi} GREATER 1 ) )
-                      set( 4dCheck true CACHE BOOL "" FORCE )
-                  else()
-                      set( 4dCheck false CACHE BOOL "" FORCE )
-                  endif()
+  # --- VADER tests ---
+  if( SABER_TEST_VADER )
+    include( ${CMAKE_CURRENT_LIST_DIR}/testlist/saber_vader.cmake )
+    if( atlas_TRANS_FOUND OR atlas_ECTRANS_FOUND )
+      include( ${CMAKE_CURRENT_LIST_DIR}/testlist/saber_vader_with_trans.cmake )
+    endif()
+    if( SABER_TEST_SPECTRALB )
+      include( ${CMAKE_CURRENT_LIST_DIR}/testlist/saber_spectralb-vader.cmake )
+    endif()
+  endif()
 
                   # Special check for parallel_hybrid tests, only run with 2 MPI and more
                   # Special check for non-parallel hybrid tests, only run with 2 MPI and less
@@ -454,21 +437,11 @@ endif()
 
 if( SABER_TEST_BUMP )
     # NICAS square-root test
-    set( mpi 2 )
-    set( omp 1 )
     add_fctest( TARGET          saber_nicas_sqrt
-                MPI             ${mpi}
-                OMP             ${omp}
+                MPI             2
+                OMP             1
+                LABELS          tier2
                 LINKER_LANGUAGE ${FORTRAN_LINKER_LANGUAGE}
                 SOURCES         fctest/fctest_nicas_sqrt.F90
                 LIBS            saber )
 endif()
-
-# A bespoke test for parallel B
-set( mpi 5 )
-set( omp 1 )
-ecbuild_add_test( TARGET saber_dirac_parallel_hybrid_ratio_stddev_5-1
-                  MPI ${mpi}
-                  OMP ${omp}
-                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
-                  ARGS testinput/dirac_parallel_hybrid_ratio_stddev.yaml)
