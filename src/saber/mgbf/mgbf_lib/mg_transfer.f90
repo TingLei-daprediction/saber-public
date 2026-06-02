@@ -1,4 +1,5 @@
 submodule(mg_intstate) mg_transfer
+public
 !$$$  submodule documentation block
 !                .      .    .                                       .
 ! module:   mg_transfer
@@ -34,12 +35,14 @@ submodule(mg_intstate) mg_transfer
 !   machine:
 !
 !$$$ end documentation block
-
+!> fortitude: disable=C121
 use mpi
 use mg_timers
+use phint1
+!> fortitude: enable=C121
+
 use mgbf_kinds, only: r_kind,i_kind
 use mgbf_utils,only : contains_nonzero
-use phint1
 
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 contains
@@ -73,7 +76,7 @@ module subroutine filt_to_anal_allmap(this,WORKA)
 !***********************************************************************
 implicit none
 class(mg_intstate_type),target::this
-real(r_kind):: WORKA(this%km_a_all,1:this%nm,1:this%mm)
+real(r_kind), intent(inout) :: WORKA(this%km_a_all,1:this%nm,1:this%mm)
 include "type_parameter_locpointer.inc"
 include "type_intstat_locpointer.inc"
 include "type_parameter_point2this.inc"
@@ -243,7 +246,7 @@ module subroutine filt_to_anal_all2(this,WORKA)
 !***********************************************************************
 implicit none
 class(mg_intstate_type),target::this
-real(r_kind):: WORKA(this%km_a_all,1:this%nm,1:this%mm)
+real(r_kind),intent(inout) :: WORKA(this%km_a_all,1:this%nm,1:this%mm)
 real(r_kind),allocatable,dimension(:,:,:):: WORK
 include "type_parameter_locpointer.inc"
 include "type_intstat_locpointer.inc"
@@ -276,7 +279,7 @@ module subroutine stack_to_composite &
 (this,ARR_ALL,A2D,A3D)
 !----------------------------------------------------------------------
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target::this
 real(r_kind),dimension(this%km ,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),   intent(in):: ARR_ALL
 real(r_kind),dimension(this%km3,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,this%lm),intent(out):: A3D
 real(r_kind),dimension(this%km2,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)   ,intent(out):: A2D
@@ -313,7 +316,7 @@ module subroutine composite_to_stack &
 (this,A2D,A3D,ARR_ALL)
 !----------------------------------------------------------------------
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target::this
 real(r_kind),dimension(this%km2,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),   intent(in):: A2D
 real(r_kind),dimension(this%km3,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,this%lm),intent(in):: A3D
 real(r_kind),dimension(this%km ,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),   intent(out):: ARR_ALL
@@ -350,7 +353,7 @@ module subroutine S2C_ens &
 (this,ARR_ALL,A3D,imn,imx,jmn,jmx,lmx,kmx,kmx_all)
 !----------------------------------------------------------------------
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target::this
 integer, intent(in):: imn,imx,jmn,jmx,lmx,kmx,kmx_all
 real(r_kind),dimension(kmx_all,imn:imx,jmn:jmx)    ,intent(in):: ARR_ALL
 real(r_kind),dimension(this%km3_all,imn:imx,jmn:jmx,lmx),intent(out):: A3D
@@ -388,7 +391,7 @@ module subroutine C2S_ens &
 (this,A3D,ARR_ALL,imn,imx,jmn,jmx,lmx,kmx,kmx_all)
 !----------------------------------------------------------------------
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 integer, intent(in):: imn,imx,jmn,jmx,lmx,kmx,kmx_all
 real(r_kind),dimension(this%km3_all,imn:imx,jmn:jmx,lmx),intent(in):: A3D
 real(r_kind),dimension(kmx_all,imn:imx,jmn:jmx)    ,intent(out):: ARR_ALL
@@ -474,8 +477,8 @@ module subroutine filt_to_anal(this,WORK)
 !                                                                      !
 !***********************************************************************
 implicit none
-class(mg_intstate_type),target::this
-real(r_kind):: WORK(this%km_all,1:this%nm,1:this%mm)
+class(mg_intstate_type), intent(inout), target :: this
+real(r_kind), intent(inout) :: WORK(this%km_all,1:this%nm,1:this%mm)
 integer(i_kind):: ibm,jbm
 include "type_parameter_locpointer.inc"
 include "type_intstat_locpointer.inc"

@@ -36,6 +36,7 @@ module mgbf_kinds
 !   machine:  ibm RS/6000 SP
 !
 !$$$ end documentation block
+  use iso_fortran_env, only: int64
   implicit none
   private
 
@@ -113,6 +114,10 @@ module mgbf_kinds
   integer,parameter, public :: spc=kind((1.0,1.0))
   integer,parameter, public :: dpc=kind((1.0d0,1.0d0))
   private:: one_dpi; integer(8),parameter:: one_dpi=1
+  
+  
+  integer(int64), parameter :: one_dpi = 1   ! ← portable, always 64-bit
+
   integer,parameter , public :: dpi=kind(one_dpi)
 
 end module mgbf_kinds

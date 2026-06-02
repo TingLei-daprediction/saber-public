@@ -1,4 +1,5 @@
 module mg_tools
+public 
 !!from codex :
 !the filtering grid is anchored to the same physical domain as the analysis grid,
 !with both sharing the left/right boundaries at 0 and lengthx (and top/bottom at lengthy).
@@ -15,6 +16,7 @@ contains
 subroutine interp_analysis_to_filter(yy, nm, mm, im, jm, zz)
   ! Bilinear interpolation from analysis grid (nm×mm) to filter grid (im×jm).
   ! Assumes both grids span the same physical domain and are cell-centered.
+  implicit none
 
   implicit none
   integer(i_kind), intent(in) :: nm, mm        ! analysis grid dimensions
