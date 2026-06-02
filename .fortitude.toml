@@ -4,8 +4,8 @@ line-length=133
 exclude = [
     "src/saber/mgbf/mgbf_lib/jp*.f90",
     "src/saber/mgbf/mgbf_lib/jp*.F90",
-    "src/saber/mgbf/mgbf_lib/phint*.f90",
-    "src/saber/mgbf/mgbf_lib/phint*.F90",
+    "src/saber/mgbf/mgbf_lib/phi*.f90",
+    "src/saber/mgbf/mgbf_lib/phi*.F90",
 ]
 
 [check.per-file-ignores]

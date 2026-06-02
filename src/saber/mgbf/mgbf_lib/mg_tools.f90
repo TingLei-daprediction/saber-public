@@ -1,5 +1,5 @@
 module mg_tools
-public 
+public
 !!from codex :
 !the filtering grid is anchored to the same physical domain as the analysis grid,
 !with both sharing the left/right boundaries at 0 and lengthx (and top/bottom at lengthy).

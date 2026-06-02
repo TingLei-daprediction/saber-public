@@ -114,8 +114,8 @@ module mgbf_kinds
   integer,parameter, public :: spc=kind((1.0,1.0))
   integer,parameter, public :: dpc=kind((1.0d0,1.0d0))
   private:: one_dpi; integer(8),parameter:: one_dpi=1
-  
-  
+
+
   integer(int64), parameter :: one_dpi = 1   ! ← portable, always 64-bit
 
   integer,parameter , public :: dpi=kind(one_dpi)
