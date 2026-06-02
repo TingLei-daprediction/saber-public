@@ -52,7 +52,7 @@ real(r_kind), allocatable,dimension(:,:,:):: a_diff_f
 real(r_kind), allocatable,dimension(:,:,:):: a_diff_h
 real(r_kind), allocatable,dimension(:,:,:):: b_diff_f
 real(r_kind), allocatable,dimension(:,:,:):: b_diff_h
-real(r_kind), allocatable, dimension(:,:,:,:):: weig_var ! 3D weights in each sub domain 
+real(r_kind), allocatable, dimension(:,:,:,:):: weig_var ! 3D weights in each sub domain
 
 !
 ! Localization weights
@@ -212,10 +212,10 @@ interface
 !from mg_interpolate.f90
    module subroutine def_offset_coef(this)
      class(mg_intstate_type),target::this
-   end subroutine
+   end subroutine def_offset_coef
    module subroutine lsqr_mg_coef(this)
      class(mg_intstate_type),target::this
-   end subroutine
+   end subroutine lsqr_mg_coef
    module subroutine lwq_vertical_coef &
         (this,nm_in,im_in,c1,c2,c3,c4,iref_out)
      implicit none
@@ -223,7 +223,7 @@ interface
      integer(i_kind), intent(in):: nm_in,im_in
      real(r_kind), dimension(1:nm_in), intent(out):: c1,c2,c3,c4
      integer(i_kind), dimension(1:nm_in), intent(out):: iref_out
-   end subroutine
+   end subroutine lwq_vertical_coef
    module subroutine lwq_vertical_direct &
         (this,km_in,nm_in,imin,imax,jmin,jmax,c1,c2,c3,c4,kref,f,w)
      implicit none
@@ -233,7 +233,7 @@ interface
      integer(i_kind), dimension(1:nm_in), intent(in):: kref
      real(r_kind), dimension(1:km_in,imin:imax,jmin:jmax), intent(in):: f
      real(r_kind), dimension(1:nm_in,imin:imax,jmin:jmax), intent(out):: w
-   end subroutine
+   end subroutine lwq_vertical_direct
    module subroutine lwq_vertical_adjoint &
         (this,nm_in,km_in,imin,imax,jmin,jmax,c1,c2,c3,c4,kref,w,f)
      implicit none
@@ -243,7 +243,7 @@ interface
      integer(i_kind), dimension(1:nm_in), intent(in):: kref
      real(r_kind), dimension(1:nm_in,imin:imax,jmin:jmax), intent(in):: w
      real(r_kind), dimension(1:km_in,imin:imax,jmin:jmax), intent(out):: f
-   end subroutine
+   end subroutine lwq_vertical_adjoint
    module subroutine lwq_vertical_direct_spec &
         (this,km3_in,km_in,nm_in,imin,imax,jmin,jmax,c1,c2,c3,c4,kref,F,W)
      implicit none
@@ -253,7 +253,7 @@ interface
      integer(i_kind), dimension(1:nm_in), intent(in):: kref
      real(r_kind), dimension(1:km3_in,imin:imax,jmin:jmax,1:km_in), intent(in):: F
      real(r_kind), dimension(1:km3_in,imin:imax,jmin:jmax,1:nm_in), intent(out):: W
-   end subroutine
+   end subroutine lwq_vertical_direct_spec
 
 
 
@@ -266,7 +266,7 @@ interface
      integer(i_kind), dimension(1:nm_in), intent(in):: kref
      real(r_kind), dimension(1:km3_in,imin:imax,jmin:jmax,1:nm_in), intent(in):: W
      real(r_kind), dimension(1:km3_in,imin:imax,jmin:jmax,1:km_in), intent(out):: F
-   end subroutine
+   end subroutine lwq_vertical_adjoint_spec
    module subroutine l_vertical_direct_spec &
         (this,km3_in,km_in,nm_in,imin,imax,jmin,jmax,F,W)
      implicit none
@@ -274,7 +274,7 @@ interface
      integer(i_kind), intent(in):: km3_in,km_in,nm_in,imin,imax,jmin,jmax
      real(r_kind), dimension(1:km3_in,imin:imax,jmin:jmax,1:km_in), intent(in):: F
      real(r_kind), dimension(1:km3_in,imin:imax,jmin:jmax,1:nm_in), intent(out):: W
-   end subroutine
+   end subroutine l_vertical_direct_spec
    module subroutine l_vertical_adjoint_spec &
         (this,km3_in,nm_in,km_in,imin,imax,jmin,jmax,W,F)
      implicit none
@@ -282,7 +282,7 @@ interface
      integer(i_kind), intent(in):: km3_in,nm_in,km_in,imin,imax,jmin,jmax
      real(r_kind), dimension(1:km3_in,imin:imax,jmin:jmax,1:nm_in), intent(in):: W
      real(r_kind), dimension(1:km3_in,imin:imax,jmin:jmax,1:km_in), intent(out):: F
-   end subroutine
+   end subroutine l_vertical_adjoint_spec
    module subroutine l_vertical_direct_spec2 &
         (this,en,km_in,nm_in,imin,imax,jmin,jmax,f,w)
      implicit none
@@ -290,7 +290,7 @@ interface
      integer(i_kind), intent(in):: en,km_in,nm_in,imin,imax,jmin,jmax
      real(r_kind), dimension(1:km_in*en,imin:imax,jmin:jmax), intent(in):: F
      real(r_kind), dimension(1:nm_in*en,imin:imax,jmin:jmax), intent(out):: W
-   end subroutine
+   end subroutine l_vertical_direct_spec2
    module subroutine l_vertical_adjoint_spec2 &
         (this,en,nm_in,km_in,imin,imax,jmin,jmax,w,f)
      implicit none
@@ -298,7 +298,7 @@ interface
      integer(i_kind), intent(in):: en,nm_in,km_in,imin,imax,jmin,jmax
      real(r_kind), dimension(1:nm_in*en,imin:imax,jmin:jmax), intent(in):: W
      real(r_kind), dimension(1:km_in*en,imin:imax,jmin:jmax), intent(out):: F
-   end subroutine
+   end subroutine l_vertical_adjoint_spec2
    module subroutine lsqr_direct_offset &
         (this,V_in,W,km_in,ibm,jbm)
      implicit none
@@ -307,7 +307,7 @@ interface
      real(r_kind), dimension(km_in,1-ibm:this%im+ibm,1-jbm:this%jm+jbm), intent(in):: V_in
      real(r_kind), dimension(km_in,1:this%nm,1:this%mm),intent(out):: W
      real(r_kind), dimension(km_in,1:this%nm,1-jbm:this%jm+jbm):: VX
-   end subroutine
+   end subroutine lsqr_direct_offset
    module subroutine lsqr_direct_offset_add &
         (this,V_in,W,km_in,ibm,jbm)
      implicit none
@@ -316,7 +316,7 @@ interface
      real(r_kind), dimension(km_in,1-ibm:this%im+ibm,1-jbm:this%jm+jbm), intent(in):: V_in
      real(r_kind), dimension(km_in,1:this%nm,1:this%mm),intent(out):: W
      real(r_kind), dimension(km_in,1:this%nm,1-jbm:this%jm+jbm):: VX
-   end subroutine
+   end subroutine lsqr_direct_offset_add
    module subroutine lsqr_adjoint_offset &
         (this,W,V_out,km_in,ibm,jbm)
      implicit none
@@ -325,7 +325,7 @@ interface
      real(r_kind), dimension(km_in,1:this%nm,1:this%mm),intent(in):: W
      real(r_kind), dimension(km_in,1-ibm:this%im+ibm,1-jbm:this%jm+jbm), intent(out):: V_out
      real(r_kind), dimension(km_in,1:this%nm,1-jbm:this%jm+jbm):: VX
-   end subroutine
+   end subroutine lsqr_adjoint_offset
    module subroutine lsqr_adjoint_offset_add &
         (this,W,V_out,km_in,ibm,jbm)
      implicit none
@@ -334,7 +334,7 @@ interface
      real(r_kind), dimension(km_in,1:this%nm,1:this%mm),intent(in):: W
      real(r_kind), dimension(km_in,1-ibm:this%im+ibm,1-jbm:this%jm+jbm), intent(out):: V_out
      real(r_kind), dimension(km_in,1:this%nm,1-jbm:this%jm+jbm):: VX
-   end subroutine
+   end subroutine lsqr_adjoint_offset_add
    module subroutine quad_direct_offset &
         (this,V_in,W,km_in,ibm,jbm)
      implicit none
@@ -343,7 +343,7 @@ interface
      real(r_kind), dimension(km_in,1-ibm:this%im+ibm,1-jbm:this%jm+jbm), intent(in):: V_in
      real(r_kind), dimension(km_in,1:this%nm,1:this%mm),intent(out):: W
      real(r_kind), dimension(km_in,1:this%nm,1-jbm:this%jm+jbm):: VX
-   end subroutine
+   end subroutine quad_direct_offset
    module subroutine quad_adjoint_offset &
         (this,W,V_out,km_in,ibm,jbm)
      implicit none
@@ -352,7 +352,7 @@ interface
      real(r_kind), dimension(km_in,1:this%nm,1:this%mm),intent(in):: W
      real(r_kind), dimension(km_in,1-ibm:this%im+ibm,1-jbm:this%jm+jbm), intent(out):: V_out
      real(r_kind), dimension(km_in,1:this%nm,1-jbm:this%jm+jbm):: VX
-   end subroutine
+   end subroutine quad_adjoint_offset
    module subroutine lin_direct_offset &
         (this,V_in,W,km_in,ibm,jbm)
      implicit none
@@ -360,7 +360,7 @@ interface
      integer(i_kind),intent(in):: km_in,ibm,jbm
      real(r_kind), dimension(km_in,1-ibm:this%im+ibm,1-jbm:this%jm+jbm), intent(in):: V_in
      real(r_kind), dimension(km_in,1:this%nm,1:this%mm),intent(out):: W
-   end subroutine
+   end subroutine lin_direct_offset
    module subroutine lin_direct_offset_add &
         (this,V_in,W,km_in,ibm,jbm)
      implicit none
@@ -368,7 +368,7 @@ interface
      integer(i_kind),intent(in):: km_in,ibm,jbm
      real(r_kind), dimension(km_in,1-ibm:this%im+ibm,1-jbm:this%jm+jbm), intent(in):: V_in
      real(r_kind), dimension(km_in,1:this%nm,1:this%mm),intent(out):: W
-   end subroutine
+   end subroutine lin_direct_offset_add
    module subroutine lin_adjoint_offset &
         (this,W,V_out,km_in,ibm,jbm)
      implicit none
@@ -376,7 +376,7 @@ interface
      integer(i_kind):: km_in,ibm,jbm
      real(r_kind), dimension(km_in,1:this%nm,1:this%mm),intent(in):: W
      real(r_kind), dimension(km_in,1-ibm:this%im+ibm,1-jbm:this%jm+jbm), intent(out):: V_out
-   end subroutine
+   end subroutine lin_adjoint_offset
    module subroutine lin_adjoint_offset_add &
         (this,W,V_out,km_in,ibm,jbm)
      implicit none
@@ -384,7 +384,7 @@ interface
      integer(i_kind):: km_in,ibm,jbm
      real(r_kind), dimension(km_in,1:this%nm,1:this%mm),intent(in):: W
      real(r_kind), dimension(km_in,1-ibm:this%im+ibm,1-jbm:this%jm+jbm), intent(out):: V_out
-   end subroutine
+   end subroutine lin_adjoint_offset_add
    module subroutine test_vertical_interpolation &
      (this, km_in, nm_in, imin, imax, jmin, jmax, F, W)
      implicit none
@@ -393,7 +393,7 @@ interface
      integer(i_kind), intent(in) :: km_in, nm_in, imin, imax, jmin, jmax
      real(r_kind), intent(in) :: F(1:km_in, imin:imax, jmin:jmax)
      real(r_kind), intent(out) :: W(1:nm_in, imin:imax, jmin:jmax)
-   end subroutine
+   end subroutine test_vertical_interpolation
    module subroutine test_vertical_interpolation_adj &
      (this, km_in, nm_in, imin, imax, jmin, jmax, adj_F, adj_W)
      implicit none
@@ -402,15 +402,15 @@ interface
      integer(i_kind), intent(in) :: km_in, nm_in, imin, imax, jmin, jmax
      real(r_kind), intent(inout) :: adj_F(1:km_in, imin:imax, jmin:jmax)
      real(r_kind), intent(in) :: adj_W(1:nm_in, imin:imax, jmin:jmax)
-   end subroutine
-!from mg_bocos.f90 
+   end subroutine test_vertical_interpolation_adj
+!from mg_bocos.f90
    module subroutine boco_2d_g1 &
         (this,W,km_in,im_in,jm_in,nbx,nby)
      implicit none
      class(mg_intstate_type),target::this
      integer(i_kind), intent(in):: km_in,im_in,jm_in,nbx,nby
      real(r_kind),dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
-   end subroutine 
+   end subroutine boco_2d_g1
    module subroutine boco_2d_gh &
         (this,W,km_in,im_in,jm_in,nbx,nby,Fimax_in,Fjmax_in,mygen_min,mygen_max)
      implicit none
@@ -418,7 +418,7 @@ interface
      integer(i_kind), intent(in):: km_in,im_in,jm_in,nbx,nby,mygen_min,mygen_max
      real(r_kind),dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
      integer(i_kind), dimension(this%gm), intent(in):: Fimax_in,Fjmax_in
-   end subroutine
+   end subroutine boco_2d_gh
    module subroutine boco_3d_g1 &
         (this,W,km3_in,im_in,jm_in,Lm_in,nbx,nby,nbz,Fimax_in,Fjmax_in)
      implicit none
@@ -426,7 +426,7 @@ interface
      integer(i_kind), intent(in):: km3_in,im_in,jm_in,Lm_in,nbx,nby,nbz
      real(r_kind),dimension(km3_in,1-nbx:im_in+nbx,1-nby:jm_in+nby,1-nbz:Lm_in+nbz),intent(inout):: W
      integer(i_kind), dimension(this%gm), intent(in):: Fimax_in,Fjmax_in
-   end subroutine
+   end subroutine boco_3d_g1
    module subroutine boco_3d_gh &
         (this,W,km3_in,im_in,jm_in,Lm_in,nbx,nby,nbz,Fimax_in,Fjmax_in,mygen_min,mygen_max)
      implicit none
@@ -434,14 +434,14 @@ interface
      integer(i_kind), intent(in):: km3_in,im_in,jm_in,Lm_in,nbx,nby,nbz,mygen_min,mygen_max
      real(r_kind),dimension(km3_in,1-nbx:im_in+nbx,1-nby:jm_in+nby,1-nbz:Lm_in+nbz),intent(inout):: W
      integer(i_kind), dimension(this%gm), intent(in):: Fimax_in,Fjmax_in
-   end subroutine
+   end subroutine boco_3d_gh
    module subroutine bocoT_2d_g1 &
         (this,W,km_in,im_in,jm_in,nbx,nby)
      implicit none
      class(mg_intstate_type),target::this
      integer(i_kind), intent(in):: km_in,im_in,jm_in,nbx,nby
      real(r_kind), dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
-   end subroutine
+   end subroutine bocoT_2d_g1
    module subroutine bocoT_2d_gh &
         (this,W,km_in,im_in,jm_in,nbx,nby,Fimax_in,Fjmax_in,mygen_min,mygen_max)
      implicit none
@@ -449,14 +449,14 @@ interface
      integer(i_kind), intent(in):: km_in,im_in,jm_in,nbx,nby,mygen_min,mygen_max
      real(r_kind), dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
      integer(i_kind), dimension(this%gm), intent(in):: Fimax_in,Fjmax_in
-   end subroutine
+   end subroutine bocoT_2d_gh
    module subroutine bocoTx_2d_g1 &
         (this,W,km_in,im_in,jm_in,nbx,nby)
      implicit none
      class(mg_intstate_type),target::this
      integer(i_kind), intent(in):: km_in,im_in,jm_in,nbx,nby
      real(r_kind), dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
-   end subroutine
+   end subroutine bocoTx_2d_g1
    module subroutine bocoTx_2d_gh &
         (this,W,km_in,im_in,jm_in,nbx,nby,Fimax_in,Fjmax_in,mygen_min,mygen_max)
      implicit none
@@ -464,14 +464,14 @@ interface
      integer(i_kind), intent(in):: km_in,im_in,jm_in,nbx,nby,mygen_min,mygen_max
      real(r_kind), dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
      integer(i_kind), dimension(this%gm), intent(in):: Fimax_in,Fjmax_in
-   end subroutine
+   end subroutine bocoTx_2d_gh
    module subroutine bocoTy_2d_g1 &
         (this,W,km_in,im_in,jm_in,nbx,nby)
      implicit none
      class(mg_intstate_type),target::this
      integer(i_kind), intent(in):: km_in,im_in,jm_in,nbx,nby
      real(r_kind), dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
-   end subroutine
+   end subroutine bocoTy_2d_g1
    module subroutine bocoTy_2d_gh &
         (this,W,km_in,im_in,jm_in,nbx,nby,Fimax_in,Fjmax_in,mygen_min,mygen_max)
      implicit none
@@ -479,7 +479,7 @@ interface
      integer(i_kind), intent(in):: km_in,im_in,jm_in,nbx,nby,mygen_min,mygen_max
      real(r_kind), dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
      integer(i_kind), dimension(this%gm), intent(in):: Fimax_in,Fjmax_in
-   end subroutine
+   end subroutine bocoTy_2d_gh
    module subroutine bocoT_3d_g1 &
         (this,W,km3_in,im_in,jm_in,Lm_in,nbx,nby,nbz,Fimax_in,Fjmax_in)
      implicit none
@@ -487,7 +487,7 @@ interface
      integer(i_kind), intent(in):: km3_in,im_in,jm_in,Lm_in,nbx,nby,nbz
      real(r_kind), dimension(km3_in,1-nbx:im_in+nbx,1-nby:jm_in+nby,1-nbz:Lm_in+nbz),intent(inout):: W
      integer(i_kind), dimension(this%gm), intent(in):: Fimax_in,Fjmax_in
-   end subroutine
+   end subroutine bocoT_3d_g1
    module subroutine bocoT_3d_gh &
         (this,W,km_in,im_in,jm_in,Lm_in,nbx,nby,nbz,Fimax_in,Fjmax_in,mygen_min,mygen_max)
      implicit none
@@ -495,7 +495,7 @@ interface
      integer(i_kind), intent(in):: km_in,im_in,jm_in,Lm_in,nbx,nby,nbz,mygen_min,mygen_max
      real(r_kind), dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby,1-nbz:Lm_in+nbz),intent(inout):: W
      integer(i_kind), dimension(this%gm), intent(in):: Fimax_in,Fjmax_in
-   end subroutine
+   end subroutine bocoT_3d_gh
    module subroutine bocox_2d_gh &
         (this,W,km_in,im_in,jm_in,nbx,nby,Fimax_in,Fjmax_in,mygen_min,mygen_max)
      implicit none
@@ -503,21 +503,21 @@ interface
      integer(i_kind), intent(in):: km_in,im_in,jm_in,nbx,nby,mygen_min,mygen_max
      real(r_kind),dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
      integer(i_kind), dimension(this%gm), intent(in):: Fimax_in,Fjmax_in
-   end subroutine
+   end subroutine bocox_2d_gh
    module subroutine bocox_2d_g1 &
         (this,W,km_in,im_in,jm_in,nbx,nby)
      implicit none
      class(mg_intstate_type),target::this
      integer(i_kind), intent(in):: km_in,im_in,jm_in,nbx,nby
      real(r_kind),dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
-   end subroutine
+   end subroutine bocox_2d_g1
    module subroutine bocoy_2d_g1 &
         (this,W,km_in,im_in,jm_in,nbx,nby)
      implicit none
      class(mg_intstate_type),target::this
      integer(i_kind), intent(in):: km_in,im_in,jm_in,nbx,nby
      real(r_kind),dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
-   end subroutine
+   end subroutine bocoy_2d_g1
    module subroutine bocoy_2d_gh &
         (this,W,km_in,im_in,jm_in,nbx,nby,Fimax_in,Fjmax_in,mygen_min,mygen_max)
      implicit none
@@ -525,7 +525,7 @@ interface
      integer(i_kind), intent(in):: km_in,im_in,jm_in,nbx,nby,mygen_min,mygen_max
      real(r_kind),dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
      integer(i_kind), dimension(this%gm), intent(in):: Fimax_in,Fjmax_in
-   end subroutine
+   end subroutine bocoy_2d_gh
    module subroutine upsend_all_g1 &
         (this,Harray,Warray,km_in)
      implicit none
@@ -533,7 +533,7 @@ interface
      integer(i_kind), intent(in):: km_in
      real(r_kind), dimension(km_in,1:this%imL,1:this%jmL),intent(in):: Harray
      real(r_kind), dimension(km_in,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(out):: Warray
-   end subroutine
+   end subroutine upsend_all_g1
    module subroutine upsend_all_gh &
         (this,Harray,Warray,km_in,mygen_dn,mygen_up)
      implicit none
@@ -542,7 +542,7 @@ interface
      real(r_kind), dimension(km_in,1:this%imL,1:this%jmL),intent(in):: Harray
      real(r_kind), dimension(km_in,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(out):: Warray
      integer(i_kind),intent(in):: mygen_dn,mygen_up
-   end subroutine
+   end subroutine upsend_all_gh
    module subroutine downsend_all_gh &
         (this,Warray,Harray,km_in,mygen_up,mygen_dn)
      implicit none
@@ -551,7 +551,7 @@ interface
      real(r_kind), dimension(km_in,1:this%im,1:this%jm),intent(in):: Warray
      real(r_kind), dimension(km_in,1:this%imL,1:this%jmL),intent(out):: Harray
      integer, intent(in):: mygen_up,mygen_dn
-   end subroutine
+   end subroutine downsend_all_gh
    module subroutine downsend_all_g2 &
         (this,Warray,Harray,km_in)
      implicit none
@@ -559,7 +559,7 @@ interface
      integer(i_kind), intent(in):: km_in
      real(r_kind), dimension(km_in,1:this%im,1:this%jm),intent(in):: Warray
      real(r_kind), dimension(km_in,1:this%imL,1:this%jmL),intent(out):: Harray
-   end subroutine
+   end subroutine downsend_all_g2
    module subroutine boco_2d_loc &
         (this,W,km_in,im_in,jm_in,nbx,nby,Fimax_in,Fjmax_in,g)
      implicit none
@@ -567,7 +567,7 @@ interface
      integer(i_kind), intent(in):: km_in,im_in,jm_in,nbx,nby,g
      real(r_kind),dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
      integer(i_kind), dimension(this%gm), intent(in):: Fimax_in,Fjmax_in
-   end subroutine
+   end subroutine boco_2d_loc
    module subroutine bocoT_2d_loc &
         (this,W,km_in,im_in,jm_in,nbx,nby,Fimax_in,Fjmax_in,g)
      implicit none
@@ -575,7 +575,7 @@ interface
      integer(i_kind), intent(in):: km_in,im_in,jm_in,nbx,nby,g
      real(r_kind),dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
      integer(i_kind), dimension(this%gm), intent(in):: Fimax_in,Fjmax_in
-   end subroutine
+   end subroutine bocoT_2d_loc
    module subroutine upsend_loc_g12 &
         (this,V_in,H,km_4_in,flag)
      implicit none
@@ -583,7 +583,7 @@ interface
      integer(i_kind), intent(in):: km_4_in,flag
      real(r_kind), dimension(km_4_in,1:this%imL,1:this%jmL),intent(in):: V_in
      real(r_kind), dimension(km_4_in,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(out):: H
-   end subroutine
+   end subroutine upsend_loc_g12
    module subroutine upsend_loc_g23 &
         (this,V_in,H,km_16_in,flag)
      implicit none
@@ -591,7 +591,7 @@ interface
      integer(i_kind), intent(in):: km_16_in,flag
      real(r_kind), dimension(km_16_in,1:this%imL,1:this%jmL),intent(in):: V_in
      real(r_kind), dimension(km_16_in,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(out):: H
-   end subroutine
+   end subroutine upsend_loc_g23
    module subroutine upsend_loc_g34 &
         (this,V_in,H,km_64_in,flag)
      implicit none
@@ -599,7 +599,7 @@ interface
      integer(i_kind), intent(in):: km_64_in,flag
      real(r_kind), dimension(km_64_in,1:this%imL,1:this%jmL),intent(in):: V_in
      real(r_kind), dimension(km_64_in,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(out):: H
-   end subroutine
+   end subroutine upsend_loc_g34
    module subroutine downsend_loc_g43 &
         (this,W,Z,km_64_in,flag)
      implicit none
@@ -607,7 +607,7 @@ interface
      integer(i_kind), intent(in):: km_64_in,flag
      real(r_kind), dimension(km_64_in,1:this%im,1:this%jm),intent(in):: W
      real(r_kind), dimension(km_64_in,1:this%imL,1:this%jmL),intent(out):: Z
-   end subroutine
+   end subroutine downsend_loc_g43
    module subroutine downsend_loc_g32 &
         (this,Z,H,km_16_in,flag)
      implicit none
@@ -615,7 +615,7 @@ interface
      integer(i_kind), intent(in):: km_16_in,flag
      real(r_kind), dimension(km_16_in,1:this%im,1:this%jm),intent(in):: Z
      real(r_kind), dimension(km_16_in,1:this%imL,1:this%jmL),intent(out):: H
-   end subroutine
+   end subroutine downsend_loc_g32
    module subroutine downsend_loc_g21 &
         (this,H,V_out,km_4_in,flag)
      implicit none
@@ -623,7 +623,7 @@ interface
      integer(i_kind), intent(in):: km_4_in,flag
      real(r_kind), dimension(km_4_in,1:this%im,1:this%jm),intent(in):: H
      real(r_kind), dimension(km_4_in,1:this%imL,1:this%jmL),intent(out):: V_out
-   end subroutine
+   end subroutine downsend_loc_g21
 !from mg_generations.f90
    module subroutine upsending_all &
         (this,V,H,lquart)
@@ -631,7 +631,7 @@ interface
      real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(in):: V
      real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(out):: H
      logical, intent(in):: lquart
-   end subroutine
+   end subroutine upsending_all
    module subroutine downsending_all &
         (this,H,V,lquart)
      implicit none
@@ -639,7 +639,7 @@ interface
      real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: H
      real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: V
      logical, intent(in):: lquart
-   end subroutine
+   end subroutine downsending_all
    module subroutine weighting_all &
         (this,V,H,lhelm)
      implicit none
@@ -647,7 +647,7 @@ interface
      real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: V
      real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: H
      logical, intent(in):: lhelm
-   end subroutine
+   end subroutine weighting_all
    module subroutine upsending &
         (this,V,H)
      implicit none
@@ -656,7 +656,7 @@ interface
      real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(out):: H
      real(r_kind),dimension(this%km,-1:this%imL+2,-1:this%jmL+2):: V_INT
      real(r_kind),dimension(this%km,-1:this%imL+2,-1:this%jmL+2):: H_INT
-   end subroutine
+   end subroutine upsending
    module subroutine upsending_normalized &
         (this,nz,V,H)
      implicit none
@@ -666,42 +666,42 @@ interface
      real(r_kind),dimension(nz,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(out):: H
      real(r_kind),dimension(nz,-1:this%imL+2,-1:this%jmL+2):: V_INT
      real(r_kind),dimension(nz,-1:this%imL+2,-1:this%jmL+2):: H_INT
-   end subroutine
+   end subroutine upsending_normalized
    module subroutine downsending &
         (this,H,V)
      implicit none
      class (mg_intstate_type),target:: this
      real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: H
      real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: V
-   end subroutine
+   end subroutine downsending
    module subroutine upsending2 &
         (this,V,H)
      implicit none
      class (mg_intstate_type),target:: this
      real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(in):: V
      real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(out):: H
-   end subroutine
+   end subroutine upsending2
    module subroutine downsending2 &
         (this,H,V)
      implicit none
      class (mg_intstate_type),target:: this
      real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: H
      real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: V
-   end subroutine
+   end subroutine downsending2
    module subroutine upsending_highest &
         (this,V,H)
      implicit none
      class (mg_intstate_type),target:: this
      real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(in):: V
      real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(out):: H
-   end subroutine
+   end subroutine upsending_highest
    module subroutine downsending_highest &
         (this,H,V)
      implicit none
      class (mg_intstate_type),target:: this
      real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: H
      real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: V
-   end subroutine
+   end subroutine downsending_highest
    module subroutine upsending_ens &
         (this,V,H,kmx)
      implicit none
@@ -709,7 +709,7 @@ interface
      integer(i_kind), intent(in):: kmx
      real(r_kind),dimension(kmx,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(in):: V
      real(r_kind),dimension(kmx,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(out):: H
-   end subroutine
+   end subroutine upsending_ens
    module subroutine downsending_ens &
         (this,H,V,kmx)
      implicit none
@@ -717,7 +717,7 @@ interface
      integer(i_kind), intent(in):: kmx
      real(r_kind),dimension(kmx,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: H
      real(r_kind),dimension(kmx,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: V
-   end subroutine
+   end subroutine downsending_ens
    module subroutine upsending2_ens &
         (this,V,H,kmx)
      implicit none
@@ -725,7 +725,7 @@ interface
      integer(i_kind), intent(in):: kmx
      real(r_kind),dimension(kmx,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(in):: V
      real(r_kind),dimension(kmx,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(out):: H
-   end subroutine
+   end subroutine upsending2_ens
    module subroutine downsending2_ens &
         (this,H,V,kmx)
      implicit none
@@ -733,7 +733,7 @@ interface
      integer(i_kind), intent(in):: kmx
      real(r_kind),dimension(kmx,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: H
      real(r_kind),dimension(kmx,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: V
-   end subroutine
+   end subroutine downsending2_ens
    module subroutine upsending_ens_nearest &
         (this,V,H,kmx)
      implicit none
@@ -741,7 +741,7 @@ interface
      integer(i_kind), intent(in):: kmx
      real(r_kind),dimension(kmx,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(in):: V
      real(r_kind),dimension(kmx,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(out):: H
-   end subroutine
+   end subroutine upsending_ens_nearest
    module subroutine downsending_ens_nearest &
         (this,H,V,kmx)
      implicit none
@@ -749,7 +749,7 @@ interface
      integer(i_kind), intent(in):: kmx
      real(r_kind),dimension(kmx,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: H
      real(r_kind),dimension(kmx,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: V
-   end subroutine
+   end subroutine downsending_ens_nearest
    module subroutine upsending_loc_g3 &
         (this,V,H,Z,km_in,km_4_in,km_16_in)
      implicit none
@@ -758,7 +758,7 @@ interface
      real(r_kind),dimension(km_in   ,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(in):: V
      real(r_kind),dimension(km_4_in ,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(out):: H
      real(r_kind),dimension(km_16_in,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(out):: Z
-   end subroutine
+   end subroutine upsending_loc_g3
    module subroutine upsending_loc_g4 &
         (this,V,H,Z,W,km_in,km_4_in,km_16_in,km_64_in)
      implicit none
@@ -768,7 +768,7 @@ interface
      real(r_kind),dimension(km_4_in ,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(out):: H
      real(r_kind),dimension(km_16_in,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(out):: Z
      real(r_kind),dimension(km_64_in,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(out):: W
-   end subroutine
+   end subroutine upsending_loc_g4
    module subroutine downsending_loc_g3 &
         (this,Z,H,V,km_in,km_4_in,km_16_in)
      implicit none
@@ -777,7 +777,7 @@ interface
      real(r_kind),dimension(km_16_in,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: Z
      real(r_kind),dimension(km_4_in ,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: H
      real(r_kind),dimension(km_in   ,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: V
-   end subroutine
+   end subroutine downsending_loc_g3
    module subroutine downsending_loc_g4 &
         (this,W,Z,H,V,km_in,km_4_in,km_16_in,km_64_in)
      implicit none
@@ -787,27 +787,27 @@ interface
      real(r_kind),dimension(km_16_in,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: Z
      real(r_kind),dimension(km_4_in ,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: H
      real(r_kind),dimension(km_in   ,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: V
-   end subroutine
+   end subroutine downsending_loc_g4
    module subroutine weighting_helm &
         (this,V,H)
      implicit none
      class (mg_intstate_type),target:: this
      real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: V
      real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: H
-   end subroutine
+   end subroutine weighting_helm
    module subroutine weighting &
         (this,V,H)
      implicit none
      class (mg_intstate_type),target:: this
      real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: V
      real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: H
-   end subroutine
+   end subroutine weighting
    module subroutine weighting_highest &
         (this,H)
      implicit none
      class (mg_intstate_type),target:: this
      real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: H
-   end subroutine
+   end subroutine weighting_highest
    module subroutine weighting_ens &
         (this,V,H,kmx)
      implicit none
@@ -815,7 +815,7 @@ interface
      integer(i_kind),intent(in):: kmx
      real(r_kind),dimension(kmx,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: V
      real(r_kind),dimension(kmx,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: H
-   end subroutine
+   end subroutine weighting_ens
    module subroutine weighting_loc_g3 &
         (this,V,H04,H16,km_in,km_4_in,km_16_in)
      implicit none
@@ -824,7 +824,7 @@ interface
      real(r_kind),dimension(km_in   ,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: V
      real(r_kind),dimension(km_4_in ,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: H04
      real(r_kind),dimension(km_16_in,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: H16
-   end subroutine
+   end subroutine weighting_loc_g3
    module subroutine weighting_loc_g4 &
         (this,V,H04,H16,H64,km_in,km_4_in,km_16_in,km_64_in)
      implicit none
@@ -834,7 +834,7 @@ interface
      real(r_kind),dimension(km_4_in ,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: H04
      real(r_kind),dimension(km_16_in,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: H16
      real(r_kind),dimension(km_64_in,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: H64
-   end subroutine
+   end subroutine weighting_loc_g4
    module subroutine adjoint &
         (this,F,W,km_in,g)
      implicit none
@@ -843,7 +843,7 @@ interface
      integer(i_kind),intent(in):: km_in
      real(r_kind), dimension(km_in,1:this%im,1:this%jm), intent(in):: F
      real(r_kind), dimension(km_in,-1:this%imL+2,-1:this%jmL+2), intent(out):: W
-   end subroutine
+   end subroutine adjoint
    module subroutine adjoint_normalized &
         (this,F,W,km_in,g)
      implicit none
@@ -852,7 +852,7 @@ interface
      integer(i_kind),intent(in):: km_in
      real(r_kind), dimension(km_in,1:this%im,1:this%jm), intent(in):: F
      real(r_kind), dimension(km_in,-1:this%imL+2,-1:this%jmL+2), intent(out):: W
-   end subroutine
+   end subroutine adjoint_normalized
    module subroutine direct1 &
         (this,W,F,km_in,g)
      implicit none
@@ -861,7 +861,7 @@ interface
      integer(i_kind),intent(in):: km_in
      real(r_kind), dimension(km_in,-1:this%imL+2,-1:this%jmL+2), intent(in):: W
      real(r_kind), dimension(km_in,1:this%im,1:this%jm), intent(out):: F
-   end subroutine
+   end subroutine direct1
    module subroutine adjoint2 &
         (this,F,W,km_in,g)
      implicit none
@@ -870,7 +870,7 @@ interface
      integer(i_kind),intent(in):: km_in
      real(r_kind), dimension(km_in,1:this%im,1:this%jm), intent(in):: F
      real(r_kind), dimension(km_in,0:this%imL+1,0:this%jmL+1), intent(out):: W
-   end subroutine
+   end subroutine adjoint2
    module subroutine direct2 &
         (this,W,F,km_in,g)
      implicit none
@@ -879,7 +879,7 @@ interface
      integer(i_kind),intent(in):: km_in
      real(r_kind), dimension(km_in,0:this%imL+1,0:this%jmL+1), intent(in):: W
      real(r_kind), dimension(km_in,1:this%im,1:this%jm), intent(out):: F
-   end subroutine
+   end subroutine direct2
    module subroutine adjoint_nearest &
         (this,F,W,km_in,g)
      implicit none
@@ -888,7 +888,7 @@ interface
      integer(i_kind),intent(in):: km_in
      real(r_kind), dimension(km_in,1:this%im,1:this%jm), intent(in):: F
      real(r_kind), dimension(km_in,-1:this%imL+2,-1:this%jmL+2), intent(out):: W
-   end subroutine
+   end subroutine adjoint_nearest
    module subroutine direct_nearest &
         (this,W,F,km_in,g)
      implicit none
@@ -897,7 +897,7 @@ interface
      integer(i_kind),intent(in):: km_in
      real(r_kind), dimension(km_in,-1:this%imL+2,-1:this%jmL+2), intent(in):: W
      real(r_kind), dimension(km_in,1:this%im,1:this%jm), intent(out):: F
-   end subroutine
+   end subroutine direct_nearest
    module subroutine adjoint_highest &
         (this,F,W,km_in,g)
      implicit none
@@ -906,7 +906,7 @@ interface
      integer(i_kind),intent(in):: km_in
      real(r_kind), dimension(km_in,1:this%im0(g),1:this%jm0(g)), intent(in):: F
      real(r_kind), dimension(km_in,-1:this%im0(g+1)+2,-1:this%jm0(g+1)+2), intent(out):: W
-   end subroutine
+   end subroutine adjoint_highest
    module subroutine direct_highest &
         (this,W,F,km_in,g)
      implicit none
@@ -915,49 +915,49 @@ interface
      integer(i_kind),intent(in):: km_in
      real(r_kind), dimension(km_in,-1:this%im0(g+1)+2,-1:this%jm0(g+1)+2), intent(in):: W
      real(r_kind), dimension(km_in,1:this%im0(g),1:this%jm0(g)), intent(out):: F
-   end subroutine
+   end subroutine direct_highest
 !from mg_filtering
    module subroutine filtering_procedure(this,mg_filt,mg_filt_flag)
      class(mg_intstate_type),target::this
      integer(i_kind),intent(in):: mg_filt
      integer(i_kind),intent(in):: mg_filt_flag
-   end subroutine
+   end subroutine filtering_procedure
    module subroutine filtering_rad3(this)
      class(mg_intstate_type),target::this
-   end subroutine
+   end subroutine filtering_rad3
    module subroutine filtering_lin3(this)
      class(mg_intstate_type),target::this
-   end subroutine
+   end subroutine filtering_lin3
    module subroutine filtering_rad2(this)
      class(mg_intstate_type),target::this
-   end subroutine
+   end subroutine filtering_rad2
    module subroutine filtering_rad2_bkg(this)
      class(mg_intstate_type),target::this
-   end subroutine
+   end subroutine filtering_rad2_bkg
    module subroutine filtering_lin2_bkg(this)
      class(mg_intstate_type),target::this
-   end subroutine
+   end subroutine filtering_lin2_bkg
    module subroutine filtering_lin2(this)
      class(mg_intstate_type),target::this
-   end subroutine
+   end subroutine filtering_lin2
    module subroutine filtering_fast_bkg(this)
      class(mg_intstate_type),target::this
-   end subroutine
+   end subroutine filtering_fast_bkg
    module subroutine filtering_rad2_ens(this,mg_filt_flag)
      class(mg_intstate_type),target::this
      integer(i_kind),intent(in):: mg_filt_flag
-   end subroutine
+   end subroutine filtering_rad2_ens
    module subroutine filtering_lin2_ens(this,mg_filt_flag)
      class(mg_intstate_type),target::this
      integer(i_kind),intent(in):: mg_filt_flag
-   end subroutine
+   end subroutine filtering_lin2_ens
    module subroutine filtering_fast_ens(this,mg_filt_flag)
      class(mg_intstate_type),target::this
      integer(i_kind),intent(in):: mg_filt_flag
-   end subroutine
+   end subroutine filtering_fast_ens
    module subroutine filtering_rad_highest(this)
      class(mg_intstate_type),target::this
-   end subroutine
+   end subroutine filtering_rad_highest
    module subroutine sup_vrbeta1 &
         (this,kmax,hx,hy,hz,im,jm,lm, pasp,ss, V)
      implicit none
@@ -966,15 +966,15 @@ interface
      real(r_kind),dimension(1:kmax,1-hx:im+hx,1-hy:jm+hy,1:lm),intent(inout):: V
      real(r_kind),dimension(1,1,1:lm), intent(in):: pasp
      real(r_kind),dimension(1:lm), intent(in):: ss
-   end subroutine
+   end subroutine sup_vrbeta1
    module subroutine sup_vrbeta1T &
-     (this,kmax,hx,hy,hz,im,jm,lm,  pasp,ss, V) 
+     (this,kmax,hx,hy,hz,im,jm,lm,  pasp,ss, V)
      class(mg_intstate_type),target::this
      integer(i_kind),intent(in):: kmax,hx,hy,hz,im,jm,lm
      real(r_kind),dimension(1:kmax,1-hx:im+hx,1-hy:jm+hy,1:lm),intent(inout):: V
      real(r_kind),dimension(1,1,1:lm), intent(in):: pasp
      real(r_kind),dimension(1:lm), intent(in):: ss
-   end subroutine
+   end subroutine sup_vrbeta1T
    module subroutine sup_vrbeta3 &
         (this,kmax,hx,hy,hz,im,jm,lm, pasp,ss, V)
      class(mg_intstate_type),target::this
@@ -982,7 +982,7 @@ interface
      real(r_kind),dimension(1:kmax,1-hx:im+hx,1-hy:jm+hy,1:lm),intent(inout):: V
      real(r_kind),dimension(3,3,1:im,1:jm,1:lm), intent(in):: pasp
      real(r_kind),dimension(1:im,1:jm,1:lm), intent(in):: ss
-   end subroutine
+   end subroutine sup_vrbeta3
    module subroutine sup_vrbeta3T &
         (this,kmax,hx,hy,hz,im,jm,lm, pasp,ss,V)
      implicit none
@@ -991,7 +991,7 @@ interface
      real(r_kind),dimension(1:kmax,1-hx:im+hx,1-hy:jm+hy,1:lm),intent(inout):: V
      real(r_kind),dimension(3,3,1:im,1:jm,1:lm), intent(in):: pasp
      real(r_kind),dimension(1:im,1:jm,1:lm), intent(in):: ss
-   end subroutine
+   end subroutine sup_vrbeta3T
    module subroutine sup_vrbeta1_ens &
         (this,km_en,hx,hy,hz,im,jm,lm,pasp,ss,VALL)
      implicit none
@@ -1000,7 +1000,7 @@ interface
      real(r_kind),dimension(1:km_en*lm,1-hx:im+hx,1-hy:jm+hy),intent(inout):: VALL
      real(r_kind),dimension(1,1,1:lm), intent(in):: pasp
      real(r_kind),dimension(1:lm), intent(in):: ss
-   end subroutine
+   end subroutine sup_vrbeta1_ens
    module subroutine sup_vrbeta1T_ens &
         (this,km_en,hx,hy,hz,im,jm,lm,pasp,ss,VALL)
      implicit none
@@ -1009,7 +1009,7 @@ interface
      real(r_kind),dimension(1:km_en*lm,1-hx:im+hx,1-hy:jm+hy),intent(inout):: VALL
      real(r_kind),dimension(1,1,1:lm), intent(in):: pasp
      real(r_kind),dimension(1:lm), intent(in):: ss
-   end subroutine
+   end subroutine sup_vrbeta1T_ens
    module subroutine sup_vrbeta1_bkg &
         (this,km,km3,hx,hy,hz,im,jm,lm,pasp,ss,VALL)
      implicit none
@@ -1018,7 +1018,7 @@ interface
      real(r_kind),dimension(1:km,1-hx:im+hx,1-hy:jm+hy),intent(inout):: VALL
      real(r_kind),dimension(1,1,1:lm), intent(in):: pasp
      real(r_kind),dimension(1:lm), intent(in):: ss
-   end subroutine
+   end subroutine sup_vrbeta1_bkg
    module subroutine sup_vrbeta1T_bkg &
         (this,km,km3,hx,hy,hz,im,jm,lm,pasp,ss,VALL)
      implicit none
@@ -1027,76 +1027,76 @@ interface
      real(r_kind),dimension(1:km,1-hx:im+hx,1-hy:jm+hy),intent(inout):: VALL
      real(r_kind),dimension(1,1,1:lm), intent(in):: pasp
      real(r_kind),dimension(1:lm), intent(in):: ss
-   end subroutine
+   end subroutine sup_vrbeta1T_bkg
 !from mg_transfer.f90
    module subroutine anal_to_filt_allmap(this,WORKA)
      class(mg_intstate_type),target::this
      real (r_kind):: WORKA(this%km_a_all,1:this%nm,1:this%mm)
-   end subroutine
+   end subroutine anal_to_filt_allmap
    module subroutine filt_to_anal_allmap(this,WORKA)
      class(mg_intstate_type),target::this
      real (r_kind):: WORKA(this%km_a_all,1:this%nm,1:this%mm)
-   end subroutine
+   end subroutine filt_to_anal_allmap
    module subroutine anal_to_filt_all(this,WORKA)
      class(mg_intstate_type),target::this
      real (r_kind):: WORKA(this%km_a_all,1:this%nm,1:this%mm)
-   end subroutine
+   end subroutine anal_to_filt_all
    module subroutine filt_to_anal_all(this,WORKA)
      class(mg_intstate_type),target::this
      real (r_kind):: WORKA(this%km_a_all,1:this%nm,1:this%mm)
-   end subroutine
+   end subroutine filt_to_anal_all
    module subroutine anal_to_filt_all2(this,WORKA)
      class(mg_intstate_type),target::this
      real (r_kind):: WORKA(this%km_a_all,1:this%nm,1:this%mm)
-   end subroutine
+   end subroutine anal_to_filt_all2
    module subroutine filt_to_anal_all2(this,WORKA)
      class(mg_intstate_type),target::this
      real (r_kind):: WORKA(this%km_a_all,1:this%nm,1:this%mm)
-   end subroutine
+   end subroutine filt_to_anal_all2
    module subroutine stack_to_composite(this,ARR_ALL,A2D,A3D)
      class(mg_intstate_type),target::this
      real(r_kind),dimension(this%km ,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),   intent(in):: ARR_ALL
      real(r_kind),dimension(this%km3,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,this%lm),intent(out):: A3D
      real(r_kind),dimension(this%km2,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)   ,intent(out):: A2D
-   end subroutine
+   end subroutine stack_to_composite
    module subroutine composite_to_stack(this,A2D,A3D,ARR_ALL)
      class(mg_intstate_type),target::this
      real(r_kind),dimension(this%km2,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),   intent(in):: A2D
      real(r_kind),dimension(this%km3,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,this%lm),intent(in):: A3D
      real(r_kind),dimension(this%km ,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),   intent(out):: ARR_ALL
-   end subroutine
+   end subroutine composite_to_stack
    module subroutine S2C_ens(this,ARR_ALL,A3D,imn,imx,jmn,jmx,lmx,kmx,kmx_all)
      class(mg_intstate_type),target::this
      integer, intent(in):: imn,imx,jmn,jmx,lmx,kmx,kmx_all
      real(r_kind),dimension(kmx_all,imn:imx,jmn:jmx)    ,intent(in):: ARR_ALL
      real(r_kind),dimension(this%km3_all,imn:imx,jmn:jmx,lmx),intent(out):: A3D
-   end subroutine
+   end subroutine S2C_ens
    module subroutine C2S_ens(this,A3D,ARR_ALL,imn,imx,jmn,jmx,lmx,kmx,kmx_all)
      class(mg_intstate_type),target::this
      integer, intent(in):: imn,imx,jmn,jmx,lmx,kmx,kmx_all
      real(r_kind),dimension(this%km3_all,imn:imx,jmn:jmx,lmx),intent(in):: A3D
      real(r_kind),dimension(kmx_all,imn:imx,jmn:jmx)    ,intent(out):: ARR_ALL
-   end subroutine
+   end subroutine C2S_ens
    module subroutine anal_to_filt(this,WORK)
      class(mg_intstate_type),target::this
      real (r_kind):: WORK(this%km_all,1:this%nm,1:this%mm)
-   end subroutine
+   end subroutine anal_to_filt
    module subroutine filt_to_anal(this,WORK)
      class(mg_intstate_type),target::this
      real (r_kind):: WORK(this%km_all,1:this%nm,1:this%mm)
-   end subroutine
+   end subroutine filt_to_anal
 !from mg_entrymod.f90
    module subroutine mg_initialize(this,n_owned_anl,anl_lonlat1d,inputfilename,obj_parameter)
      class (mg_intstate_type):: this
      integer(i_kind),optional,intent(in)::n_owned_anl
      real(r_kind),optional,intent(in)::anl_lonlat1d(:,:)
-     character*(*),optional,intent(in) :: inputfilename
+     character(len=*),optional,intent(in) :: inputfilename
      class(mg_parameter_type),optional,intent(in)::obj_parameter
-   end subroutine
+   end subroutine mg_initialize
    module subroutine mg_finalize(this)
      implicit none
      class (mg_intstate_type)::this
-   end subroutine
+   end subroutine mg_finalize
 end interface
 
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -1121,7 +1121,7 @@ if(this%l_loc) then
    allocate(this%w2_loc(this%km_all/4 ,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this%w2_loc=0.
    allocate(this%w3_loc(this%km_all/16,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this%w3_loc=0.
    allocate(this%w4_loc(this%km_all/64,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this%w4_loc=0.
-endif
+end if
 
 
 
@@ -1129,10 +1129,10 @@ allocate(this%V(1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,this%lm))   
 allocate(this%VALL(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this%VALL=0.
 allocate(this%HALL(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this%HALL=0.
 
-allocate(this%a_diff_f(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this%a_diff_f=0. 
-allocate(this%a_diff_h(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this%a_diff_h=0. 
-allocate(this%b_diff_f(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this%b_diff_f=0. 
-allocate(this%b_diff_h(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this%b_diff_h=0. 
+allocate(this%a_diff_f(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this%a_diff_f=0.
+allocate(this%a_diff_h(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this%a_diff_h=0.
+allocate(this%b_diff_f(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this%b_diff_f=0.
+allocate(this%b_diff_h(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this%b_diff_h=0.
 
 allocate(this%p_eps(1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this%p_eps=0.
 allocate(this%p_del(1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this%p_del=0.
@@ -1245,7 +1245,7 @@ allocate(this%cvh3(1:this%lm)) ; this%cvh3=0.
 allocate(this%cvh4(1:this%lm)) ; this%cvh4=0.
 
 !-----------------------------------------------------------------------
-endsubroutine allocate_mg_intstate
+end subroutine allocate_mg_intstate
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 subroutine def_mg_weights(this,n_owned_anl,lonlat1d_anl)
@@ -1262,9 +1262,9 @@ integer(i_kind):: i,j,k,L
 
 real(r_kind):: gen_fac
 real(r_kind),allocatable, dimension(:,:,:,:):: weig_g
-real(r_kind),allocatable, dimension(:,:,:,:):: loc_a 
-real(r_kind),allocatable, dimension(:,:,:):: weigh_tmp 
-real(r_kind),allocatable, dimension(:):: par_weig_g 
+real(r_kind),allocatable, dimension(:,:,:,:):: loc_a
+real(r_kind),allocatable, dimension(:,:,:):: weigh_tmp
+real(r_kind),allocatable, dimension(:):: par_weig_g
 real(r_kind),allocatable :: lonlat2d_anl(:,:,:)
 real(r_kind),allocatable :: lonlat2d_filt(:,:,:)
                          !
@@ -1276,7 +1276,7 @@ integer,allocatable,dimension(:) :: sendcounts, displs
 integer :: dims(2), periods(2), coords(2)
 integer(i_kind):: nxloc,nyloc,nz,nt,start_idx,end_idx
 integer(i_kind):: ig
-character*72  tmpfilename
+character(len=72)  :: tmpfilename
 real (r_kind)::rtem1,rtem2
 real (r_kind) :: dist_rad
 !-----------------------------------------------------------------------
@@ -1284,9 +1284,9 @@ allocate(this%weig_var(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+t
 start_idx=Lbound(this%weig_var,4)
 end_idx=Ubound(this%weig_var,4)
 if(start_idx /=1 ) then
- write(6,*)'the expected begin index of weig_var is 1, stop'
+ write(6,*)"the expected begin index of weig_var is 1, stop"
  stop
-endif
+end if
 
  if (present(lonlat1d_anl)) then
     if (size(lonlat1d_anl,2) /= 2 .or. size(lonlat1d_anl,1) < n_owned_anl) then
@@ -1294,16 +1294,16 @@ endif
     end if
   else
     this%l_constant_aspt2=.true.
-   
+
   end if
  if (present(n_owned_anl)) then
-   if(this%nm*this%mm /= n_owned_anl) then 
+   if(this%nm*this%mm /= n_owned_anl) then
      error stop "the input grid number is not as expected , stop "
-   endif
+   end if
  else
     this%l_constant_aspt2=.true.
-    
- endif
+
+ end if
 
 
 
@@ -1313,8 +1313,8 @@ allocate(weigh_tmp(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%
 !clt first transform/upsend original mg_weigh_var to their correct locations
 if(this%l_mgbf_inhomogeneous ) then
   if(this%l_mg_weig_readin) then
-   dims=(/this%nxpe,this%nype/)
-   periods=(/0,0/)
+   dims=[this%nxpe,this%nype]
+   periods=[0,0]
    nxloc=this%im
    nyloc=this%jm
    nz=this%km
@@ -1329,54 +1329,54 @@ if(this%l_mgbf_inhomogeneous ) then
     !cltclt  read in global_weight(nx,ny,km,ng)
   else
       allocate(weig_g(1,1,1,1))
-   endif
+   end if
        do j = 0, this%nype - 1
         do i = 0, this%nxpe - 1
           sendcounts(i + j * this%nxpe) = nxloc * nyloc * this%km * nt
           displs(i + j * this%nxpe) = ((i * nxloc) + (j * nyloc) * nxloc) * nz * nt
         end do
       end do
-   
+
    call MPI_Scatterv(weig_g, sendcounts, displs, MPI_REAL, loc_a, nxloc * nyloc * nz * nt, MPI_REAL, 0, comm2d, ierr)
    call MPI_COMM_FREE(comm2d, ierr)
    do ig=1,this%gm
      do k=1,this%km
       this%weig_var(k,1:nxloc,1:nyloc,ig)=loc_a(:,:,k,ig)
-     enddo
-   enddo
+     end do
+   end do
   !clt the following would have different results in corners when run on different order
   !cltthink to be investigated further
      do i=1-this%hx, 0
       this%weig_var(:,i,:,:)=this%weig_var(:,1,:,:)
-     enddo
+     end do
      do i=nxloc+1,nxloc+this%hx
       this%weig_var(:,i,:,:)=this%weig_var(:,nxloc,:,:)
-     enddo
+     end do
      do j=1-this%hy,0
       this%weig_var(:,:,j,:)=this%weig_var(:,:,1,:)
-     enddo
-     do j=nyloc+1,nyloc+this%hy 
+     end do
+     do j=nyloc+1,nyloc+this%hy
       this%weig_var(:,:,j,:)=this%weig_var(:,:,nyloc,:)
-     enddo
-  !clttothink  
+     end do
+  !clttothink
   !clt to convert data in weigt_var to their correct locations
      do ig=start_idx,end_idx
        weigh_tmp=this%weig_var(:,:,:,ig)
        call this%upsending_normalized(this%km_all,weigh_tmp,this%weig_var(:,:,:,ig))
-     enddo 
+     end do
 
       deallocate(weig_g,weigh_tmp)
   else
    allocate(par_weig_g(4))
-   par_weig_g=(/this%mg_weig1,this%mg_weig2,this%mg_weig3,this%mg_weig4/)
+   par_weig_g=[this%mg_weig1,this%mg_weig2,this%mg_weig3,this%mg_weig4]
    do ig=start_idx,end_idx
    weigh_tmp=par_weig_g(ig)
    call this%upsending_normalized(this%km_all,weigh_tmp,this%weig_var(:,:,:,ig))
-   enddo 
+   end do
 
    deallocate(par_weig_g)
-  endif
-endif
+  end if
+end if
 deallocate(sendcounts, displs)
 
 this%p_eps(:,:)=0.0
@@ -1393,134 +1393,134 @@ if(this%l_loc) then
    this%w2_loc(:,:,:)=this%mg_weig2
    this%w3_loc(:,:,:)=this%mg_weig3
    this%w4_loc(:,:,:)=this%mg_weig4
-endif
+end if
 !--------------------------------------------------------
 gen_fac=1.
 write(tmpfilename, '("mgbf_tmpfile_", I0, ".txt")') this%mype
 open(12,file=trim(tmpfilename),form="formatted")
 if(this%l_mgbf_inhomogeneous ) then
-this%a_diff_f(:,:,:)=this%weig_var(:,:,:,1) 
-this%a_diff_h(:,:,:)=this%weig_var(:,:,:,1) 
+this%a_diff_f(:,:,:)=this%weig_var(:,:,:,1)
+this%a_diff_h(:,:,:)=this%weig_var(:,:,:,1)
 
 this%b_diff_f(:,:,:)=0.
 this%b_diff_h(:,:,:)=0.
 
 select case(this%my_hgen)
-case(2) 
+case(2)
    this%a_diff_h(:,:,:)=this%weig_var(:,:,:,2)
-case(3) 
+case(3)
    this%a_diff_h(:,:,:)=this%weig_var(:,:,:,3)
-case default 
+case default
    this%a_diff_h(:,:,:)=this%weig_var(:,:,:,4)
 end select
 close (12)
 else
-this%a_diff_f(:,:,:)=this%mg_weig1 
+this%a_diff_f(:,:,:)=this%mg_weig1
 
 this%b_diff_f(:,:,:)=0.
 
 select case(this%my_hgen)
-case(2) 
+case(2)
   this%a_diff_h(:,:,:)=this%mg_weig2
-case(3) 
- this%a_diff_h(:,:,:)=this%mg_weig3 
-case default 
+case(3)
+ this%a_diff_h(:,:,:)=this%mg_weig3
+case default
   this%a_diff_h(:,:,:)=this%mg_weig4
 end select
 
-endif
+end if
 
 do L=1,this%lm
    this%pasp1(1,1,L)=this%pasp01
-enddo
+end do
 
 !tothink
-if (this%l_constant_aspt2 ) then 
+if (this%l_constant_aspt2 ) then
      this%paspx=this%pasp02
      this%paspy=this%pasp02
      this%paspx4d(:,:,:,:)=this%pasp02  !for first generation
 !lct   this%paspy(:,:,:,1)=this%pasp02  !for first generation
      this%paspy4d(:,:,:,:)=this%pasp02  !for first generation
- else  !clt inhomogeneous and anisotropic aspect tensors 
-  !to initialize halo points 
-  !to initialize halo points 
+ else  !clt inhomogeneous and anisotropic aspect tensors
+  !to initialize halo points
+  !to initialize halo points
      this%paspx=this%pasp02
      this%paspy=this%pasp02  !paspx and paspy will be replaced by paspx4d/paspy4d when the x/y filter
-                             ! is used ( filtering_fast_bkg ) 
-#if 1 
+                             ! is used ( filtering_fast_bkg )
+#if 1
    allocate (lonlat2d_anl(this%nm,this%mm,2))
    allocate (lonlat2d_filt(this%im,this%jm,2))
    lonlat2d_anl(:,:,1)=reshape(lonlat1d_anl(:,1),[size(lonlat2d_anl,1),size(lonlat2d_anl,2)])
    lonlat2d_anl(:,:,2)=reshape(lonlat1d_anl(:,2),[size(lonlat2d_anl,1),size(lonlat2d_anl,2)])
    lonlat2d_anl=lonlat2d_anl*deg2rad
-   if(this%mype.eq.0) then 
-     open(13,file='latlon.txt',form="formatted")
+   if(this%mype==0) then
+     open(13,file="latlon.txt",form="formatted")
        write(13,*)"lon and lat "
         do j = 1, this%mm
            do i = 1, this%nm
-            write(13,'(2I5, 2ES20.10)') i, j, &
+            write(13,"(2I5, 2ES20.10)") i, j, &
                       lonlat2d_anl(i, j, 1), lonlat2d_anl(i, j, 2)
             end do
          end do
 !#       write(13,*)lonlat2d_anl(:,:,1)
     close(13)
-   endif
+   end if
    call interp_analysis_to_filter(lonlat2d_anl(:,:,1),this%nm,this%mm,this%im,this%jm,lonlat2d_filt(:,:,1))
    call interp_analysis_to_filter(lonlat2d_anl(:,:,2),this%nm,this%mm,this%im,this%jm,lonlat2d_filt(:,:,2))
-  
+
    do j=1,this%jm
     do i=1,this%im
-      if (i.le.this%im-1) then
+      if (i<=this%im-1) then
         call mg_sphere_dist(lonlat2d_filt(i,j,1), lonlat2d_filt(i,j,2), lonlat2d_filt(i+1,j,1),lonlat2d_filt(i+1,j,2), dist_rad)
       else
         call mg_sphere_dist(lonlat2d_filt(i-1,j,1), lonlat2d_filt(i-1,j,2), lonlat2d_filt(i,j,1),lonlat2d_filt(i,j,2), dist_rad)
-      endif
+      end if
       this%dxfm(i,j)=dist_rad*req
-      if (j.le.this%jm-1) then
+      if (j<=this%jm-1) then
         call mg_sphere_dist(lonlat2d_filt(i,j,1), lonlat2d_filt(i,j,2), lonlat2d_filt(i,j+1,1),lonlat2d_filt(i,j+1,2), dist_rad)
       else
         call mg_sphere_dist(lonlat2d_filt(i,j-1,1), lonlat2d_filt(i,j-1,2), lonlat2d_filt(i,j,1),lonlat2d_filt(i,j,2), dist_rad)
-      endif
+      end if
       this%dyfm(i,j)=dist_rad*req
-    enddo
-   enddo
-      
-       
-      rtem1=this%pasp02  
+    end do
+   end do
+
+
+      rtem1=this%pasp02
       rtem2=this%pasp02
-     
+
       do i=1,this%im
       do j=1,this%jm
      this%paspx4d(1,i,j,1)=(rtem1/this%dxfmctrl*this%dxfm(i,j))  ! !cltthinkdeb9999
      this%paspy4d(1,i,j,1)=(rtem1/this%dyfmctrl*this%dyfm(i,j))  !
-      enddo
-      enddo
-           
+      end do
+      end do
+
 
 
      this%paspx4d(2:this%lm,:,:,1)=spread(this%paspx4d(1,:,:,1),dim=1,ncopies=this%lm-1)
      this%paspy4d(2:this%lm,:,:,1)=spread(this%paspy4d(1,:,:,1),dim=1,ncopies=this%lm-1)
-   
-   
 
 
-   
-    
+
+
+
+
    deallocate (lonlat2d_anl)
    deallocate (lonlat2d_filt)
 #else
      this%paspx4d(:,:,:,1)=this%pasp02
      this%paspy4d(:,:,:,1)=this%pasp02
 #endif
-  
-endif
+
+end if
 !$omp parallel do private(i,j) schedule(static)
 do j=1,this%jm
 do i=1,this%im
    this%pasp2(1,1,i,j)=this%pasp02*(1.+this%p_del(i,j))
    this%pasp2(2,2,i,j)=this%pasp02*(1.-this%p_del(i,j))
-   this%pasp2(1,2,i,j)=this%pasp02*this%p_eps(i,j)     
-   this%pasp2(2,1,i,j)=this%pasp02*this%p_eps(i,j)     
+   this%pasp2(1,2,i,j)=this%pasp02*this%p_eps(i,j)
+   this%pasp2(2,1,i,j)=this%pasp02*this%p_eps(i,j)
 end do
 end do
 !$omp end parallel do
@@ -1557,10 +1557,10 @@ end do
                call this%sup_vrbeta1_ens(1,0,0,this%hz,1,1,this%lm,this%pasp1,this%ss1,this%VALL(1:this%lm,2,1))
                this%VALL(L,1,1)=sqrt(this%VALL(L,2,1))
                this%VALL(1:this%lm,2,1)=0.
-            enddo
+            end do
             this%ss1(1:this%lm)=this%ss1(1:this%lm)/this%VALL(1:this%lm,1,1)
             this%VALL(1:this%lm,1,1)=0.
-         endif
+         end if
          call this%cholaspect(1,this%im,1,this%jm,this%pasp2)
          call this%getlinesum(this%hx,1,this%im,this%hy,1,this%jm,this%pasp2,this%ss2)
          this%VALL(1,this%im/2,this%jm/2)=1.
@@ -1592,12 +1592,12 @@ end do
          do j=1,this%jm
          call this%getlinesum(this%hx,1,this%im,this%paspx4d(k,1:this%im,j,1),this%ssx4d(k,1:this%im,j,1))
          end do
-       enddo
+       end do
        do k=1,this%lm
          do i=1,this%im
          call this%getlinesum(this%hy,1,this%jm,this%paspy4d(k,i,1:this%jm,1),this%ssy4d(k,i,1:this%jm,1))
-         end do 
-       enddo
+         end do
+       end do
          call this%getlinesum(this%hz,1,this%lm,this%pasp1,this%ss1)
          call this%getlinesum(this%hx,1,this%im,this%hy,1,this%jm,this%pasp2,this%ss2)
          call this%getlinesum(this%hx,1,this%im,this%hy,1,this%jm,this%hz,1,this%lm,this%pasp3,this%ss3)
@@ -1624,23 +1624,27 @@ end do
       this%VALL(1,1-this%hx:this%imH+this%hx,1-this%hy:this%jmH+this%hy)=0.
    end if
 !cltthinkdeb10000
-   call this%boco_2d(this%paspx4d(1:this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,1),this%lm,this%im,this%jm,this%hx,this%hy)
+   call this%boco_2d(this%paspx4d(1:this%lm,1-this%hx:this%im+this%hx, &
+        1-this%hy:this%jm+this%hy,1),this%lm,this%im,this%jm,this%hx,this%hy)
    call this%upsending_normalized(this%lm,this%paspx4d(:,:,:,1),this%paspx4d(:,:,:,2))
 
-   call this%boco_2d(this%paspy4d(1:this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,1),this%lm,this%im,this%jm,this%hx,this%hy)
+   call this%boco_2d(this%paspy4d(1:this%lm,1-this%hx:this%im+this%hx, &
+        1-this%hy:this%jm+this%hy,1),this%lm,this%im,this%jm,this%hx,this%hy)
    call this%upsending_normalized(this%lm,this%paspy4d(:,:,:,1),this%paspy4d(:,:,:,2))
 
-   call this%boco_2d(this%ssx4d(1:this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,1),this%lm,this%im,this%jm,this%hx,this%hy)
+   call this%boco_2d(this%ssx4d(1:this%lm,1-this%hx:this%im+this%hx, &
+        1-this%hy:this%jm+this%hy,1),this%lm,this%im,this%jm,this%hx,this%hy)
    call this%upsending_normalized(this%lm,this%ssx4d(:,:,:,1),this%ssx4d(:,:,:,2))
-   call this%boco_2d(this%ssy4d(1:this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,1),this%lm,this%im,this%jm,this%hx,this%hy)
+   call this%boco_2d(this%ssy4d(1:this%lm,1-this%hx:this%im+this%hx, &
+        1-this%hy:this%jm+this%hy,1),this%lm,this%im,this%jm,this%hx,this%hy)
    call this%upsending_normalized(this%lm,this%ssy4d(:,:,:,1),this%ssy4d(:,:,:,2))
 
 
-deallocate(this%weig_var) 
+deallocate(this%weig_var)
 
 
 !-----------------------------------------------------------------------
-endsubroutine def_mg_weights
+end subroutine def_mg_weights
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 subroutine init_mg_line(this)
@@ -1658,16 +1662,16 @@ logical:: ff
 do j=1,this%jm
 do i=1,this%im
    call t22_to_3(this%pasp2(:,:,i,j),this%vpasp2(:,i,j))
-enddo
-enddo
+end do
+end do
 
 do l=1,this%lm
 do j=1,this%jm
 do i=1,this%im
    call t33_to_6(this%pasp3(:,:,i,j,l),this%vpasp3(:,i,j,l))
-enddo
-enddo
-enddo
+end do
+end do
+end do
 
 call inimomtab(this%p,this%nh,ff)
 
@@ -1675,16 +1679,16 @@ call tritform(1,this%im,1,this%jm,this%vpasp2, this%dixs,this%diys, ff)
 
 do icol=1,3
    this%hss2(:,:,icol)=this%vpasp2(icol-1,:,:)
-enddo
+end do
 
 call hextform(1,this%im,1,this%jm,1,this%lm,this%vpasp3,this%qcols,this%dixs3,this%diys3,this%dizs3, ff)
 
 do icol=1,6
    this%hss3(:,:,:,icol)=this%vpasp3(icol,:,:,:)
-enddo
- 
+end do
+
 !-----------------------------------------------------------------------
-endsubroutine init_mg_line
+end subroutine init_mg_line
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 subroutine deallocate_mg_intstate(this)
@@ -1737,7 +1741,7 @@ deallocate(this%a_coef,this%b_coef)
 
 if(this%l_loc) then
   deallocate(this%w1_loc,this%w2_loc,this%w3_loc,this%w4_loc)
-endif
+end if
 if (allocated(this%aspect_vert_profile_angrid) ) deallocate( this%aspect_vert_profile_angrid)
 if (allocated(this%aspect_vert_profile_filtgrid) ) deallocate( this%aspect_vert_profile_filtgrid)
 deallocate(this%dxfm,this%dyfm)

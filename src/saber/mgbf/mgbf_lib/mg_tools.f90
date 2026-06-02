@@ -1,12 +1,14 @@
 module mg_tools
 !!from codex :
-!the filtering grid is anchored to the same physical domain as the analysis grid, 
+!the filtering grid is anchored to the same physical domain as the analysis grid,
 !with both sharing the left/right boundaries at 0 and lengthx (and top/bottom at lengthy).
-! In init_mg_parameter, the domain length is set to lengthx = nm and 
-!lengthy = mm (src/saber/mgbf/mgbf_lib/mg_parameter.f90:946-957). 
-!Analysis points sit at midpoints of unit cells: xa(n) = xa0 + dxa*(n-1) with xa0 = dxa/2 = 0.5 
-!(src/saber/mgbf/mgbf_lib/mg_parameter.f90:952-961). Filtering points use the same origin convention: xf(i) = xf0 + dxf*(i-1) with xf0 = dxf/2 (src/saber/mgbf/mgbf_lib/mg_parameter.f90:952-964). 
-!So both grids start half a grid spacing from the boundary; no global offset is applied.    
+! In init_mg_parameter, the domain length is set to lengthx = nm and
+!lengthy = mm (src/saber/mgbf/mgbf_lib/mg_parameter.f90:946-957).
+!Analysis points sit at midpoints of unit cells: xa(n) = xa0 + dxa*(n-1) with xa0 = dxa/2 = 0.5
+!(src/saber/mgbf/mgbf_lib/mg_parameter.f90:952-961). Filtering points use the same origin
+!convention: xf(i) = xf0 + dxf*(i-1) with xf0 = dxf/2
+!(src/saber/mgbf/mgbf_lib/mg_parameter.f90:952-964).
+!So both grids start half a grid spacing from the boundary; no global offset is applied.
 use mgbf_kinds, only: r_kind,i_kind
 
 contains

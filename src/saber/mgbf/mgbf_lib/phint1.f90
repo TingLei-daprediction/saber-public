@@ -20,7 +20,7 @@ use mgbf_kinds, only: i_kind,r_kind
 use phint, only: wint3,whint,v1_wint3,v1_whint
 implicit none
 public:: make_ssf, make_ssgrid, zsigtossig, interpftos, sstosig, intgrid, &
-     logintgrid, wintgrid, monotonicrefine,sofztozofs 
+     logintgrid, wintgrid, monotonicrefine,sofztozofs
 
 interface make_ssf
    module procedure make_ssf
@@ -53,7 +53,7 @@ interface monotonicrefine
    module procedure monotonicrefine
 end interface monotonicrefine
 contains
-   
+
 !============================================================================
 subroutine make_ssf(nz,nf,sigofz,ssofzf)!                          [make_ssf]
 !============================================================================
@@ -88,14 +88,14 @@ dzf=u1/nf
 !$omp parallel do private(izf) schedule(static)
 do izf=0,nzf
    zofzf(izf)=izf*dzf
-enddo
+end do
 !$omp end parallel do
 call logintgrid(nz,nzf,zofzf,u1/sigofz, sigiofzf)
 ! Integrate sigiofzf
 s=0; ssofzf(0)=s
 do izf=1,nzf
    s=s+sigiofzf(izf-1)+sigiofzf(izf); ssofzf(izf)=s
-enddo
+end do
 ssofzf=ssofzf*dzf*o2
 end subroutine make_ssf
 
@@ -147,7 +147,7 @@ real(r_kind)                   :: r,s,z,dzf
 integer(i_kind)               :: iz,izf,izfm,izfp,is,nzf
 !============================================================================
 ! Interpolate the log of the sigofz distribution to a finer grid:
-write(6,*)'thinkdeb555 nz.. ',nz,nf,ns
+write(6,*)"thinkdeb555 nz.. ",nz,nf,ns
 dzf=u1/nf
 nzf=nz*nf
 call make_ssf(nz,nf,sigofz,ssf)
@@ -160,10 +160,10 @@ sofz(nz)=ns
 do iz=1,nz-1
    izf=iz*nf
    sofz(iz)=ssf(izf)/dss
-enddo
+end do
 do is=0,ns
    ss(is)=is*dss
-enddo
+end do
 zofs(0)=0
 zofs(ns)=nz
 izfp=1
@@ -172,12 +172,12 @@ do is=1,ns-1
    do
       if(ssf(izfp)>=s)exit
       izfp=izfp+1
-   enddo
+   end do
    izf=izfp-1
    r=(s-ssf(izf))/(ssf(izfp)-ssf(izf))
    zofs(is)=(izf+r)/nf
-  write(6,*)'thinkdeb555 zofs = ',is , ' ',zofs(is)
-enddo
+  write(6,*)"thinkdeb555 zofs = ",is , " ",zofs(is)
+end do
 end subroutine make_ssgrid
 
 !===========================================================================
@@ -248,7 +248,7 @@ call sstosig(nsf,sss,sigofsf)
 do is=0,ns
    isf=is*nfs
    sigofs(is)=sigofsf(isf)/nfs
-enddo
+end do
 end subroutine zsigtosfsig
 
 !============================================================================
@@ -277,7 +277,7 @@ do is=0,ns
    w1=izfp-zf
    w2=zf-izf
    sss(is)=w1*ssf(izf)+w2*ssf(izfp)! <- linearly interpolate
-enddo
+end do
 end subroutine interpftos
 
 !===========================================================================
@@ -300,7 +300,7 @@ integer(i_kind):: is
 sig(0)=u1/(ss(1)-ss(0))
 do is=1,ns-1
    sig(is)=u2/(ss(is+1)-ss(is-1))
-enddo
+end do
 sig(ns)=u1/(ss(ns)-ss(ns-1))
 end subroutine sstosig
 
@@ -327,19 +327,19 @@ integer(i_kind)            :: is,iz,liz,miz
 !============================================================================
 do iz=0,nz
    zs(iz)=iz
-enddo
+end do
 do is=0,ns
    z=zofs(is); iz=min(nz-1,max(0,floor(z)))
    if(iz==0)       then; liz=0;    miz=2
-   elseif(iz==nz-1)then; liz=nz-2; miz=nz
+   else if(iz==nz-1)then; liz=nz-2; miz=nz
    else;                 liz=iz-1; miz=iz+2
-   endif
+   end if
    if(miz==liz+2)then
       call wint3(zs(liz:miz),z,w3);as(is)=dot_product(w3,az(liz:miz))
    else
       call whint(zs(liz:miz),z,w4);as(is)=dot_product(w4,az(liz:miz))
-   endif
-enddo
+   end if
+end do
 end subroutine intgrid
 !===========================================================================
 subroutine intgridw(nz,ns,lizs,mizs,ws,az,as)!                     [intgrid]
@@ -357,8 +357,8 @@ do is=0,ns
    liz=lizs(is); miz=mizs(is)
    if(liz+2==miz)then; as(is)=dot_product(ws(1:3,is),az(liz:miz))
    else              ; as(is)=dot_product(ws(:  ,is),az(liz:miz))
-   endif
-enddo
+   end if
+end do
 end subroutine intgridw
 
 !===========================================================================
@@ -380,19 +380,19 @@ integer(i_kind)            :: is,iz,liz,miz
 !===========================================================================
 do iz=0,nz
    zs(iz)=iz
-enddo
+end do
 do is=0,ns
    z=zofs(is); iz=min(nz-1,max(0,floor(z)))
    if(iz==0)       then; liz=0;    miz=2
-   elseif(iz==nz-1)then; liz=nz-2; miz=nz
+   else if(iz==nz-1)then; liz=nz-2; miz=nz
    else;                 liz=iz-1; miz=iz+2
-   endif
+   end if
    if(miz==liz+2)then; call wint3(zs(liz:miz),z,ws(1:3,is)); ws(4,is)=0
    else;               call whint(zs(liz:miz),z,ws(:,is))
-   endif
+   end if
    lizs(is)=liz
    mizs(is)=miz
-enddo
+end do
 end subroutine wintgrid
 
 !===========================================================================
@@ -492,10 +492,10 @@ do is=1,ns-1
    ! Search izp=iz+1 that ensures s belongs in interval sofz[iz,izp]
    do izp=jzp,nz-1
       if(sofz(izp)>=s)exit
-   enddo
+   end do
    jzp=izp; iz=izp-1
    zofs(is)=iz+(s-sofz(iz))/(sofz(izp)-sofz(iz))! <- Linear interpolation
-enddo
+end do
 end subroutine sofztozofs
 
 !============================================================================
@@ -533,14 +533,14 @@ dzf=u1/nfz! <- interval of uniform fine grid zf
 ! Set up fine staggered z-grid:
 do izf=1,nzf
    zofzf(izf)=dzf*(izf-o2)-o2
-enddo
-! Set up weights and index parameters for interpolation to zofzf targets: 
+end do
+! Set up weights and index parameters for interpolation to zofzf targets:
 call wintgrid(nzm,nzfm,zofzf, lizzf,mizzf,wzf)
 ! compute coarse finite difference dsdz on staggered grid and take its log:
 do iz=1,nz
    dsdz(iz)=sofz(iz)-sofz(iz-1)
    ldsdz(iz)=log(dsdz(iz))
-enddo
+end do
 ldsdzt=0
 ! Iterative adjust an approximation ldsdzt of staggered log(dsdz) such that,
 ! when interpolated to a finer grid, exponentiated, and intergated in
@@ -549,25 +549,25 @@ ldsdzt=0
 mit=nit+1
 do it=1,nit ! Iterate up to nit times, but exit early if possible
 
-! Increment profile ldsdzt by ldsdz to improve match of next dsdzt to dsdz:   
+! Increment profile ldsdzt by ldsdz to improve match of next dsdzt to dsdz:
    do iz=1,nz
       ldsdzt(iz)=ldsdzt(iz)+ldsdz(iz)
-   enddo
-   
+   end do
+
    ! Interpolate ldsdzt to a staggered refined grid:
    call intgrid(nzm,nzfm,lizzf,mizzf,wzf,ldsdzt,ldsdzf)
    dsdzf=exp(ldsdzf)! <-get corresponding dsdzf by taking the exponential
-   
+
    ! integrate to get dsdzt in each is interval for comparison with dsdz:
    do iz=1,nz
       mizf=iz*nfz; lizf=mizf-nfz+1
       dsdzt(iz)=dzf*sum(dsdzf(lizf:mizf))
       ldsdz(iz)=log(dsdz(iz)/dsdzt(iz))
-   enddo
+   end do
    norm=sum(abs(ldsdz))/nz
    if(norm<eps)mit=min(mit,it+it/3)! <- Anticipate full convergence soon
    if(it>=mit)exit ! <- Full convergence presumed achieved at this point
-enddo! it
+end do! it
 
 ! Integrate dsdzf on the fine grid to get monotonic sofzf consitent with
 ! the original coarse grid sofz
@@ -578,8 +578,8 @@ do iz=1,nz
    ! Integrate fine-grid dsdzf across the interior of coarse interval iz:
    do izf=izm*nfz+1,iz*nfz-1
       sofzf(izf)=sofzf(izf-1)+r*dsdzf(izf)
-   enddo
-enddo
+   end do
+end do
 sofzf(nzf)=sofz(nz)! <- Match last fine grid sofzf to last coarse grid sofz
 end subroutine monotonicrefine
 subroutine intgrid_f2a_3d(nz, ns, nx, ny, zofs, az,as)
@@ -601,7 +601,7 @@ real(r_kind)               :: z
 integer(i_kind)           :: i, j, k, s
 
 !------------------------------------------------------------------------------
-write(6,*)'thinkdeb10000  zofs in interpolation zofs ',zofs
+write(6,*)"thinkdeb10000  zofs in interpolation zofs ",zofs
 do j = 1, ny
   do i = 1, nx
     do k = 0, nz
@@ -616,7 +616,7 @@ do j = 1, ny
       if (s <= 1) then
         call wint3(zofs(0:2), z, w3)
         az(k,i,j) = dot_product(w3, as(0:2,i,j))
-      elseif (s >= ns-1) then
+      else if (s >= ns-1) then
         call wint3(zofs(ns-2:ns), z, w3)
         az(k,i,j) = dot_product(w3, as(ns-2:ns,i,j))
       else
@@ -663,7 +663,7 @@ do j = 1, ny
       if (s <= 1) then
         call v1_wint3(zofs(0:2), z, w3)
         az(k,i,j) = dot_product(w3, as(0:2,i,j))
-      elseif (s >= ns-1) then
+      else if (s >= ns-1) then
         call v1_wint3(zofs(ns-2:ns), z, w3)
         az(k,i,j) = dot_product(w3, as(ns-2:ns,i,j))
       else
@@ -711,21 +711,21 @@ do k = 0, nz
   if (s <= 1) then
     call v1_wint3(zofs(0:2), z, w3)
     interp_type(k) = wint3_type
-    src_inds(1:3,k) = (/0,1,2/)
+    src_inds(1:3,k) = [0,1,2]
     weights(1:3,k) = w3
     src_inds(4,k) = -1
     weights(4,k) = 0.0_r_kind
-  elseif (s >= ns-1) then
+  else if (s >= ns-1) then
     call v1_wint3(zofs(ns-2:ns), z, w3)
     interp_type(k) = wint3_top_type
-    src_inds(1:3,k) = (/ns-2, ns-1, ns/)
+    src_inds(1:3,k) = [ns-2, ns-1, ns]
     weights(1:3,k) = w3
     src_inds(4,k) = -1
     weights(4,k) = 0.0_r_kind
   else
     call v1_whint(zofs(s-1:s+2), z, w4)
     interp_type(k) = whint_type
-    src_inds(1:4,k) = (/s-1, s, s+1, s+2/)
+    src_inds(1:4,k) = [s-1, s, s+1, s+2]
     weights(1:4,k) = w4
   end if
 end do
@@ -788,21 +788,21 @@ do k = 0, nz
   if (s <= 1) then
     call v1_wint3(zofs(0:2), z, w3)
     interp_type(k) = wint3_type
-    src_inds(1:3,k) = (/0,1,2/)
+    src_inds(1:3,k) = [0,1,2]
     weights(1:3,k) = w3
     src_inds(4,k) = -1
     weights(4,k) = 0.0_r_kind
-  elseif (s >= ns-1) then
+  else if (s >= ns-1) then
     call v1_wint3(zofs(ns-2:ns), z, w3)
     interp_type(k) = wint3_top_type
-    src_inds(1:3,k) = (/ns-2, ns-1, ns/)
+    src_inds(1:3,k) = [ns-2, ns-1, ns]
     weights(1:3,k) = w3
     src_inds(4,k) = -1
     weights(4,k) = 0.0_r_kind
   else
     call v1_whint(zofs(s-1:s+2), z, w4)
     interp_type(k) = whint_type
-    src_inds(1:4,k) = (/s-1, s, s+1, s+2/)
+    src_inds(1:4,k) = [s-1, s, s+1, s+2]
     weights(1:4,k) = w4
   end if
 end do
@@ -855,7 +855,7 @@ real(r_kind)               :: z
 integer(i_kind)           :: i, j, k, s
 
 !------------------------------------------------------------------------------
-write(6,*)'intgrid_f2a_3d_ad 1 ',ny,nx,nz
+write(6,*)"intgrid_f2a_3d_ad 1 ",ny,nx,nz
 !clt todo some optimization could be done, when the interpolation coeff is homogeneous
 do j = 1, ny
   do i = 1, nx
@@ -870,7 +870,7 @@ do j = 1, ny
       if (s <= 1) then
         call wint3(zofs(0:2), z, w3)
         as_ad(0:2,i,j) = as_ad(0:2,i,j) + az_ad(k,i,j) * w3
-      elseif (s >= ns-1) then
+      else if (s >= ns-1) then
         call wint3(zofs(ns-2:ns), z, w3)
         as_ad(ns-2:ns,i,j) = as_ad(ns-2:ns,i,j) + az_ad(k,i,j) * w3
       else
@@ -881,7 +881,7 @@ do j = 1, ny
     end do
   end do
 end do
-write(6,*)'intgrid_f2a_3d_ad 100'
+write(6,*)"intgrid_f2a_3d_ad 100"
 call flush(6)
 
 end subroutine intgrid_f2a_3d_ad
@@ -926,7 +926,7 @@ do j = 1, ny
         do m = 0, 2
           as(m,i,j) = as(m,i,j) + w3(m+1) * az(k,i,j)
         end do
-      elseif (s >= ns-1) then
+      else if (s >= ns-1) then
         call v1_wint3(zofs(ns-2:ns), z, w3)
         do m = ns-2, ns
           as(m,i,j) = as(m,i,j) + w3(m-ns+3) * az(k,i,j)

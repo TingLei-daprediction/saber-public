@@ -47,7 +47,7 @@ real(sp),parameter:: &
 ! Euler-Mascheroni constant:
      euler=0.57721566490153286060651209008240243104215933593992359880e0_sp, &
 ! Degree to radians; radians to degrees:
-     dtor=pi/180,rtod=180/pi, & 
+     dtor=pi/180,rtod=180/pi, &
 ! Sines of all main fractions of 90 degrees (down to ninths):
      s10=.173648177666930348851716626769314796000375677184069387236241e0_sp,&
      s11=.195090322016128267848284868477022240927691617751954807754502e0_sp,&

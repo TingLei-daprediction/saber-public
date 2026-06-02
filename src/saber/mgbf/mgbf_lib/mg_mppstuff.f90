@@ -79,18 +79,18 @@ include "type_parameter_point2this.inc"
 !***
 !***  Define PEs that handle high generations
 !***
-   
+
       mype_hgen=-1
       my_hgen=-1
 
       if( mype < maxpe_filt-nxy(1)) then
         mype_hgen=mype+nxy(1)
-      endif
+      end if
       do g=1,gm
         if(maxpe_fgen(g-1)<= mype_hgen .and. mype_hgen< maxpe_fgen(g)) then
             my_hgen=g
-         endif
-      enddo
+         end if
+      end do
       l_hgen = mype_hgen >-1
 
 !***
@@ -117,13 +117,13 @@ include "type_parameter_point2this.inc"
 !$omp parallel do private(nf) schedule(static)
      do nf = 1,npes_filt
        out_ranks(nf)=nf-1
-     enddo 
+     end do
 !$omp end parallel do
 
      call MPI_GROUP_INCL(group_world,npes_filt,out_ranks,group_work,ierr)
 !
 !  Now create a new communicator associated with new group
-!    
+!
      call MPI_COMM_CREATE(mpi_comm_comp, group_work, mpi_comm_work, ierr)
 
     if( mype < npes_filt) then
@@ -132,18 +132,18 @@ include "type_parameter_point2this.inc"
       call MPI_COMM_SIZE(mpi_comm_work,npes_gr,ierr)
 
    else
-       
+
       mype_gr= -1
       npes_gr= npes_filt
- 
-   endif 
+
+   end if
 
 !-----------------------------------------------------------------------
 !
       call MPI_BARRIER(mpi_comm_comp,ierr)
 !
 !-----------------------------------------------------------------------
-endsubroutine init_mg_MPI
+end subroutine init_mg_MPI
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine barrierMPI(this)
@@ -163,7 +163,7 @@ include "type_parameter_point2this.inc"
       call MPI_BARRIER(mpi_comm_comp,ierr)
 
 !-----------------------------------------------------------------------
-endsubroutine barrierMPI
+end subroutine barrierMPI
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine finishMPI(this)
@@ -178,11 +178,11 @@ implicit none
 class(mg_parameter_type),target::this
 !
 ! don't need mpi_finalize if mgbf is a lib to be called from outside
-   write(6,*) "mggbf%finishmpi should not be invoked  if mgbf is used as a lib" 
+   write(6,*) "mggbf%finishmpi should not be invoked  if mgbf is used as a lib"
 !
 !
 !-----------------------------------------------------------------------
-endsubroutine finishMPI
+end subroutine finishMPI
 
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 end submodule mg_mppstuff

@@ -5,7 +5,7 @@
 !                                *          jim.purser@noaa.gov              *
 !                                *                                           *
 !                                *********************************************
-! 
+!
 ! Simple 4-point smooth interpolation from:
 ! (1) a uniform grid (whint and whintd);
 ! (2) a variable grid (whintvar and whintvard)
@@ -45,7 +45,7 @@ contains
 !=============================================================================
 subroutine hint(x,as,a)!                                                [hint]
 !=============================================================================
-! smoothly interpolate the value from four uniformly-spaced source values, as, 
+! smoothly interpolate the value from four uniformly-spaced source values, as,
 ! to a point located a fraction, x, into the central interval. The result is a.
 !=============================================================================
 implicit none
@@ -65,8 +65,8 @@ end subroutine hint
 !=============================================================================
 subroutine hintd(x,as,a,da)!                                            [hint]
 !=============================================================================
-! smoothly interpolate the value and its derivative from four uniformly-spaced 
-! source values, as, to a point located a fraction, x, into the central 
+! smoothly interpolate the value and its derivative from four uniformly-spaced
+! source values, as, to a point located a fraction, x, into the central
 ! interval. The results are a and da.
 !=============================================================================
 implicit none
@@ -104,7 +104,7 @@ wint=(/-x*xm1*o2, xm1*xp1,   -x*xp1*o2,      u0 /)*xm1+ &
      (/      u0, xm1*xm2*o2,   -xm2*x, xm1*x*o2 /)*x
 end subroutine whint
 subroutine v1_whint(x,wint)!                                              [whint]
-!the same as wint  
+!the same as wint
 !=============================================================================
 ! Return the interpolation weights, wint, for smooth 4-point interpolation
 ! from a uniform grid to a target located a fraction, x, into the central
@@ -334,7 +334,7 @@ x2=x-xs(0)
 wint=(/x1*x2/(x01*x02),-x0*x2/(x01*x12),x0*x1/(x02*x12)/)
 wint=wint(2:0:-1)
 end subroutine v1_wint3
-  
+
 !=============================================================================
 subroutine wint3d(xs,x,wint,dwint)!                                    [wint3]
 !=============================================================================
@@ -384,6 +384,6 @@ dwint=(/(x1+x2)/(x01*x02),-(x0+x2)/(x01*x12),(x0+x1)/(x02*x12)/)
 wint=wint(2:0:-1)
 dwint=dwint(2:0:-1)
 end subroutine v1_wint3d
-  
+
 end module phint
 !#

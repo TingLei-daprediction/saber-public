@@ -72,17 +72,17 @@ use, intrinsic:: ieee_arithmetic
 interface weighting_loc
   module procedure weighting_loc_g3
   module procedure weighting_loc_g4
-endinterface
+end interface
 
 interface upsending_loc
   module procedure upsending_loc_g3
   module procedure upsending_loc_g4
-endinterface
+end interface
 
 interface downsending_loc
   module procedure downsending_loc_g3
   module procedure downsending_loc_g4
-endinterface
+end interface
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 contains
 
@@ -103,13 +103,13 @@ logical, intent(in):: lquart
 !-----------------------------------------------------------------------
 
         if(lquart) then
-           call this%upsending2(V,H) 
+           call this%upsending2(V,H)
         else
-           call this%upsending(V,H) 
-        endif
+           call this%upsending(V,H)
+        end if
 
 !-----------------------------------------------------------------------
-endsubroutine upsending_all 
+end subroutine upsending_all
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine downsending_all &
@@ -130,13 +130,13 @@ logical, intent(in):: lquart
 !-----------------------------------------------------------------------
 
         if(lquart) then
-           call this%downsending2(H,V) 
+           call this%downsending2(H,V)
         else
-           call this%downsending(H,V) 
-        endif
+           call this%downsending(H,V)
+        end if
 
 !-----------------------------------------------------------------------
-endsubroutine downsending_all
+end subroutine downsending_all
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine weighting_all &
@@ -155,13 +155,13 @@ logical, intent(in):: lhelm
 !-----------------------------------------------------------------------
 
         if(lhelm) then
-           call this%weighting_helm(V,H) 
+           call this%weighting_helm(V,H)
         else
-           call this%weighting(V,H) 
-        endif
+           call this%weighting(V,H)
+        end if
 
 !-----------------------------------------------------------------------
-endsubroutine weighting_all 
+end subroutine weighting_all
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine upsending &
@@ -186,7 +186,7 @@ integer(i_kind):: g,L
 ! From generation 1 to generation 2
 !
 
-        call this%adjoint(V(1:this%km,1:this%im,1:this%jm),V_INT,this%km,1) 
+        call this%adjoint(V(1:this%km,1:this%im,1:this%jm),V_INT,this%km,1)
 
         call this%bocoT_2d(V_INT,this%km,this%imL,this%jmL,2,2)
 
@@ -194,20 +194,20 @@ integer(i_kind):: g,L
 !
 ! From generation 2 sequentially to higher generations
 !
-  do g=2,this%gm-1 
+  do g=2,this%gm-1
 
     if(g==this%my_hgen) then
-        call this%adjoint(H(1:this%km,1:this%im,1:this%jm),H_INT,this%km,g) 
-    endif
+        call this%adjoint(H(1:this%km,1:this%im,1:this%jm),H_INT,this%km,g)
+    end if
 
         call this%bocoT_2d(H_INT,this%km,this%imL,this%jmL,2,2,this%FimaxL,this%FjmaxL,g,g)
 
         call this%upsend_all(H_INT(1:this%km,1:this%imL,1:this%jmL),H,this%km,g,g+1)
 
-  end do    
+  end do
 
 !-----------------------------------------------------------------------
-endsubroutine upsending
+end subroutine upsending
 module subroutine upsending_normalized &
 !***********************************************************************
 ! using adjoint_normalized
@@ -231,7 +231,7 @@ integer(i_kind):: g,L
 !
 ! From generation 1 to generation 2
 !
-        call this%adjoint_normalized(V(1:nz,1:this%im,1:this%jm),V_INT,nz,1) 
+        call this%adjoint_normalized(V(1:nz,1:this%im,1:this%jm),V_INT,nz,1)
 
         call this%bocoT_2d(V_INT,nz,this%imL,this%jmL,2,2)
 !clttothink
@@ -240,21 +240,21 @@ integer(i_kind):: g,L
 !
 ! From generation 2 sequentially to higher generations
 !
-  do g=2,this%gm-1 
+  do g=2,this%gm-1
 
     if(g==this%my_hgen) then
-        call this%adjoint_normalized(H(1:nz,1:this%im,1:this%jm),H_INT,nz,g) 
-    endif
+        call this%adjoint_normalized(H(1:nz,1:this%im,1:this%jm),H_INT,nz,g)
+    end if
 
         call this%bocoT_2d(H_INT,nz,this%imL,this%jmL,2,2,this%FimaxL,this%FjmaxL,g,g)
 
 !clt tothink ,problem on rank =20
         call this%upsend_all(H_INT(1:nz,1:this%imL,1:this%jmL),H,nz,g,g+1)
 
-  end do    
+  end do
 
 !-----------------------------------------------------------------------
-endsubroutine upsending_normalized
+end subroutine upsending_normalized
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine downsending &
@@ -290,9 +290,9 @@ integer(i_kind):: iL,jL,i,j
         call this%direct1(H_INT,H_PROX,this%km,g-1)
         H(1:this%km,1:this%im,1:this%jm)=H     (1:this%km,1:this%im,1:this%jm) &
                                         +H_PROX(1:this%km,1:this%im,1:this%jm)
-      endif
+      end if
 
-    enddo
+    end do
 
 !
 ! From geneartion 2 to generation 1
@@ -309,7 +309,7 @@ integer(i_kind):: iL,jL,i,j
                                           +V_PROX(1:this%km,1:this%im,1:this%jm)
 
 !-----------------------------------------------------------------------
-endsubroutine downsending
+end subroutine downsending
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine upsending_highest &
@@ -334,16 +334,16 @@ integer(i_kind):: g
 !
   H(:,:,:)=0.
   H(1:this%km,1:this%im0(1),1:this%jm0(1))=V(1:this%km,1:this%im0(1),1:this%jm0(1))
-  do g=1,this%gm-1 
+  do g=1,this%gm-1
         call this%adjoint_highest(H(1:this%km,1:this%im0(g),1:this%jm0(g)),&
-             & H_INT(1:this%km,-1:this%im0(g+1)+2,-1:this%jm0(g+1)+2),this%km,g) 
+             & H_INT(1:this%km,-1:this%im0(g+1)+2,-1:this%jm0(g+1)+2),this%km,g)
         H(1:this%km,1:this%im0(g),1:this%jm0(g))=0.
         H(1:this%km,1:this%im0(g+1),1:this%jm0(g+1))=H_INT(1:this%km,1:this%im0(g+1),1:this%jm0(g+1))
         H_INT(1:this%km,-1:this%im0(g+1)+2,-1:this%jm0(g+1)+2)=0.
   end do
 
 !-----------------------------------------------------------------------
-endsubroutine upsending_highest
+end subroutine upsending_highest
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine downsending_highest &
@@ -372,13 +372,13 @@ integer(i_kind):: g
      H(1:this%km,1:this%im0(g-1),1:this%jm0(g-1))=0.
      call this%direct_highest(H_INT(1:this%km,-1:this%im0(g)+2,-1:this%jm0(g)+2),&
           & H(1:this%km,1:this%im0(g-1),1:this%jm0(g-1)),this%km,g-1)
-  enddo
+  end do
   V(:,:,:)=0.
   V(1:this%km,1:this%im0(1),1:this%jm0(1))=H(1:this%km,1:this%im0(1),1:this%jm0(1))
   H(:,:,:)=0.
 
 !-----------------------------------------------------------------------
-endsubroutine downsending_highest
+end subroutine downsending_highest
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine upsending2 &
@@ -403,7 +403,7 @@ integer(i_kind):: g,L
 ! From generation 1 to generation 2
 !
 
-        call this%adjoint2(V(1:this%km,1:this%im,1:this%jm),V_INT,this%km,1) 
+        call this%adjoint2(V(1:this%km,1:this%im,1:this%jm),V_INT,this%km,1)
 
         call this%bocoT_2d(V_INT,this%km,this%imL,this%jmL,1,1)
 
@@ -411,20 +411,20 @@ integer(i_kind):: g,L
 !
 ! From generation 2 sequentially to higher generations
 !
-  do g=2,this%gm-1 
+  do g=2,this%gm-1
 
     if(g==this%my_hgen) then
-        call this%adjoint2(H(1:this%km,1:this%im,1:this%jm),H_INT,this%km,g) 
-    endif
+        call this%adjoint2(H(1:this%km,1:this%im,1:this%jm),H_INT,this%km,g)
+    end if
 
         call this%bocoT_2d(H_INT,this%km,this%imL,this%jmL,1,1,this%FimaxL,this%FjmaxL,g,g)
 
         call this%upsend_all(H_INT(1:this%km,1:this%imL,1:this%jmL),H,this%km,g,g+1)
 
-  end do    
+  end do
 
 !-----------------------------------------------------------------------
-endsubroutine upsending2
+end subroutine upsending2
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine downsending2 &
@@ -460,9 +460,9 @@ integer(i_kind):: iL,jL,i,j
         call this%direct2(H_INT,H_PROX,this%km,g-1)
         H(1:this%km,1:this%im,1:this%jm)=H     (1:this%km,1:this%im,1:this%jm) &
                                         +H_PROX(1:this%km,1:this%im,1:this%jm)
-      endif
+      end if
 
-    enddo
+    end do
 
 !
 ! From generation 2 to generation 1
@@ -479,7 +479,7 @@ integer(i_kind):: iL,jL,i,j
                                           +V_PROX(1:this%km,1:this%im,1:this%jm)
 
 !-----------------------------------------------------------------------
-endsubroutine downsending2
+end subroutine downsending2
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine upsending_ens &
@@ -517,7 +517,7 @@ integer(i_kind):: g,L
 
     if(g==this%my_hgen) then
         call this%adjoint(H(1:kmx,1:this%im,1:this%jm),H_INT,kmx,g)
-    endif
+    end if
 
         call this%bocoT_2d(H_INT,kmx,this%imL,this%jmL,2,2,this%FimaxL,this%FjmaxL,g,g)
 
@@ -526,7 +526,7 @@ integer(i_kind):: g,L
   end do
 
 !-----------------------------------------------------------------------
-endsubroutine upsending_ens
+end subroutine upsending_ens
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine downsending_ens &
@@ -564,9 +564,9 @@ integer(i_kind):: iL,jL,i,j
         call this%direct1(H_INT,H_PROX,kmx,g-1)
         H(1:kmx,1:this%im,1:this%jm)=H     (1:kmx,1:this%im,1:this%jm) &
                                     +H_PROX(1:kmx,1:this%im,1:this%jm)
-      endif
+      end if
 
-    enddo
+    end do
 
 !
 ! From geneartion 2 to generation 1
@@ -583,7 +583,7 @@ integer(i_kind):: iL,jL,i,j
                                       +V_PROX(1:kmx,1:this%im,1:this%jm)
 
 !-----------------------------------------------------------------------
-endsubroutine downsending_ens
+end subroutine downsending_ens
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine upsending_ens_nearest &
@@ -621,7 +621,7 @@ integer(i_kind):: g,L
 
     if(g==this%my_hgen) then
         call this%adjoint_nearest(H(1:kmx,1:this%im,1:this%jm),H_INT,kmx,g)
-    endif
+    end if
 
         call this%bocoT_2d(H_INT,kmx,this%imL,this%jmL,2,2,this%FimaxL,this%FjmaxL,g,g)
 
@@ -630,7 +630,7 @@ integer(i_kind):: g,L
   end do
 
 !-----------------------------------------------------------------------
-endsubroutine upsending_ens_nearest
+end subroutine upsending_ens_nearest
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine downsending_ens_nearest &
@@ -668,9 +668,9 @@ integer(i_kind):: iL,jL,i,j
         call this%direct_nearest(H_INT,H_PROX,kmx,g-1)
         H(1:kmx,1:this%im,1:this%jm)=H     (1:kmx,1:this%im,1:this%jm) &
                                     +H_PROX(1:kmx,1:this%im,1:this%jm)
-      endif
+      end if
 
-    enddo
+    end do
 
 !
 ! From geneartion 2 to generation 1
@@ -687,7 +687,7 @@ integer(i_kind):: iL,jL,i,j
                                       +V_PROX(1:kmx,1:this%im,1:this%jm)
 
 !-----------------------------------------------------------------------
-endsubroutine downsending_ens_nearest
+end subroutine downsending_ens_nearest
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine upsending2_ens &
@@ -725,7 +725,7 @@ integer(i_kind):: g,L
 
     if(g==this%my_hgen) then
         call this%adjoint2(H(1:kmx,1:this%im,1:this%jm),H_INT,kmx,g)
-    endif
+    end if
 
         call this%bocoT_2d(H_INT,kmx,this%imL,this%jmL,1,1,this%FimaxL,this%FjmaxL,g,g)
 
@@ -734,7 +734,7 @@ integer(i_kind):: g,L
   end do
 
 !-----------------------------------------------------------------------
-endsubroutine upsending2_ens
+end subroutine upsending2_ens
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine downsending2_ens &
@@ -772,9 +772,9 @@ integer(i_kind):: iL,jL,i,j
         call this%direct2(H_INT,H_PROX,kmx,g-1)
         H(1:kmx,1:this%im,1:this%jm)=H     (1:kmx,1:this%im,1:this%jm) &
                                     +H_PROX(1:kmx,1:this%im,1:this%jm)
-      endif
+      end if
 
-    enddo
+    end do
 
 !
 ! From geneartion 2 to generation 1
@@ -791,7 +791,7 @@ integer(i_kind):: iL,jL,i,j
                                       +V_PROX(1:kmx,1:this%im,1:this%jm)
 
 !-----------------------------------------------------------------------
-endsubroutine downsending2_ens
+end subroutine downsending2_ens
 
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
@@ -828,7 +828,7 @@ integer(i_kind):: g,L,ind,k_low,k_hgh
        k_low=km_4_in*(ind-1)+1
        k_hgh=km_4_in*ind
        call this%upsend_loc_g12(V_INT(k_low:k_hgh,1:this%imL,1:this%jmL),H,km_4_in,ind)
-     enddo
+     end do
 
 !
 ! From generation 2 to generation 3
@@ -841,10 +841,10 @@ integer(i_kind):: g,L,ind,k_low,k_hgh
        k_low=km_16_in*(ind-1)+1
        k_hgh=km_16_in*ind
        call this%upsend_loc_g23(H_INT(k_low:k_hgh,1:this%imL,1:this%jmL),Z,km_16_in,ind)
-     enddo
+     end do
 
 !-----------------------------------------------------------------------
-endsubroutine upsending_loc_g3
+end subroutine upsending_loc_g3
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine upsending_loc_g4 &
@@ -883,7 +883,7 @@ integer(i_kind):: g,L,ind,k_low,k_hgh
        k_low=km_4_in*(ind-1)+1
        k_hgh=km_4_in*ind
        call this%upsend_loc_g12(V_INT(k_low:k_hgh,1:this%imL,1:this%jmL),H,km_4_in,ind)
-     enddo
+     end do
 
 !
 ! From generation 2 to generation 3
@@ -896,7 +896,7 @@ integer(i_kind):: g,L,ind,k_low,k_hgh
        k_low=km_16_in*(ind-1)+1
        k_hgh=km_16_in*ind
        call this%upsend_loc_g23(H_INT(k_low:k_hgh,1:this%imL,1:this%jmL),Z,km_16_in,ind)
-     enddo
+     end do
 
 !
 ! From generation 3 to generation 4
@@ -909,10 +909,10 @@ integer(i_kind):: g,L,ind,k_low,k_hgh
        k_low=km_64_in*(ind-1)+1
        k_hgh=km_64_in*ind
        call this%upsend_loc_g34(Z_INT(k_low:k_hgh,1:this%imL,1:this%jmL),W,km_64_in,ind)
-     enddo
+     end do
 
 !-----------------------------------------------------------------------
-endsubroutine upsending_loc_g4
+end subroutine upsending_loc_g4
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine downsending_loc_g3 &
@@ -948,7 +948,7 @@ integer(i_kind):: iL,jL,i,j,ind,k_low,k_hgh
        k_low=km_16_in*(ind-1)+1
        k_hgh=km_16_in*ind
         call this%downsend_loc_g32(Z(1:km_16_in,1:this%im,1:this%jm),H_INT(k_low:k_hgh,1:this%imL,1:this%jmL),km_16_in,ind)
-     enddo
+     end do
           Z(:,:,:)=0.
 
         call this%boco_2d_loc(H_INT,km_4_in ,this%imL,this%jmL,2,2,this%FimaxL,this%FjmaxL,2)
@@ -964,7 +964,7 @@ integer(i_kind):: iL,jL,i,j,ind,k_low,k_hgh
        k_low=km_4_in*(ind-1)+1
        k_hgh=km_4_in*ind
         call this%downsend_loc_g21(H(1:km_4_in,1:this%im,1:this%jm),V_INT(k_low:k_hgh,1:this%imL,1:this%jmL),km_4_in,ind)
-     enddo
+     end do
           H(:,:,:)=0.
 
 
@@ -975,7 +975,7 @@ integer(i_kind):: iL,jL,i,j,ind,k_low,k_hgh
                                         +V_PROX(1:km_in,1:this%im,1:this%jm)
 
 !-----------------------------------------------------------------------
-endsubroutine downsending_loc_g3
+end subroutine downsending_loc_g3
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine downsending_loc_g4 &
@@ -1014,7 +1014,7 @@ integer(i_kind):: iL,jL,i,j,ind,k_low,k_hgh
        k_low=km_64_in*(ind-1)+1
        k_hgh=km_64_in*ind
         call this%downsend_loc_g43(W(1:km_64_in,1:this%im,1:this%jm),Z_INT(k_low:k_hgh,1:this%imL,1:this%jmL),km_64_in,ind)
-     enddo
+     end do
         W(:,:,:)=0.
 
         call this%boco_2d_loc(Z_INT,km_16_in,this%imL,this%jmL,2,2,this%FimaxL,this%FjmaxL,3)
@@ -1030,7 +1030,7 @@ integer(i_kind):: iL,jL,i,j,ind,k_low,k_hgh
        k_low=km_16_in*(ind-1)+1
        k_hgh=km_16_in*ind
         call this%downsend_loc_g32(Z(1:km_16_in,1:this%im,1:this%jm),H_INT(k_low:k_hgh,1:this%imL,1:this%jmL),km_16_in,ind)
-     enddo
+     end do
           Z(:,:,:)=0.
 
         call this%boco_2d_loc(H_INT,km_4_in ,this%imL,this%jmL,2,2,this%FimaxL,this%FjmaxL,2)
@@ -1046,7 +1046,7 @@ integer(i_kind):: iL,jL,i,j,ind,k_low,k_hgh
        k_low=km_4_in*(ind-1)+1
        k_hgh=km_4_in*ind
         call this%downsend_loc_g21(H(1:km_4_in,1:this%im,1:this%jm),V_INT(k_low:k_hgh,1:this%imL,1:this%jmL),km_4_in,ind)
-     enddo
+     end do
           H(:,:,:)=0.
 
 
@@ -1057,7 +1057,7 @@ integer(i_kind):: iL,jL,i,j,ind,k_low,k_hgh
                                         +V_PROX(1:km_in,1:this%im,1:this%jm)
 
 !-----------------------------------------------------------------------
-endsubroutine downsending_loc_g4
+end subroutine downsending_loc_g4
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine weighting_helm &
@@ -1083,15 +1083,15 @@ integer(i_kind):: i,j,l,k,imx,jmx
      do j=1,this%jm
      do i=0,this%im
        DIFX(:,i,j)=V(:,i+1,j)-V(:,i,j)
-     enddo
-     enddo
+     end do
+     end do
 !$omp end parallel do
 !$omp parallel do private(i,j) schedule(static)
      do j=0,this%jm
      do i=1,this%im
        DIFY(:,i,j)=V(:,i,j+1)-V(:,i,j)
-     enddo
-     enddo
+     end do
+     end do
 !$omp end parallel do
 
 !$omp parallel do private(i,j) schedule(static)
@@ -1099,9 +1099,9 @@ integer(i_kind):: i,j,l,k,imx,jmx
      do i=1,this%im
        V(:,i,j)=this%a_diff_f(:,i,j)*V(:,i,j)                      &
                -this%b_diff_f(:,i,j)*(DIFX(:,i,j)-DIFX(:,i-1,j)    &
-                                     +DIFY(:,i,j)-DIFY(:,i,j-1))   
-     enddo
-     enddo
+                                     +DIFY(:,i,j)-DIFY(:,i,j-1))
+     end do
+     end do
 !$omp end parallel do
 
 if(this%l_hgen) then
@@ -1114,15 +1114,15 @@ if(this%l_hgen) then
      do j=1,jmx
      do i=0,imx
        DIFXH(:,i,j)=H(:,i+1,j)-H(:,i,j)
-     enddo
-     enddo
+     end do
+     end do
 !$omp end parallel do
 !$omp parallel do private(i,j) schedule(static)
      do j=0,jmx
      do i=1,imx
        DIFYH(:,i,j)=H(:,i,j+1)-H(:,i,j)
-     enddo
-     enddo
+     end do
+     end do
 !$omp end parallel do
 
 !$omp parallel do private(i,j) schedule(static)
@@ -1130,15 +1130,15 @@ if(this%l_hgen) then
      do i=1,imx
         H(:,i,j)=this%a_diff_h(:,i,j)*H(:,i,j)                          &
                 -this%b_diff_h(:,i,j)*(DIFXH(:,i,j)-DIFXH(:,i-1,j)      &
-                                      +DIFYH(:,i,j)-DIFYH(:,i,j-1))  
-     enddo
-     enddo
+                                      +DIFYH(:,i,j)-DIFYH(:,i,j-1))
+     end do
+     end do
 !$omp end parallel do
 
-endif
+end if
 
 !-----------------------------------------------------------------------
-endsubroutine weighting_helm
+end subroutine weighting_helm
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine weighting &
@@ -1159,9 +1159,9 @@ integer(i_kind):: i,j,l,k,imx,jmx
 !$omp parallel do private(i,j) schedule(static)
      do j=1,this%jm
      do i=1,this%im
-       V(:,i,j)=this%a_diff_f(:,i,j)*V(:,i,j)                      
-     enddo
-     enddo
+       V(:,i,j)=this%a_diff_f(:,i,j)*V(:,i,j)
+     end do
+     end do
 !$omp end parallel do
 
 if(this%l_hgen) then
@@ -1172,15 +1172,15 @@ if(this%l_hgen) then
 !$omp parallel do private(i,j) schedule(static)
      do j=1,jmx
      do i=1,imx
-        H(:,i,j)=this%a_diff_h(:,i,j)*H(:,i,j)                          
-     enddo
-     enddo
+        H(:,i,j)=this%a_diff_h(:,i,j)*H(:,i,j)
+     end do
+     end do
 !$omp end parallel do
 
-endif
+end if
 
 !-----------------------------------------------------------------------
-endsubroutine weighting 
+end subroutine weighting
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine weighting_highest &
@@ -1202,12 +1202,12 @@ integer(i_kind):: i,j,imx,jmx
 
    do j=1,jmx
    do i=1,imx
-      H(:,i,j)=this%a_diff_h(:,i,j)*H(:,i,j)                          
-   enddo
-   enddo
+      H(:,i,j)=this%a_diff_h(:,i,j)*H(:,i,j)
+   end do
+   end do
 
 !-----------------------------------------------------------------------
-endsubroutine weighting_highest
+end subroutine weighting_highest
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine weighting_ens &
@@ -1230,11 +1230,11 @@ if(this%l_filt_g1) then
      do j=1,this%jm
      do i=1,this%im
        V(:,i,j)=this%a_diff_f(:,i,j)*V(:,i,j)
-     enddo
-     enddo
+     end do
+     end do
 else
      V(:,:,:)=0.
-endif
+end if
 
 if(this%l_hgen) then
 
@@ -1244,13 +1244,13 @@ if(this%l_hgen) then
      do j=1,jmx
      do i=1,imx
         H(:,i,j)=this%a_diff_h(:,i,j)*H(:,i,j)
-     enddo
-     enddo
+     end do
+     end do
 
-endif
+end if
 
 !-----------------------------------------------------------------------
-endsubroutine weighting_ens
+end subroutine weighting_ens
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine weighting_loc_g3 &
@@ -1276,11 +1276,11 @@ integer(i_kind):: i,j,l,k
        V  (1:km_in   ,i,j)=this%w1_loc(1:km_in   ,i,j)*V  (1:km_in   ,i,j)
        H04(1:km_4_in ,i,j)=this%w2_loc(1:km_4_in ,i,j)*H04(1:km_4_in ,i,j)
        H16(1:km_16_in,i,j)=this%w3_loc(1:km_16_in,i,j)*H16(1:km_16_in,i,j)
-     enddo
-     enddo
+     end do
+     end do
 
 !-----------------------------------------------------------------------
-endsubroutine weighting_loc_g3
+end subroutine weighting_loc_g3
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine weighting_loc_g4 &
@@ -1308,11 +1308,11 @@ integer(i_kind):: i,j,l,k
        H04(1:km_4_in ,i,j)=this%w2_loc(1:km_4_in ,i,j)*H04(1:km_4_in ,i,j)
        H16(1:km_16_in,i,j)=this%w3_loc(1:km_16_in,i,j)*H16(1:km_16_in,i,j)
        H64(1:km_64_in,i,j)=this%w4_loc(1:km_64_in,i,j)*H64(1:km_64_in,i,j)
-     enddo
-     enddo
+     end do
+     end do
 
 !-----------------------------------------------------------------------
-endsubroutine weighting_loc_g4
+end subroutine weighting_loc_g4
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine adjoint &
@@ -1320,14 +1320,14 @@ module subroutine adjoint &
 !                                                                      !
 !   Mapping from the high to low resolution grid                       !
 !   using linearly squared interpolations                              !
-!                         - offset version -                           ! 
+!                         - offset version -                           !
 !                                                                      !
 !***********************************************************************
 (this,F,W,km_in,g)
 !-----------------------------------------------------------------------
 implicit none
 class (mg_intstate_type),target:: this
-integer(i_kind),intent(in):: g 
+integer(i_kind),intent(in):: g
 integer(i_kind),intent(in):: km_in
 real(r_kind), dimension(km_in,1:this%im,1:this%jm), intent(in):: F
 real(r_kind), dimension(km_in,-1:this%imL+2,-1:this%jmL+2), intent(out):: W
@@ -1346,8 +1346,8 @@ integer(i_kind):: i,j,iL,jL
       W_AUX(:,i,jL+1)=W_AUX(:,i,jL+1)+this%p_coef(3)*F(:,i,j)
       W_AUX(:,i,jL  )=W_AUX(:,i,jL  )+this%p_coef(2)*F(:,i,j)
       W_AUX(:,i,jL-1)=W_AUX(:,i,jL-1)+this%p_coef(1)*F(:,i,j)
-    enddo
-  enddo
+    end do
+  end do
 !
 ! 2)
 !
@@ -1358,8 +1358,8 @@ integer(i_kind):: i,j,iL,jL
       W_AUX(:,i,jL+1)=W_AUX(:,i,jL+1)+this%q_coef(3)*F(:,i,j)
       W_AUX(:,i,jL  )=W_AUX(:,i,jL  )+this%q_coef(2)*F(:,i,j)
       W_AUX(:,i,jL-1)=W_AUX(:,i,jL-1)+this%q_coef(1)*F(:,i,j)
-    enddo
-  enddo
+    end do
+  end do
 
     W(:,:,:)=0.
 !
@@ -1372,37 +1372,37 @@ integer(i_kind):: i,j,iL,jL
       W(:,iL+1,jL)=W(:,iL+1,jL)+this%q_coef(3)*W_AUX(:,i,jL)
       W(:,iL  ,jL)=W(:,iL  ,jL)+this%q_coef(2)*W_AUX(:,i,jL)
       W(:,iL-1,jL)=W(:,iL-1,jL)+this%q_coef(1)*W_AUX(:,i,jL)
-    enddo
+    end do
     do i=this%im-mod(this%im,2),2,-2
     iL=i/2
       W(:,iL+2,jL)=W(:,iL+2,jL)+this%p_coef(4)*W_AUX(:,i,jL)
       W(:,iL+1,jL)=W(:,iL+1,jL)+this%p_coef(3)*W_AUX(:,i,jL)
       W(:,iL  ,jL)=W(:,iL  ,jL)+this%p_coef(2)*W_AUX(:,i,jL)
       W(:,iL-1,jL)=W(:,iL-1,jL)+this%p_coef(1)*W_AUX(:,i,jL)
-     enddo
-   enddo
+     end do
+   end do
 
 !-----------------------------------------------------------------------
-endsubroutine adjoint
+end subroutine adjoint
 module subroutine adjoint_normalized &
 !***********************************************************************
-!                         - offset version -                           ! 
+!                         - offset version -                           !
 !                                                                      !
-!modified from Misha's adjoint_bilin_norm.f90 
+!modified from Misha's adjoint_bilin_norm.f90
 !except for the addtional normalization step, let holo points of W equal to inner points
 !***********************************************************************
 (this,F,W,km_in,g)
 !-----------------------------------------------------------------------
 implicit none
 class (mg_intstate_type),target:: this
-integer(i_kind),intent(in):: g 
+integer(i_kind),intent(in):: g
 integer(i_kind),intent(in):: km_in
 real(r_kind), dimension(km_in,1:this%im,1:this%jm), intent(in):: F
 real(r_kind), dimension(km_in,-1:this%imL+2,-1:this%jmL+2), intent(out):: W
 real(r_kind), dimension(km_in,-1:this%imL+2,-1:this%jmL+2) :: Wnorm
 integer(i_kind):: i,j,iL,jL
 real(r_kind):: r1_16,r3_16,r9_16
-integer(i_kind):: k 
+integer(i_kind):: k
 real(r_kind), parameter :: eps = 1.0e-10_r_kind  ! Add epsilon for safety check
 integer(i_kind):: im1, ip0, ip1, ip2
 integer(i_kind):: jm1, jp0, jp1, jp2
@@ -1430,41 +1430,41 @@ r9_16 = 9.*r1_16
                  +        F(:,ip0,jp2)+F(:,ip1,jp2))                          &
                  + r9_16*(F(:,ip0,jp0)+F(:,ip1,jp0)+F(:,ip0,jp1)+F(:,ip1,jp1))
       wnorm(:,iL,jL) = wnorm(:,iL,jL) + r1_16*4 + r3_16*8 + r9_16*4
-    enddo
-  enddo 
+    end do
+  end do
 !
-if (1.gt.0) then
+if (1>0) then
   do jL=1,this%jmL
     do iL=1,this%imL
-     do k=1,km_in 
+     do k=1,km_in
       if(abs(Wnorm(k,iL,jL)) > eps) then
         W(k,iL,jL)=W(k,iL,jL)/Wnorm(k,iL,jL)
       else
         W(k,iL,jL)=0.0_r_kind
-      endif 
-     enddo !for k 
-    enddo
-   enddo
-!clt the following procedure would cause values on the corner change 
+      end if
+     end do !for k
+    end do
+   end do
+!clt the following procedure would cause values on the corner change
 !if the order of the following assignment change
-!an assumption is that those boundary points (including corner points) 
+!an assumption is that those boundary points (including corner points)
 !would be specified through mpi exchanges of halo points later
-if (1.gt.2) then
+if (1>2) then
     W(:,-1:0,:)=spread(W(:,1,:),dim=2,ncopies=2)
     W(:,this%imL+1:this%imL+2,:)=spread(W(:,this%imL,:),dim=2,ncopies=2)
     W(:,:,-1:0)=spread(W(:,:,1),dim=3,ncopies=2)
     W(:,:,this%jmL+1:this%jmL+2)=spread(W(:,:,this%jmL),dim=3,ncopies=2)
-else 
+else
     W(:,-1:0,:)=0
     W(:,this%imL+1:this%imL+2,:)=0
     W(:,:,-1:0)=0
     W(:,:,this%jmL+1:this%jmL+2)=0
-endif
+end if
 
 
-endif
+end if
 !-----------------------------------------------------------------------
-endsubroutine adjoint_normalized
+end subroutine adjoint_normalized
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine direct1 &
@@ -1494,13 +1494,13 @@ integer(i_kind):: i,j,iL,jL
        iL=i/2
          W_AUX(:,i,jL)=this%q_coef(1)*W(:,iL-1,jL)+this%q_coef(2)*W(:,iL  ,jL) &
                       +this%q_coef(3)*W(:,iL+1,jL)+this%q_coef(4)*W(:,iL+2,jL)
-     enddo
+     end do
      do i=2,this%im-mod(this%im,2),2
        iL=i/2
          W_AUX(:,i,jL)=this%p_coef(1)*W(:,iL-1,jL)+this%p_coef(2)*w(:,iL  ,jL) &
                       +this%p_coef(3)*W(:,iL+1,jL)+this%p_coef(4)*W(:,iL+2,jL)
-     enddo
-   enddo
+     end do
+   end do
 !
 ! 2)
 !
@@ -1509,8 +1509,8 @@ integer(i_kind):: i,j,iL,jL
      do i=1,this%im
        F(:,i,j)=this%q_coef(1)*W_AUX(:,i,jL-1)+this%q_coef(2)*W_AUX(:,i,jL  ) &
                +this%q_coef(3)*W_AUX(:,i,jL+1)+this%q_coef(4)*W_AUX(:,i,jL+2)
-     enddo
-   enddo
+     end do
+   end do
 !
 ! 3)
 !
@@ -1519,11 +1519,11 @@ integer(i_kind):: i,j,iL,jL
      do i=1,this%im
        F(:,i,j)=this%p_coef(1)*W_AUX(:,i,jL-1)+this%p_coef(2)*W_AUX(:,i,jL  ) &
                +this%p_coef(3)*W_AUX(:,i,jL+1)+this%p_coef(4)*W_AUX(:,i,jL+2)
-     enddo
-   enddo
+     end do
+   end do
 
 !-----------------------------------------------------------------------
-endsubroutine direct1
+end subroutine direct1
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine adjoint2 &
@@ -1531,14 +1531,14 @@ module subroutine adjoint2 &
 !                                                                      !
 !   Mapping from the high to low resolution grid                       !
 !   using quadratics interpolations                                    !
-!                         - offset version -                           ! 
+!                         - offset version -                           !
 !                                                                      !
 !***********************************************************************
 (this,F,W,km_in,g)
 !-----------------------------------------------------------------------
 implicit none
 class (mg_intstate_type),target:: this
-integer(i_kind),intent(in):: g 
+integer(i_kind),intent(in):: g
 integer(i_kind),intent(in):: km_in
 real(r_kind), dimension(km_in,1:this%im,1:this%jm), intent(in):: F
 real(r_kind), dimension(km_in,0:this%imL+1,0:this%jmL+1), intent(out):: W
@@ -1556,8 +1556,8 @@ integer(i_kind):: i,j,iL,jL
       W_AUX(:,i,jL+1)=W_AUX(:,i,jL+1)+this%b_coef(3)*F(:,i,j)
       W_AUX(:,i,jL  )=W_AUX(:,i,jL  )+this%b_coef(2)*F(:,i,j)
       W_AUX(:,i,jL-1)=W_AUX(:,i,jL-1)+this%b_coef(1)*F(:,i,j)
-    enddo
-  enddo
+    end do
+  end do
 !
 ! 2)
 !
@@ -1567,8 +1567,8 @@ integer(i_kind):: i,j,iL,jL
       W_AUX(:,i,jL+1)=W_AUX(:,i,jL+1)+this%a_coef(3)*F(:,i,j)
       W_AUX(:,i,jL  )=W_AUX(:,i,jL  )+this%a_coef(2)*F(:,i,j)
       W_AUX(:,i,jL-1)=W_AUX(:,i,jL-1)+this%a_coef(1)*F(:,i,j)
-    enddo
-  enddo
+    end do
+  end do
 
     W(:,:,:)=0.
 !
@@ -1580,17 +1580,17 @@ integer(i_kind):: i,j,iL,jL
       W(:,iL+1,jL)=W(:,iL+1,jL)+this%a_coef(3)*W_AUX(:,i,jL)
       W(:,iL  ,jL)=W(:,iL  ,jL)+this%a_coef(2)*W_AUX(:,i,jL)
       W(:,iL-1,jL)=W(:,iL-1,jL)+this%a_coef(1)*W_AUX(:,i,jL)
-    enddo
+    end do
     do i=this%im-mod(this%im,2),2,-2
     iL=i/2
       W(:,iL+1,jL)=W(:,iL+1,jL)+this%b_coef(3)*W_AUX(:,i,jL)
       W(:,iL  ,jL)=W(:,iL  ,jL)+this%b_coef(2)*W_AUX(:,i,jL)
       W(:,iL-1,jL)=W(:,iL-1,jL)+this%b_coef(1)*W_AUX(:,i,jL)
-     enddo
-   enddo
+     end do
+   end do
 
 !-----------------------------------------------------------------------
-endsubroutine adjoint2
+end subroutine adjoint2
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine direct2 &
@@ -1620,13 +1620,13 @@ integer(i_kind):: i,j,iL,jL
        iL=(i+1)/2
          W_AUX(:,i,jL)=this%a_coef(1)*W(:,iL-1,jL)+this%a_coef(2)*W(:,iL  ,jL) &
                       +this%a_coef(3)*W(:,iL+1,jL)
-     enddo
+     end do
      do i=2,this%im-mod(this%im,2),2
        iL=i/2
          W_AUX(:,i,jL)=this%b_coef(1)*W(:,iL-1,jL)+this%b_coef(2)*w(:,iL  ,jL) &
                       +this%b_coef(3)*W(:,iL+1,jL)
-     enddo
-   enddo
+     end do
+   end do
 !
 ! 2)
 !
@@ -1635,8 +1635,8 @@ integer(i_kind):: i,j,iL,jL
      do i=1,this%im
        F(:,i,j)=this%a_coef(1)*W_AUX(:,i,jL-1)+this%a_coef(2)*W_AUX(:,i,jL  ) &
                +this%a_coef(3)*W_AUX(:,i,jL+1)
-     enddo
-   enddo
+     end do
+   end do
 !
 ! 3)
 !
@@ -1645,11 +1645,11 @@ integer(i_kind):: i,j,iL,jL
      do i=1,this%im
        F(:,i,j)=this%b_coef(1)*W_AUX(:,i,jL-1)+this%b_coef(2)*W_AUX(:,i,jL  ) &
                +this%b_coef(3)*W_AUX(:,i,jL+1)
-     enddo
-   enddo
+     end do
+   end do
 
 !-----------------------------------------------------------------------
-endsubroutine direct2
+end subroutine direct2
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine adjoint_nearest &
@@ -1657,14 +1657,14 @@ module subroutine adjoint_nearest &
 !                                                                      !
 !   Mapping from the high to low resolution grid                       !
 !   selecting the nearest point                                        !
-!                         - offset version -                           ! 
+!                         - offset version -                           !
 !                                                                      !
 !***********************************************************************
 (this,F,W,km_in,g)
 !-----------------------------------------------------------------------
 implicit none
 class (mg_intstate_type),target:: this
-integer(i_kind),intent(in):: g 
+integer(i_kind),intent(in):: g
 integer(i_kind),intent(in):: km_in
 real(r_kind), dimension(km_in,1:this%im,1:this%jm), intent(in):: F
 real(r_kind), dimension(km_in,-1:this%imL+2,-1:this%jmL+2), intent(out):: W
@@ -1680,8 +1680,8 @@ integer(i_kind):: i,j,iL,jL
     jL = j/2
     do i=this%im,1,-1
       W_AUX(:,i,jL  )=W_AUX(:,i,jL  )+0.5**0.5*F(:,i,j)
-    enddo
-  enddo
+    end do
+  end do
 !
 ! 2)
 !
@@ -1689,8 +1689,8 @@ integer(i_kind):: i,j,iL,jL
     jL=j/2
     do i=this%im,1,-1
       W_AUX(:,i,jL+1)=W_AUX(:,i,jL+1)+0.5**0.5*F(:,i,j)
-    enddo
-  enddo
+    end do
+  end do
 
     W(:,:,:)=0.
 !
@@ -1700,15 +1700,15 @@ integer(i_kind):: i,j,iL,jL
     do i=this%im-1+mod(this%im,2),1,-2
     iL = i/2
       W(:,iL+1,jL)=W(:,iL+1,jL)+0.5**0.5*W_AUX(:,i,jL)
-    enddo
+    end do
     do i=this%im-mod(this%im,2),2,-2
     iL=i/2
       W(:,iL  ,jL)=W(:,iL  ,jL)+0.5**0.5*W_AUX(:,i,jL)
-     enddo
-   enddo
+     end do
+   end do
 
 !-----------------------------------------------------------------------
-endsubroutine adjoint_nearest
+end subroutine adjoint_nearest
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine direct_nearest &
@@ -1737,12 +1737,12 @@ integer(i_kind):: i,j,iL,jL
      do i=1,this%im-1+mod(this%im,2),2
        iL=i/2
          W_AUX(:,i,jL)=0.5**0.5*W(:,iL+1,jL)
-     enddo
+     end do
      do i=2,this%im-mod(this%im,2),2
        iL=i/2
          W_AUX(:,i,jL)=0.5**0.5*w(:,iL  ,jL)
-     enddo
-   enddo
+     end do
+   end do
 !
 ! 2)
 !
@@ -1750,8 +1750,8 @@ integer(i_kind):: i,j,iL,jL
      jL=j/2
      do i=1,this%im
        F(:,i,j)=0.5**0.5*W_AUX(:,i,jL+1)
-     enddo
-   enddo
+     end do
+   end do
 !
 ! 3)
 !
@@ -1759,11 +1759,11 @@ integer(i_kind):: i,j,iL,jL
      jL=j/2
      do i=1,this%im
        F(:,i,j)=0.5**0.5*W_AUX(:,i,jL  )
-     enddo
-   enddo
+     end do
+   end do
 
 !-----------------------------------------------------------------------
-endsubroutine direct_nearest
+end subroutine direct_nearest
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine adjoint_highest &
@@ -1771,14 +1771,14 @@ module subroutine adjoint_highest &
 !                                                                      !
 !   Mapping from the high to low resolution grid                       !
 !   using linearly squared interpolations                              !
-!                         - offset version -                           ! 
+!                         - offset version -                           !
 !                                                                      !
 !***********************************************************************
 (this,F,W,km_in,g)
 !-----------------------------------------------------------------------
 implicit none
 class (mg_intstate_type),target:: this
-integer(i_kind),intent(in):: g 
+integer(i_kind),intent(in):: g
 integer(i_kind),intent(in):: km_in
 real(r_kind), dimension(km_in,1:this%im0(g),1:this%jm0(g)), intent(in):: F
 real(r_kind), dimension(km_in,-1:this%im0(g+1)+2,-1:this%jm0(g+1)+2), intent(out):: W
@@ -1797,8 +1797,8 @@ integer(i_kind):: i,j,iL,jL
       W_AUX(:,i,jL+1)=W_AUX(:,i,jL+1)+this%p_coef(3)*F(:,i,j)
       W_AUX(:,i,jL  )=W_AUX(:,i,jL  )+this%p_coef(2)*F(:,i,j)
       W_AUX(:,i,jL-1)=W_AUX(:,i,jL-1)+this%p_coef(1)*F(:,i,j)
-    enddo
-  enddo
+    end do
+  end do
 !
 ! 2)
 !
@@ -1809,8 +1809,8 @@ integer(i_kind):: i,j,iL,jL
       W_AUX(:,i,jL+1)=W_AUX(:,i,jL+1)+this%q_coef(3)*F(:,i,j)
       W_AUX(:,i,jL  )=W_AUX(:,i,jL  )+this%q_coef(2)*F(:,i,j)
       W_AUX(:,i,jL-1)=W_AUX(:,i,jL-1)+this%q_coef(1)*F(:,i,j)
-    enddo
-  enddo
+    end do
+  end do
 
     W(:,:,:)=0.
 !
@@ -1823,18 +1823,18 @@ integer(i_kind):: i,j,iL,jL
       W(:,iL+1,jL)=W(:,iL+1,jL)+this%q_coef(3)*W_AUX(:,i,jL)
       W(:,iL  ,jL)=W(:,iL  ,jL)+this%q_coef(2)*W_AUX(:,i,jL)
       W(:,iL-1,jL)=W(:,iL-1,jL)+this%q_coef(1)*W_AUX(:,i,jL)
-    enddo
+    end do
     do i=this%im0(g)-mod(this%im0(g),2),2,-2
     iL=i/2
       W(:,iL+2,jL)=W(:,iL+2,jL)+this%p_coef(4)*W_AUX(:,i,jL)
       W(:,iL+1,jL)=W(:,iL+1,jL)+this%p_coef(3)*W_AUX(:,i,jL)
       W(:,iL  ,jL)=W(:,iL  ,jL)+this%p_coef(2)*W_AUX(:,i,jL)
       W(:,iL-1,jL)=W(:,iL-1,jL)+this%p_coef(1)*W_AUX(:,i,jL)
-     enddo
-   enddo
+     end do
+   end do
 
 !-----------------------------------------------------------------------
-endsubroutine adjoint_highest
+end subroutine adjoint_highest
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine direct_highest &
@@ -1864,13 +1864,13 @@ integer(i_kind):: i,j,iL,jL
        iL=i/2
          W_AUX(:,i,jL)=this%q_coef(1)*W(:,iL-1,jL)+this%q_coef(2)*W(:,iL  ,jL) &
                       +this%q_coef(3)*W(:,iL+1,jL)+this%q_coef(4)*W(:,iL+2,jL)
-     enddo
+     end do
      do i=2,this%im0(g)-mod(this%im0(g),2),2
        iL=i/2
          W_AUX(:,i,jL)=this%p_coef(1)*W(:,iL-1,jL)+this%p_coef(2)*w(:,iL  ,jL) &
                       +this%p_coef(3)*W(:,iL+1,jL)+this%p_coef(4)*W(:,iL+2,jL)
-     enddo
-   enddo
+     end do
+   end do
 !
 ! 2)
 !
@@ -1879,8 +1879,8 @@ integer(i_kind):: i,j,iL,jL
      do i=1,this%im0(g)
        F(:,i,j)=this%q_coef(1)*W_AUX(:,i,jL-1)+this%q_coef(2)*W_AUX(:,i,jL  ) &
                +this%q_coef(3)*W_AUX(:,i,jL+1)+this%q_coef(4)*W_AUX(:,i,jL+2)
-     enddo
-   enddo
+     end do
+   end do
 !
 ! 3)
 !
@@ -1889,11 +1889,11 @@ integer(i_kind):: i,j,iL,jL
      do i=1,this%im0(g)
        F(:,i,j)=this%p_coef(1)*W_AUX(:,i,jL-1)+this%p_coef(2)*W_AUX(:,i,jL  ) &
                +this%p_coef(3)*W_AUX(:,i,jL+1)+this%p_coef(4)*W_AUX(:,i,jL+2)
-     enddo
-   enddo
+     end do
+   end do
 
 !-----------------------------------------------------------------------
-endsubroutine direct_highest
+end subroutine direct_highest
 
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 end submodule mg_generations

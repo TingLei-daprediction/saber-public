@@ -48,9 +48,9 @@ class(mg_parameter_type)::this
 
 call init_domain(this)
 call init_topology_2d(this)
- 
+
 !-----------------------------------------------------------------------
-endsubroutine init_mg_domain
+end subroutine init_mg_domain
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine init_domain(this)
@@ -62,7 +62,7 @@ module subroutine init_domain(this)
 implicit none
 class(mg_parameter_type),target::this
 
-integer(i_kind) n,nstrd,i,j
+integer(i_kind) :: n,nstrd,i,j
 logical:: F=.false., T=.true.
 
 integer(i_kind):: loc_pe,g
@@ -70,21 +70,21 @@ include "type_parameter_locpointer.inc"
 include "type_parameter_point2this.inc"
 !-----------------------------------------------------------------------
 
-      Flwest(1)=nx.eq.1
-      Fleast(1)=nx.eq.nxm
-      Flsouth(1)=my.eq.1
-      Flnorth(1)=my.eq.nym
+      Flwest(1)=nx==1
+      Fleast(1)=nx==nxm
+      Flsouth(1)=my==1
+      Flnorth(1)=my==nym
 
- if(l_hgen) then 
+ if(l_hgen) then
 
       loc_pe=mype_hgen-maxpe_fgen(my_hgen-1)
       jy=loc_pe/ixm(my_hgen)+1
       ix=mod(loc_pe,ixm(my_hgen))+1
 
-      Flwest(2)=ix.eq.1
-      Fleast(2)=ix.eq.ixm(my_hgen)
-      Flsouth(2)=jy.eq.1
-      Flnorth(2)=jy.eq.jym(my_hgen)
+      Flwest(2)=ix==1
+      Fleast(2)=ix==ixm(my_hgen)
+      Flsouth(2)=jy==1
+      Flnorth(2)=jy==jym(my_hgen)
 
  else
 
@@ -96,10 +96,10 @@ include "type_parameter_point2this.inc"
      Flsouth(2)=F
      Flnorth(2)=F
 
- endif
+ end if
 
     mype_filt(1)=mype
-    mype_filt(2)=mype_hgen 
+    mype_filt(2)=mype_hgen
 
 !
 ! Communication params for analysis grid
@@ -108,32 +108,32 @@ include "type_parameter_point2this.inc"
       itarg_wA=-1
     else
       itarg_wA=mype-1
-    endif
+    end if
 
     if(nx==nxm) then
       itarg_eA=-1
     else
       itarg_eA=mype+1
-    endif
+    end if
 
     if(my==1) then
       itarg_sA=-1
     else
       itarg_sA=mype-nxm
-    endif
+    end if
 
     if(my==nym) then
       itarg_nA=-1
     else
       itarg_nA=mype+nxm
-    endif
+    end if
 
-      lwestA=nx.eq.1
-      leastA=nx.eq.nxm
-      lsouthA=my.eq.1
-      lnorthA=my.eq.nym
+      lwestA=nx==1
+      leastA=nx==nxm
+      lsouthA=my==1
+      lnorthA=my==nym
 
-   
+
 !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 !       write(100+mype,'(a)')'---------------------------------'
 !       write(100+mype,'(a)')'From init_domain'
@@ -158,7 +158,7 @@ include "type_parameter_point2this.inc"
 !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 !-----------------------------------------------------------------------
-endsubroutine init_domain
+end subroutine init_domain
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine init_topology_2d(this)
@@ -173,15 +173,15 @@ class(mg_parameter_type),target::this
 !-----------------------------------------------------------------------
 logical:: F=.false., T=.true.
 
-integer(i_kind) mx2,my2,ix_up,jy_up,ix_dn,jy_dn
-integer(i_kind) g,naux,nx_up,my_up
+integer(i_kind) :: mx2,my2,ix_up,jy_up,ix_dn,jy_dn
+integer(i_kind) :: g,naux,nx_up,my_up
 include "type_parameter_locpointer.inc"
 include "type_parameter_point2this.inc"
 !-----------------------------------------------------------------------
 !
 !     Topology of generations of the squared domain
 !
-!                           G1 
+!                           G1
 !    _____ _____ _____ _____ _____ _____ _____ _____
 !   |     |     |     |     |     |     |     |     |
 !   | 56  | 57  | 58  | 59  | 60  | 61  | 62  | 63  |
@@ -209,8 +209,8 @@ include "type_parameter_point2this.inc"
 !   |_____|_____|_____|_____|_____|_____|_____|_____|
 !
 !
-!                           G2 
-!    ___________ ___________ ___________ ___________ 
+!                           G2
+!    ___________ ___________ ___________ ___________
 !   |           |           |           |           |
 !   |           |           |           |           |
 !   |    76     |    77     |    78     |    79     |
@@ -237,8 +237,8 @@ include "type_parameter_point2this.inc"
 !   |___________|___________|___________|___________|
 !
 !
-!                           G3 
-!    _______________________ _______________________ 
+!                           G3
+!    _______________________ _______________________
 !   |                       |                       |
 !   |                       |                       |
 !   |                       |                       |
@@ -265,8 +265,8 @@ include "type_parameter_point2this.inc"
 !   |_______________________|_______________________|
 !
 !
-!                           G4 
-!    _______________________________________________ 
+!                           G4
+!    _______________________________________________
 !   |                                               |
 !   |                                               |
 !   |                                               |
@@ -300,13 +300,13 @@ include "type_parameter_point2this.inc"
 !***
        if(Flwest(g)) then
          Fitarg_w(g) = -1
-       else 
+       else
          if(g==1.or.l_hgen) then
            Fitarg_w(g) = mype_filt(g)-1
          else
            Fitarg_w(g) = -1
-         endif
-       endif
+         end if
+       end if
 !***
 !*** Send EAST
 !***
@@ -317,8 +317,8 @@ include "type_parameter_point2this.inc"
            Fitarg_e(g) = mype_filt(g)+1
          else
            Fitarg_e(g) = -1
-         endif
-       endif
+         end if
+       end if
 
 !***
 !*** Send SOUTH
@@ -333,14 +333,14 @@ include "type_parameter_point2this.inc"
            case(2)
              if(l_hgen) then
                naux = ixm(my_hgen)
-             endif
-         endselect
+             end if
+         end select
          if(g==1.or.l_hgen) then
            Fitarg_s(g)=mype_filt(g)-naux
-         else  
+         else
            Fitarg_s(g)=-1
-         endif
-       endif
+         end if
+       end if
 
 !***
 !*** Send NORTH
@@ -354,14 +354,14 @@ include "type_parameter_point2this.inc"
            case(2)
              if(l_hgen) then
                naux = ixm(my_hgen)
-             endif
-         endselect
+             end if
+         end select
          if(g==1.or.l_hgen) then
            Fitarg_n(g)=mype_filt(g)+naux
          else
            Fitarg_n(g)=-1
-         endif
-       endif
+         end if
+       end if
 
 !***
 !*** Send SOUTH-WEST
@@ -377,10 +377,10 @@ include "type_parameter_point2this.inc"
          Fitarg_sw(g)=Fitarg_s(g)
        else
          Fitarg_sw(g)=Fitarg_s(g)-1
-       endif
+       end if
          if(g>1 .and. .not.l_hgen) then
            Fitarg_sw(g)=-1
-         endif
+         end if
 
 !***
 !*** Send SOUTH-EAST
@@ -396,10 +396,10 @@ include "type_parameter_point2this.inc"
           Fitarg_se(g)=Fitarg_s(g)
        else
           Fitarg_se(g)=Fitarg_s(g)+1
-       endif 
+       end if
          if(g>1 .and. .not.l_hgen) then
            Fitarg_se(g)=-1
-         endif
+         end if
 
 !***
 !*** Send NORTH-WEST
@@ -414,10 +414,10 @@ include "type_parameter_point2this.inc"
          Fitarg_nw(g)=Fitarg_n(g)
        else
          Fitarg_nw(g)=Fitarg_n(g)-1
-       endif
+       end if
          if(g>1 .and. .not.l_hgen) then
            Fitarg_nw(g)=-1
-         endif
+         end if
 
 
 !***
@@ -434,13 +434,13 @@ include "type_parameter_point2this.inc"
          Fitarg_ne(g)=Fitarg_n(g)
        else
          Fitarg_ne(g)=Fitarg_n(g)+1
-       endif
+       end if
          if(g>1 .and. .not.l_hgen) then
            Fitarg_ne(g)=-1
-         endif
+         end if
 
 
-       enddo 
+       end do
 
 !-----------------------------------------------------------------------
 !
@@ -458,10 +458,10 @@ include "type_parameter_point2this.inc"
       else &
       if(mx2==1.and.my2==0) then
         Flsendup_nw(1)=T
-      else 
+      else
         Flsendup_ne(1)=T
       end if
-       
+
        nx_up=(nx-1)/2   !+1
        my_up=(my-1)/2   !+1
 
@@ -469,7 +469,7 @@ include "type_parameter_point2this.inc"
        Fitarg_up(1)=maxpe_fgen(1)+my_up*ixm(2)+nx_up
     else
        Fitarg_up(1)=-1   !cltthinkdebtodo
-    endif
+    end if
 
 
     if(l_hgen.and.my_hgen < gm) then
@@ -485,16 +485,16 @@ include "type_parameter_point2this.inc"
       else &
       if(mx2==1.and.my2==0) then
         Flsendup_nw(2)=T
-      else 
+      else
         Flsendup_ne(2)=T
       end if
-       
+
        ix_up=(ix-1)/2   !+1
        jy_up=(jy-1)/2   !+1
 
        Fitarg_up(2)=maxpe_fgen(my_hgen)+jy_up*ixm(my_hgen+1)+ix_up
 
-    else 
+    else
 
        Flsendup_sw(2)=F
        Flsendup_se(2)=F
@@ -503,14 +503,14 @@ include "type_parameter_point2this.inc"
 
        Fitarg_up(2)=-1
 
-    endif
+    end if
 
 !
-! Downsending flags 
+! Downsending flags
 !
 
      if(my_hgen > 1) then
-       
+
        ix_dn = 2*ix-1
        jy_dn = 2*jy-1
 
@@ -518,17 +518,17 @@ include "type_parameter_point2this.inc"
        itargdn_nw=itargdn_sw+ixm(my_hgen-1)
        itargdn_se=itargdn_sw+1
        itargdn_ne=itargdn_nw+1
-       
+
        if(Fimax(my_hgen) <= imL .and. Fleast(2)) then
           itargdn_se=-1
           itargdn_ne=-1
-       endif
+       end if
        if(Fjmax(my_hgen) <= jmL .and. Flnorth(2)) then
           itargdn_nw=-1
           itargdn_ne=-1
        end if
 
-     else 
+     else
 
         itargdn_sw=-1
         itargdn_se=-1
@@ -549,10 +549,10 @@ include "type_parameter_point2this.inc"
    call real_itarg(this,Fitarg_nw(2))
    call real_itarg(this,Fitarg_ne(2))
 
-   if(itargdn_sw .ge. maxpe_fgen(1)) call real_itarg(this,itargdn_sw)
-   if(itargdn_se .ge. maxpe_fgen(1)) call real_itarg(this,itargdn_se)
-   if(itargdn_nw .ge. maxpe_fgen(1)) call real_itarg(this,itargdn_nw)
-   if(itargdn_ne .ge. maxpe_fgen(1)) call real_itarg(this,itargdn_ne)
+   if(itargdn_sw >= maxpe_fgen(1)) call real_itarg(this,itargdn_sw)
+   if(itargdn_se >= maxpe_fgen(1)) call real_itarg(this,itargdn_se)
+   if(itargdn_nw >= maxpe_fgen(1)) call real_itarg(this,itargdn_nw)
+   if(itargdn_ne >= maxpe_fgen(1)) call real_itarg(this,itargdn_ne)
 
    call real_itarg(this,Fitarg_up(1))
    call real_itarg(this,Fitarg_up(2))
@@ -614,7 +614,7 @@ include "type_parameter_point2this.inc"
 !    call finishMPI
 !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 !-----------------------------------------------------------------------
-endsubroutine init_topology_2d
+end subroutine init_topology_2d
 !----------------------------------------------------------------------
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine real_itarg &
@@ -633,9 +633,9 @@ include "type_parameter_point2this.inc"
 !-----------------------------------------------------------------------
 if(itarg>-1) then
    itarg = itarg-nxy(1)
-endif
+end if
 !-----------------------------------------------------------------------
-endsubroutine real_itarg
+end subroutine real_itarg
 
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 end submodule mg_domain

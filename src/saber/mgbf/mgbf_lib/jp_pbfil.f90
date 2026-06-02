@@ -39,7 +39,7 @@ submodule(mg_parameter) jp_pbfil
 ! Functions Included:
 !
 ! remarks:
-!   The filters invoke the aspect tensor information encoded by the 
+!   The filters invoke the aspect tensor information encoded by the
 !   Cholesky lower-triangular factors, el, of the INVERSE aspect tensors.
 !   The routines, "cholaspect", convert (in place) the field of given
 !   aspect tensors A to the equivalent cholesky factors of A^(-1).
@@ -81,7 +81,7 @@ real(dp),dimension(1,1,lx:mx),intent(inout):: el
 integer :: ix
 !=============================================================================
 !$omp parallel do private(ix) schedule(static)
-do ix=lx,mx; el(1,1,ix)=u1/sqrt(el(1,1,ix)); enddo
+do ix=lx,mx; el(1,1,ix)=u1/sqrt(el(1,1,ix)); end do
 !$omp end parallel do
 end subroutine cholaspect1
 !=============================================================================
@@ -101,7 +101,7 @@ integer                :: ix,iy
 !=============================================================================
 do iy=ly,my; do ix=lx,mx
    tel=el(:,:,ix,iy); call inv(tel); call l1lm(tel,el(:,:,ix,iy))
-enddo;       enddo
+end do;       end do
 end subroutine cholaspect2
 !=============================================================================
 module subroutine cholaspect3(lx,mx, ly,my, lz,mz, el)          ! [cholaspect]
@@ -120,7 +120,7 @@ integer                :: ix,iy,iz
 !=============================================================================
 do iz=lz,mz; do iy=ly,my; do ix=lx,mx
    tel=el(:,:,ix,iy,iz); call inv(tel); call l1lm(tel,el(:,:,ix,iy,iz))
-enddo;       enddo;       enddo
+end do;       end do;       end do
 end subroutine cholaspect3
 !=============================================================================
 module subroutine cholaspect4(lx,mx, ly,my, lz,mz, lw,mw,el)    ! [cholaspect]
@@ -140,7 +140,7 @@ integer                :: ix,iy,iz,iw
 !=============================================================================
 do iw=lw,mw; do iz=lz,mz; do iy=ly,my; do ix=lx,mx
    tel=el(:,:,ix,iy,iz,iw); call inv(tel); call l1lm(tel,el(:,:,ix,iy,iz,iw))
-enddo;       enddo;       enddo;       enddo
+end do;       end do;       end do;       end do
 end subroutine cholaspect4
 
 !=============================================================================
@@ -149,7 +149,7 @@ module subroutine getlinesum1(this,hx,lx,mx, el, ss)            ! [getlinesum]
 ! Get inverse of the line-sum of the matrix representing the
 ! unnormalized
 ! beta function with aspect tensor pasp=(el*el^T)^(-1), and invert the
-! result 
+! result
 ! so it can be used subsequently in the normalized version of this
 ! filter.
 !=============================================================================
@@ -168,14 +168,14 @@ do ix=Lx,Mx
    x=u1/exx
    gxl=ceiling(-x+eps); gxm=floor( x-eps)
    if(gxl<-hx.or.gxm>hx)&
-        stop 'In getlinesum1; filter reach fx becomes too large for hx'
+        stop "In getlinesum1; filter reach fx becomes too large for hx"
    do gx=gxl,gxm
       x=gx
       rr=(x*exx)**2; rrc=u1-rr
       s=s+rrc**this%p
-   enddo
+   end do
    ss(ix)=u1/s
-enddo
+end do
 end subroutine getlinesum1
 module subroutine getlinesum1d(this,hx,lx,mx, el, ss)            ! [getlinesum]
 !=============================================================================
@@ -183,7 +183,7 @@ module subroutine getlinesum1d(this,hx,lx,mx, el, ss)            ! [getlinesum]
 ! Get inverse of the line-sum of the matrix representing the
 ! unnormalized
 ! beta function with aspect tensor pasp=(el*el^T)^(-1), and invert the
-! result 
+! result
 ! so it can be used subsequently in the normalized version of this
 ! filter.
 !=============================================================================
@@ -202,19 +202,19 @@ do ix=Lx,Mx
    x=u1/exx
    gxl=ceiling(-x+eps); gxm=floor( x-eps)
    if(gxl<-hx.or.gxm>hx) then
-        write(error_unit,*) 'thinkdeb7777 exx =',exx,' ',this%rmom2_1,' ',hx,' ',el(ix)
+        write(error_unit,*) "thinkdeb7777 exx =",exx," ",this%rmom2_1," ",hx," ",el(ix)
         call flush(error_unit)
-        write(error_unit,*) 'In getlinesum1dxx; filter reach fx becomes too large for hx'
+        write(error_unit,*) "In getlinesum1dxx; filter reach fx becomes too large for hx"
         call flush(error_unit)
-        stop 'In getlinesum1d; filter reach becomes too large for hy'
-   endif
+        stop "In getlinesum1d; filter reach becomes too large for hy"
+   end if
    do gx=gxl,gxm
       x=gx
       rr=(x*exx)**2; rrc=u1-rr
       s=s+rrc**this%p
-   enddo
+   end do
    ss(ix)=u1/s
-enddo
+end do
 end subroutine getlinesum1d
 !=============================================================================
 module subroutine getlinesum2(this,hx,lx,mx, hy,ly,my, el, ss)  ! [getlinesum]
@@ -239,21 +239,21 @@ do iy=Ly,My; do ix=Lx,Mx
    y=u1/eyy
    gyl=ceiling(-y+eps); gym=floor( y-eps)
    if(gyl<-hy.or.gym>hy)&
-        stop 'In getlinesum2; filter reach becomes too large for hy'
+        stop "In getlinesum2; filter reach becomes too large for hy"
    do gy=gyl,gym
       y=gy; xc=-y*eyx
       rrx=(y*eyy)**2; x=sqrt(u1-rrx)
       gxl=ceiling((xc-x)/exx+eps); gxm=floor((xc+x)/exx-eps)
       if(gxl<-hx.or.gxm>hx)&
-           stop 'In getlinesum2; filter reach becomes too large for hx'
+           stop "In getlinesum2; filter reach becomes too large for hx"
       do gx=gxl,gxm
          x=gx
          rr=rrx+(x*exx-xc)**2; rrc=u1-rr
          s=s+rrc**this%p
-      enddo! gx
-   enddo! gy
+      end do! gx
+   end do! gy
    ss(ix,iy)=u1/s
-enddo;  enddo! ix, iy
+end do;  end do! ix, iy
 end subroutine getlinesum2
 !=============================================================================
 module subroutine getlinesum3(this,hx,lx,mx, hy,ly,my, hz,lz,mz, el, ss) ! [getlinesum]
@@ -283,28 +283,28 @@ do iz=Lz,Mz; do iy=Ly,My; do ix=Lx,Mx
    z=u1/ezz
    gzl=ceiling(-z+eps); gzm=floor( z-eps)
    if(gzl<-hz.or.gzm>hz)&
-        stop 'In getlinesum3; filter reach becomes too large for hz'
+        stop "In getlinesum3; filter reach becomes too large for hz"
    do gz=gzl,gzm
       z=gz;           yc=-z*ezy
       rry=(z*ezz)**2; y =sqrt(u1-rry)
       gyl=ceiling((yc-y)/eyy+eps); gym=floor((yc+y)/eyy-eps)
       if(gyl<-hy.or.gym>hy)&
-           stop 'In getlinesum3; filter reach becomes too large for hy'
+           stop "In getlinesum3; filter reach becomes too large for hy"
       do gy=gyl,gym
          y=gy;                  xc=-y*eyx-z*ezx
          rrx=rry+(y*eyy-yc)**2; x =sqrt(u1-rrx)
          gxl=ceiling((xc-x)/exx+eps); gxm=floor((xc+x)/exx-eps)
          if(gxl<-hx.or.gxm>hx)&
-              stop 'In getlinesum3; filter reach becomes too large for hx'
+              stop "In getlinesum3; filter reach becomes too large for hx"
          do gx=gxl,gxm
             x=gx
             rr=rrx+(x*exx-xc)**2; rrc=u1-rr
             s=s+rrc**this%p
-         enddo! gx
-      enddo! gy
-   enddo! gz
+         end do! gx
+      end do! gy
+   end do! gz
    ss(ix,iy,iz)=u1/s
-enddo; enddo; enddo! ix, iy, iz
+end do; end do; end do! ix, iy, iz
 end subroutine getlinesum3
 !=============================================================================
 module subroutine getlinesum4(this,hx,lx,mx, hy,ly,my, hz,lz,mz, hw,lw,mw, &
@@ -339,35 +339,35 @@ do iw=Lw,Mw; do iz=Lz,Mz; do iy=Ly,My; do ix=Lx,Mx
    w=u1/eww
    gwl=ceiling(-w+eps); gwm=floor( w-eps)
    if(gwl<-hw.or.gwm>hw)&
-        stop 'In getlinesum4; filter reach becomes too large for hw'
+        stop "In getlinesum4; filter reach becomes too large for hw"
    do gw=gwl,gwm
       w=gw;           zc=-w*ewz
       rrz=(w-eww)**2; z =sqrt(u1-rrz)
       gzl=ceiling((zc-z)/ezz+eps); gzm=floor((zc+z)/ezz-eps)
       if(gzl<-hz.or.gzm>hz)&
-           stop 'In getlinesum4; filter reach becomes too large for hz'
+           stop "In getlinesum4; filter reach becomes too large for hz"
       do gz=gzl,gzm
          z=gz;                  yc=-z*ezy-w*ewy
          rry=rrz+(z*ezz-zc)**2; y =sqrt(u1-rry)
          gyl=ceiling((yc-y)/eyy+eps); gym=floor((yc+y)/eyy-eps)
          if(gyl<-hy.or.gym>hy)&
-              stop 'In getlinesum4; filter reach becomes too large for hy'
+              stop "In getlinesum4; filter reach becomes too large for hy"
          do gy=gyl,gym
             y=gy;                  xc=-y*eyx-z*ezx-w*ewx
             rrx=rry+(y*eyy-yc)**2; x =sqrt(u1-rrx)
             gxl=ceiling((xc-x)/exx+eps); gxm=floor((xc+x)/exx-eps)
             if(gxl<-hx.or.gxm>hx)&
-                 stop 'In getlinesum4; filter reach becomes too large for hx'
+                 stop "In getlinesum4; filter reach becomes too large for hx"
             do gx=gxl,gxm
                x=gx
                rr=rrx+(x*exx-xc)**2; rrc=u1-rr
                s=s+rrc**this%p
-            enddo! gx
-         enddo! gy
-      enddo! gz
-   enddo! gw
+            end do! gx
+         end do! gy
+      end do! gz
+   end do! gw
    ss(ix,iy,iz,iw)=u1/s
-enddo;  enddo;  enddo;  enddo! ix, iy, iz, iw
+end do;  end do;  end do;  end do! ix, iy, iz, iw
 end subroutine getlinesum4
 
 !=============================================================================
@@ -403,9 +403,9 @@ do ix=Lx,Mx
       rr=(x*exx)**2; rrc=u1-rr
       frow=s*rrc**this%p
       tb=tb+frow*a(jx)
-   enddo
+   end do
    b(ix)=tb
-enddo
+end do
 a=b
 end subroutine rbeta1
 module subroutine rbeta3d_1(this,nz,hx,lx,mx, el,ss, a)                    ! [rbeta]
@@ -432,7 +432,7 @@ real(dp)                       :: x,tb,s,rr,rrc,frow,exx
 integer                        :: ix,jx,gx,k
 !=============================================================================
 b=0
-do k=1,nz 
+do k=1,nz
 do ix=Lx,Mx
    tb=0; s=ss(k,ix)
    exx=el(k,ix)*this%rmom2_1
@@ -442,10 +442,10 @@ do ix=Lx,Mx
       rr=(x*exx)**2; rrc=u1-rr
       frow=s*rrc**this%p
       tb=tb+frow*a(k,jx)
-   enddo
+   end do
    b(k,ix)=tb
-enddo
-enddo
+end do
+end do
 a=b
 end subroutine rbeta3d_1
 !=============================================================================
@@ -490,10 +490,10 @@ do iy=Ly,My; do ix=Lx,Mx
          rr=rrx+(x*exx-xc)**2; rrc=u1-rr
          frow=s*rrc**this%p
          tb=tb+frow*a(jx,jy)
-      enddo! gx
-   enddo! gy
+      end do! gx
+   end do! gy
    b(ix,iy)=tb
-enddo; enddo! ix, iy
+end do; end do! ix, iy
 a=b
 end subroutine rbeta2
 !=============================================================================
@@ -544,11 +544,11 @@ do iz=Lz,Mz; do iy=Ly,My; do ix=Lx,Mx
             rr=rrx+(x*exx-xc)**2; rrc=u1-rr
             frow=s*rrc**this%p
             tb=tb+frow*a(jx,jy,jz)
-         enddo! gx
-      enddo! gy
-   enddo! gz
+         end do! gx
+      end do! gy
+   end do! gz
    b(ix,iy,iz)=tb
-enddo;   enddo;    enddo! ix, iy, iz
+end do;   end do;    end do! ix, iy, iz
 a=b
 end subroutine rbeta3
 !=============================================================================
@@ -559,7 +559,7 @@ module subroutine rbeta4(this,hx,lx,mx, hy,ly,my, hz,lz,mz, hw,lw,mw, el,ss,a) !
 ! (in its target region) when presented with a constant-density input
 ! field.
 ! The input data occupy the extended region:
-! Lx-hx <= jx <= mx+hx, Ly-hy <= Jy <= my+hy, Lz-hz <= Jz <= mz+hz, 
+! Lx-hx <= jx <= mx+hx, Ly-hy <= Jy <= my+hy, Lz-hz <= Jz <= mz+hz,
 ! Lw-hw <= Jw <= mw+hw
 ! The output data occupy the central region
 ! Lx <= ix <= Mx, Ly <= iy <= My, Lz <= iz <= Mz, Lw <= iw <= Mw.
@@ -608,12 +608,12 @@ do iw=lw,mw; do iz=Lz,Mz; do iy=Ly,My; do ix=Lx,Mx
                rr=rrx+(x*exx-xc)**2; rrc=u1-rr
                frow=s*rrc**this%p
                tb=tb+frow*a(jx,jy,jz,jw)
-            enddo! gx
-         enddo! gy
-      enddo! gz
-   enddo! gw
+            end do! gx
+         end do! gy
+      end do! gz
+   end do! gw
    b(ix,iy,iz,iw)=tb
-enddo;   enddo;   enddo;   enddo! ix, iy, iz, iw
+end do;   end do;   end do;   end do! ix, iy, iz, iw
 a=b
 end subroutine rbeta4
 
@@ -672,12 +672,12 @@ do iw=lw,mw; do iz=Lz,Mz; do iy=Ly,My; do ix=Lx,Mx
                rr=rrx+(x*exx-xc)**2; rrc=u1-rr
                frow=s*rrc**this%p
                tb=tb+frow*a(:,jx,jy,jz,jw)
-            enddo! gx
-         enddo! gy
-      enddo! gz
-   enddo! gw
+            end do! gx
+         end do! gy
+      end do! gz
+   end do! gw
    b(:,ix,iy,iz,iw)=tb
-enddo;  enddo;  enddo;  enddo! ix, iy, iz, iw
+end do;  end do;  end do;  end do! ix, iy, iz, iw
 a=b
 end subroutine vrbeta4
 
@@ -685,11 +685,11 @@ end subroutine vrbeta4
 module subroutine rbeta1T(this,hx,lx,mx, el,ss, a)                  ! [rbetat]
 !=============================================================================
 ! Perform an ADJOINT radial beta-function filter in 1D.
-! It conserves "masses" initially distributed only at the closure of 
-! the central domain, 
+! It conserves "masses" initially distributed only at the closure of
+! the central domain,
 ! Lx <= ix <= Mx.
 ! The output field of the redistributed masses occupies the
-! the extended domain, 
+! the extended domain,
 ! Lx-hx <= jx <= mx+hx.
 !=============================================================================
 class(mg_parameter_type)::this
@@ -713,19 +713,19 @@ do ix=Lx,Mx
       rr=(x*exx)**2; rrc=u1-rr
       frow=s*rrc**this%p
       b(jx)=b(jx)+frow*ta
-   enddo
-enddo
+   end do
+end do
 a=b
 end subroutine rbeta1t
 module subroutine rbeta3d_1T(this,nz,hx,lx,mx, el,ss, a)                  ! [rbetat]
 !clt modified from rbeta1T to add a vertical dimension
 !=============================================================================
 ! Perform an ADJOINT radial beta-function filter in 1D.
-! It conserves "masses" initially distributed only at the closure of 
-! the central domain, 
+! It conserves "masses" initially distributed only at the closure of
+! the central domain,
 ! Lx <= ix <= Mx.
 ! The output field of the redistributed masses occupies the
-! the extended domain, 
+! the extended domain,
 ! Lx-hx <= jx <= mx+hx.
 !=============================================================================
 class(mg_parameter_type)::this
@@ -750,20 +750,20 @@ do ix=Lx,Mx
       rr=(x*exx)**2; rrc=u1-rr
       frow=s*rrc**this%p
       b(k,jx)=b(k,jx)+frow*ta
-   enddo
-enddo
-enddo
+   end do
+end do
+end do
 a=b
 end subroutine rbeta3d_1t
 !=============================================================================
 module subroutine rbeta2T(this,hx,lx,mx, hy,ly,my, el,ss, a)        ! [rbetat]
 !=============================================================================
 ! Perform an ADJOINT radial beta-function filter in 2D.
-! It conserved "masses" initially distributed only at the closure of 
-! the central domain, 
+! It conserved "masses" initially distributed only at the closure of
+! the central domain,
 ! Lx <= ix <= Mx, Ly <= iy <= My.
 ! The output field of the redistributed masses occupies the
-! the extended domain, 
+! the extended domain,
 ! Lx-hx <= jx <= mx+hx, Ly-hy <= Jy <= my+hy
 !=============================================================================
 class(mg_parameter_type)::this
@@ -796,20 +796,20 @@ do iy=Ly,My; do ix=Lx,Mx
          rr=rrx+(x*exx-xc)**2; rrc=u1-rr
          frow=s*rrc**this%p
          b(jx,jy)=b(jx,jy)+frow*ta
-      enddo! gx 
-   enddo! gy
-enddo;  enddo! ix, iy
+      end do! gx
+   end do! gy
+end do;  end do! ix, iy
 a=b
 end subroutine rbeta2t
 !=============================================================================
 module subroutine rbeta3T(this,hx,lx,mx, hy,ly,my, hz,lz,mz, el,ss, a) ! [rbetat]
 !=============================================================================
 ! Perform an ADJOINT radial beta-function filter in 3D.
-! It conserves "masses" initially distributed only at the closure of 
-! the central domain, 
+! It conserves "masses" initially distributed only at the closure of
+! the central domain,
 ! Lx <= ix <= Mx, Ly <= iy <= My, Lz <= iz <= Mz.
 ! The output field of the redistributed masses occupies the
-! the extended domain, 
+! the extended domain,
 ! Lx-hx <= jx <= Mx+hx, Ly-hy <= Jy <= My+hy, Lz-hz <= Jz <= Mz+hz.
 !=============================================================================
 class(mg_parameter_type)::this
@@ -848,10 +848,10 @@ do iz=Lz,Mz; do iy=Ly,My; do ix=Lx,Mx
             rr=rrx+(x*exx-xc)**2; rrc=u1-rr
             frow=s*rrc**this%p
             b(jx,jy,jz)=b(jx,jy,jz)+frow*ta
-         enddo! gx
-      enddo! gy
-   enddo ! gz
-enddo;  enddo;  enddo ! ix, iy, iz
+         end do! gx
+      end do! gy
+   end do ! gz
+end do;  end do;  end do ! ix, iy, iz
 a=b
 end subroutine rbeta3t
 !=============================================================================
@@ -859,12 +859,12 @@ module subroutine rbeta4T(this,hx,lx,mx, hy,ly,my, hz,lz,mz, hw,lw,mw, &
      el,ss, a)                                                      ! [rbetat]
 !=============================================================================
 ! Perform an ADJOINT radial beta-function filter in 4D.
-! It conserves "masses" initially distributed only at the closure of 
-! the central domain, 
+! It conserves "masses" initially distributed only at the closure of
+! the central domain,
 ! Lx <= ix <= Mx, Ly <= iy <= My, Lz <= iz <= Mz, Lw <= iw <= Mw.
 ! The output field of the redistributed masses occupies the
-! the extended domain, 
-! Lx-hx <= jx <= Mx+hx, Ly-hy <= Jy <= My+hy, Lz-hz <= Jz <= Mz+hz, 
+! the extended domain,
+! Lx-hx <= jx <= Mx+hx, Ly-hy <= Jy <= My+hy, Lz-hz <= Jz <= Mz+hz,
 !     Lw-hw <= Jw <= Mw+hw.
 !=============================================================================
 class(mg_parameter_type)::this
@@ -911,11 +911,11 @@ do iw=Lw,Mw; do iz=Lz,Mz; do iy=Ly,My; do ix=Lx,Mx
                rr=rrx+(x*exx-xc)**2; rrc=u1-rr
                frow=s*rrc**this%p
                b(jx,jy,jz,jw)=b(jx,jy,jz,jw)+frow*ta
-            enddo! gx
-         enddo! gy
-      enddo! gz
-   enddo! gw
-enddo;  enddo;  enddo;  enddo! ix, iy, iz, iw
+            end do! gx
+         end do! gy
+      end do! gz
+   end do! gw
+end do;  end do;  end do;  end do! ix, iy, iz, iw
 a=b
 end subroutine rbeta4t
 
@@ -972,11 +972,11 @@ do iw=Lw,Mw; do iz=Lz,Mz; do iy=Ly,My; do ix=Lx,Mx
                rr=rrx+(x*exx-xc)**2; rrc=u1-rr
                frow=s*rrc**this%p
                b(:,jx,jy,jz,jw)=b(:,jx,jy,jz,jw)+frow*ta
-            enddo! gx
-         enddo! gy
-      enddo! gz
-   enddo! gw
-enddo; enddo; enddo; enddo! ix, iy, iz, iw
+            end do! gx
+         end do! gy
+      end do! gz
+   end do! gw
+end do; end do; end do; end do! ix, iy, iz, iw
 a=b
 end subroutine vrbeta4t
 
@@ -1008,9 +1008,9 @@ do ix=Lx,Mx
       rr=(x*exx)**2; rrc=u1-rr
       frow=s*rrc**this%p
       tb=tb+frow*a(:,jx)
-   enddo
+   end do
    b(:,ix)=tb
-enddo
+end do
 a=b
 end subroutine vrbeta1
 
@@ -1051,10 +1051,10 @@ do iy=Ly,My; do ix=Lx,Mx
          rr=rrx+(x*exx-xc)**2; rrc=u1-rr
          frow=s*rrc**this%p
          tb=tb+frow*a(:,jx,jy)
-      enddo! gx
-   enddo! gy
+      end do! gx
+   end do! gy
    b(:,ix,iy)=tb
-enddo;   enddo! ix, iy
+end do;   end do! ix, iy
 a=b
 end subroutine vrbeta2
 
@@ -1101,11 +1101,11 @@ do iz=Lz,Mz; do iy=Ly,My; do ix=Lx,Mx
             rr=rrx+(x*exx-xc)**2; rrc=u1-rr
             frow=s*rrc**this%p
             tb=tb+frow*a(:,jx,jy,jz)
-         enddo! gx
-      enddo! gy
-   enddo! gz
+         end do! gx
+      end do! gy
+   end do! gz
    b(:,ix,iy,iz)=tb
-enddo;   enddo;    enddo! ix, iy, iz
+end do;   end do;    end do! ix, iy, iz
 a=b
 end subroutine vrbeta3
 
@@ -1137,8 +1137,8 @@ do ix=Lx,Mx
       rr=(x*exx)**2; rrc=u1-rr
       frow=s*rrc**this%p
       b(:,jx)=b(:,jx)+frow*ta
-   enddo
-enddo
+   end do
+end do
 a=b
 end subroutine vrbeta1t
 !=============================================================================
@@ -1178,9 +1178,9 @@ do iy=Ly,My; do ix=Lx,Mx
          rr=rrx+(x*exx-xc)**2; rrc=u1-rr
          frow=s*rrc**this%p
          b(:,jx,jy)=b(:,jx,jy)+frow*ta
-      enddo! gx
-   enddo! gy
-enddo; enddo ! ix, iy
+      end do! gx
+   end do! gy
+end do; end do ! ix, iy
 a=b
 end subroutine vrbeta2t
 
@@ -1228,10 +1228,10 @@ do iz=Lz,Mz; do iy=Ly,My; do ix=Lx,Mx
             rr=rrx+(x*exx-xc)**2; rrc=u1-rr
             frow=s*rrc**this%p
             b(:,jx,jy,jz)=b(:,jx,jy,jz)+frow*ta
-         enddo! gx
-      enddo! gy
-   enddo! gz
-enddo; enddo; enddo! ix, iy, iz
+         end do! gx
+      end do! gy
+   end do! gz
+end do; end do; end do! ix, iy, iz
 a=b
 end subroutine vrbeta3t
 

@@ -44,35 +44,35 @@ implicit none
 class (mg_intstate_type):: this
 integer(i_kind),optional,intent(in)::n_owned_anl
 real(r_kind),optional,intent(in)::anl_lonlat1d(:,:)
-character*(*),optional,intent(in) :: inputfilename
+character(len=*),optional,intent(in) :: inputfilename
 
 class(mg_parameter_type),optional,intent(in)::obj_parameter
 
 !---------------------------------------------------------------------------
 !
-!               Firs set of subroutines is called only once and serves to 
-!               initialte the MGBF run                                 
-! 
+!               Firs set of subroutines is called only once and serves to
+!               initialte the MGBF run
+!
 !---------------------------------------------------------------------------
 
 !****
 !**** Initialize run multigrid Beta filter parameters
 !****
-if (present(inputfilename)) then  
+if (present(inputfilename)) then
    call this%init_mg_parameter(inputfilename)
-elseif (present(obj_parameter)) then
+else if (present(obj_parameter)) then
    this%mg_parameter_type=obj_parameter
-endif
+end if
 
  if (present(anl_lonlat1d)) then
     if (size(anl_lonlat1d,2) /= 2 .or. size(anl_lonlat1d,1) <  n_owned_anl) then
-      write(6,*)'thinkdeb size(anl_lonlat1d,2) ',size(anl_lonlat1d,2)
-      write(6,*)'thinkdeb size(anl_lonlat1d,1) ',size(anl_lonlat1d,1)
-      write(6,*)'thinkdeb n_owned_anl ) ', n_owned_anl 
+      write(6,*)"thinkdeb size(anl_lonlat1d,2) ",size(anl_lonlat1d,2)
+      write(6,*)"thinkdeb size(anl_lonlat1d,1) ",size(anl_lonlat1d,1)
+      write(6,*)"thinkdeb n_owned_anl ) ", n_owned_anl
       call flush(6)
       error stop "anl_lonlat1d has wrong shape"
     end if
-   
+
  end if
 
 !****
@@ -83,20 +83,20 @@ if(this%nxm*this%nym>1) call this%init_mg_MPI
 !***
 !*** Initialize integration domain
 !***
-      write(6,*)'thinkdeb in mg_entry,  ', 3   
+      write(6,*)"thinkdeb in mg_entry,  ", 3
       call flush(6)
 call this%init_mg_domain
 if(this%l_loc) then
    call this%init_domain_loc
-endif
+end if
 
-      write(6,*)'thinkdeb in mg_entry,  ', 4   
+      write(6,*)"thinkdeb in mg_entry,  ", 4
       call flush(6)
 !---------------------------------------------------------------------------
 !
 !               All others are function of km2,km3,km,nm,mm,im,jm
 !               and needs to be called separately for each application
-! 
+!
 !---------------------------------------------------------------------------
 !***
 !*** Define km and WORKA array based on input from mg_parameters and
@@ -104,49 +104,49 @@ endif
 !***
 
 !***
-!*** Allocate variables, define weights, prepare mapping 
+!*** Allocate variables, define weights, prepare mapping
 !*** between analysis and filter grid
 !***
 
 call this%allocate_mg_intstate
-      write(6,*)'thinkdeb in mg_entry,  ', 5   
+      write(6,*)"thinkdeb in mg_entry,  ", 5
       call flush(6)
 
 call this%def_offset_coef
-      write(6,*)'thinkdeb in mg_entry,  ', 6   
+      write(6,*)"thinkdeb in mg_entry,  ", 6
       call flush(6)
-if(present(n_owned_anl).and.present(anl_lonlat1d)) then 
+if(present(n_owned_anl).and.present(anl_lonlat1d)) then
 call this%def_mg_weights(n_owned_anl=n_owned_anl,lonlat1d_anl=anl_lonlat1d)
 else
 call this%def_mg_weights
-endif
-      write(6,*)'thinkdeb in mg_entry,  ', 7   
+end if
+      write(6,*)"thinkdeb in mg_entry,  ", 7
       call flush(6)
 
 if(this%mgbf_line) then
-   write(6,*)'thinkdeb init_mg_line is called'
+   write(6,*)"thinkdeb init_mg_line is called"
    call this%init_mg_line
-endif
-      write(6,*)'thinkdeb in mg_entry,  ', 8   
+end if
+      write(6,*)"thinkdeb in mg_entry,  ", 8
       call flush(6)
 
-call this%lsqr_mg_coef 
-      write(6,*)'thinkdeb in mg_entry,  ', 9   
+call this%lsqr_mg_coef
+      write(6,*)"thinkdeb in mg_entry,  ", 9
       call flush(6)
 
 call this%lwq_vertical_coef(this%lm_a,this%lm,this%cvf1,this%cvf2,this%cvf3,this%cvf4,this%lref)
 
-      write(6,*)'thinkdeb in mg_entry,  ', 10   
+      write(6,*)"thinkdeb in mg_entry,  ", 10
       call flush(6)
 !***
 !*** Just for testing of standalone version. In GSI WORKA will be given
-!*** through a separate subroutine 
+!*** through a separate subroutine
 !***
 
 
 
 !-----------------------------------------------------------------------
-endsubroutine mg_initialize
+end subroutine mg_initialize
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine mg_finalize(this)
@@ -170,13 +170,13 @@ if(this%ldelta) then
    nm=this%nm
    mm=this%mm
    lm=this%lm
-endif
+end if
 
 if(this%nxm*this%nym>1) call this%barrierMPI
 
-call this%deallocate_mg_intstate          
+call this%deallocate_mg_intstate
 
 !-----------------------------------------------------------------------
-endsubroutine mg_finalize
+end subroutine mg_finalize
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 end submodule mg_entrymod

@@ -17,7 +17,7 @@ module jp_pmat4
 !                        of 3D rotations, and their conversion routines.
 !
 ! Subroutines Included:
-!   gram -           Right-handed orthogonal basis and rank, nrank. The first 
+!   gram -           Right-handed orthogonal basis and rank, nrank. The first
 !                    nrank basis vectors span the column range of matrix given,
 !                    OR  ("plain" version) simple unpivoted Gram-Schmidt of a
 !                    square matrix.
@@ -72,7 +72,7 @@ module jp_pmat4
 !   functions (Cross_product, Triple_product and Axial) do not possess simple
 !   generalizations to a generic number N of dimensions. The others, while
 !   admitting such N-dimensional generalizations, have not all been provided
-!   with such generic forms here at the time of writing, though some of these 
+!   with such generic forms here at the time of writing, though some of these
 !   may be added at a future date.
 !
 ! attributes:
@@ -173,7 +173,7 @@ implicit none
 real(sp),dimension(:),intent(IN):: a
 real(sp),dimension(size(a))     :: b
 real(sp)                        :: s
-s=absv_s(a); if(s==u0)then; b=u0;else;b=a/s;endif
+s=absv_s(a); if(s==u0)then; b=u0;else;b=a/s;end if
 end function normalized_s
 !=============================================================================
 function normalized_d(a)result(b)!                                [normalized]
@@ -183,7 +183,7 @@ implicit none
 real(dp),dimension(:),intent(IN):: a
 real(dp),dimension(size(a))     :: b
 real(dp)                        :: s
-s=absv_d(a); if(s==u0)then; b=u0;else;b=a/s;endif
+s=absv_d(a); if(s==u0)then; b=u0;else;b=a/s;end if
 end function normalized_d
 
 !=============================================================================
@@ -228,9 +228,9 @@ function triple_cross_product_s(u,v,w)result(x)!               [cross_product]
 !=============================================================================
 ! Deliver the triple-cross-product, x, of the
 ! three 4-vectors, u, v, w, with the sign convention
-! that ordered, {u,v,w,x} form a right-handed quartet 
+! that ordered, {u,v,w,x} form a right-handed quartet
 ! in the generic case (determinant >= 0).
-!============================================================================= 
+!=============================================================================
 implicit none
 real(sp),dimension(4),intent(in ):: u,v,w
 real(sp),dimension(4)            :: x
@@ -272,7 +272,7 @@ real(sp),dimension(:),  intent(in ):: b
 real(sp),DIMENSION(size(a),size(b)):: c
 integer(spi)                       :: nb,i
 nb=size(b)
-do i=1,nb; c(:,i)=a*b(i); enddo
+do i=1,nb; c(:,i)=a*b(i); end do
 end function outer_product_s
 !=============================================================================
 function outer_product_d(a,b)result(c)!                        [outer_product]
@@ -283,7 +283,7 @@ real(dp),dimension(:),  intent(in ):: b
 real(dp),dimension(size(a),size(b)):: c
 integer(spi)                       :: nb,i
 nb=size(b)
-do i=1,nb; c(:,i)=a*b(i); enddo
+do i=1,nb; c(:,i)=a*b(i); end do
 end function outer_product_d
 !=============================================================================
 function outer_product_i(a,b)result(c)!                        [outer_product]
@@ -294,7 +294,7 @@ integer(spi),dimension(:),  intent(in ):: b
 integer(spi),dimension(size(a),size(b)):: c
 integer(spi)                           :: nb,i
 nb=size(b)
-do i=1,nb; c(:,i)=a*b(i); enddo
+do i=1,nb; c(:,i)=a*b(i); end do
 end function outer_product_i
 
 !=============================================================================
@@ -329,7 +329,7 @@ if(n==3)then
 else
    call gram(a,b,nrank,det)
    if(nrank<n)det=u0
-endif
+end if
 end function det_s
 !=============================================================================
 function det_d(a)result(det)!                                            [det]
@@ -346,7 +346,7 @@ if(n==3)then
 else
    call gram(a,b,nrank,det)
    if(nrank<n)det=u0
-endif
+end if
 end function det_d
 !=============================================================================
 function det_i(a)result(idet)!                                           [det]
@@ -417,7 +417,7 @@ real(sp),dimension(:),intent(IN )  :: a
 real(sp),dimension(size(a),size(a)):: b
 integer(spi)                        :: n,i
 n=size(a)
-b=u0; do i=1,n; b(i,i)=a(i); enddo
+b=u0; do i=1,n; b(i,i)=a(i); end do
 end function diagn_s
 !=============================================================================
 function diagn_d(a)result(b)!                                           [diag]
@@ -428,7 +428,7 @@ real(dp),dimension(:),intent(IN )  :: a
 real(dp),dimension(size(a),size(a)):: b
 integer(spi)                       :: n,i
 n=size(a)
-b=u0; do i=1,n; b(i,i)=a(i); enddo
+b=u0; do i=1,n; b(i,i)=a(i); end do
 end function diagn_d
 !=============================================================================
 function diagn_i(a)result(b)!                                           [diag]
@@ -438,7 +438,7 @@ integer(spi),dimension(:),intent(IN )  :: a
 integer(spi),dimension(size(a),size(a)):: b
 integer(spi)                           :: n,i
 n=size(a)
-b=0; do i=1,n; b(i,i)=a(i); enddo
+b=0; do i=1,n; b(i,i)=a(i); end do
 end function diagn_i
 !=============================================================================
 function diagnn_s(b)result(a)!                                          [diag]
@@ -448,7 +448,7 @@ real(sp),dimension(:,:),intent(IN ):: b
 real(sp),dimension(size(b,1))      :: a
 integer(spi)                       :: n,i
 n=size(b,1)
-do i=1,n; a(i)=b(i,i); enddo
+do i=1,n; a(i)=b(i,i); end do
 end function diagnn_s
 !=============================================================================
 function diagnn_d(b)result(a)!                                          [diag]
@@ -458,7 +458,7 @@ real(dp),dimension(:,:),intent(IN ):: b
 real(dp),dimension(size(b,1))      :: a
 integer(spi)                       :: n,i
 n=size(b,1)
-do i=1,n; a(i)=b(i,i); enddo
+do i=1,n; a(i)=b(i,i); end do
 end function diagnn_d
 !=============================================================================
 function diagnn_i(b)result(a)!                                          [diag]
@@ -468,7 +468,7 @@ integer(spi),dimension(:,:),intent(IN ):: b
 integer(spi),dimension(size(b,1))      :: a
 integer(spi)                           :: n,i
 n=size(b,1)
-do i=1,n; a(i)=b(i,i); enddo
+do i=1,n; a(i)=b(i,i); end do
 end function diagnn_i
 
 !=============================================================================
@@ -503,7 +503,7 @@ implicit none
 integer(spi),intent(IN )   :: n
 integer(spi),dimension(n,n):: a
 integer(spi)               :: i
-a=0; do i=1,n; a(i,i)=1; enddo
+a=0; do i=1,n; a(i,i)=1; end do
 end function identity_i
 !=============================================================================
 function identity3_i()result(a)!                                    [identity]
@@ -511,7 +511,7 @@ function identity3_i()result(a)!                                    [identity]
 implicit none
 integer(spi),dimension(3,3):: a
 integer(spi)               :: i
-a=0; do i=1,3; a(i,i)=1; enddo
+a=0; do i=1,3; a(i,i)=1; end do
 end function identity3_i
 
 !=============================================================================
@@ -573,7 +573,7 @@ if(d3<d1 .or. d3<d2)call cyclic(u1,u2,u3,d1,d2,d3)
 y=normalized( cross_product(u1,u2) )
 b=dot_product(y,u3)
 u0=normalized( u3-y*b )
-x=cross_product(y,u0) 
+x=cross_product(y,u0)
 a1=-dot_product(x,u1-u0); a2= dot_product(x,u2-u0)
 area=huarea(a1,b)+huarea(a2,b)
 
@@ -616,7 +616,7 @@ if(d3<d1 .or. d3<d2)call cyclic(u1,u2,u3,d1,d2,d3)
 y=normalized( cross_product(u1,u2) )
 b=dot_product(y,u3)
 u0=normalized( u3-y*b )
-x=cross_product(y,u0) 
+x=cross_product(y,u0)
 a1=-dot_product(x,u1-u0); a2= dot_product(x,u2-u0)
 area=huarea(a1,b)+huarea(a2,b)
 
@@ -654,7 +654,7 @@ real(sp)             :: sb,ssb,cb,xa,sa,ca,sc,cc
 call dlltoxy(rlat,drlata,drlona,x2a)
 call dlltoxy(rlat,drlatb,drlonb,x2b)
 ssb=dot_product(x2b,x2b); sb=sqrt(ssb)
-if(sb==u0)then; area=u0; return; endif
+if(sb==u0)then; area=u0; return; end if
 cb=sqrt(u1-ssb)
 ! Construct 2D normalized right-handed basis vectors with xb pointing to B:
 xb=x2b/sb
@@ -681,7 +681,7 @@ real(dp)             :: sb,ssb,cb,xa,sa,ca,sc,cc
 call dlltoxy(rlat,drlata,drlona,x2a)
 call dlltoxy(rlat,drlatb,drlonb,x2b)
 ssb=dot_product(x2b,x2b); sb=sqrt(ssb)
-if(sb==u0)then; area=u0; return; endif
+if(sb==u0)then; area=u0; return; end if
 cb=sqrt(u1-ssb)
 ! Construct 2D normalized right-handed basis vectors with xb pointing to B:
 xb=x2b/sb
@@ -699,12 +699,12 @@ function dqarea_s &!                                                   [sarea]
      (rlat,drlata,drlona,drlatb,drlonb,drlatc,drlonc) result(area)
 !=============================================================================
 ! Compute the area of the spherical quadrilateral with a vertex at latitude
-! rlat, and three other vertices at A, B, and C inturn, 
+! rlat, and three other vertices at A, B, and C inturn,
 ! whose incremented latitudes and longitudes are drlata,drlona (for A),
 ! drlatb,drlonb (for B), and drlatc,drlonc (for C).
 ! The computations are designed to give a proportionately accurate area
-! estimate even when the quadrilateral is very small, provided the 
-! diagonal making the B-increment is not disproportionately small compared to 
+! estimate even when the quadrilateral is very small, provided the
+! diagonal making the B-increment is not disproportionately small compared to
 ! the characteristic size of the quadrilateral.
 !=============================================================================
 implicit none
@@ -781,7 +781,7 @@ use jp_pietc_s, only: u0,u1
 implicit none
 real(sp),dimension(:),intent(inout):: v
 real(sp)                           :: s
-s=absv(v); if(s==0)then; v=u0; v(1)=u1; else; v=v/s; endif
+s=absv(v); if(s==0)then; v=u0; v(1)=u1; else; v=v/s; end if
 end subroutine normalize_s
 !=============================================================================
 subroutine normalize_d(v)!                                         [normalize]
@@ -790,7 +790,7 @@ use jp_pietc, only: u0,u1
 implicit none
 real(dp),dimension(:),intent(inout):: v
 real(dp)                           :: s
-s=absv(v); if(s==u0)then; v=0; v(1)=u1; else; v=v/s; endif
+s=absv(v); if(s==u0)then; v=0; v(1)=u1; else; v=v/s; end if
 end subroutine normalize_d
 
 !=============================================================================
@@ -802,7 +802,7 @@ real(sp),dimension(:,:),intent(IN )      :: as
 real(sp),dimension(:,:),intent(OUT)      :: b
 integer(spi),           intent(OUT)      :: nrank
 real(sp),               intent(OUT)      :: det
-!- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+!- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 real(sp),parameter                       :: crit=1.e-5_sp
 real(sp),dimension(size(as,1),size(as,2)):: a
 real(sp),dimension(size(as,2),size(as,1)):: ab
@@ -813,7 +813,7 @@ integer(spi),dimension(2)                :: ii
 !=============================================================================
 n=size(as,1)
 m=size(as,2)
-if(n/=size(b,1) .or. n/=size(b,2))stop 'In gram; incompatible dimensions'
+if(n/=size(b,1) .or. n/=size(b,2))stop "In gram; incompatible dimensions"
 a=as
 b=identity(n)
 det=u1
@@ -821,7 +821,7 @@ val=maxval(abs(a))
 if(val==u0)then
    nrank=0
    return
-endif
+end if
 vcrit=val*crit
 nrank=min(n,m)
 do k=1,n
@@ -832,7 +832,7 @@ do k=1,n
    if(val<=vcrit)then
       nrank=k-1
       exit
-   endif
+   end if
    i=ii(1)
    j=ii(2)
    tv=b(:,j)
@@ -852,11 +852,11 @@ do k=1,n
       do j=l+1,n
          s=dot_product(b(:,l),b(:,j))
          b(:,j)=normalized( b(:,j)-b(:,l)*s )
-      enddo
-   enddo
-enddo
+      end do
+   end do
+end do
 end subroutine gram_s
-   
+
 !=============================================================================
 subroutine gram_d(as,b,nrank,det)!                                      [gram]
 !=============================================================================
@@ -866,7 +866,7 @@ real(dp),dimension(:,:),intent(IN )      :: as
 real(dp),dimension(:,:),intent(OUT)      :: b
 integer(spi),           intent(OUT)      :: nrank
 real(dp),               intent(OUT)      :: det
-!- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+!- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 real(dp),parameter                       :: crit=1.e-9_dp
 real(dp),dimension(size(as,1),size(as,2)):: a
 real(dp),dimension(size(as,2),size(as,1)):: ab
@@ -877,7 +877,7 @@ integer(spi),dimension(2)                :: ii
 !=============================================================================
 n=size(as,1)
 m=size(as,2)
-if(n/=size(b,1) .or. n/=size(b,2))stop 'In gram; incompatible dimensions'
+if(n/=size(b,1) .or. n/=size(b,2))stop "In gram; incompatible dimensions"
 a=as
 b=identity(n)
 det=u1
@@ -885,7 +885,7 @@ val=maxval(abs(a))
 if(val==u0)then
    nrank=0
    return
-endif
+end if
 vcrit=val*crit
 nrank=min(n,m)
 do k=1,n
@@ -896,7 +896,7 @@ do k=1,n
    if(val<=vcrit)then
       nrank=k-1
       exit
-   endif
+   end if
    i=ii(1)
    j=ii(2)
    tv=b(:,j)
@@ -916,11 +916,11 @@ do k=1,n
       do j=l+1,n
          s=dot_product(b(:,l),b(:,j))
          b(:,j)=normalized( b(:,j)-b(:,l)*s )
-      enddo
-   enddo
-enddo
+      end do
+   end do
+end do
 end subroutine gram_d
-   
+
 !=============================================================================
 subroutine graml_d(as,b,nrank,detsign,ldet)!                            [gram]
 !=============================================================================
@@ -937,7 +937,7 @@ real(dp),dimension(:,:),intent(OUT)      :: b
 integer(spi),           intent(OUT)      :: nrank
 integer(spi),           intent(out)      :: detsign
 real(dp),               intent(OUT)      :: ldet
-!- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+!- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 real(dp),parameter                       :: crit=1.e-9_dp
 real(dp),dimension(size(as,1),size(as,2)):: a
 real(dp),dimension(size(as,2),size(as,1)):: ab
@@ -949,7 +949,7 @@ integer(spi),dimension(2)                :: ii
 detsign=1
 n=size(as,1)
 m=size(as,2)
-if(n/=size(b,1) .or. n/=size(b,2))stop 'In gram; incompatible dimensions'
+if(n/=size(b,1) .or. n/=size(b,2))stop "In gram; incompatible dimensions"
 a=as
 b=identity(n)
 
@@ -958,7 +958,7 @@ val=maxval(abs(a))
 if(val==u0)then
    nrank=0
    return
-endif
+end if
 vcrit=val*crit
 nrank=min(n,m)
 do k=1,n
@@ -969,7 +969,7 @@ do k=1,n
    if(val<=vcrit)then
       nrank=k-1
       exit
-   endif
+   end if
    i=ii(1)
    j=ii(2)
    tv=b(:,j)
@@ -986,22 +986,22 @@ do k=1,n
    if(s<0)then
       ldet=ldet+log(-s)
       detsign=-detsign
-   elseif(s>u0)then
+   else if(s>u0)then
       ldet=ldet+log(s)
    else
       detsign=0
-   endif
-      
+   end if
+
    b(:,k)=b(:,k)/s
    do l=k,n
       do j=l+1,n
          s=dot_product(b(:,l),b(:,j))
          b(:,j)=normalized( b(:,j)-b(:,l)*s )
-      enddo
-   enddo
-enddo
+      end do
+   end do
+end do
 end subroutine graml_d
-   
+
 !=============================================================================
 subroutine plaingram_s(b,nrank)!                                        [gram]
 !=============================================================================
@@ -1010,31 +1010,31 @@ use jp_pietc_s, only: u0
 implicit none
 real(sp),dimension(:,:),intent(INOUT)    :: b
 integer(spi),           intent(  OUT)    :: nrank
-!- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+!- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 real(sp),parameter                       :: crit=1.e-5_sp
 real(sp)                                 :: val,vcrit
 integer(spi)                             :: j,k,n
 !=============================================================================
-n=size(b,1); if(n/=size(b,2))stop 'In gram; matrix needs to be square'
+n=size(b,1); if(n/=size(b,2))stop "In gram; matrix needs to be square"
 val=maxval(abs(b))
 nrank=0
 if(val==0)then
    b=u0
    return
-endif
+end if
 vcrit=val*crit
 do k=1,n
    val=sqrt(dot_product(b(:,k),b(:,k)))
    if(val<=vcrit)then
       b(:,k:n)=u0
       return
-   endif
+   end if
    b(:,k)=b(:,k)/val
    nrank=k
    do j=k+1,n
       b(:,j)=b(:,j)-b(:,k)*dot_product(b(:,k),b(:,j))
-   enddo
-enddo
+   end do
+end do
 end subroutine plaingram_s
 
 !=============================================================================
@@ -1045,31 +1045,31 @@ use jp_pietc, only: u0
 implicit none
 real(dp),dimension(:,:),intent(INOUT):: b
 integer(spi),           intent(  OUT):: nrank
-!- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+!- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 real(dp),parameter:: crit=1.e-9_dp
 real(dp)          :: val,vcrit
 integer(spi)      :: j,k,n
 !=============================================================================
-n=size(b,1); if(n/=size(b,2))stop 'In gram; matrix needs to be square'
+n=size(b,1); if(n/=size(b,2))stop "In gram; matrix needs to be square"
 val=maxval(abs(b))
 nrank=0
 if(val==u0)then
    b=u0
    return
-endif
+end if
 vcrit=val*crit
 do k=1,n
    val=sqrt(dot_product(b(:,k),b(:,k)))
    if(val<=vcrit)then
       b(:,k:n)=u0
       return
-   endif
+   end if
    b(:,k)=b(:,k)/val
    nrank=k
    do j=k+1,n
       b(:,j)=b(:,j)-b(:,k)*dot_product(b(:,k),b(:,j))
-   enddo
-enddo
+   end do
+end do
 end subroutine plaingram_d
 
 !=============================================================================
@@ -1081,7 +1081,7 @@ subroutine rowgram(m,n,a,ipiv,tt,b,rank)!                               [gram]
 ! in tt(j,j) and the row-orthogonalization in tt(i,j), for i>j. Note that
 ! tt(i,j)=0 for i<j (tt is truncated lower triangular). The orthonormalized
 ! rows are returned in square array b, which is complete even when the
-! effective rank < n. 
+! effective rank < n.
 ! The recorded row operations can be repeated on independent column vectors
 ! through the use of subroutine ROWOPS (in this module).
 ! It is recommended to rescale the original matrix A via a call to CORRAL
@@ -1106,7 +1106,7 @@ real(dp)                 :: maxp,nepss
 integer(spi),dimension(1):: jloc
 integer(spi)             :: i,ii,iii,j,maxi
 !=============================================================================
-if(m<n)stop 'In rowgram; this routines needs m>=n please'
+if(m<n)stop "In rowgram; this routines needs m>=n please"
 nepss=n*epss
 rank=n
 aa=a
@@ -1123,8 +1123,8 @@ do ii=1,n
       if(p(i)>maxp)then
          maxp=p(i)
          maxi=i
-      endif
-   enddo
+      end if
+   end do
    if(maxp<nepss)then !<- End of gram process; clean up and return
       b=u0
       b(1:ii-1,:)=aa(1:ii-1,:)
@@ -1133,37 +1133,37 @@ do ii=1,n
 ! find the column of b for which the maximum element is the smallest:
          do j=1,n
             rowv(j)=maxval(abs(b(1:iii-1,j)))
-         enddo
+         end do
          jloc=minloc(rowv)
          j=jloc(1)
          b(iii,j)=u1
          do i=1,iii-1
             maxp=dot_product(b(i,:),b(iii,:))
             b(iii,:)=b(iii,:)-b(i,:)*maxp
-         enddo
+         end do
          maxp=sqrt(dot_product(b(iii,:),b(iii,:)))
          b(iii,:)=b(iii,:)/maxp
-      enddo
+      end do
       rank=ii-1
       return
-   endif
-   
+   end if
+
    ipiv(ii)=maxi
    if(maxi/=ii)then
       rowv      =aa(ii,  :)
       aa(ii,  :)=aa(maxi,:)
       aa(maxi,:)=rowv
-   endif
+   end if
    maxp=sqrt(maxp)
    tt(ii,ii)=maxp
    aa(ii,:)=aa(ii,:)/maxp
-! Adjust all rows below to make them orthogonal to new row ii  
+! Adjust all rows below to make them orthogonal to new row ii
    do i=ii+1,m
       maxp=dot_product(aa(ii,:),aa(i,:))
       tt(i,ii)=maxp
       aa(i,:)=aa(i,:)-aa(ii,:)*maxp
-   enddo
-enddo
+   end do
+end do
 b=aa(1:n,:)
 end subroutine rowgram
 
@@ -1190,22 +1190,22 @@ do j=1,n
       p=vv(j)
       vv(j)=vv(k)
       vv(k)=p
-   endif
+   end if
    vv(j)=vv(j)/tt(j,j)
    do i=j+1,m
       vv(i)=vv(i)-vv(j)*tt(i,j)
-   enddo
-enddo
+   end do
+end do
 end subroutine rowops
-   
+
 !=============================================================================
 subroutine corral(m,n,mask,a,d,aa,e)!                                 [corral]
 !=============================================================================
 ! Find positive diagonals D and E and a Lagrange multiplier F that minimize
-! the row-sum +column-sum of masked terms, 
+! the row-sum +column-sum of masked terms,
 ! (D_i +log(|A_ij|) +E_j)^2
 ! subject to the single constraint, sum_j E_j =0, where the mask permits
-! only nonnegligible A_ij to participate in the quadratic quantities. 
+! only nonnegligible A_ij to participate in the quadratic quantities.
 ! Once a solution for D and E is found, return their exponentials, d and e,
 ! together with the rescaled matrix aa such that a = d.aa.e when d and e are
 ! interpreted as diagonal matrices.
@@ -1229,8 +1229,8 @@ aa=u0
 do j=1,n
 do i=1,m
    if(mask(i,j))aa(i,j)=log(abs(a(i,j)))
-enddo
-enddo
+end do
+end do
 
 h=u0
 g=u0
@@ -1239,7 +1239,7 @@ g=u0
 do j=1,n
    k=m+j
    g(0,k)=u1
-enddo
+end do
 
 ! Equations on rows 1:m minimizing row sums of quadratic terms:
 do i=1,m
@@ -1249,9 +1249,9 @@ do i=1,m
          g(i,i)=g(i,i)-u1
          g(i,k)=-u1
          h(i)=h(i)-aa(i,j)
-      endif
-   enddo
-enddo
+      end if
+   end do
+end do
 
 ! Equations on rows m+1:m+n minimizing col sums subject to constraint
 do j=1,n
@@ -1262,9 +1262,9 @@ do j=1,n
          g(k,k)=g(k,k)-u1
          g(k,i)=-u1
          h(k)=h(k)-aa(i,j)
-      endif
-   enddo
-enddo
+      end if
+   end do
+end do
 
 ! Invert the normal equations:
 call inv(g,h)
@@ -1272,18 +1272,18 @@ call inv(g,h)
 ! Exponentiate the parts that become final scaling diagnonal matrices d and e:
 do i=1,m
    d(i)=exp(h(i))
-enddo
+end do
 do j=1,n
    k=m+j
    e(j)=exp(h(k))
-enddo
+end do
 
 ! Compute the rescaled matrix directly:
 do j=1,n
 do i=1,m
    aa(i,j)=a(i,j)/(d(i)*e(j))
-enddo
-enddo
+end do
+end do
 end subroutine corral
 
 !=============================================================================
@@ -1306,7 +1306,7 @@ integer(spi),dimension(1):: ii
 integer(spi)             :: i,j,k
 !=============================================================================
 plane=orth33-identity()! Columns must be coplanar vectors
-do i=1,3; z(i)=dot_product(plane(:,i),plane(:,i)); enddo
+do i=1,3; z(i)=dot_product(plane(:,i),plane(:,i)); end do
 ii=minloc(z)
 k=ii(1); i=1+mod(k,3); j=1+mod(i,3)
 ax3=cross_product(plane(:,i),plane(:,j))
@@ -1322,7 +1322,7 @@ end subroutine rottoax
 !=============================================================================
 subroutine axtorot(ax3,orth33)!                                    [axtorot]
 !=============================================================================
-! Construct the 3*3 orthogonal matrix, orth33, that corresponds to the 
+! Construct the 3*3 orthogonal matrix, orth33, that corresponds to the
 ! proper rotation encoded by the 3-vector, ax3. The antisymmetric matrix
 ! ax33 equivalent to the axial vector ax3 is exponentiated to obtain orth33.
 !=============================================================================
@@ -1382,28 +1382,28 @@ integer(spi),dimension(1):: ii
 !==============================================================================
 ! construct the orthogonal matrix, t1, whose third row is the rotation axis
 ! of rot:
-t1=rot; do i=1,3; t1(i,i)=t1(i,i)-1; u1(i)=dot_product(t1(i,:),t1(i,:)); enddo
+t1=rot; do i=1,3; t1(i,i)=t1(i,i)-1; u1(i)=dot_product(t1(i,:),t1(i,:)); end do
 ii=maxloc(u1); j=ii(1); ss=u1(j)
 if(ss<1.e-16_dp)then
    q=zero; q(0)=one; return
-endif
+end if
 t1(j,:)=t1(j,:)/sqrt(ss)
 if(j/=1)then
    u2     =t1(1,:)
    t1(1,:)=t1(j,:)
    t1(j,:)=u2
-endif
+end if
 do i=2,3
    t1(i,:)=t1(i,:)-dot_product(t1(1,:),t1(i,:))*t1(1,:)
    u1(i)=dot_product(t1(i,:),t1(i,:))
-enddo
+end do
 if(u1(3)>u1(2))then
    j=3
 else
    j=2
-endif
+end if
 ss=u1(j)
-if(ss==zero)stop 'In rotov; invalid rot'
+if(ss==zero)stop "In rotov; invalid rot"
 if(j/=2)t1(2,:)=t1(3,:)
 t1(2,:)=t1(2,:)/sqrt(ss)
 
@@ -1455,7 +1455,7 @@ end subroutine axtoq
 !=============================================================================
 subroutine qtoax(q,v)!                                                [qtoax]
 !=============================================================================
-! Go from quaternion to axial 3-vector 
+! Go from quaternion to axial 3-vector
 !=============================================================================
 implicit none
 real(dp),dimension(0:3),intent(in ):: q
@@ -1526,14 +1526,14 @@ b=p
 do i=2,L
    p=matmul(p,c)/i
    b=b+p
-enddo
+end do
 do i=1,m
    b=b*u2+matmul(b,b)
-enddo
+end do
 do i=1,n
    b(i,i)=b(i,i)+u1
-enddo
-detb=u0; do i=1,n; detb=detb+a(i,i); enddo; detb=exp(detb)
+end do
+detb=u0; do i=1,n; detb=detb+a(i,i); end do; detb=exp(detb)
 end subroutine expmat
 
 !=============================================================================
@@ -1564,16 +1564,16 @@ p=c
 pd=u0
 do k=1,n
    pd(k,k,k)=t
-enddo
+end do
 k=n
 do i=1,n-1
    do j=i+1,n
       k=k+1
       pd(i,j,k)=t
       pd(j,i,k)=t
-   enddo
-enddo
-if(k/=n1)stop 'In expmatd; n1 is inconsistent with n'
+   end do
+end do
+if(k/=n1)stop "In expmatd; n1 is inconsistent with n"
 cd=pd
 b=p
 bd=pd
@@ -1581,22 +1581,22 @@ bd=pd
 do i=2,L
    do k=1,n1
       pd(:,:,k)=(matmul(cd(:,:,k),p)+matmul(c,pd(:,:,k)))/i
-   enddo
+   end do
    p=matmul(c,p)/i
    b=b+p
    bd=bd+pd
-enddo
+end do
 do i=1,m
    do k=1,n1
       bd(:,:,k)=2*bd(:,:,k)+matmul(bd(:,:,k),b)+matmul(b,bd(:,:,k))
-   enddo
+   end do
    b=b*u2+matmul(b,b)
-enddo
+end do
 do i=1,n
    b(i,i)=b(i,i)+u1
-enddo
-detb=u0; do i=1,n; detb=detb+a(i,i); enddo; detb=exp(detb)
-detbd=u0; do k=1,n; detbd(k)=detb; enddo
+end do
+detb=u0; do i=1,n; detb=detb+a(i,i); end do; detb=exp(detb)
+detbd=u0; do k=1,n; detbd(k)=detb; end do
 end subroutine expmatd
 
 !=============================================================================
@@ -1631,16 +1631,16 @@ pd=u0
 pdd=u0
 do k=1,n
    pd(k,k,k)=t
-enddo
+end do
 k=n
 do i=1,n-1
    do j=i+1,n
       k=k+1
       pd(i,j,k)=t
       pd(j,i,k)=t
-   enddo
-enddo
-if(k/=n1)stop 'In expmatd; n1 is inconsistent with n'
+   end do
+end do
+if(k/=n1)stop "In expmatd; n1 is inconsistent with n"
 cd=pd
 cdd=u0
 b=p
@@ -1653,16 +1653,16 @@ do i=2,L
          pdd(:,:,ki,kj)=(matmul(cd(:,:,ki),pd(:,:,kj)) &
                        + matmul(cd(:,:,kj),pd(:,:,ki)) &
                        + matmul(c,pdd(:,:,ki,kj)))/i
-      enddo
-   enddo
+      end do
+   end do
    do k=1,n1
       pd(:,:,k)=(matmul(cd(:,:,k),p)+matmul(c,pd(:,:,k)))/i
-   enddo
+   end do
    p=matmul(c,p)/i
    b=b+p
    bd=bd+pd
    bdd=bdd+pdd
-enddo
+end do
 do i=1,m
    do ki=1,n1
       do kj=1,n1
@@ -1671,19 +1671,19 @@ do i=1,m
                         +matmul(bd(:,:,ki),bd(:,:,kj)) &
                         +matmul(bd(:,:,kj),bd(:,:,ki)) &
                         +matmul(b,bdd(:,:,ki,kj))
-      enddo
-   enddo
+      end do
+   end do
    do k=1,n1
       bd(:,:,k)=2*bd(:,:,k)+matmul(bd(:,:,k),b)+matmul(b,bd(:,:,k))
-   enddo
+   end do
    b=b*u2+matmul(b,b)
-enddo
+end do
 do i=1,n
    b(i,i)=b(i,i)+u1
-enddo
-detb=u0; do i=1,n; detb=detb+a(i,i); enddo; detb=exp(detb)
-detbd=u0;  do k=1,n; detbd(k)=detb; enddo
-detbdd=u0; do ki=1,n; do kj=1,n; detbdd(ki,kj)=detb; enddo; enddo
+end do
+detb=u0; do i=1,n; detb=detb+a(i,i); end do; detb=exp(detb)
+detbd=u0;  do k=1,n; detbd(k)=detb; end do
+detbdd=u0; do ki=1,n; do kj=1,n; detbdd(ki,kj)=detb; end do; end do
 end subroutine expmatdd
 
 !=============================================================================
@@ -1705,7 +1705,7 @@ n2=n*2
 t=1
 do i=1,n
    t=t/(i*2-1)
-enddo
+end do
 eps=t*eps0
 zn=t
 do i=1,ni
@@ -1713,7 +1713,7 @@ do i=1,ni
    t=t*z2/(i2*(i2+n2-1))
    zn=zn+t
    if(abs(t)<eps)return
-enddo
+end do
 print'("In zntay;  full complement of iterations used")'
 end subroutine zntay
 
@@ -1748,7 +1748,7 @@ else
          znd=zndd
          zndd=znddd
          znddd=(znd-i2p3*zndd)/z2
-      enddo
+      end do
    else
       zn=cos(rz2)
       znd=sin(rz2)/rz2
@@ -1760,14 +1760,14 @@ else
          znd=zndd
          zndd=znddd
          znddd=-(znd-i2p3*zndd)/z2
-      enddo
-   endif
-endif
+      end do
+   end if
+end if
 end subroutine znfun
-      
+
 !=============================================================================
 ! Utility code for various Mobius transformations. If aa1,bb1,cc1,dd1 are
-! the coefficients for one transformation, and aa2,bb2,cc2,dd2 are the 
+! the coefficients for one transformation, and aa2,bb2,cc2,dd2 are the
 ! coefficients for a second one, then the coefficients for the mapping
 ! of a test point, zz, by aa1 etc to zw, followed by a mapping of zw, by
 ! aa2 etc to zv, is equivalent to a single mapping zz-->zv by the transformatn
@@ -1798,10 +1798,10 @@ else
    rr=v(1)**2+v(2)**2
    infz=(rr==u0); if(infz)return ! <- The point is mapped to infinity (90S)
    zzpi=(u1-v(3))/rr
-endif
+end if
 z=z*zzpi
 end subroutine ctoz
-   
+
 !=============================================================================
 subroutine ztoc(z,infz, v)!                                             [ztoc]
 !=============================================================================
@@ -1813,7 +1813,7 @@ real(dp),dimension(3),intent(OUT):: v
 real(dp),parameter:: zero=0_dp,one=1_dp,two=2_dp
 real(dp)          :: r,q,rs,rsc,rsbi
 !=============================================================================
-if(infz)then; v=(/zero,zero,-one/); return; endif
+if(infz)then; v=(/zero,zero,-one/); return; end if
 r=real(z); q=aimag(z); rs=r*r+q*q
 rsc=one-rs
 rsbi=one/(one+rs)
@@ -1843,7 +1843,7 @@ real(dp)             :: r,q,rs,rsc,rsbi,rsbis
 real(dp),dimension(3):: u1,u2
 integer(spi)         :: i
 !=============================================================================
-if(infz)then; v=(/zero,zero,-one/); return; endif
+if(infz)then; v=(/zero,zero,-one/); return; end if
 r=real(z); q=aimag(z); rs=r*r+q*q
 rsc=one-rs
 rsbi=one/(one+rs)
@@ -1857,7 +1857,7 @@ u1(3)=-four*r*rsbis
 u2=cross_product(v,u1)
 do i=1,3
    vd(i)=cmplx(u1(i),-u2(i),dpc)
-enddo
+end do
 end subroutine ztocd
 
 !============================================================================
@@ -1886,49 +1886,49 @@ z10=z1-z0
 if(  (z0==z1.and.infz0.eqv.infz1).or.&
      (z1==z2.and.infz1.eqv.infz2).or.&
      (z2==z0.and.infz2.eqv.infz0))   &
-     stop 'In setmobius; anchor points must be distinct'
+     stop "In setmobius; anchor points must be distinct"
 
 if(infz2 .or. (.not.infz0 .and. abs(z0)<abs(z2)))then
 ! z0 is finite and smaller than z2:
    if(infz1)then
       aa=one/sqrt(z02)        ! <- z1 is infinite
-   elseif(infz2)then
+   else if(infz2)then
       aa=one/sqrt(z10)        ! <- z2 is infinite
    else
       aa=sqrt(-z21/(z02*z10)) ! <- all zs are finite
-   endif
+   end if
    bb=-z0*aa
    if(infz1)then
       cc=aa                   ! <- z1 is infinite
       dd=-z2*aa               !
-   elseif(infz2)then
+   else if(infz2)then
       cc=zero                 ! <- z2 is infinite
       dd=z10*aa               !
    else
       cc=-(z10/z21)*aa        ! <- all zs are finite
       dd= z2*(z10/z21)*aa     !
-   endif
+   end if
 else
 ! z2 is finite and smaller than z0:
    if(infz0)then
       cc=one/sqrt(z21)        ! <- z0 is inifinite
-   elseif(infz1)then
+   else if(infz1)then
       cc=one/sqrt(z02)        ! <- z1 is infinite
    else
       cc=sqrt(-z10/(z02*z21)) ! <- all zs are finite
-   endif
+   end if
    dd=-z2*cc
    if(infz0)then
       aa=zero                 ! <- z0 is inifinite
       bb=-z21*cc              !
-   elseif(infz1)then
+   else if(infz1)then
       aa=cc                   ! <- z1 is infinite
       bb=-z0*cc               !
    else
       aa=(-z21/z10)*cc        ! <- all zs are finite
       bb=z0*(z21/z10)*cc      !
-   endif
-endif
+   end if
+end if
 end subroutine setmobius
 
 !============================================================================
@@ -1936,10 +1936,10 @@ subroutine zsetmobius(z0,infz0, z1,infz1, z2,infz2,  aa,bb,cc,dd)
 !                                                                 [setmobius]
 !============================================================================
 ! Find the Mobius transformation complex coefficients, aa,bb,cc,dd,
-! with aa*dd-bb*cc=1, 
-! that takes polar stereographic  point, z0 to the north pole, 
+! with aa*dd-bb*cc=1,
+! that takes polar stereographic  point, z0 to the north pole,
 ! z1 to (lat=0,lon=0), z2 to the south pole (=complex infinity).
-! Should any one of z0,z1,z2 be itself the "point at infinity" its 
+! Should any one of z0,z1,z2 be itself the "point at infinity" its
 ! corresponding infz will be set "true" (and the z value itself not used).
 ! This routine is like setmobius, except the three fixed points defining
 ! the mapping are given in standard complex stereographic form, together
@@ -1961,49 +1961,49 @@ z10=z1-z0
 if(  (z0==z1.and.infz0.eqv.infz1).or.&
      (z1==z2.and.infz1.eqv.infz2).or.&
      (z2==z0.and.infz2.eqv.infz0))   &
-     stop 'In setmobius; anchor points must be distinct'
+     stop "In setmobius; anchor points must be distinct"
 
 if(infz2 .or. (.not.infz0 .and. abs(z0)<abs(z2)))then
 ! z0 is finite and smaller than z2:
    if(infz1)then
       aa=one/sqrt(z02)        ! <- z1 is infinite
-   elseif(infz2)then
+   else if(infz2)then
       aa=one/sqrt(z10)        ! <- z2 is infinite
    else
       aa=sqrt(-z21/(z02*z10)) ! <- all zs are finite
-   endif
+   end if
    bb=-z0*aa
    if(infz1)then
       cc=aa                   ! <- z1 is infinite
       dd=-z2*aa               !
-   elseif(infz2)then
+   else if(infz2)then
       cc=zero                 ! <- z2 is infinite
       dd=z10*aa               !
    else
       cc=-(z10/z21)*aa        ! <- all zs are finite
       dd= z2*(z10/z21)*aa     !
-   endif
+   end if
 else
 ! z2 is finite and smaller than z0:
    if(infz0)then
       cc=one/sqrt(z21)        ! <- z0 is inifinite
-   elseif(infz1)then
+   else if(infz1)then
       cc=one/sqrt(z02)        ! <- z1 is infinite
    else
       cc=sqrt(-z10/(z02*z21)) ! <- all zs are finite
-   endif
+   end if
    dd=-z2*cc
    if(infz0)then
       aa=zero                 ! <- z0 is inifinite
       bb=-z21*cc              !
-   elseif(infz1)then
+   else if(infz1)then
       aa=cc                   ! <- z1 is infinite
       bb=-z0*cc               !
    else
       aa=(-z21/z10)*cc        ! <- all zs are finite
       bb=z0*(z21/z10)*cc      !
-   endif
-endif
+   end if
+end if
 end subroutine zsetmobius
 
 !=============================================================================
@@ -2031,13 +2031,13 @@ if(infz)then
 else
    top=aa*z+bb
    bot=cc*z+dd
-endif
+end if
 
 if(abs(bot)==zero)then
    infw=.true.
 else
    w=top/bot
-endif
+end if
 end subroutine zmobius
 
 !=============================================================================

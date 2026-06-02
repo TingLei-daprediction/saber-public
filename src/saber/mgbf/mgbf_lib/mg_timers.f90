@@ -81,9 +81,9 @@ module mg_timers
   type(timer),save,public ::       boco_tim
   type(timer),save,public ::    bfiltT_tim
   type(timer),save,public ::     mg_multiply_time
-  type(timer),save,public ::     mg_interface_multiply_time 
-  type(timer),save,public ::     mg_interface_registry_get_time 
-  type(timer),save,public ::     mg_interface_fldset_time 
+  type(timer),save,public ::     mg_interface_multiply_time
+  type(timer),save,public ::     mg_interface_registry_get_time
+  type(timer),save,public ::     mg_interface_fldset_time
   type(timer),save,public ::     mg_preprocess_time
   type(timer),save,public ::     mg_postprocess_time
   type(timer),save,public ::     mg_anal_to_filt_time
@@ -112,7 +112,7 @@ contains
     t%start_clock = wtime()
     t%start_cpu = ctime()
 
-  endsubroutine btim
+  end subroutine btim
 !-----------------------------------------------------------------------
   subroutine etim(t)
     implicit none
@@ -123,7 +123,7 @@ contains
     ct = ctime()
 
     if (.not.t%running) then
-      write(6,*)'etim: timer is not running'
+      write(6,*)"etim: timer is not running"
       call flush(6)
       STOP
     end if
@@ -136,7 +136,7 @@ contains
 !clt noneed    t%start_cpu = 0.0
 
 
-  endsubroutine etim
+  end subroutine etim
 !-----------------------------------------------------------------------
   subroutine print_mg_timers(filename, print_type,mype)
     use mpi
@@ -159,7 +159,7 @@ contains
                        MPI_MODE_WRONLY + MPI_MODE_CREATE, &
                        MPI_INFO_NULL, fh, ierr)
 
-       buffer1=' '; buffer2=' ';buffer3=' ';buffer4=' '
+       buffer1=" "; buffer2=" ";buffer3=" ";buffer4=" "
     write(buffer1,"(I6,25(',',F10.4),',',I10)") mype,                            &
                                        init_tim%time_clock,             &
                                        upsend_tim%time_clock,           &
@@ -171,7 +171,7 @@ contains
                                        vfilt_tim%time_clock,           &
                                        bocoT_tim%time_clock,           &
                                        boco_tim%time_clock,           &
-  
+
                                        filt2an_tim%time_clock,          &
                                        aintp_tim%time_clock,            &
                                        intp_tim%time_clock,             &
@@ -179,15 +179,15 @@ contains
                                        output_tim%time_clock,           &
                                        total_tim%time_clock,            &
                                        mg_multiply_time%time_clock ,  &
-                                  mg_interface_multiply_time%time_clock,& 
-                                  mg_interface_registry_get_time%time_clock,& 
-                                  mg_interface_fldset_time%time_clock,& 
+                                  mg_interface_multiply_time%time_clock,&
+                                  mg_interface_registry_get_time%time_clock,&
+                                  mg_interface_fldset_time%time_clock,&
                                        mg_preprocess_time%time_clock ,  &
                                        mg_anal_to_filt_time%time_clock,   &
                                        mg_filtering_time%time_clock,   &
                                        mg_filt_to_anal_time%time_clock,   &
                                        mg_postprocess_time%time_clock  , &
-                                  mg_interface_multiply_time%icount 
+                                  mg_interface_multiply_time%icount
     write(buffer2,"(I6,25(',',F10.4),',',I10)") mype,                            &
                                        init_tim%time_cpu,             &
                                        upsend_tim%time_cpu,           &
@@ -206,20 +206,20 @@ contains
                                        output_tim%time_cpu,           &
                                        total_tim%time_cpu,            &
                                        mg_multiply_time%time_cpu ,  &
-                                  mg_interface_multiply_time%time_cpu,& 
-                                  mg_interface_registry_get_time%time_cpu,& 
-                                  mg_interface_fldset_time%time_cpu,& 
+                                  mg_interface_multiply_time%time_cpu,&
+                                  mg_interface_registry_get_time%time_cpu,&
+                                  mg_interface_fldset_time%time_cpu,&
                                        mg_preprocess_time%time_cpu ,  &
                                        mg_anal_to_filt_time%time_cpu,   &
                                        mg_filtering_time%time_cpu,   &
                                        mg_filt_to_anal_time%time_cpu,   &
-                                       mg_postprocess_time%time_cpu, &   
-                                  mg_interface_multiply_time%icount 
+                                       mg_postprocess_time%time_cpu, &
+                                  mg_interface_multiply_time%icount
 
     bufsize1 = LEN(TRIM(buffer1)) + 1
     bufsize2 = LEN(TRIM(buffer2)) + 1
-    buffer1(bufsize1:bufsize1) = NEW_LINE(' ')
-    buffer2(bufsize2:bufsize2) = NEW_LINE(' ')
+    buffer1(bufsize1:bufsize1) = NEW_LINE(" ")
+    buffer2(bufsize2:bufsize2) = NEW_LINE(" ")
 
     write(header1,"(A6,26(',',A10))") "mype",                            &
                                      "init",                            &
@@ -239,21 +239,21 @@ contains
                                      "output",                            &
                                      "total",                           &
                                      "multiply",                           &
-                                     "ifc_mult",& 
-                                     "ifc_reg",& 
-                                     "ifc_fset",          & 
+                                     "ifc_mult",&
+                                     "ifc_reg",&
+                                     "ifc_fset",          &
                                      "preprocess",                            &
                                      "anal_to_filt",                          &
                                      "filtering",                          &
                                      "filt_to_anal",                         &
-                                     "postprocess"  ,   &                      
-                                     "icount"                         
+                                     "postprocess"  ,   &
+                                     "icount"
 
-    header1(bufsize1:bufsize1) = NEW_LINE(' ')
+    header1(bufsize1:bufsize1) = NEW_LINE(" ")
     if(sizeof(header1(1:1)) /= 1) then
       write(6,*)" the one character is not using one byte as assumened ,stop"
       stop
-    endif
+    end if
     disp = 0
  if(mype==0)    call MPI_File_write_at(fh, disp, header1, bufsize1, MPI_BYTE, stat, ierr)
     disp =disp+ bufsize1
@@ -262,21 +262,21 @@ contains
     disp=bufsize1+num_ranks*bufsize1
     disp = disp+(mype)*bufsize2
     call MPI_File_write_at(fh, disp, buffer2, bufsize2, MPI_BYTE, stat, ierr)
-    
+
 
     call MPI_File_close(fh, ierr)
 
-  endsubroutine print_mg_timers
+  end subroutine print_mg_timers
 !-----------------------------------------------------------------------
   function wtime()
     use mpi
     real(r_kind) :: wtime
     wtime = MPI_Wtime()
-  endfunction wtime
+  end function wtime
 !-----------------------------------------------------------------------
   function ctime()
     real(r_kind) :: ctime
     call CPU_TIME(ctime)
-  endfunction ctime
+  end function ctime
 !-----------------------------------------------------------------------
 end module mg_timers

@@ -48,7 +48,7 @@ contains
 ! --------------------------------------------------------------------------------------------------
 
 subroutine mgbf_covariance_create_cpp(c_self, c_comm, c_conf, c_fs, c_bg, c_fg) &
-           bind(c, name='mgbf_covariance_create_f90')
+           bind(c, name="mgbf_covariance_create_f90")
 
 ! Arguments
 integer(c_int),     intent(inout) :: c_self
@@ -91,7 +91,7 @@ end subroutine mgbf_covariance_create_cpp
 ! --------------------------------------------------------------------------------------------------
 
 subroutine mgbf_covariance_delete_cpp(c_self) &
-           bind(c, name='mgbf_covariance_delete_f90')
+           bind(c, name="mgbf_covariance_delete_f90")
 
 ! Arguments
 integer(c_int), intent(inout)  :: c_self
@@ -114,7 +114,7 @@ end subroutine mgbf_covariance_delete_cpp
 ! --------------------------------------------------------------------------------------------------
 
 subroutine mgbf_covariance_randomize_cpp(c_self, c_inc) &
-           bind(c,name='mgbf_covariance_randomize_f90')
+           bind(c,name="mgbf_covariance_randomize_f90")
 
 implicit none
 
@@ -141,7 +141,7 @@ end subroutine mgbf_covariance_randomize_cpp
 ! --------------------------------------------------------------------------------------------------
 
 subroutine mgbf_covariance_multiply_cpp(c_self, c_afieldset,c_index_member_in) &
-           bind(c,name='mgbf_covariance_multiply_f90')
+           bind(c,name="mgbf_covariance_multiply_f90")
 
 implicit none
 
@@ -177,7 +177,7 @@ end subroutine mgbf_covariance_multiply_cpp
 ! --------------------------------------------------------------------------------------------------
 
 subroutine mgbf_covariance_multiply_ad_cpp(c_self, c_afieldset) &
-           bind(c,name='mgbf_covariance_multiply_ad_f90')
+           bind(c,name="mgbf_covariance_multiply_ad_f90")
 
 implicit none
 

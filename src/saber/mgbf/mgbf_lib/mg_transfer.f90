@@ -1,4 +1,4 @@
-submodule(mg_intstate) mg_transfer 
+submodule(mg_intstate) mg_transfer
 !$$$  submodule documentation block
 !                .      .    .                                       .
 ! module:   mg_transfer
@@ -62,7 +62,7 @@ include "type_intstat_point2this.inc"
 !----------------------------------------------------------------------
    call this%anal_to_filt_all(WORKA)
 !----------------------------------------------------------------------
-endsubroutine anal_to_filt_allmap
+end subroutine anal_to_filt_allmap
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine filt_to_anal_allmap(this,WORKA)
@@ -81,7 +81,7 @@ include "type_intstat_point2this.inc"
 !----------------------------------------------------------------------
    call this%filt_to_anal_all(WORKA)
 !----------------------------------------------------------------------
-endsubroutine filt_to_anal_allmap
+end subroutine filt_to_anal_allmap
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine anal_to_filt_all(this,WORKA)
@@ -109,7 +109,7 @@ allocate(F3D(km3_all,1:nm,1:mm,lm))
 !tothink
 
                                                  call btim(an2filt_tim)
-if(2.gt.3) then
+if(2>3) then
      call this%S2C_ens(WORKA,A3D,1,nm,1,mm,lm_a,km_a,km_a_all)
   if(lm_a>lm) then
     if(l_lin_vertical) then
@@ -117,45 +117,46 @@ if(2.gt.3) then
     else
        call this%lwq_vertical_adjoint_spec(km3_all,lm_a,lm,1,nm,1,mm,               &
                                       cvf1,cvf2,cvf3,cvf4,lref,A3D,F3D)
-    endif
+    end if
   else
 !clttothink
 
 !$omp parallel do private(L) schedule(static)
     do L=1,lm
       F3D(:,:,:,L)=A3D(:,:,:,L)
-    enddo
+    end do
 !$omp end parallel do
 
-  endif
+  end if
 
       call this%C2S_ens(F3D,WORK,1,nm,1,mm,lm,km,km_all)
-endif !2.gt.3 
+end if !2.gt.3
      if(lm_a>lm) then
 !$omp parallel do private(ivar) schedule(static)
       do ivar=1,this%km2 !2dvar is directly passed
         work(this%km_all-ivar+1,:,:)=worka(this%km_all-ivar+1,:,:)
-      enddo
+      end do
 !$omp end parallel do
-      
+
       do ivar=1,this%km3
          lev1_a=1+(ivar-1)*this%lm_a
          lev1_f=1+(ivar-1)*this%lm
          lev2_a=lev1_a+this%lm_a-1
          lev2_f=lev1_f+this%lm-1
-        
-  
-          call intgrid_f2a_3d_ad_top2bot_fast(this%lm_a-1,this%lm-1,nm,mm,this%zofis,worka(lev1_a:lev2_a,:,:),work(lev1_f:lev2_f,:,:))
-       enddo
+
+
+           call intgrid_f2a_3d_ad_top2bot_fast(this%lm_a-1,this%lm-1,nm,mm, &
+                this%zofis,worka(lev1_a:lev2_a,:,:),work(lev1_f:lev2_f,:,:))
+       end do
       else
         work=worka
-      endif
+      end if
       call this%anal_to_filt(WORK)
                                                  call etim(an2filt_tim)
 
 deallocate(A3D,F3D,WORK)
 !----------------------------------------------------------------------
-endsubroutine anal_to_filt_all
+end subroutine anal_to_filt_all
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine filt_to_anal_all(this,WORKA)
@@ -184,22 +185,22 @@ include "type_intstat_point2this.inc"
 !$omp parallel do private(ivar) schedule(static)
       do ivar=1,this%km2 !2dvar is directly passed
         worka(this%km_a_all-ivar+1,:,:)=work(this%km_all-ivar+1,:,:)
-      enddo
+      end do
 !$omp end parallel do
-      
+
       do ivar=1,this%km3
          lev1_a=1+(ivar-1)*this%lm_a
          lev1_f=1+(ivar-1)*this%lm
          lev2_a=lev1_a+this%lm_a-1
          lev2_f=lev1_f+this%lm-1
           call intgrid_f2a_3d_top2bot_fast(this%lm_a-1,this%lm-1,nm,mm,this%zofis,worka(lev1_a:lev2_a,:,:),work(lev1_f:lev2_f,:,:))
-       enddo
+       end do
       else
         worka=work
-      endif
+      end if
     deallocate(WORK)
 !----------------------------------------------------------------------
-endsubroutine filt_to_anal_all
+end subroutine filt_to_anal_all
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine anal_to_filt_all2(this,WORKA)
@@ -224,14 +225,14 @@ allocate(WORK(km_all,1:nm,1:mm))
      call this%l_vertical_adjoint_spec2(km3*n_ens,lm_a,lm,1,nm,1,mm,WORKA,WORK)
   else
      WORK = WORKA
-  endif
+  end if
 
      call this%anal_to_filt(WORK)
                                                  call etim(an2filt_tim)
 
 deallocate(WORK)
 !----------------------------------------------------------------------
-endsubroutine anal_to_filt_all2
+end subroutine anal_to_filt_all2
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine filt_to_anal_all2(this,WORKA)
@@ -258,12 +259,12 @@ allocate(WORK(km_all,1:nm,1:mm))
      call this%l_vertical_direct_spec2(km3*n_ens,lm,lm_a,1,nm,1,mm,WORK,WORKA)
   else
      WORKA = WORK
-  endif
+  end if
                                                  call etim(filt2an_tim)
 
 deallocate(WORK)
 !----------------------------------------------------------------------
-endsubroutine filt_to_anal_all2
+end subroutine filt_to_anal_all2
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine stack_to_composite &
@@ -290,17 +291,17 @@ include "type_intstat_point2this.inc"
       do i=1-hx,im+hx
         do k=1,km3
           A3D(k,i,j,L)=ARR_ALL( (k-1)*lm+L,i,j )
-        enddo
-      enddo
-      enddo
-    enddo
+        end do
+      end do
+      end do
+    end do
 
         do k=1,km2
           A2D(k,:,:)=ARR_ALL(km3*lm+k,:,:)
-        enddo 
+        end do
 
 !----------------------------------------------------------------------
-endsubroutine stack_to_composite
+end subroutine stack_to_composite
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine composite_to_stack &
@@ -327,17 +328,17 @@ include "type_intstat_point2this.inc"
       do i=1-hx,im+hx
         do k=1,km3
           ARR_ALL( (k-1)*lm+L,i,j )=A3D(k,i,j,L)
-        enddo
-      enddo
-      enddo
-    enddo
+        end do
+      end do
+      end do
+    end do
 
         do k=1,km2
           ARR_ALL(km3*lm+k,:,:)=A2D(k,:,:)
-        enddo 
+        end do
 
 !----------------------------------------------------------------------
-endsubroutine composite_to_stack 
+end subroutine composite_to_stack
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine S2C_ens &
@@ -368,14 +369,14 @@ include "type_intstat_point2this.inc"
       do i=imn,imx
         do k=1,km3
           A3D(km3*(n-1)+k,i,j,L)=ARR_ALL(n_inc+(k-1)*lmx+L,i,j)
-        enddo
-      enddo
-      enddo
-    enddo
+        end do
+      end do
+      end do
+    end do
 
-  enddo
+  end do
 !----------------------------------------------------------------------
-endsubroutine S2C_ens
+end subroutine S2C_ens
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine C2S_ens &
@@ -406,14 +407,14 @@ include "type_intstat_point2this.inc"
        do i=imn,imx
          do k=1,km3
            ARR_ALL(n_inc+(k-1)*lmx+L,i,j )= A3D(km3*(n-1)+k,i,j,L)
-         enddo
-       enddo
-       enddo
-     enddo
+         end do
+       end do
+       end do
+     end do
 
-  enddo
+  end do
 !----------------------------------------------------------------------
-endsubroutine C2S_ens
+end subroutine C2S_ens
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine anal_to_filt(this,WORK)
@@ -439,7 +440,7 @@ include "type_intstat_point2this.inc"
             ibm=1
             jbm=1
             call this%lin_adjoint_offset(WORK,VALL(1:km_all,1-ibm:im+ibm,1-jbm:jm+jbm),km_all,ibm,jbm)
-          elseif(l_quad_horizontal) then
+          else if(l_quad_horizontal) then
             ibm=2
             jbm=2
             call this%quad_adjoint_offset(WORK,VALL(1:km_all,1-ibm:im+ibm,1-jbm:jm+jbm),km_all,ibm,jbm)
@@ -447,15 +448,15 @@ include "type_intstat_point2this.inc"
             ibm=3
             jbm=3
             call this%lsqr_adjoint_offset(WORK,VALL(1:km_all,1-ibm:im+ibm,1-jbm:jm+jbm),km_all,ibm,jbm)
-          endif
+          end if
      else
 !clttothink
             ibm=1
-            jbm=1  ! to make the following bocoT_2d still work with 0 values of 1 bank of halo points to be 
-                   ! exchanged. 
+            jbm=1  ! to make the following bocoT_2d still work with 0 values of 1 bank of halo points to be
+                   ! exchanged.
           VALL(1:km_all,1:im,1:jm)=WORK
 
-     endif
+     end if
 !***
 !***  Apply adjoint lateral bc on PKF and WKF
 !***
@@ -463,7 +464,7 @@ include "type_intstat_point2this.inc"
          call this%bocoT_2d(VALL(1:km_all,1-this%hx:im+this%hx,1-this%hy:jm+this%hy),km_all,im,jm,this%hx,this%hy)
 
 !----------------------------------------------------------------------
-endsubroutine anal_to_filt
+end subroutine anal_to_filt
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine filt_to_anal(this,WORK)
@@ -485,13 +486,13 @@ include "type_intstat_point2this.inc"
        if(l_lin_horizontal) then
          ibm=1
          jbm=1
-       elseif(l_quad_horizontal) then
+       else if(l_quad_horizontal) then
          ibm=2
          jbm=2
        else
          ibm=3
          jbm=3
-       endif
+       end if
 
 !***
 !***  Supply boundary conditions for VALL
@@ -503,15 +504,15 @@ include "type_intstat_point2this.inc"
    else
        if(l_lin_horizontal) then
          call this%lin_direct_offset(VALL(1:km_all,1-ibm:im+ibm,1-jbm:jm+jbm),WORK,km_all,ibm,jbm)
-       elseif(l_quad_horizontal) then
+       else if(l_quad_horizontal) then
          call this%quad_direct_offset(VALL(1:km_all,1-ibm:im+ibm,1-jbm:jm+jbm),WORK,km_all,ibm,jbm)
        else
          call this%lsqr_direct_offset(VALL(1:km_all,1-ibm:im+ibm,1-jbm:jm+jbm),WORK,km_all,ibm,jbm)
-       endif
-   endif
+       end if
+   end if
 
 !----------------------------------------------------------------------
-endsubroutine filt_to_anal
+end subroutine filt_to_anal
 
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 end submodule mg_transfer

@@ -55,7 +55,7 @@ call targdn32_loc(this)
 call targdn43_loc(this)
 
 !----------------------------------------------------------------------
-endsubroutine init_domain_loc
+end subroutine init_domain_loc
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine sidesend_loc(this)
@@ -100,25 +100,25 @@ include "type_parameter_point2this.inc"
       Fitarg_s_loc(1) = -1
     else
       Fitarg_s_loc(1) = mype-nxm
-    endif
+    end if
 
     if(Flnorth_loc(1)) then
       Fitarg_n_loc(1) = -1
     else
       Fitarg_n_loc(1) = mype+nxm
-    endif
+    end if
 
     if(Flwest_loc(1)) then
       Fitarg_w_loc(1) = -1
     else
       Fitarg_w_loc(1) = mype-1
-    endif
+    end if
 
     if(Fleast_loc(1)) then
       Fitarg_e_loc(1) = -1
     else
       Fitarg_e_loc(1) = mype+1
-    endif
+    end if
 
 
 !
@@ -146,30 +146,30 @@ include "type_parameter_point2this.inc"
     Flnorth_loc(2)=jy_c==nym/2
     Flwest_loc(2) =ix_c==1
     Fleast_loc(2) =ix_c==nxm/2
-     
+
     if(Flsouth_loc(2)) then
       Fitarg_s_loc(2) = -1
     else
       Fitarg_s_loc(2) = mype-nxm
-    endif
+    end if
 
     if(Flnorth_loc(2)) then
       Fitarg_n_loc(2) = -1
     else
       Fitarg_n_loc(2) = mype+nxm
-    endif
+    end if
 
     if(Flwest_loc(2)) then
       Fitarg_w_loc(2) = -1
     else
       Fitarg_w_loc(2) = mype-1
-    endif
+    end if
 
     if(Fleast_loc(2)) then
       Fitarg_e_loc(2) = -1
     else
       Fitarg_e_loc(2) = mype+1
-    endif
+    end if
 
 
 !
@@ -190,36 +190,36 @@ include "type_parameter_point2this.inc"
   if(ix_c > nxm/4 .and. jy_c >  nym/4) then
     ix_cc = ix_c-nxm/4
     jy_cc = jy_c-nym/4
-  endif 
-    
+  end if
+
     Flsouth_loc(3)=jy_cc==1
     Flnorth_loc(3)=jy_cc==nym/4
     Flwest_loc(3) =ix_cc==1
     Fleast_loc(3) =ix_cc==nxm/4
-     
+
     if(Flsouth_loc(3)) then
       Fitarg_s_loc(3) = -1
     else
       Fitarg_s_loc(3) = mype-nxm
-    endif
+    end if
 
     if(Flnorth_loc(3)) then
       Fitarg_n_loc(3) = -1
     else
       Fitarg_n_loc(3) = mype+nxm
-    endif
+    end if
 
     if(Flwest_loc(3)) then
       Fitarg_w_loc(3) = -1
     else
       Fitarg_w_loc(3) = mype-1
-    endif
+    end if
 
     if(Fleast_loc(3)) then
       Fitarg_e_loc(3) = -1
     else
       Fitarg_e_loc(3) = mype+1
-    endif
+    end if
 
 
 !
@@ -236,40 +236,40 @@ include "type_parameter_point2this.inc"
   else &
   if(ix_cc > nxm/8 .and. jy_cc >  nym/8) then
     ix_ccc = ix_cc-nxm/8; jy_ccc =jy_cc-nym/8
-  endif
+  end if
 
     Flsouth_loc(4)=jy_ccc==1
     Flnorth_loc(4)=jy_ccc==nym/8
     Flwest_loc(4) =ix_ccc==1
     Fleast_loc(4) =ix_ccc==nxm/8
-     
+
     if(Flsouth_loc(4)) then
       Fitarg_s_loc(4) = -1
     else
       Fitarg_s_loc(4) = mype-nxm
-    endif
+    end if
 
     if(Flnorth_loc(4)) then
       Fitarg_n_loc(4) = -1
     else
       Fitarg_n_loc(4) = mype+nxm
-    endif
+    end if
 
     if(Flwest_loc(4)) then
       Fitarg_w_loc(4) = -1
     else
       Fitarg_w_loc(4) = mype-1
-    endif
+    end if
 
     if(Fleast_loc(4)) then
       Fitarg_e_loc(4) = -1
     else
       Fitarg_e_loc(4) = mype+1
-    endif
+    end if
 
 
 !----------------------------------------------------------------------
-endsubroutine sidesend_loc
+end subroutine sidesend_loc
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine targup_loc(this)
@@ -314,9 +314,9 @@ include "type_parameter_point2this.inc"
     is= n-1 -js*2
     ix_prox=ix_c+is*nxm/2
     jy_prox=jy_c+js*nym/2
-    
+
       Fitargup_loc12(n)=nxm*(jy_prox-1)+ix_prox-1
-  enddo
+  end do
 !$omp end parallel do
 
 
@@ -325,16 +325,16 @@ include "type_parameter_point2this.inc"
 !
     il = (ix_0-1)/(nxm/2)
     jl = (jy_0-1)/(nym/2)
-   
+
 !$omp parallel do private(n,js,is,ix_prox,jy_prox) schedule(static)
   do n=1,4
     js=(n-1)/2
     is= n-1-js*2
     ix_prox=ix_c +is*nxm/4 + il*nxm/4
     jy_prox=jy_c +js*nym/4 + jl*nym/4
-    
+
       Fitargup_loc23(n)=nxm*(jy_prox-1)+ix_prox-1
-  enddo
+  end do
 !$omp end parallel do
 
 
@@ -343,7 +343,7 @@ include "type_parameter_point2this.inc"
 !
     il = (ix_0-1)/(nxm/4)
     jl = (jy_0-1)/(nym/4)
-   
+
 !$omp parallel do private(n,js,is,ix_prox,jy_prox) schedule(static)
   do n=1,4
     js=(n-1)/2
@@ -352,13 +352,13 @@ include "type_parameter_point2this.inc"
     jy_prox=jy_c +js*nym/8 + jl*nym/8
 
       Fitargup_loc34(n)=nxm*(jy_prox-1)+ix_prox-1
-   enddo
+   end do
 !$omp end parallel do
 
 
 
 !----------------------------------------------------------------------
-endsubroutine targup_loc
+end subroutine targup_loc
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine targdn21_loc(this)
@@ -416,10 +416,10 @@ include "type_parameter_point2this.inc"
         ix_l = ix_t-nxm/2
         jy_l = jy_t-nym/2
         nsq21 = 4
-      endif
-      
-          ix_sw = 2*ix_l-1 
-          jy_sw = 2*jy_l-1 
+      end if
+
+          ix_sw = 2*ix_l-1
+          jy_sw = 2*jy_l-1
           itargdn_sw_loc21 = nxm*(jy_sw-1)+ix_sw-1
 
           ix_se = ix_sw+1
@@ -437,7 +437,7 @@ include "type_parameter_point2this.inc"
 
 !  end do
 !-----------------------------------------------------------
-endsubroutine targdn21_loc
+end subroutine targdn21_loc
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine targdn32_loc(this)
@@ -508,7 +508,7 @@ include "type_parameter_point2this.inc"
 !
 ! Square 5
 !
-      if( (nxm/2 <ix_t .and. ix_t <= 3*nxm/4) .and. jy_t <= nym/4) then 
+      if( (nxm/2 <ix_t .and. ix_t <= 3*nxm/4) .and. jy_t <= nym/4) then
         ix_l = ix_t-nxm/2
         jy_l = jy_t
         nsq32 = 1
@@ -625,8 +625,8 @@ include "type_parameter_point2this.inc"
         facx = 1
         facy = 1
 
-      endif
-      
+      end if
+
           ix_sw = 2*ix_l-1
           jy_sw = 2*jy_l-1
           itargdn_sw_loc32 = nxm*(jy_sw-1)+ix_sw-1 + facx*nxm/2 + facy*nxm*nym/2
@@ -646,7 +646,7 @@ include "type_parameter_point2this.inc"
 
 !  end do
 !-----------------------------------------------------------------------
-endsubroutine targdn32_loc
+end subroutine targdn32_loc
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine targdn43_loc(this)
@@ -716,12 +716,12 @@ include "type_parameter_point2this.inc"
         itargdn_se_loc43 = mype-nxm
         itargdn_nw_loc43 = mype-1
         itargdn_ne_loc43 = mype
-      endif
+      end if
 
 !
 !  end do
 !-----------------------------------------------------------
-endsubroutine targdn43_loc
+end subroutine targdn43_loc
 
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 end submodule mg_domain_loc

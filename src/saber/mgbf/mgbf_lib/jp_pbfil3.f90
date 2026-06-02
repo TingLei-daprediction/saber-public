@@ -51,17 +51,17 @@ module jp_pbfil3
 !   Some technical explanations are provided in the series of office notes,
 !   ON498, ON499, ON500.
 !
-!   The style of line filtering is the "Dibeta" combination of two 
+!   The style of line filtering is the "Dibeta" combination of two
 !   nonnegatively-weighted consecutive-imteger-half-span beta filters, whose
 !   normalization coefficients are stored in the table, "bnorm" and whose
-!   second moments (spread**2) are stored in the table "bsprds"; these 
+!   second moments (spread**2) are stored in the table "bsprds"; these
 !   moment tables must be initialized in subr. inimomtab before any filtering
-!   can be done. The max-halp-span size of the table is set by the user, so 
+!   can be done. The max-halp-span size of the table is set by the user, so
 !   the tables use allocatable space (in module jp_pbfil2); to deallocate this
 !   storage, the user must invoke fintabmom once all filtering operations
 !   have been completed.
 !
-!   Aspect tensors in N dimensions are positive-definite and symmetric, and 
+!   Aspect tensors in N dimensions are positive-definite and symmetric, and
 !   therefore require M=(N*(N+1))/2 independent components, which we can arrange
 !   into a vector of this size. The utility routines tNN_to_M do this; tM_to_NN
 !   do the opposite. tN_to_M put the outer-product of an N-vector into the
@@ -74,7 +74,7 @@ module jp_pbfil3
 !   the line filter specifications have been determined, it ic convenient to
 !   over-write the old aspect tensor components with the new line-second-
 !   moments ("spread**2"). In other word, we can express the needed action
-!   as a formal "transform" (and invert it if ever needed, to recover the 
+!   as a formal "transform" (and invert it if ever needed, to recover the
 !   original aspect tensor). The basic decomposition of the aspect tensor
 !   into its spread**2 components and line generators is done, at a single
 !   grid point using subroutine triad (2D), hexad (3D), decad (4D). Working
@@ -82,7 +82,7 @@ module jp_pbfil3
 !   dectform, and their respective inverse transforms in tritformi, hextfotmi,
 !   dectformi. In the case of the 3D hexad method, although there are 6 active
 !   line filters at any given point, each of those lines is associated with
-!   one of the 7 different "colors" (our term for the nonnull Galois field 
+!   one of the 7 different "colors" (our term for the nonnull Galois field
 !   elements) no two of these colors in a given hexad are the same. The
 !
 ! attributes:
@@ -163,7 +163,7 @@ integer(spi),dimension(0:2),intent(out):: i3
 !------------------------------------------------------------------------------
 integer(spi):: L
 !==============================================================================
-do L=0,2; i3(L)=i22(i2pair(1,L),i2pair(2,L)); enddo
+do L=0,2; i3(L)=i22(i2pair(1,L),i2pair(2,L)); end do
 end subroutine i22_to_3
 !==============================================================================
 subroutine r22_to_3(r22,r3)!                                         [t22_to_3]
@@ -175,7 +175,7 @@ real(dp),dimension(0:2),intent(out):: r3
 !------------------------------------------------------------------------------
 integer(spi):: L
 !==============================================================================
-do L=0,2; r3(L)=r22(i2pair(1,L),i2pair(2,L)); enddo
+do L=0,2; r3(L)=r22(i2pair(1,L),i2pair(2,L)); end do
 end subroutine r22_to_3
 
 !==============================================================================
@@ -214,7 +214,7 @@ integer(spi):: L
 do L=0,2
    i22(i2pair(1,L),i2pair(2,L))=i3(L)
    i22(i2pair(2,L),i2pair(1,L))=i3(L)
-enddo
+end do
 end subroutine i3_to_22
 !==============================================================================
 subroutine r3_to_22(r3,r22)!                                         [t3_to_22]
@@ -229,7 +229,7 @@ integer(spi):: L
 do L=0,2
    r22(i2pair(1,L),i2pair(2,L))=r3(L)
    r22(i2pair(2,L),i2pair(1,L))=r3(L)
-enddo
+end do
 end subroutine r3_to_22
 
 !==============================================================================
@@ -242,7 +242,7 @@ integer(spi),dimension(6)  ,intent(out):: i6
 !------------------------------------------------------------------------------
 integer(spi):: L
 !==============================================================================
-do L=1,6; i6(L)=i33(i3pair(1,L),i3pair(2,L)); enddo
+do L=1,6; i6(L)=i33(i3pair(1,L),i3pair(2,L)); end do
 end subroutine i33_to_6
 !==============================================================================
 subroutine r33_to_6(r33,r6)!                                         [t33_to_6]
@@ -254,7 +254,7 @@ real(dp),dimension(6)  ,intent(out):: r6
 !------------------------------------------------------------------------------
 integer(spi):: L
 !==============================================================================
-do L=1,6; r6(L)=r33(i3pair(1,L),i3pair(2,L)); enddo
+do L=1,6; r6(L)=r33(i3pair(1,L),i3pair(2,L)); end do
 end subroutine r33_to_6
 
 !==============================================================================
@@ -293,7 +293,7 @@ integer(spi):: L
 do L=1,6
    i33(i3pair(1,L),i3pair(2,L))=i6(L)
    i33(i3pair(2,L),i3pair(1,L))=i6(L)
-enddo
+end do
 end subroutine i6_to_33
 !==============================================================================
 subroutine r6_to_33(r6,r33)!                                         [t6_to_33]
@@ -308,7 +308,7 @@ integer(spi):: L
 do L=1,6
    r33(i3pair(1,L),i3pair(2,L))=r6(L)
    r33(i3pair(2,L),i3pair(1,L))=r6(L)
-enddo
+end do
 end subroutine r6_to_33
 
 !==============================================================================
@@ -321,7 +321,7 @@ integer(spi),dimension(10) ,intent(out):: i10
 !------------------------------------------------------------------------------
 integer(spi):: L
 !==============================================================================
-do L=1,10; i10(L)=i44(i4pair(1,L),i4pair(2,L)); enddo
+do L=1,10; i10(L)=i44(i4pair(1,L),i4pair(2,L)); end do
 end subroutine i44_to_10
 !==============================================================================
 subroutine r44_to_10(r44,r10)!                                      [t44_to_10]
@@ -333,7 +333,7 @@ real(dp),dimension(10) ,intent(out):: r10
 !------------------------------------------------------------------------------
 integer(spi):: L
 !==============================================================================
-do L=1,10; r10(L)=r44(i4pair(1,L),i4pair(2,L)); enddo
+do L=1,10; r10(L)=r44(i4pair(1,L),i4pair(2,L)); end do
 end subroutine r44_to_10
 
 !==============================================================================
@@ -372,7 +372,7 @@ integer(spi):: L
 do L=1,10
    i44(i4pair(1,L),i4pair(2,L))=i10(L)
    i44(i4pair(2,L),i4pair(1,L))=i10(L)
-enddo
+end do
 end subroutine i10_to_44
 !==============================================================================
 subroutine r10_to_44(r10,r44)!                                      [t10_to_44]
@@ -387,7 +387,7 @@ integer(spi):: L
 do L=1,10
    r44(i4pair(1,L),i4pair(2,L))=r10(L)
    r44(i4pair(2,L),i4pair(1,L))=r10(L)
-enddo
+end do
 end subroutine r10_to_44
 
 !--
@@ -450,12 +450,12 @@ ff=(p_prescribe<1 .or. p_prescribe>np)
 if(ff)then
    print'(" In inimomtab; prescribed exponent p out of bounds")'
    return
-endif
+end if
 ff=(nh_prescribe<2 .or. nh_prescribe>1000)
 if(ff)then
    print'(" In inimomtab; prescribed table size nh out of bounds")'
    return
-endif
+end if
 p =p_prescribe
 nh=nh_prescribe
 allocate(bnorm(nh),bsprds(nh))
@@ -465,7 +465,7 @@ ffac(-1)=u1
 ffac(0)=u1
 do i=1,np2p3
    ffac(i)=i*ffac(i-2)
-enddo
+end do
 mk0=(p-1)/2
 mk2=mk0+1
 do h=1,nh
@@ -476,16 +476,16 @@ do h=1,nh
    hm0=u0
    do k=0,mk0
       hm0=hm0+n0pk(k,p)*xx**k
-   enddo
+   end do
    hm2=u0
    do k=0,mk2
       hm2=hm2+n2pk(k,p)*xx**k
-   enddo
+   end do
    cm0=m0+hm0/(ffac(p2p1)*x**p2m1)
    cm2=m2+hm2/(ffac(p2p3)*x**p2m1)
    bnorm(h)=u1/cm0
    bsprds(h)=cm2/cm0
-enddo
+end do
 end subroutine inimomtab
 
 !================================================================== [tritform]
@@ -517,11 +517,11 @@ do iy=ly,my
       if(ff)then
          print'(" Failure in tritform at ix,iy=",2i5)',ix,iy
          return
-      endif
+      end if
       dixs(ix,iy,:)=ltri(1,:)
       diys(ix,iy,:)=ltri(2,:)
-   enddo
-enddo
+   end do
+end do
 end subroutine tritforms
 
 !=================================================================== [tritform]
@@ -549,7 +549,7 @@ call triad(aspect, ltri3,wtri,ff)
 if(ff)then
    print'(" In tritform; triad failed; check aspect tensor")'
    return
-endif
+end if
 ltri=ltri3
 aspect=wtri
 do i=1,3
@@ -559,8 +559,8 @@ do i=1,3
       print'(" Check that inimomtab has been called to initialize exponent")'
       print'(" p, table size, nh, and the moment tables for line filters")'
       return
-   endif
-enddo
+   end if
+end do
 end subroutine tritform
 
 !================================================================== [tritformi]
@@ -595,9 +595,9 @@ do i=1,3
       print'(" Check that inimomtab has been called to initialize exponent")'
       print'(" p, table size, nh, and the moment tables for line filters")'
       return
-   endif
+   end if
    a22=a22+outer_product(vec,vec)*aspect(i)
-enddo
+end do
 call t22_to_3(a22,aspect)
 end subroutine tritformi
 
@@ -651,7 +651,7 @@ do it=1,nit
    signs=ssigns(-kcol:2-kcol)
    lui=lui+outer_product(dlui,signs)
    wtri=wtri+signs*dwtri
-enddo
+end do
 ff=it>nit
 end subroutine triad
 
@@ -665,7 +665,7 @@ integer(fpi),dimension(2,0:2),intent(out):: lu
 !-----------------------------------------------------------------------------
 integer(spi):: i,L
 !==============================================================================
-do i=0,2; do L=1,2; lu(L,i)=Ltri(i2pair(1,L),i)*Ltri(i2pair(2,L),i);enddo;enddo
+do i=0,2; do L=1,2; lu(L,i)=Ltri(i2pair(1,L),i)*Ltri(i2pair(2,L),i);end do;end do
 end subroutine gettrilu
 
 !==============================================================================
@@ -681,7 +681,7 @@ integer(spi)             :: i
 data tcols/0,1,2/
 !==============================================================================
 i=modulo(vin(1),2)+2*modulo(vin(2),2)
-if(i==0)stop 'In querytcol; invalid 2-vector vin has all components even'
+if(i==0)stop "In querytcol; invalid 2-vector vin has all components even"
 tcol=tcols(i)
 end subroutine querytcol
 
@@ -721,13 +721,13 @@ do iz=lz,mz
          if(ff)then
             print'(" Failure in hextform at ix,iy,iz=",3i5)',ix,iy,iz
             return
-         endif
+         end if
          dixs(ix,iy,iz,:)=lhex(1,:)
          diys(ix,iy,iz,:)=lhex(2,:)
          dizs(ix,iy,iz,:)=lhex(3,:)
-      enddo
-   enddo
-enddo
+      end do
+   end do
+end do
 end subroutine hextforms
 
 !=================================================================== [hextform]
@@ -758,7 +758,7 @@ call hexad(aspect, lhex7,whex7,ff)
 if(ff)then
    print'(" In hextform; hexad, failed; check aspect tensor")'
    return
-endif
+end if
 qcol(0)=0; qcol(7)=0
 j=1
 do i=1,7
@@ -767,7 +767,7 @@ do i=1,7
    lhex(:,j)=lhex7(:,i)
    aspect(j)=whex7(  i)
    j=j+1_fpi
-enddo
+end do
 do i=1,6
    call hstform(aspect(i),ff)
    if(ff)then
@@ -775,8 +775,8 @@ do i=1,6
       print'(" Check that inimomtab has been called to initialize exponent")'
       print'(" p, table size, nh, and the moment tables for line filters")'
       return
-   endif
-enddo
+   end if
+end do
 ff=(j/=7)
 if(ff)print'(" In hextform; inconsistent hexad generator set found")'
 end subroutine hextform
@@ -816,11 +816,11 @@ do i=1,7
       print'(" Check that inimomtab has been called to initialize exponent")'
       print'(" p, table size, nh, and the moment tables for line filters")'
       return
-   endif
+   end if
    vec=lhex(:,j)
    a33=a33+outer_product(vec,vec)*aspect(j)
    j=j+1_fpi
-enddo
+end do
 ff=(j/=7)
 if(ff)print'(" In hextformi; Inconsistent qcol")'
 call t33_to_6(a33,aspect)
@@ -845,11 +845,11 @@ subroutine hexad(aspect,lhex7,whex7,ff)
 !        and whose outer-products imply basis 6-vectors into which the aspect
 !        is resolved. This matrix of 6-vectors is denoted Lu, but only its
 !        inverse, Lui, is needed in this routine. These seven 3-vectors are
-!        arranged in decreasing order of "cardinality", 
+!        arranged in decreasing order of "cardinality",
 !        meaning that the cardinal
 !        directions' colors define the first three vectors, the next three have
 !        two odd components, and the seventh has all odd components.
-! whex7: Seven real nonnegative weights (projected aspect) 
+! whex7: Seven real nonnegative weights (projected aspect)
 !        corresponding to lhex
 !        (zero value in the case of the null vector of lhex7)
 ! ff   : failure flag, raised only when the iterations exceed their limit.
@@ -909,7 +909,7 @@ data jcol/7,4,6,3,5,2,1/
 !==============================================================================
 lhex=deflhex; lui=deflui; hcol=0
 rlui=lui; whex=matmul(aspect,rlui)
-do i=0,2; Kset(:,i)=Lhex(:,modulo(hcol-line(i),7)); enddo
+do i=0,2; Kset(:,i)=Lhex(:,modulo(hcol-line(i),7)); end do
 do it=1,nit
    ii=minloc(whex)-1; kcol=ii(1); dwhex=whex(kcol); if(dwhex>=bcmins)exit
    dcol=modulo(kcol-hcol,7); hcol=kcol; L=modulo(hcol+ttriad(dcol),7)
@@ -918,12 +918,12 @@ do it=1,nit
    signs=sstriad(-L:6-L)
    lui =lui+outer_product(dlui,signs)
    whex=whex+signs*dwhex
-enddo
+end do
 ff=it>nit; if(ff)return
 do i=0,2; ip=modulo(i+1,3)
    lhex(:,modulo(hcol-line(i),7))=Kset(:,i)
    lhex(:,modulo(hcol+line(i),7))=Kset(:,i)-Kset(:,ip)
-enddo
+end do
 lhex(:,kcol)=0
 lhex7=0
 whex7=u0
@@ -931,7 +931,7 @@ do i=0,6
    j=jcol(i)
    lhex7(:,j)=lhex(:,i)
    whex7(  j)=whex(  i)
-enddo
+end do
 
 end subroutine hexad
 
@@ -945,7 +945,7 @@ integer(fpi),dimension(6,0:6),intent(out):: lu
 !------------------------------------------------------------------------------
 integer(spi):: i,L
 !==============================================================================
-do i=0,6; do L=1,6; lu(L,i)=Lhex(i3pair(1,L),i)*Lhex(i3pair(2,L),i);enddo;enddo
+do i=0,6; do L=1,6; lu(L,i)=Lhex(i3pair(1,L),i)*Lhex(i3pair(2,L),i);end do;end do
 end subroutine gethexlu
 
 !==============================================================================
@@ -961,7 +961,7 @@ integer(spi)             :: i
 data hcols/6,5,1,3,4,2,0/
 !==============================================================================
 i=modulo(vin(1),2)+2*modulo(vin(2),2)+4*modulo(vin(3),2)
-if(i==0)stop 'In queryhcol; invalid 3-vector Vin has all components even'
+if(i==0)stop "In queryhcol; invalid 3-vector Vin has all components even"
 hcol=hcols(i)
 end subroutine queryhcol
 
@@ -980,7 +980,7 @@ subroutine dectforms(lx,mx,ly,my,lz,mz,lw,mw,aspects,qcols, &
 ! dizs:    z-component
 ! diws:    w-component
 ! ff:      Logical failure flag, output .true. when failure occurs.
-! Note that the integer arrays, qcols, doxs, diys, dizs, diws, 
+! Note that the integer arrays, qcols, doxs, diys, dizs, diws,
 ! are 1-byte integers.
 !
 !==============================================================================
@@ -1011,15 +1011,15 @@ do iw=lw,mw
                print'(" Failure in dectform at ix,iy,iz,iw=",4i5)',&
                     ix,iy,iz,iw
                return
-            endif
+            end if
             dixs(ix,iy,iz,iw,:)=ldec(1,:)
             diys(ix,iy,iz,iw,:)=ldec(2,:)
             dizs(ix,iy,iz,iw,:)=ldec(3,:)
             diws(ix,iy,iz,iw,:)=ldec(4,:)
-         enddo
-      enddo
-   enddo
-enddo
+         end do
+      end do
+   end do
+end do
 end subroutine dectforms
 
 !=================================================================== [dectform]
@@ -1050,7 +1050,7 @@ call decad(aspect, ldec15,wdec15,ff)
 if(ff)then
    print'(" In dectform; decad, failed; check aspect tensor")'
    return
-endif
+end if
 qcol(0)=0; qcol(11)=0
 j=1
 do i=1,15
@@ -1059,7 +1059,7 @@ do i=1,15
    ldec(:,j)=ldec15(:,i)
    aspect(j)=wdec15(  i)
    j=j+1_fpi
-enddo
+end do
 do i=1,10
    call hstform(aspect(i),ff)
    if(ff)then
@@ -1067,8 +1067,8 @@ do i=1,10
       print'(" Check that inimomtab has been called to initialize exponent")'
       print'(" p, table size, nh, and the moment tables for line filters")'
       return
-   endif
-enddo
+   end if
+end do
 
 ff=(j/=11)
 if(ff)print'(" In dectform; inconsistent decad generator set found")'
@@ -1109,16 +1109,16 @@ do i=1,15
       print'(" Check that inimomtab has been called to initialize exponent")'
       print'(" p, table size, nh, and the moment tables for line filters")'
       return
-   endif
+   end if
     vec=ldec(:,j)
    a44=a44+outer_product(vec,vec)*aspect(j)
    j=j+1
-enddo
+end do
 ff=(j/=11)
 if(ff)then
    print'(" In dectformi; Inconsistent qcol")'
    return
-endif
+end if
 call t44_to_10(a44,aspect)
 end subroutine dectformi
 
@@ -1178,13 +1178,13 @@ data defeldec/                                                         &
 data defpalet/ 2, 1, 0,13, 9, 3, 8,12, 7,14/
 !==============================================================================
 eldec=defeldec; palet=defpalet; ktyp=4; dcol=4
-do j=0,9; call t4_to_10(eldec(:,j),lu(:,j)); enddo
+do j=0,9; call t4_to_10(eldec(:,j),lu(:,j)); end do
 lui=transpose(lu)
 call inv(lui,ff)
 if(ff)then
    print'(" In decad, at A; lu cannot be inverted")'
    return
-endif
+end if
 rlui=lui
 wdec=matmul(aspect,rlui)
 do it=1,nit
@@ -1202,17 +1202,17 @@ do it=1,nit
       else
          abscol=dcol
          newbase(:,:)=matmul(eldec(:,0:3),umats(:,:,k))/2
-      endif
-   endif
+      end if
+   end if
    jcol=0
    jcor=0
    if(newktyp==11)then
       jcol=abscol/3
       if(jcol>0)then
          jcor=6+jcol
-      endif
+      end if
       abscol=modulo(abscol,3)
-   elseif(newktyp>=44)then
+   else if(newktyp>=44)then
       jcol=abscol/5
       if(jcol>0)then
          select case(ktyp)
@@ -1235,7 +1235,7 @@ do it=1,nit
             ff=.true.
             return
          end select
-      endif
+      end if
       abscol=modulo(abscol,5)
       if(ktyp<12)then
          newdcol=modulo(abscol-dcol10(k,ktyp),15)
@@ -1244,13 +1244,13 @@ do it=1,nit
             newdcol=modulo(abscol-dcol12(k,ktyp),15)
          else
             newdcol=dcol
-         endif
-      endif
-   endif
+         end if
+      end if
+   end if
    if(jcor /= 0)then
       tcor=tcors(:,:,jcor)
       newbase=matmul(newbase(:,:),tcor)/2
-   endif
+   end if
 
    if(ktyp<12)then
       perm=perm10(:,k,ktyp)
@@ -1261,27 +1261,27 @@ do it=1,nit
             qwt=twt10a5(:,kcor)
          else
             qwt=qwt10a(:,k)
-         endif
+         end if
       case(4:7)
          if(k==1)then
             kcor=kcor10b1(jcol,ktyp)
             qwt=twt10b1(:,kcor)
-         elseif(k==2)then
+         else if(k==2)then
             kcor=kcor10b2(jcol,ktyp)
             qwt=twt10b2(:,kcor)
          else
             qwt=qwt10b(:,k)
-         endif
+         end if
       case(8:9)
          if(k==1)then
             kcor=kcor10b1(jcol,ktyp)
             qwt=twt10b1(:,kcor)
-         elseif(k==2)then
+         else if(k==2)then
             kcor=kcor10b2(jcol,ktyp)
             qwt=twt10b2(:,kcor)
          else
             qwt=qwt10c(:,k)
-         endif
+         end if
       case(10)
          qwt=qwt10d(:,k)
       case(11)
@@ -1303,60 +1303,60 @@ do it=1,nit
          case default
             qwt=qwt12b0(:,kcor)
          end select
-      elseif(k<4)then
+      else if(k<4)then
          perm=perm12(:,k,ktyp)
          qwt=qwt12a(:,k)
       else
          perm=perms(:,k)
          qwt=qwt12a(:,k)
-      endif
-   endif
+      end if
+   end if
    if(jcor/=0)then
       do i=0,9
          tperm(i)=tperms(perm(i),jcor)
-      enddo
+      end do
       perm=tperm
-   endif
+   end if
    call standardizeb(newbase(:,:),FF)
    if(FF)then
       print'(" In decad, at B;  failure of subr. standardizedb")'
       return
-   endif
+   end if
 
 !--------
    awdec=wdec-qwt*dwdec
    do i=0,9
       newwdec(perm(i))=awdec(i)
-   enddo
+   end do
    if(newktyp<12)then
       neweldec=matmul(newbase,dec0)
    else
       neweldec=matmul(newbase,dodec0t)/2
-   endif
+   end if
    do j=0,9
       call t4_to_10(neweldec(:,j),lu(:,j))
-   enddo
+   end do
    lui=transpose(lu)
    call inv(lui,ff)
    if(ff)then
       print'(" In decad, at C; lu cannot be inverted")'
       return
-   endif
+   end if
    rlui=lui
    xwdec=matmul(aspect,rlui)
    eldec=neweldec
    ktyp=newktyp
    dcol=abscol
    wdec=xwdec
-enddo
+end do
 if(it>nit)then
    ff=.true.
    print '(" in decad, at D; failure of decad iterations to converge")'
    return
-endif
+end if
 do j=0,9
    call querydcol(eldec(:,j),palet(j))
-enddo
+end do
 print'(" departing decad having used it = ",i5," iterations.")',it
 ! Insert the decad into its proper color slots in order of decreasing
 ! "cardinality:"
@@ -1366,7 +1366,7 @@ do i=0,9
    j=icol15(palet(i))
    ldec15(:,j)=int(eldec(:,i),fpi)
    wdec15(  j)= wdec(  i)
-enddo
+end do
 end subroutine decad
 
 !=================================================================== [getdeclu]
@@ -1379,7 +1379,7 @@ integer(spi),dimension(10,0:14),intent(out):: lu
 !------------------------------------------------------------------------------
 integer(spi):: i,L
 !==============================================================================
-do i=0,14;do L=1,10;lu(L,i)=Ldec(i4pair(1,L),i)*Ldec(i4pair(2,L),i);enddo;enddo
+do i=0,14;do L=1,10;lu(L,i)=Ldec(i4pair(1,L),i)*Ldec(i4pair(2,L),i);end do;end do
 end subroutine getdeclu
 
 !==============================================================================
@@ -1397,7 +1397,7 @@ data dcols/ 0, 1, 4, 2, 8, 5,10, 3,14, 9, 7, 6,13,11,12/
 data bbbb/1,2,4,8/
 !==============================================================================
 i=dot_product(bbbb,modulo(vin,2))
-if(i==0)stop 'In querydcol; invalid 4-vector Vin has all components even'
+if(i==0)stop "In querydcol; invalid 4-vector Vin has all components even"
 dcol=dcols(i)
 end subroutine querydcol
 
@@ -1420,20 +1420,20 @@ do i=1,4
    if(b==0)cycle
    if(b<0)bases=-bases
    return
-enddo
+end do
 print'(" WARNING! In subroutine standardizeb, first column is null:")'
 FF=.true.
 end subroutine standardizeb
 
 !==================================================================== [hstform]
-subroutine hstform(hs,ff)!            
+subroutine hstform(hs,ff)!
 !==============================================================================
 ! Perform the "hspan transform". For a given spread**2, replace it with the
-! corresponding effective half-span corresponding to beta filters of the 
+! corresponding effective half-span corresponding to beta filters of the
 ! already-initialized exponent p. Generally, hs>=1, lies between consecutive
 ! integers, h, h+1 <=nh (nh is also already given in jp_pbfil2.mod). The linear
 ! interpolation weights at h and h+1 for this target, applied to the
-! "interpolation" of the two standardized p-exponent beta distributions of 
+! "interpolation" of the two standardized p-exponent beta distributions of
 ! half-spans h and h+1 will also be standardized (sum of gridded responses = 1)
 ! and will possess exactly the prescribed spread**2, the input hs.
 ! This transform is obviously invertible (see subr. hstformi).
@@ -1454,8 +1454,8 @@ do h=2,nh
    if(bsprds(h) >= hs)then
       hs=h-(bsprds(h)-hs)/(bsprds(h)-bsprds(h-1))
       return
-   endif
-enddo
+   end if
+end do
 ff=.true.
 end subroutine hstform
 
@@ -1483,7 +1483,7 @@ ff=(h<2 .or. h>nh)
 if(ff)then
    print'(" In hstformi; hs out of bounds")'
    return
-endif
+end if
 ! Linearly interpolate the spread**2 from the table bsprds:
 w=h-hs
 hs=w*bsprds(h-1)+(u1-w)*bsprds(h)
@@ -1525,9 +1525,9 @@ h=int(hspan); hp=h+1; ff=h<1 .or. hp>nh .or. hp>nfil; if(ff)return
 whp =(hspan-h)*bnorm(hp)! linear interpolation weight at hp=h+1
 wh=(hp-hspan)*bnorm(h)! linear interpolation weight at h
 ! start with the contribution of the filter of formal halfspan h+1:
-do i=0,h;   z=i; z=(z/hp)**2; fil(i)=      whp*(u1-z)**p; enddo
+do i=0,h;   z=i; z=(z/hp)**2; fil(i)=      whp*(u1-z)**p; end do
 ! add the contribution of the filter of formal halfspan h:
-do i=0,h-1; z=i; z=(z/h)**2;  fil(i)=fil(i)+wh*(u1-z)**p; enddo
+do i=0,h-1; z=i; z=(z/h)**2;  fil(i)=fil(i)+wh*(u1-z)**p; end do
 end subroutine blinfil
 
 !-- The following routines share the interface, dibeta:
@@ -1559,9 +1559,9 @@ do ix=lx,mx
       do i=1,h
          fili=fil(i); dixi=dix*i
          b(ix)=b(ix)+fili*(a(ix+dixi)+a(ix-dixi))
-      enddo
-   endif
-enddo
+      end do
+   end if
+end do
 a=b
 end subroutine dibeta1
 !===================================================================== [dibeta]
@@ -1595,9 +1595,9 @@ do iy=ly,my; do ix=lx,mx
       do i=1,h
          fili=fil(i); dixi=dix*i; diyi=diy*i
          b(ix,iy)=b(ix,iy)+fili*(a(ix+dixi,iy+diyi)+a(ix-dixi,iy-diyi))
-      enddo
-   endif
-enddo; enddo
+      end do
+   end if
+end do; end do
 a=b
 end subroutine dibeta2
 !===================================================================== [dibeta]
@@ -1636,9 +1636,9 @@ do iz=lz,mz; do iy=ly,my; do ix=lx,mx
          b(ix,iy,iz)=b(ix,iy,iz)+fili*   &
               (a(ix+dixi,iy+diyi,iz+dizi)&
               +a(ix-dixi,iy-diyi,iz-dizi))
-      enddo
-   endif
-enddo; enddo; enddo
+      end do
+   end if
+end do; end do; end do
 a=b
 end subroutine dibeta3
 !===================================================================== [dibeta]
@@ -1680,9 +1680,9 @@ do iw=lw,mw; do iz=lz,mz; do iy=ly,my; do ix=lx,mx
          b(ix,iy,iz,iw)=b(ix,iy,iz,iw)+fili*     &
               (a(ix+dixi,iy+diyi,iz+dizi,iw+diwi)&
               +a(ix-dixi,iy-diyi,iz-dizi,iw-diwi))
-      enddo
-   endif
-enddo; enddo; enddo; enddo
+      end do
+   end if
+end do; end do; end do; end do
 a=b
 end subroutine dibeta4
 
@@ -1732,9 +1732,9 @@ do iz=lz,mz; do iy=ly,my; do ix=lx,mx
          b(ix,iy,iz)=b(ix,iy,iz)+fili*  &
               (a(ix+dixi,iy+diyi,iz+dizi)&
               +a(ix-dixi,iy-diyi,iz-dizi))
-      enddo
-   endif
-enddo;       enddo;       enddo
+      end do
+   end if
+end do;       end do;       end do
 a=b
 end subroutine dibetax3
 !===================================================================== [dibeta]
@@ -1788,9 +1788,9 @@ do iw=lw,mw; do iz=lz,mz; do iy=ly,my; do ix=lx,mx
          b(ix,iy,iz,iw)=b(ix,iy,iz,iw)+fili*  &
               (a(ix+dixi,iy+diyi,iz+dizi,iw+diwi)&
               +a(ix-dixi,iy-diyi,iz-dizi,iw-diwi))
-      enddo
-   endif
-enddo;       enddo;       enddo;     enddo
+      end do
+   end if
+end do;       end do;       end do;     end do
 a=b
 end subroutine dibetax4
 
@@ -1822,9 +1822,9 @@ do ix=lx,mx
       do i=1,h
          fili=fil(i); dixi=dix*i
          b(:,ix)=b(:,ix)+fili*(a(:,ix+dixi)+a(:,ix-dixi))
-      enddo
-   endif
-enddo
+      end do
+   end if
+end do
 a=b
 end subroutine vdibeta1
 !===================================================================== [dibeta]
@@ -1860,9 +1860,9 @@ do iy=ly,my; do ix=lx,mx
          fili=fil(i); dixi=dix*i; diyi=diy*i
          b(:,ix,iy)=b(:,ix,iy)+fili* &
               (a(:,ix+dixi,iy+diyi)+a(:,ix-dixi,iy-diyi))
-      enddo
-   endif
-enddo; enddo
+      end do
+   end if
+end do; end do
 a=b
 end subroutine vdibeta2
 !===================================================================== [dibeta]
@@ -1902,9 +1902,9 @@ do iz=lz,mz; do iy=ly,my; do ix=lx,mx
          b(:,ix,iy,iz)=b(:,ix,iy,iz)+fili*   &
               (a(:,ix+dixi,iy+diyi,iz+dizi)&
               +a(:,ix-dixi,iy-diyi,iz-dizi))
-      enddo
-   endif
-enddo; enddo; enddo
+      end do
+   end if
+end do; end do; end do
 a=b
 end subroutine vdibeta3
 !===================================================================== [dibeta]
@@ -1948,9 +1948,9 @@ do iw=lw,mw; do iz=lz,mz; do iy=ly,my; do ix=lx,mx
          b(:,ix,iy,iz,iw)=b(:,ix,iy,iz,iw)+fili*     &
               (a(:,ix+dixi,iy+diyi,iz+dizi,iw+diwi)&
               +a(:,ix-dixi,iy-diyi,iz-dizi,iw-diwi))
-      enddo
-   endif
-enddo; enddo; enddo; enddo
+      end do
+   end if
+end do; end do; end do; end do
 a=b
 end subroutine vdibeta4
 
@@ -2000,9 +2000,9 @@ do iz=lz,mz; do iy=ly,my; do ix=lx,mx
          b(:,ix,iy,iz)=b(:,ix,iy,iz)+fili*  &
               (a(:,ix+dixi,iy+diyi,iz+dizi)&
               +a(:,ix-dixi,iy-diyi,iz-dizi))
-      enddo
-   endif
-enddo;       enddo;       enddo
+      end do
+   end if
+end do;       end do;       end do
 a=b
 end subroutine vdibetax3
 !===================================================================== [dibeta]
@@ -2057,9 +2057,9 @@ do iw=lw,mw; do iz=lz,mz; do iy=ly,my; do ix=lx,mx
          b(:,ix,iy,iz,iw)=b(:,ix,iy,iz,iw)+fili*  &
               (a(:,ix+dixi,iy+diyi,iz+dizi,iw+diwi)&
               +a(:,ix-dixi,iy-diyi,iz-dizi,iw-diwi))
-      enddo
-   endif
-enddo;       enddo;       enddo;     enddo
+      end do
+   end if
+end do;       end do;       end do;     end do
 a=b
 end subroutine vdibetax4
 
@@ -2095,9 +2095,9 @@ do ix=lx,mx
          filiat=fil(i)*at; dixi=dix*i
          b(ix+dixi)=b(ix+dixi)+filiat
          b(ix-dixi)=b(ix-dixi)+filiat
-      enddo
-   endif
-enddo
+      end do
+   end if
+end do
 a=b
 end subroutine dibeta1t
 !==================================================================== [dibetat]
@@ -2133,9 +2133,9 @@ do iy=ly,my; do ix=lx,mx
          filiat=fil(i)*at; dixi=dix*i; diyi=diy*i
          b(ix+dixi,iy+diyi)=b(ix+dixi,iy+diyi)+filiat
          b(ix-dixi,iy-diyi)=b(ix-dixi,iy-diyi)+filiat
-      enddo
-   endif
-enddo; enddo
+      end do
+   end if
+end do; end do
 a=b
 end subroutine dibeta2t
 !==================================================================== [dibetat]
@@ -2174,9 +2174,9 @@ do iz=lz,mz; do iy=ly,my; do ix=lx,mx
          filiat=fil(i)*at; dixi=dix*i; diyi=diy*i; dizi=diz*i
          b(ix+dixi,iy+diyi,iz+dizi)=b(ix+dixi,iy+diyi,iz+dizi)+filiat
          b(ix-dixi,iy-diyi,iz-dizi)=b(ix-dixi,iy-diyi,iz-dizi)+filiat
-      enddo
-   endif
-enddo; enddo; enddo
+      end do
+   end if
+end do; end do; end do
 a=b
 end subroutine dibeta3t
 
@@ -2222,9 +2222,9 @@ do iw=lw,mw; do iz=lz,mz; do iy=ly,my; do ix=lx,mx
               b(ix+dixi,iy+diyi,iz+dizi,iw+diwi)+filiat
          b(ix-dixi,iy-diyi,iz-dizi,iw-diwi)= &
               b(ix-dixi,iy-diyi,iz-dizi,iw-diwi)+filiat
-      enddo
-   endif
-enddo; enddo; enddo; enddo
+      end do
+   end if
+end do; end do; end do; end do
 a=b
 end subroutine dibeta4t
 
@@ -2273,9 +2273,9 @@ do iz=lz,mz; do iy=ly,my; do ix=lx,mx
          filiat=fil(i)*at; dixi=dix*i; diyi=diy*i; dizi=diz*i
          b(ix+dixi,iy+diyi,iz+dizi)=b(ix+dixi,iy+diyi,iz+dizi)+filiat
          b(ix-dixi,iy-diyi,iz-dizi)=b(ix-dixi,iy-diyi,iz-dizi)+filiat
-      enddo
-   endif
-enddo;       enddo;       enddo
+      end do
+   end if
+end do;       end do;       end do
 a=b
 end subroutine dibetax3t
 
@@ -2330,9 +2330,9 @@ do iw=lw,mw; do iz=lz,mz; do iy=ly,my; do ix=lx,mx
               b(ix+dixi,iy+diyi,iz+dizi,iw+diwi)+filiat
          b(ix-dixi,iy-diyi,iz-dizi,iw-diwi)= &
               b(ix-dixi,iy-diyi,iz-dizi,iw-diwi)+filiat
-      enddo
-   endif
-enddo;       enddo;       enddo;    enddo
+      end do
+   end if
+end do;       end do;       end do;    end do
 a=b
 end subroutine dibetax4t
 
@@ -2366,9 +2366,9 @@ do ix=lx,mx
          filiat=fil(i)*at; dixi=dix*i
          b(:,ix+dixi)=b(:,ix+dixi)+filiat
          b(:,ix-dixi)=b(:,ix-dixi)+filiat
-      enddo
-   endif
-enddo
+      end do
+   end if
+end do
 a=b
 end subroutine vdibeta1t
 !==================================================================== [dibetat]
@@ -2405,9 +2405,9 @@ do iy=ly,my; do ix=lx,mx
          filiat=fil(i)*at; dixi=dix*i; diyi=diy*i
          b(:,ix+dixi,iy+diyi)=b(:,ix+dixi,iy+diyi)+filiat
          b(:,ix-dixi,iy-diyi)=b(:,ix-dixi,iy-diyi)+filiat
-      enddo
-   endif
-enddo; enddo
+      end do
+   end if
+end do; end do
 a=b
 end subroutine vdibeta2t
 !==================================================================== [dibetat]
@@ -2447,9 +2447,9 @@ do iz=lz,mz; do iy=ly,my; do ix=lx,mx
          filiat=fil(i)*at; dixi=dix*i; diyi=diy*i; dizi=diz*i
          b(:,ix+dixi,iy+diyi,iz+dizi)=b(:,ix+dixi,iy+diyi,iz+dizi)+filiat
          b(:,ix-dixi,iy-diyi,iz-dizi)=b(:,ix-dixi,iy-diyi,iz-dizi)+filiat
-      enddo
-   endif
-enddo; enddo; enddo
+      end do
+   end if
+end do; end do; end do
 a=b
 end subroutine vdibeta3t
 !==================================================================== [dibetat]
@@ -2495,9 +2495,9 @@ do iw=lw,mw; do iz=lz,mz; do iy=ly,my; do ix=lx,mx
               b(:,ix+dixi,iy+diyi,iz+dizi,iw+diwi)+filiat
          b(:,ix-dixi,iy-diyi,iz-dizi,iw-diwi)= &
               b(:,ix-dixi,iy-diyi,iz-dizi,iw-diwi)+filiat
-      enddo
-   endif
-enddo; enddo; enddo; enddo
+      end do
+   end if
+end do; end do; end do; end do
 a=b
 end subroutine vdibeta4t
 
@@ -2548,9 +2548,9 @@ do iz=lz,mz; do iy=ly,my; do ix=lx,mx
          filiat=fil(i)*at; dixi=dix*i; diyi=diy*i; dizi=diz*i
          b(:,ix+dixi,iy+diyi,iz+dizi)=b(:,ix+dixi,iy+diyi,iz+dizi)+filiat
          b(:,ix-dixi,iy-diyi,iz-dizi)=b(:,ix-dixi,iy-diyi,iz-dizi)+filiat
-      enddo
-   endif
-enddo;       enddo;       enddo
+      end do
+   end if
+end do;       end do;       end do
 a=b
 end subroutine vdibetax3t
 
@@ -2607,9 +2607,9 @@ do iw=lw,mw; do iz=lz,mz; do iy=ly,my; do ix=lx,mx
               b(:,ix+dixi,iy+diyi,iz+dizi,iw+diwi)+filiat
          b(:,ix-dixi,iy-diyi,iz-dizi,iw-diwi)= &
               b(:,ix-dixi,iy-diyi,iz-dizi,iw-diwi)+filiat
-      enddo
-   endif
-enddo;       enddo;       enddo;    enddo
+      end do
+   end if
+end do;       end do;       end do;    end do
 a=b
 end subroutine vdibetax4t
 

@@ -76,7 +76,7 @@ type :: mgbf_covariance
     procedure, private :: ivar2grp
 end type mgbf_covariance
 
-character(len=*), parameter :: myname='mgbf_covariance_mod'
+character(len=*), parameter :: myname="mgbf_covariance_mod"
 
 ! --------------------------------------------------------------------------------------------------
 
@@ -97,7 +97,7 @@ type(atlas_fieldset),      intent(in)    :: firstguess
 ! Locals
 real(r_kind) :: dist_rad, dist_m
 integer      :: ipt
-character(len=*), parameter :: myname_=myname//'*create'
+character(len=*), parameter :: myname_=myname//"*create"
 character(len=:), allocatable :: mgbf_nml,centralblockname
 logical :: central
 integer :: layout(2)
@@ -120,7 +120,7 @@ namelist /parameters_mgbf_init/ nscale,nvargrp,readin_mgbf_nml_group ,readin_mul
 
 character(len=:), allocatable :: dump_json
 integer(i_kind):: max_nlevs
-logical l_debug_print
+logical :: l_debug_print
 
 ! Hold communicator
 ! -----------------
@@ -135,12 +135,12 @@ if (config%has("debug print")) call config%get_or_die("debug print", l_debug_pri
 
 if (l_debug_print .and. self%rank == 0) then
   dump_json = config%json()
-  write(6,'(A)') trim(dump_json)
-endif
+  write(6,"(A)") trim(dump_json)
+end if
 call config%get_or_die("saber block name", centralblockname)
 if (config%has("mgbf sdl and vdl init namelist file")) then
      call config%get_or_die("mgbf sdl and vdl init namelist file",  mgbf_nml)
-  open(newunit=myunit,file=trim(mgbf_nml),status='old')
+  open(newunit=myunit,file=trim(mgbf_nml),status="old")
   read(myunit,nml=parameters_mgbf_init)
   close(unit=myunit)
   self%nscale=nscale
@@ -154,21 +154,21 @@ if (config%has("mgbf sdl and vdl init namelist file")) then
     do ivargrp=1,nvargrp
       self%mgbf_nml_group(iscale,ivargrp)=readin_mgbf_nml_group(ii)
       ii=ii+1
-    enddo
-  enddo
+    end do
+  end do
   do iscale=1,nscale
     self%iscalegroup(iscale)=readin_iscalegroup(iscale)
-  enddo
+  end do
   ii=1
   do i=1,nvargrp
     do j=1,nvargrp
       self%multigrp_cor(i,j)=readin_multigrp_cor(ii)
       ii=ii+1
-    enddo
-  enddo
+    end do
+  end do
   do i=1,nvargrp
     self%ivargroup(i)=readin_ivargroup(i)
-  enddo
+  end do
 else
 call config%get_or_die("mgbf namelist file ",  mgbf_nml)
 !still need allocate them though nscale=nvargrp=1
@@ -179,26 +179,26 @@ call config%get_or_die("mgbf namelist file ",  mgbf_nml)
   self%iscalegroup(nscale) =1
   allocate(self%ivargroup(nvargrp) )
   self%ivargroup=1
-endif
+end if
 
 if(nscale == 1 .and. nvargrp ==1 ) then
   self%mgbf_nml_group(1,1)=mgbf_nml   !the same mgbf namelist file is used
                                       !and hence, it would be backward-compatible
                                       ! the previous namelist files could be still used,correctly,
                                       ! by the current sdl/vdl enhanced version
-endif
+end if
 
-if (trim(funcspace%name()) /= 'StructuredColumns') then
-  error stop 'MGBF requires StructuredColumns function space'
+if (trim(funcspace%name()) /= "StructuredColumns") then
+  error stop "MGBF requires StructuredColumns function space"
 end if
 fs_sc = funcspace
 npts_owned = fs_sc%size_owned()
 npts_total   = fs_sc%size()
-if(npts_owned.ge.npts_total) then
-   write(6,*)'the halo points are not present, on which the outer block interpolator would be problematic, stop'
+if(npts_owned>=npts_total) then
+   write(6,*)"the halo points are not present, on which the outer block interpolator would be problematic, stop"
    call flush(6)
    stop
-endif
+end if
 
 lonlat_field = fs_sc%xy()
 call lonlat_field%data(lonlat_ptr)
@@ -213,8 +213,8 @@ do iscale=1,nscale
   do ivargrp=1,nvargrp
    call  self%intstate(iscale,ivargrp)%mg_initialize(n_owned_anl=npts_owned, &
         anl_lonlat1d=lonlat_anl, inputfilename=self%mgbf_nml_group(iscale,ivargrp))  !mgbf_nml like mgbeta.nml
-  enddo
-enddo
+  end do
+end do
 if (allocated(lonlat_anl)) deallocate(lonlat_anl)
 
 ! Allocate persistent workspaces based on intstate sizes
@@ -223,47 +223,47 @@ do iscale=1,nscale
   do ivargrp=1,nvargrp
     self%total_km_a_all = self%total_km_a_all + self%intstate(iscale,ivargrp)%km_a_all
     if(self%intstate(iscale,ivargrp)%nm /= self%intstate(1,1)%nm ) then
-      write(6,*)'nm should be the same for all mgbf filters, stop'
+      write(6,*)"nm should be the same for all mgbf filters, stop"
       call flush(6)
       stop
-    endif
+    end if
     if(self%intstate(iscale,ivargrp)%mm /= self%intstate(1,1)%mm ) then
-      write(6,*)'mm should be the same for all mgbf filters, stop'
+      write(6,*)"mm should be the same for all mgbf filters, stop"
       call flush(6)
       stop
-    endif
+    end if
     if(self%intstate(iscale,ivargrp)%lm_a /= self%intstate(1,1)%lm_a ) then
-      write(6,*)'lm_a should be the same for all mgbf filters, stop'
+      write(6,*)"lm_a should be the same for all mgbf filters, stop"
       call flush(6)
       stop
-    endif
-  enddo
-enddo
+    end if
+  end do
+end do
 self%total_km_a_all=0
 do iscale=1,nscale
   do ivargrp=1,nvargrp
     if (iscale == 1 ) self%total_km_a_all = self%total_km_a_all + self%intstate(iscale,ivargrp)%km_a_all
     if(self%intstate(iscale,ivargrp)%nm /= self%intstate(1,1)%nm ) then
-      write(6,*)'nm should be the same for all mgbf filters, stop'
+      write(6,*)"nm should be the same for all mgbf filters, stop"
       call flush(6)
       stop
-    endif
+    end if
     if(self%intstate(iscale,ivargrp)%mm /= self%intstate(1,1)%mm ) then
-      write(6,*)'mm should be the same for all mgbf filters, stop'
+      write(6,*)"mm should be the same for all mgbf filters, stop"
       call flush(6)
       stop
-    endif
+    end if
     if(self%intstate(iscale,ivargrp)%lm_a /= self%intstate(1,1)%lm_a ) then
-      write(6,*)'lm_a should be the same for all mgbf filters, stop'
+      write(6,*)"lm_a should be the same for all mgbf filters, stop"
       call flush(6)
       stop
-    endif
-  enddo
-enddo
+    end if
+  end do
+end do
   self%nvar = 0
   do ivargrp=1,nvargrp
     self%nvar = self%nvar + self%intstate(1,ivargrp)%km2+self%intstate(1,ivargrp)%km3
-  enddo
+  end do
   nz3d=self%intstate(1,1)%lm_a
 
   allocate(self%work_mgbf(self%total_km_a_all, self%intstate(1,1)%nm, self%intstate(1,1)%mm))
@@ -276,15 +276,15 @@ enddo
   do iscale=1,nscale
   do ivargrp=1,nvargrp
     self%nlev_vargrp(ivargrp,iscale)=self%intstate(iscale,ivargrp)%km_a_all
-  enddo
-  enddo
+  end do
+  end do
 ! Note, for different scales, they should have the sma esetup (using the same "zero level"  filtering grids from the atlas  )
   max_nlevs=1
   do iscale=1,nscale
   do ivargrp=1,nvargrp
    max_nlevs=max(max_nlevs,self%nlev_vargrp(ivargrp,iscale))
-  enddo
-  enddo
+  end do
+  end do
   allocate(self%vargrp_work_mgbf(max_nlevs, self%intstate(1,1)%nm, self%intstate(1,1)%mm))
   allocate(self%vargrp_work_mgbf2(max_nlevs, self%intstate(1,1)%nm, self%intstate(1,1)%mm))
 
@@ -307,8 +307,8 @@ integer:: iscale,ivargrp
 do iscale=1,self%nscale
   do ivargrp=1,self%nvargrp
    call self%intstate(iscale,ivargrp)%mg_finalize()
-  enddo
-enddo
+  end do
+end do
 
 if (associated(self%work_mgbf)) deallocate(self%work_mgbf)
 if (associated(self%work_mgbf_tmp)) deallocate(self%work_mgbf_tmp)
@@ -338,32 +338,32 @@ real(kind=r_kind), pointer :: psi(:,:), chi(:,:), t(:,:), q(:,:), qi(:,:), ql(:,
 real(kind=r_kind), pointer :: ps(:)
 
 integer, parameter :: rseed = 3
-write(6,*)'thinkdeb this is to be implemente'
+write(6,*)"thinkdeb this is to be implemente"
 call flush(6)
 stop
 ! Get Atlas field
-afield = fields%field('stream_function')
+afield = fields%field("stream_function")
 call afield%data(psi)
 
-afield = fields%field('velocity_potential')
+afield = fields%field("velocity_potential")
 call afield%data(chi)
 
-afield = fields%field('air_temperature')
+afield = fields%field("air_temperature")
 call afield%data(t)
 
-afield = fields%field('surface_pressure')
+afield = fields%field("surface_pressure")
 call afield%data(ps)
 
-afield = fields%field('specific_humidity')
+afield = fields%field("specific_humidity")
 call afield%data(q)
 
-afield = fields%field('cloud_liquid_ice')
+afield = fields%field("cloud_liquid_ice")
 call afield%data(qi)
 
-afield = fields%field('cloud_liquid_water')
+afield = fields%field("cloud_liquid_water")
 call afield%data(ql)
 
-afield = fields%field('ozone_mass_mixing_ratio')
+afield = fields%field("ozone_mass_mixing_ratio")
 call afield%data(o3)
 
 ! Set fields to random numbers
@@ -421,7 +421,7 @@ integer ::  loc(2)
           else
                                         ! namely, it is not a sdl/vdl run.
           member_index=index_member_in+1  ! the privous ensemble index starts from 0)
-          endif
+          end if
           jscale=self%imem2scale(member_index)
           nvargrp=self%nvargrp
           call btim(mg_multiply_time)
@@ -431,16 +431,16 @@ integer ::  loc(2)
 &        "in which, the first level contains the 2d variables and others zeros "
 
            stop !to use a better exit procdure
-          endif
+          end if
           myrank=self%rank
           write(str_rank,"(I4.4)")myrank
         if (.not. associated(self%nlev_vargrp)) then
           error stop "MGBF workspace nlev_vargrp not allocated"
-        endif
+        end if
         nlev_vargrp=>self%nlev_vargrp(:,jscale)
         if (size(nlev_vargrp) < nvargrp) then
           error stop "MGBF workspace nlev_vargrp too small for nvargrp"
-        endif
+        end if
         work_mgbf => self%work_mgbf
         work_mgbf_tmp => self%work_mgbf_tmp
         work2d_mgbf => self%work2d_mgbf
@@ -456,31 +456,31 @@ integer ::  loc(2)
              ivargrp0=1
              if (.not. associated(self%work_mgbf)) then
                error stop "MGBF workspace work_mgbf not allocated"
-             endif
+             end if
             if (size(work_mgbf,1) /= self%total_km_a_all .or. &
                 size(work_mgbf,2) /= self%intstate(jscale,ivargrp0)%nm .or. &
                 size(work_mgbf,3) /= self%intstate(jscale,ivargrp0)%mm) then
               error stop "MGBF workspace work_mgbf does not match "
-            endif
+            end if
             if (.not. associated(self%work_mgbf_tmp)) then
               error stop "MGBF workspace work_mgbf_tmp not allocated"
-            endif
+            end if
             if (size(work_mgbf_tmp,1) /= self%total_km_a_all .or. &
                 size(work_mgbf_tmp,2) /= self%intstate(jscale,ivargrp0)%nm .or. &
                 size(work_mgbf_tmp,3) /= self%intstate(jscale,ivargrp0)%mm) then
               error stop "MGBF workspace work_mgbf_tmp does not match "
-            endif
+            end if
 
             if (size(work2d_mgbf,1) /=  self%total_km_a_all .or. &
                  size(work2d_mgbf,2) /= self%intstate(jscale,ivargrp0)%nm * &
                                            self%intstate(jscale,ivargrp0)%mm) then
                error stop "MGBF workspace work2d_mgbf too small for current scale"
-             endif
+             end if
 
              if (size(rnormalization,1) /= self%total_km_a_all .or. &
                  size(rnormalization,2) /= nvargrp) then
                error stop "MGBF workspace rnormalization too small for current scale"
-             endif
+             end if
              if(self%l_multiply_first_call(jscale)) then
 !$omp parallel do private(ivargrp,ii,k) schedule(static)
                 do ivargrp=1,nvargrp
@@ -490,20 +490,20 @@ integer ::  loc(2)
                         rnormalization(ii:ii+nz3d-1,ivargrp)=self%intstate(jscale,ivargrp)%coef_normalization(1:nz3d)
                         ii=ii+nz3d
 
-                  enddo
+                  end do
                   do k=1,self%intstate(jscale,ivargrp)%km2
    !clt if for localization , km2=0  only for
    !clt only for     l_2dvar_last_vertical_lev
                     rnormalization(ii,ivargrp)=self%intstate(jscale,ivargrp)%coef_normalization(nz3d)
                     ii=ii+1
-                  enddo
+                  end do
                   if (any(rnormalization(1:nlev_vargrp(ivargrp), ivargrp) == 0.0_r_kind)) then
-                    write(6,*) 'DBG zero normalization in group', ivargrp, &
-                      ' nlev=', nlev_vargrp(ivargrp), ' jscale=', jscale, ' rank=', self%rank
-                  endif
-                enddo
+                    write(6,*) "DBG zero normalization in group", ivargrp, &
+                      " nlev=", nlev_vargrp(ivargrp), " jscale=", jscale, " rank=", self%rank
+                  end if
+                end do
 !$omp end parallel do
-             endif
+             end if
 
              dim2d=shape(work2d_mgbf)
 
@@ -513,10 +513,10 @@ integer ::  loc(2)
              nzloc=dim3d(1)
              nvar=fields%size()
              if(nvar /= self%nvar ) then
-               write(6,*)'wrong, local nvar is not the same as self%nvar stop'
+               write(6,*)"wrong, local nvar is not the same as self%nvar stop"
                call flush(6)
                stop
-             endif
+             end if
              varvlev_index => self%varvlev_index(:,:,jscale)
              if (self%l_multiply_first_call(jscale))  varvlev_index = 0
 
@@ -530,75 +530,78 @@ integer ::  loc(2)
                     nz=afield%levels()
                     call afield%data(ptr_2d)
                     if(nz /= 1 .and. nz /= nz3d ) then
-                      write(6,*)'the vertical dimension of the input fields are not as expectd ,stop ',nz,' ',nz3d
+                      write(6,*)"the vertical dimension of the input fields are not as expectd ,stop ",nz," ",nz3d
                       call flush(6)
                       stop
-                    endif
+                    end if
 
                     if(nz == 1) then
                         if(self%intstate(jscale,1)%l_for_localization) then
-                             if( self%l_2dvar_last_vertical_level) then  !when used for localization,2dvars are put on the last vertical level
+                             ! When used for localization, 2d variables are put on the last vertical level.
+                             if( self%l_2dvar_last_vertical_level) then
                                 if(ilev+nz3d-1 > self%total_km_a_all) then
-                                   write(6,*)'MGBF abort 1 : the dimensions are not as expected'
+                                   write(6,*)"MGBF abort 1 : the dimensions are not as expected"
                                    call flush(6)
                                    stop
-                                endif
+                                end if
                                 if(n_owned_size >0 ) then
                                   work2d_mgbf(ilev+nz3d-1:ilev+nz3d-1,:)=ptr_2d(:,1:n_owned_size)
-                                  work2d_mgbf(ilev:ilev+nz3d-2,:)=0.0  !other levels are set to 0 and to be updated by the info spreading.
+                                  ! Other levels are set to 0 and updated by the information spreading.
+                                  work2d_mgbf(ilev:ilev+nz3d-2,:)=0.0
                                 else
                                   work2d_mgbf(ilev+nz3d-1:ilev+nz3d-1,:)=ptr_2d
                                   work2d_mgbf(ilev:ilev+nz3d-2,:)=ptr_2d
-                                endif
+                                end if
                               else
                                 if(ilev+nz-1 > self%total_km_a_all) then
-                                   write(6,*)'MGBF abort 2 : the dimensions are not as expected'
+                                   write(6,*)"MGBF abort 2 : the dimensions are not as expected"
                                    call flush(6)
                                    stop
-                                endif
+                                end if
                                 if(n_owned_size >0 ) then
                                   work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d (:,1:n_owned_size)
                                 else
                                   work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d
-                                endif
+                                end if
                                 work2d_mgbf(ilev+nz:ilev+nz3d-1,:)=0.0
-                              endif
+                              end if
 
                         else
                                 if(ilev+nz-1 > self%total_km_a_all) then
-                                   write(6,*)'MGBF abort 3 : the dimensions are not as expected'
+                                   write(6,*)"MGBF abort 3 : the dimensions are not as expected"
                                    call flush(6)
                                    stop
-                                endif
+                                end if
                             if(n_owned_size >0 ) then
                                work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d(:,1:n_owned_size)
                             else
                                work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d
-                            endif
-                        endif
+                            end if
+                        end if
                      else
                                 if(ilev+nz-1 > self%total_km_a_all) then
-                                   write(6,*)'MGBF abort 4 : the dimensions are not as expected'
+                                   write(6,*)"MGBF abort 4 : the dimensions are not as expected"
                                    call flush(6)
                                    stop
-                                endif
+                                end if
                        if(n_owned_size >0 ) then
                         work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d(:,1:n_owned_size)
                        else
                         work2d_mgbf(ilev:ilev+nz-1,:)=ptr_2d
-                       endif
-                    endif
+                       end if
+                    end if
 
                     if(nz ==  1) then
                       l2d_encountered=.true.
                       n2d=n2d+1
-                    endif
+                    end if
                     if(nz > 1) then
                        if(l2d_encountered  ) then
                         call flush(6)
-                        error stop ("2dvariable is not put in the ending stop.")    !  is required 2d fields are saved consecutively,and at the ending
-                       endif
-                    endif
+                        ! 2d fields are required to be saved consecutively at the end.
+                        error stop ("2dvariable is not put in the ending stop.")
+                       end if
+                    end if
                     if(self%l_multiply_first_call(jscale)) then
                        if(isize==1) then
                            varvlev_index(isize,1)= 1
@@ -606,7 +609,7 @@ integer ::  loc(2)
                              varvlev_index(isize,2)= nz
                            else
                              varvlev_index(isize,2)= nz3d
-                           endif
+                           end if
                            varvlev_index(isize,3)= varvlev_index(isize,2) -varvlev_index(isize,1)+1
                        else
                            varvlev_index(isize,1)= varvlev_index(isize-1,2)+1
@@ -614,31 +617,31 @@ integer ::  loc(2)
                              varvlev_index(isize,2)= varvlev_index(isize,1)+nz-1
                            else
                              varvlev_index(isize,2)= varvlev_index(isize,1)+nz3d-1
-                           endif
+                           end if
                            varvlev_index(isize,3)= varvlev_index(isize,2) -varvlev_index(isize,1)+1
-                       endif
-                    endif
+                       end if
+                    end if
 
                     ilev=varvlev_index(isize,2)+1
-                elseif (afield%rank() == 3) then
-                    write(6,*)'this case needs more work, stop' ! a better exption handling to be added
+                else if (afield%rank() == 3) then
+                    write(6,*)"this case needs more work, stop" ! a better exption handling to be added
                     call flush(6)
                     stop
                 else
-                    write(6,*)'wrong in mgbf_covariance_mod.f90 ' !todo
+                    write(6,*)"wrong in mgbf_covariance_mod.f90 " !todo
                     stop
-                endif
-             enddo
+                end if
+             end do
 !$omp parallel do private(k) schedule(static)
              do k=1,nzloc
                 work_mgbf(k,:,:) = reshape(work2d_mgbf(k,:),[dim3d(2),dim3d(3)])
-             enddo
+             end do
 !$omp end parallel do
 
-             if(self%intstate(jscale,ivargrp0)%km2.ne.n2d.and. .not.self%intstate(jscale,ivargrp0)%l_for_localization ) then
-                write(6,*)'The numbers of 2d variables is different from  mgbf-expected ,stop'
+             if(self%intstate(jscale,ivargrp0)%km2/=n2d.and. .not.self%intstate(jscale,ivargrp0)%l_for_localization ) then
+                write(6,*)"The numbers of 2d variables is different from  mgbf-expected ,stop"
                 stop   ! a better exception handling is to be added
-             endif
+             end if
 
                 call etim(mg_preprocess_time)
              ii=1
@@ -662,11 +665,11 @@ integer ::  loc(2)
 !$omp parallel do private(k) schedule(static)
                 do k=1,nlev_vargrp(ivargrp)
                  vargrp_work_mgbf2(k,:,:) = vargrp_work_mgbf2(k,:,:) / rnormalization(k,ivargrp)
-                enddo
+                end do
 !$omp end parallel do
                 work_mgbf(ii:ii+nlev_vargrp(ivargrp)-1,:,:) = vargrp_work_mgbf2(1:nlev_vargrp(ivargrp),:,:)
                 ii=ii+nlev_vargrp(ivargrp)
-             enddo ! ivargrp
+             end do ! ivargrp
              if(self%intstate(jscale,ivargrp0)%l_for_localization ) then   !clthinkdebxxx
                if(nvargrp == 1 ) then
                    work1var_mgbf = 0.0
@@ -674,13 +677,13 @@ integer ::  loc(2)
                      lev1=varvlev_index(ivar,1)
                      lev2=varvlev_index(ivar,2)
                      work1var_mgbf=work1var_mgbf+work_mgbf(lev1:lev2,:,:)
-                   enddo
+                   end do
 !$omp parallel do private(jvar,lev1,lev2) schedule(static)
                    do jvar=1,nvar
                      lev1=varvlev_index(jvar,1)
                      lev2=varvlev_index(jvar,2)
                      work_mgbf(lev1:lev2,:,:)=work1var_mgbf
-                   enddo
+                   end do
 !$omp end parallel do
                else
 !clttodo, further optimizaiton
@@ -693,18 +696,18 @@ integer ::  loc(2)
                      lev2=varvlev_index(ivar,2)
                      ivargrp=self%ivar2grp(ivar)
                     work1var_mgbf=work1var_mgbf+self%multigrp_cor(jvargrp,ivargrp)*work_mgbf_tmp(lev1:lev2,:,:)
-                   enddo
+                   end do
                    lev1=varvlev_index(jvar,1)
                    lev2=varvlev_index(jvar,2)
                    work_mgbf(lev1:lev2,:,:)=work1var_mgbf
-                 enddo
-               endif
+                 end do
+               end if
                nullify(work1var_mgbf)
-             endif
+             end if
 !$omp parallel do private(k) schedule(static)
              do k=1,nzloc
                work2d_mgbf(k,:) = reshape(work_mgbf(k,:,:),[dim2d(2)])
-             enddo
+             end do
 !$omp end parallel do
                 ilev=1
                      n_owned_size=0
@@ -718,58 +721,64 @@ integer ::  loc(2)
                   call afield%data(ptr_2d)
                   nz=afield%levels()
                   lev1=varvlev_index(isize,1)
-                  if(nz.gt.1) then
+                  if(nz>1) then
                       if(n_owned_size >0 ) then
-                          ptr_2d(1:nz,1:n_owned_size)=work2d_mgbf(lev1:lev1+nz-1,:)!if nz=1, only the first level is used (like for surface pressure)
+                          ! If nz=1, only the first level is used (like for surface pressure).
+                          ptr_2d(1:nz,1:n_owned_size)=work2d_mgbf(lev1:lev1+nz-1,:)
                        else
                        !cltthinkdebto now, the n_owned_size can't be got rightly for mgbf_grid using PointCloud function space
-                          ptr_2d(1:nz,:)=work2d_mgbf(lev1:lev1+nz-1,:)!if nz=1, only the first level is used (like for surface pressure)
-                      endif
+                          ! If nz=1, only the first level is used (like for surface pressure).
+                          ptr_2d(1:nz,:)=work2d_mgbf(lev1:lev1+nz-1,:)
+                      end if
                   else
                      if(self%intstate(1,1)%l_for_localization) then
                          if( self%l_2dvar_last_vertical_level) then !,2dvars are put on the last vertical level
 
                               if(n_owned_size >0 ) then
-                                ptr_2d(1,1:n_owned_size)=work2d_mgbf(lev1+nz3d-1,:)!if nz=1, only the first level is used (like for surface pressure)
+                                ! If nz=1, only the first level is used (like for surface pressure).
+                                ptr_2d(1,1:n_owned_size)=work2d_mgbf(lev1+nz3d-1,:)
                               else
-                               !cltthinkdebto now, the n_owned_size can't be got rightly for mgbf_grid using PointCloud function space
-                                ptr_2d(1,:)=work2d_mgbf(lev1+nz3d-1,:)!if nz=1, only the first level is used (like for surface pressure)
-                              endif
+                               ! cltthinkdebto now, n_owned_size cannot be obtained correctly for
+                               ! mgbf_grid using PointCloud function space.
+                                ! If nz=1, only the first level is used (like for surface pressure).
+                                ptr_2d(1,:)=work2d_mgbf(lev1+nz3d-1,:)
+                              end if
                          else
                               if(n_owned_size >0 ) then
                                   ptr_2d(1,1:n_owned_size)=work2d_mgbf(lev1,:)!
                               else
                                   ptr_2d(1,:)=work2d_mgbf(lev1,:)!if nz=1, only the first level is used (like for surface pressure)
-                             endif
-                         endif
+                             end if
+                         end if
                      else
                          if(n_owned_size >0 ) then
-                            ptr_2d(1,1:n_owned_size)=work2d_mgbf(lev1,:)!if nz=1, only the first level is used (like for surface pressure)
+                            ! If nz=1, only the first level is used (like for surface pressure).
+                            ptr_2d(1,1:n_owned_size)=work2d_mgbf(lev1,:)
                          else
                          !cltthinkdebto now, the n_owned_size can't be got rightly for mgbf_grid using PointCloud function space
-                            write(6,*)'suspicous situation while n_owned_szie =0 ,stop'
+                            write(6,*)"suspicous situation while n_owned_szie =0 ,stop"
                             call flush(6)
                             stop
                             ptr_2d(1,:)=work2d_mgbf(lev1,:)!if nz=1, only the first level is used (like for surface pressure)
-                        endif
+                        end if
 
-                     endif
-                  endif  !nz >1 or not
+                     end if
+                  end if  !nz >1 or not
 
-                elseif (afield%rank() == 3) then
+                else if (afield%rank() == 3) then
                   call afield%data(ptr_3d)
                   nz=afield%levels()
-                  write(6,*)'wrong in mgbf_covariance_mod.f90 todo ' !todo
+                  write(6,*)"wrong in mgbf_covariance_mod.f90 todo " !todo
                   call flush(6)
                   stop
 
                   ilev=ilev+nz
                 else
-                  write(6,*)'wrong in mgbf_covariance_mod.f90 ' !todo
+                  write(6,*)"wrong in mgbf_covariance_mod.f90 " !todo
                   call flush(6)
                   stop
-                endif
-              enddo
+                end if
+              end do
 
              call etim(mg_postprocess_time)
 
@@ -805,9 +814,9 @@ function imem2scale(self,imem) result(iscale)
   integer, intent(in)::imem
   integer :: iscale
      iscale=1
-    do  while (iscale.le.self%nscale-1.and.imem > self%iscalegroup(iscale) )
+    do  while (iscale<=self%nscale-1.and.imem > self%iscalegroup(iscale) )
        iscale=iscale+1
-    enddo
+    end do
 
 end function imem2scale
 function ivar2grp(self,ivar) result(jvargrp)
@@ -815,9 +824,9 @@ function ivar2grp(self,ivar) result(jvargrp)
   integer, intent(in)::ivar
   integer :: jvargrp
      jvargrp=1
-    do  while (jvargrp.le.self%nvargrp-1.and.ivar > self%ivargroup(jvargrp) )
+    do  while (jvargrp<=self%nvargrp-1.and.ivar > self%ivargroup(jvargrp) )
        jvargrp=jvargrp+1
-    enddo
+    end do
 
 end function ivar2grp
 

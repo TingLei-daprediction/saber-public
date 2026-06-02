@@ -28,7 +28,7 @@ module jp_pmat
 !   of pmat1.f90 (a most extensive collection of matrix routines -- not just
 !   inversions). As well as having both single and double precision versions
 !   of each routine, these versions also make provision for a more graceful
-!   termination in cases where the system matrix is detected to be 
+!   termination in cases where the system matrix is detected to be
 !   essentially singular (and therefore noninvertible). This provision takes
 !   the form of an optional "failure flag", FF, which is normally returned
 !   as .FALSE., but is returned as .TRUE. when inversion fails.
@@ -98,7 +98,7 @@ subroutine sinvmt(a)!                                                    [inv]
 real(sp),dimension(:,:),intent(INOUT):: a
 logical                              :: ff
 call sinvmtf(a,ff)
-if(ff)stop 'In sinvmt; Unable to invert matrix'
+if(ff)stop "In sinvmt; Unable to invert matrix"
 end subroutine sinvmt
 !=============================================================================
 subroutine dinvmt(a)!                                                    [inv]
@@ -106,7 +106,7 @@ subroutine dinvmt(a)!                                                    [inv]
 real(dp),dimension(:,:),intent(inout):: a
 logical                              :: ff
 call dinvmtf(a,ff)
-if(ff)stop 'In dinvmt; Unable to invert matrix'
+if(ff)stop "In dinvmt; Unable to invert matrix"
 end subroutine dinvmt
 !=============================================================================
 subroutine cinvmt(a)!                                                    [inv]
@@ -114,7 +114,7 @@ subroutine cinvmt(a)!                                                    [inv]
 complex(dpc),dimension(:,:),intent(inout):: a
 logical                                  :: ff
 call cinvmtf(a,ff)
-if(ff)stop 'In cinvmt; Unable to invert matrix'
+if(ff)stop "In cinvmt; Unable to invert matrix"
 end subroutine cinvmt
 !=============================================================================
 subroutine sinvmtf(a,ff)!                                                [inv]
@@ -122,39 +122,39 @@ subroutine sinvmtf(a,ff)!                                                [inv]
 ! Invert matrix (or flag if can't)
 !----------------
 real(sp),dimension(:,:),intent(inout):: a
-logical,                intent(  out):: ff 
+logical,                intent(  out):: ff
 integer                              :: m,i,j,jp,l
 real(sp)                             :: d
 integer,dimension(size(a,1))         :: ipiv
 !=============================================================================
 m=size(a,1)
-if(m /= size(a,2))stop 'In sinvmtf; matrix passed to sinvmtf is not square'
+if(m /= size(a,2))stop "In sinvmtf; matrix passed to sinvmtf is not square"
 ! Perform a pivoted L-D-U decomposition on matrix a:
 call sldumf(a,ipiv,d,ff)
 if(ff)then
    print '(" In sinvmtf; failed call to sldumf")'
    return
-endif
+end if
 
 ! Invert upper triangular portion U in place:
-do i=1,m; a(i,i)=1./a(i,i); enddo
+do i=1,m; a(i,i)=1./a(i,i); end do
 do i=1,m-1
-   do j=i+1,m; a(i,j)=-a(j,j)*dot_product(a(i:j-1,j),a(i,i:j-1)); enddo
-enddo
+   do j=i+1,m; a(i,j)=-a(j,j)*dot_product(a(i:j-1,j),a(i,i:j-1)); end do
+end do
 
 ! Invert lower triangular portion L in place:
 do j=1,m-1; jp=j+1
-   do i=jp,m; a(i,j)=-a(i,j)-dot_product(a(jp:i-1,j),a(i,jp:i-1)); enddo
-enddo
+   do i=jp,m; a(i,j)=-a(i,j)-dot_product(a(jp:i-1,j),a(i,jp:i-1)); end do
+end do
 
 !  Form the product of U**-1 and L**-1 in place
 do j=1,m-1; jp=j+1
-   do i=1,j; a(i,j)=a(i,j)+dot_product(a(jp:m,j),a(i,jp:m)); enddo
-   do i=jp,m; a(i,j)=dot_product(a(i:m,j),a(i,i:m));         enddo
-enddo
+   do i=1,j; a(i,j)=a(i,j)+dot_product(a(jp:m,j),a(i,jp:m)); end do
+   do i=jp,m; a(i,j)=dot_product(a(i:m,j),a(i,i:m));         end do
+end do
 
 !  Permute columns according to ipiv
-do j=m-1,1,-1; l=ipiv(j); call sswpvv(a(:,j),a(:,l)); enddo
+do j=m-1,1,-1; l=ipiv(j); call sswpvv(a(:,j),a(:,l)); end do
 end subroutine sinvmtf
 !=============================================================================
 subroutine dinvmtf(a,ff)!                                                [inv]
@@ -166,33 +166,33 @@ real(DP)                             :: d
 integer, dimension(size(a,1))        :: ipiv
 !=============================================================================
 m=size(a,1)
-if(m /= size(a,2))stop 'In inv; matrix passed to dinvmtf is not square'
+if(m /= size(a,2))stop "In inv; matrix passed to dinvmtf is not square"
 ! Perform a pivoted L-D-U decomposition on matrix a:
 call dldumf(a,ipiv,d,ff)
 if(ff)then
    print '(" In dinvmtf; failed call to dldumf")'
    return
-endif
+end if
 
 ! Invert upper triangular portion U in place:
-do i=1,m; a(i,i)=1/a(i,i); enddo
+do i=1,m; a(i,i)=1/a(i,i); end do
 do i=1,m-1
-   do j=i+1,m; a(i,j)=-a(j,j)*dot_product(a(i:j-1,j),a(i,i:j-1)); enddo
-enddo
+   do j=i+1,m; a(i,j)=-a(j,j)*dot_product(a(i:j-1,j),a(i,i:j-1)); end do
+end do
 
 ! Invert lower triangular portion L in place:
 do j=1,m-1; jp=j+1
-   do i=jp,m; a(i,j)=-a(i,j)-dot_product(a(jp:i-1,j),a(i,jp:i-1)); enddo
-enddo
+   do i=jp,m; a(i,j)=-a(i,j)-dot_product(a(jp:i-1,j),a(i,jp:i-1)); end do
+end do
 
 !  Form the product of U**-1 and L**-1 in place
 do j=1,m-1; jp=j+1
-   do i=1,j; a(i,j)=a(i,j)+dot_product(a(jp:m,j),a(i,jp:m)); enddo
-   do i=jp,m; a(i,j)=dot_product(a(i:m,j),a(i,i:m));         enddo
-enddo
+   do i=1,j; a(i,j)=a(i,j)+dot_product(a(jp:m,j),a(i,jp:m)); end do
+   do i=jp,m; a(i,j)=dot_product(a(i:m,j),a(i,i:m));         end do
+end do
 
 !  Permute columns according to ipiv
-do j=m-1,1,-1; l=ipiv(j); call dswpvv(a(:,j),a(:,l)); enddo
+do j=m-1,1,-1; l=ipiv(j); call dswpvv(a(:,j),a(:,l)); end do
 end subroutine dinvmtf
 !=============================================================================
 subroutine cinvmtf(a,ff)!                                                [inv]
@@ -204,33 +204,33 @@ complex(dpc)                             :: d
 integer, dimension(size(a,1))            :: ipiv
 !=============================================================================
 m=size(a,1)
-if(m /= size(a,2))stop 'In inv; matrix passed to cinvmtf is not square'
+if(m /= size(a,2))stop "In inv; matrix passed to cinvmtf is not square"
 ! Perform a pivoted L-D-U decomposition on matrix a:
 call cldumf(a,ipiv,d,ff)
 if(ff)then
    print '(" In cinvmtf; failed call to cldumf")'
    return
-endif
+end if
 
 ! Invert upper triangular portion U in place:
-do i=1,m; a(i,i)=1/a(i,i); enddo
+do i=1,m; a(i,i)=1/a(i,i); end do
 do i=1,m-1
-   do j=i+1,m; a(i,j)=-a(j,j)*sum(a(i:j-1,j)*a(i,i:j-1)); enddo
-enddo
+   do j=i+1,m; a(i,j)=-a(j,j)*sum(a(i:j-1,j)*a(i,i:j-1)); end do
+end do
 
 ! Invert lower triangular portion L in place:
 do j=1,m-1; jp=j+1
-   do i=jp,m; a(i,j)=-a(i,j)-sum(a(jp:i-1,j)*a(i,jp:i-1)); enddo
-enddo
+   do i=jp,m; a(i,j)=-a(i,j)-sum(a(jp:i-1,j)*a(i,jp:i-1)); end do
+end do
 
 !  Form the product of U**-1 and L**-1 in place
 do j=1,m-1; jp=j+1
-   do i=1,j; a(i,j)=a(i,j)+sum(a(jp:m,j)*a(i,jp:m)); enddo
-   do i=jp,m; a(i,j)=sum(a(i:m,j)*a(i,i:m));         enddo
-enddo
+   do i=1,j; a(i,j)=a(i,j)+sum(a(jp:m,j)*a(i,jp:m)); end do
+   do i=jp,m; a(i,j)=sum(a(i:m,j)*a(i,i:m));         end do
+end do
 
 !  Permute columns according to ipiv
-do j=m-1,1,-1; l=ipiv(j); call cswpvv(a(:,j),a(:,l)); enddo
+do j=m-1,1,-1; l=ipiv(j); call cswpvv(a(:,j),a(:,l)); end do
 end subroutine cinvmtf
 
 !=============================================================================
@@ -239,7 +239,7 @@ subroutine slinmmt(a,b)!                                                 [inv]
 real(sp),dimension(:,:),intent(inout):: a,b
 logical                              :: ff
 call slinmmtf(a,b,ff)
-if(ff)stop 'In slinmmt; unable to invert linear system'
+if(ff)stop "In slinmmt; unable to invert linear system"
 end subroutine slinmmt
 !=============================================================================
 subroutine dlinmmt(a,b)!                                                 [inv]
@@ -247,7 +247,7 @@ subroutine dlinmmt(a,b)!                                                 [inv]
 real(dp),dimension(:,:),intent(inout):: a,b
 logical                              :: ff
 call dlinmmtf(a,b,ff)
-if(ff)stop 'In dlinmmt; unable to invert linear system'
+if(ff)stop "In dlinmmt; unable to invert linear system"
 end subroutine dlinmmt
 !=============================================================================
 subroutine clinmmt(a,b)!                                                 [inv]
@@ -255,7 +255,7 @@ subroutine clinmmt(a,b)!                                                 [inv]
 complex(dpc),dimension(:,:),intent(inout):: a,b
 logical                                  :: ff
 call clinmmtf(a,b,ff)
-if(ff)stop 'In clinmmt; unable to invert linear system'
+if(ff)stop "In clinmmt; unable to invert linear system"
 end subroutine clinmmt
 !=============================================================================
 subroutine slinmmtf(a,b,ff)!                                             [inv]
@@ -267,14 +267,14 @@ integer                                 :: m
 real(sp)                                :: d
 !=============================================================================
 m=size(a,1)
-if(m /= size(a,2))stop 'In inv; matrix passed to slinmmtf is not square'
+if(m /= size(a,2))stop "In inv; matrix passed to slinmmtf is not square"
 if(m /= size(b,1))&
-     stop 'In inv; matrix and vectors in slinmmtf have unmatched sizes'
+     stop "In inv; matrix and vectors in slinmmtf have unmatched sizes"
 call sldumf(a,ipiv,d,ff)
 if(ff)then
    print '("In slinmmtf; failed call to sldumf")'
    return
-endif
+end if
 call sudlmm(a,b,ipiv)
 end subroutine slinmmtf
 !=============================================================================
@@ -283,18 +283,18 @@ subroutine dlinmmtf(a,b,ff)!                                             [inv]
 real(dp),dimension(:,:),   intent(inout):: a,b
 logical,                   intent(  out):: ff
 integer, dimension(size(a,1))           :: ipiv
-integer                                 :: m 
+integer                                 :: m
 real(dp)                                :: d
 !=============================================================================
 m=size(a,1)
-if(m /= size(a,2))stop 'In inv; matrix passed to dlinmmtf is not square'
+if(m /= size(a,2))stop "In inv; matrix passed to dlinmmtf is not square"
 if(m /= size(b,1))&
-     stop 'In inv; matrix and vectors in dlinmmtf have unmatched sizes'
+     stop "In inv; matrix and vectors in dlinmmtf have unmatched sizes"
 call dldumf(a,ipiv,d,ff)
 if(ff)then
    print '("In dlinmmtf; failed call to dldumf")'
    return
-endif
+end if
 call dudlmm(a,b,ipiv)
 end subroutine dlinmmtf
 !=============================================================================
@@ -303,18 +303,18 @@ subroutine clinmmtf(a,b,ff)!                                             [inv]
 complex(dpc),dimension(:,:),intent(INOUT):: a,b
 logical,                    intent(  OUT):: ff
 integer, dimension(size(a,1))            :: ipiv
-integer                                  :: m 
+integer                                  :: m
 complex(dpc)                             :: d
 !=============================================================================
 m=size(a,1)
-if(m /= size(a,2))stop 'In inv; matrix passed to dlinmmtf is not square'
+if(m /= size(a,2))stop "In inv; matrix passed to dlinmmtf is not square"
 if(m /= size(b,1))&
-     stop 'In inv; matrix and vectors in dlinmmtf have unmatched sizes'
+     stop "In inv; matrix and vectors in dlinmmtf have unmatched sizes"
 call cldumf(a,ipiv,d,ff)
 if(ff)then
    print '("In clinmmtf; failed call to cldumf")'
    return
-endif
+end if
 call cudlmm(a,b,ipiv)
 end subroutine clinmmtf
 
@@ -325,7 +325,7 @@ real(sp),   dimension(:,:),intent(inout):: a
 real(sp),   dimension(:),  intent(inout):: b
 logical                                 :: ff
 call slinmvtf(a,b,ff)
-if(ff)stop 'In slinmvt; matrix singular, unable to continue'
+if(ff)stop "In slinmvt; matrix singular, unable to continue"
 end subroutine slinmvt
 !=============================================================================
 subroutine dlinmvt(a,b)!                                                 [inv]
@@ -334,7 +334,7 @@ real(dp),   dimension(:,:),intent(inout):: a
 real(dp),   dimension(:),  intent(inout):: b
 logical                                 :: ff
 call dlinmvtf(a,b,ff)
-if(ff)stop 'In dlinmvt; matrix singular, unable to continue'
+if(ff)stop "In dlinmvt; matrix singular, unable to continue"
 end subroutine dlinmvt
 !=============================================================================
 subroutine clinmvt(a,b)!                                                 [inv]
@@ -343,7 +343,7 @@ complex(dpc),   dimension(:,:),intent(inout):: a
 complex(dpc),   dimension(:),  intent(inout):: b
 logical                                     :: ff
 call clinmvtf(a,b,ff)
-if(ff)stop 'In clinmvt; matrix singular, unable to continue'
+if(ff)stop "In clinmvt; matrix singular, unable to continue"
 end subroutine clinmvt
 !=============================================================================
 subroutine slinmvtf(a,b,ff)!                                             [inv]
@@ -355,13 +355,13 @@ integer,dimension(size(a,1))         :: ipiv
 real(sp)                             :: d
 !=============================================================================
 if(size(a,1) /= size(a,2).or. size(a,1) /= size(b))&
-     stop 'In inv; In slinmvtf; incompatible array dimensions'
+     stop "In inv; In slinmvtf; incompatible array dimensions"
 call sldumf(a,ipiv,d,ff)
 if(ff)then
    print '("In slinmvtf; failed call to sldumf")'
    return
-endif
-call sudlmv(a,b,ipiv) 
+end if
+call sudlmv(a,b,ipiv)
 end subroutine slinmvtf
 !=============================================================================
 subroutine dlinmvtf(a,b,ff)!                                             [inv]
@@ -373,12 +373,12 @@ integer, dimension(size(a,1))        :: ipiv
 real(dp)                             :: d
 !=============================================================================
 if(size(a,1) /= size(a,2).or. size(a,1) /= size(b))&
-     stop 'In inv; incompatible array dimensions passed to dlinmvtf'
+     stop "In inv; incompatible array dimensions passed to dlinmvtf"
 call dldumf(a,ipiv,d,ff)
 if(ff)then
    print '("In dlinmvtf; failed call to dldumf")'
    return
-endif
+end if
 call dudlmv(a,b,ipiv)
 end subroutine dlinmvtf
 !=============================================================================
@@ -391,12 +391,12 @@ integer, dimension(size(a,1))            :: ipiv
 complex(dpc)                             :: d
 !=============================================================================
 if(size(a,1) /= size(a,2).or. size(a,1) /= size(b))&
-     stop 'In inv; incompatible array dimensions passed to clinmvtf'
+     stop "In inv; incompatible array dimensions passed to clinmvtf"
 call cldumf(a,ipiv,d,ff)
 if(ff)then
    print '("In clinmvtf; failed call to cldumf")'
    return
-endif
+end if
 call cudlmv(a,b,ipiv)
 end subroutine clinmvtf
 
@@ -414,46 +414,46 @@ real(dp),dimension(size(imat,1),size(imat,1)):: dmat
 integer                                      :: m,i,j
 !=============================================================================
 m=size(imat,1)
-if(m /= size(imat,2))stop 'In inv; matrix passed to iinvf is not square'
+if(m /= size(imat,2))stop "In inv; matrix passed to iinvf is not square"
 dmat=imat; call inv(dmat,ff)
 if(.not.ff)then
    do j=1,m
       do i=1,m
          imat(i,j)=nint(dmat(i,j)); if(abs(dmat(i,j)-imat(i,j))>eps)ff=t
-      enddo
-   enddo
-endif
+      end do
+   end do
+end if
 end subroutine iinvf
 
 !=============================================================================
 subroutine sldum(a,ipiv,d)!                                             [ldum]
 !=============================================================================
-real(sp),intent(inout) :: a(:,:) 
+real(sp),intent(inout) :: a(:,:)
 real(sp),intent(out  ) :: d
 integer, intent(out  ) :: ipiv(:)
 logical                :: ff
 call sldumf(a,ipiv,d,ff)
-if(ff)stop 'In sldum; matrix singular, unable to continue'
+if(ff)stop "In sldum; matrix singular, unable to continue"
 end subroutine sldum
 !=============================================================================
 subroutine dldum(a,ipiv,d)!                                             [ldum]
 !=============================================================================
-real(dp),intent(inout) :: a(:,:) 
+real(dp),intent(inout) :: a(:,:)
 real(dp),intent(out  ) :: d
 integer, intent(out  ) :: ipiv(:)
 logical:: ff
 call dldumf(a,ipiv,d,ff)
-if(ff)stop 'In dldum; matrix singular, unable to continue'
+if(ff)stop "In dldum; matrix singular, unable to continue"
 end subroutine dldum
 !=============================================================================
 subroutine cldum(a,ipiv,d)!                                             [ldum]
 !=============================================================================
-complex(dpc),intent(inout) :: a(:,:) 
+complex(dpc),intent(inout) :: a(:,:)
 complex(dpc),intent(out  ) :: d
 integer,     intent(out  ) :: ipiv(:)
 logical:: ff
 call cldumf(a,ipiv,d,ff)
-if(ff)stop 'In cldum; matrix singular, unable to continue'
+if(ff)stop "In cldum; matrix singular, unable to continue"
 end subroutine cldum
 !=============================================================================
 subroutine sldumf(a,ipiv,d,ff)!                                         [ldum]
@@ -468,7 +468,7 @@ subroutine sldumf(a,ipiv,d,ff)!                                         [ldum]
 !  <-- d    indicator for possible sign change of determinant
 !  <-- ff:  failure flag, set to .true. when determinant of a vanishes.
 !=============================================================================
-real(SP),intent(INOUT) :: a(:,:) 
+real(SP),intent(INOUT) :: a(:,:)
 real(SP),intent(OUT  ) :: d
 integer, intent(OUT  ) :: ipiv(:)
 logical, intent(OUT  ) :: ff
@@ -482,14 +482,14 @@ do i=1,m
   do j=1,m
     aa=abs(a(i,j))
     if(aa > aam)aam=aa
-  enddo
+  end do
   if(aam == 0)then
     print '("In sldumf; row ",i6," of matrix vanishes")',i
     ff=t
     return
-  endif
+  end if
   s(i)=1/aam
-enddo
+end do
 d=1.
 ipiv(m)=m
 do j=1,m-1
@@ -501,34 +501,34 @@ do j=1,m-1
     if(aa > abig)then
       ibig=i
       abig=aa
-    endif
-  enddo
+    end if
+  end do
 !  swap rows, recording changed sign of determinant
   ipiv(j)=ibig
   if(ibig /= j)then
     d=-d
     call sswpvv(a(j,:),a(ibig,:))
     s(ibig)=s(j)
-  endif
+  end if
   ajj=a(j,j)
   if(ajj == 0)then
     jm=j-1
     print '(" failure in sldumf:"/" matrix singular, rank=",i3)',jm
     ff=t
     return
-  endif
+  end if
   ajji=1/ajj
   do i=jp,m
     aij=ajji*a(i,j)
     a(i,j)=aij
     a(i,jp:m) = a(i,jp:m) - aij*a(j,jp:m)
-  enddo
-enddo
+  end do
+end do
 end subroutine sldumf
 !=============================================================================
 subroutine DLDUMf(A,IPIV,D,ff)!                                         [ldum]
 !=============================================================================
-real(DP), intent(INOUT) :: a(:,:) 
+real(DP), intent(INOUT) :: a(:,:)
 real(DP), intent(OUT  ) :: d
 integer,  intent(OUT  ) :: ipiv(:)
 logical,  intent(OUT  ) :: ff
@@ -542,14 +542,14 @@ do i=1,m
   do j=1,m
     aa=abs(a(i,j))
     if(aa > aam)aam=aa
-  enddo
+  end do
   if(aam == 0)then
     print '("In dldumf;  row ",i6," of matrix vanishes")',i
     ff=t
     return
-  endif
+  end if
   s(i)=1/aam
-enddo
+end do
 d=1.
 ipiv(m)=m
 do j=1,m-1
@@ -561,35 +561,35 @@ do j=1,m-1
     if(aa > abig)then
       ibig=i
       abig=aa
-    endif
-  enddo
+    end if
+  end do
 !  swap rows, recording changed sign of determinant
   ipiv(j)=ibig
   if(ibig /= j)then
     d=-d
     call dswpvv(a(j,:),a(ibig,:))
     s(ibig)=s(j)
-  endif
+  end if
   ajj=a(j,j)
   if(ajj == 0)then
     jm=j-1
     print '(" Failure in dldumf:"/" matrix singular, rank=",i3)',jm
     ff=t
     return
-  endif
+  end if
   ajji=1/ajj
   do i=jp,m
     aij=ajji*a(i,j)
     a(i,j)=aij
     a(i,jp:m) = a(i,jp:m) - aij*a(j,jp:m)
-  enddo
-enddo
+  end do
+end do
 end subroutine DLDUMf
 !=============================================================================
 subroutine cldumf(a,ipiv,d,ff)!                                         [ldum]
 !=============================================================================
 use jp_pietc, only: c0
-complex(dpc), intent(INOUT)  :: a(:,:) 
+complex(dpc), intent(INOUT)  :: a(:,:)
 complex(dpc), intent(OUT  )  :: d
 integer,      intent(OUT  )  :: ipiv(:)
 logical,      intent(OUT  )  :: ff
@@ -605,14 +605,14 @@ do i=1,m
   do j=1,m
     aa=abs(a(i,j))
     if(aa > aam)aam=aa
-  enddo
+  end do
   if(aam == 0)then
     print '("In cldumf;  row ",i6," of matrix vanishes")',i
     ff=t
     return
-  endif
+  end if
   s(i)=1/aam
-enddo
+end do
 d=1.
 ipiv(m)=m
 do j=1,m-1
@@ -624,29 +624,29 @@ do j=1,m-1
     if(aa > abig)then
       ibig=i
       abig=aa
-    endif
-  enddo
+    end if
+  end do
 !  swap rows, recording changed sign of determinant
   ipiv(j)=ibig
   if(ibig /= j)then
     d=-d
     call cswpvv(a(j,:),a(ibig,:))
     s(ibig)=s(j)
-  endif
+  end if
   ajj=a(j,j)
   if(ajj == c0)then
     jm=j-1
     print '(" Failure in cldumf:"/" matrix singular, rank=",i3)',jm
     ff=t
     return
-  endif
+  end if
   ajji=1/ajj
   do i=jp,m
     aij=ajji*a(i,j)
     a(i,j)=aij
     a(i,jp:m) = a(i,jp:m) - aij*a(j,jp:m)
-  enddo
-enddo
+  end do
+end do
 end subroutine cldumf
 
 !=============================================================================
@@ -661,9 +661,9 @@ subroutine sudlmm(a,b,ipiv)!                                           [udlmm]
 !  <-> B    rt-hand-sides vectors on input, corresponding solutions on return
 !  --> IPIV array encoding the pivoting sequence
 !=============================================================================
-integer, dimension(:),  intent(in)    :: ipiv 
-real(sp),dimension(:,:),intent(in)    :: a 
-real(sp),dimension(:,:),intent(inout) :: b 
+integer, dimension(:),  intent(in)    :: ipiv
+real(sp),dimension(:,:),intent(in)    :: a
+real(sp),dimension(:,:),intent(inout) :: b
 integer                               :: m,i, k, l
 real(sp)                              :: s,aiii
 !=============================================================================
@@ -675,21 +675,21 @@ do k=1,size(b,2) !loop over columns of b
     b(l,k)=b(i,k)
     s = s - sum(b(1:i-1,k)*a(i,1:i-1))
     b(i,k)=s
-  enddo
+  end do
   b(m,k)=b(m,k)/a(m,m)
   do i=m-1,1,-1
     aiii=1/a(i,i)
     b(i,k) = b(i,k) - sum(b(i+1:m,k)*a(i,i+1:m))
     b(i,k)=b(i,k)*aiii
-  enddo
-enddo
+  end do
+end do
 end subroutine sudlmm
 !=============================================================================
 subroutine dudlmm(a,b,ipiv)!                                           [udlmm]
 !=============================================================================
-integer,  dimension(:),  intent(in   ) :: ipiv 
-real(dp), dimension(:,:),intent(in   ) :: a 
-real(dp), dimension(:,:),intent(inout) :: b 
+integer,  dimension(:),  intent(in   ) :: ipiv
+real(dp), dimension(:,:),intent(in   ) :: a
+real(dp), dimension(:,:),intent(inout) :: b
 integer                                :: m,i, k, l
 real(dp)                               :: s,aiii
 !=============================================================================
@@ -701,21 +701,21 @@ do k=1, size(b,2)!loop over columns of b
     b(l,k)=b(i,k)
     s = s - sum(b(1:i-1,k)*a(i,1:i-1))
     b(i,k)=s
-  enddo
+  end do
   b(m,k)=b(m,k)/a(m,m)
   do i=m-1,1,-1
     aiii=1/a(i,i)
     b(i,k) = b(i,k) - sum(b(i+1:m,k)*a(i,i+1:m))
     b(i,k)=b(i,k)*aiii
-  enddo
-enddo
+  end do
+end do
 end subroutine dudlmm
 !=============================================================================
 subroutine cudlmm(a,b,ipiv)!                                           [udlmm]
 !=============================================================================
-integer,     dimension(:),  intent(in   ) :: ipiv 
-complex(dpc),dimension(:,:),intent(in   ) :: a 
-complex(dpc),dimension(:,:),intent(inout) :: b 
+integer,     dimension(:),  intent(in   ) :: ipiv
+complex(dpc),dimension(:,:),intent(in   ) :: a
+complex(dpc),dimension(:,:),intent(inout) :: b
 integer                                   :: m,i, k, l
 complex(dpc)                              :: s,aiii
 !=============================================================================
@@ -727,14 +727,14 @@ do k=1, size(b,2)!loop over columns of b
     b(l,k)=b(i,k)
     s = s - sum(b(1:i-1,k)*a(i,1:i-1))
     b(i,k)=s
-  enddo
+  end do
   b(m,k)=b(m,k)/a(m,m)
   do i=m-1,1,-1
     aiii=1/a(i,i)
     b(i,k) = b(i,k) - sum(b(i+1:m,k)*a(i,i+1:m))
     b(i,k)=b(i,k)*aiii
-  enddo
-enddo
+  end do
+end do
 end subroutine cudlmm
 
 !=============================================================================
@@ -749,9 +749,9 @@ subroutine sudlmv(a,b,ipiv)!                                           [udlmv]
 !  <-> B    right-hand-side vector on input, corresponding solution on return
 !  --> IPIV array encoding the pivoting sequence
 !=============================================================================
-integer, dimension(:),  intent(in)    :: ipiv 
-real(sp),dimension(:,:),intent(in)    :: a 
-real(sp),dimension(:),  intent(inout) :: b 
+integer, dimension(:),  intent(in)    :: ipiv
+real(sp),dimension(:,:),intent(in)    :: a
+real(sp),dimension(:),  intent(inout) :: b
 integer                               :: m,i, l
 real(sp)                              :: s,aiii
 !=============================================================================
@@ -762,20 +762,20 @@ do i=1,m
    b(l)=b(i)
    s = s - sum(b(1:i-1)*a(i,1:i-1))
    b(i)=s
-enddo
+end do
 b(m)=b(m)/a(m,m)
 do i=m-1,1,-1
    aiii=1/a(i,i)
    b(i) = b(i) - sum(b(i+1:m)*a(i,i+1:m))
    b(i)=b(i)*aiii
-enddo
+end do
 end subroutine sudlmv
 !=============================================================================
 subroutine dudlmv(a,b,ipiv)!                                           [udlmv]
 !=============================================================================
-integer,   dimension(:),  intent(in   ) :: ipiv(:) 
-real(dp),  dimension(:,:),intent(in   ) :: a(:,:) 
-real(dp),  dimension(:),  intent(inout) :: b(:) 
+integer,   dimension(:),  intent(in   ) :: ipiv(:)
+real(dp),  dimension(:,:),intent(in   ) :: a(:,:)
+real(dp),  dimension(:),  intent(inout) :: b(:)
 integer                                 :: m,i, l
 real(dp)                                :: s,aiii
 !=============================================================================
@@ -786,20 +786,20 @@ do i=1,m
    b(l)=b(i)
    s = s - sum(b(1:i-1)*a(i,1:i-1))
    b(i)=s
-enddo
+end do
 b(m)=b(m)/a(m,m)
 do i=m-1,1,-1
    aiii=1/a(i,i)
    b(i) = b(i) - sum(b(i+1:m)*a(i,i+1:m))
    b(i)=b(i)*aiii
-enddo
+end do
 end subroutine dudlmv
 !=============================================================================
 subroutine cudlmv(a,b,ipiv)!                                           [udlmv]
 !=============================================================================
-integer,     dimension(:),  intent(in   ) :: ipiv(:) 
-complex(dpc),dimension(:,:),intent(in   ) :: a(:,:) 
-complex(dpc),dimension(:),  intent(inout) :: b(:) 
+integer,     dimension(:),  intent(in   ) :: ipiv(:)
+complex(dpc),dimension(:,:),intent(in   ) :: a(:,:)
+complex(dpc),dimension(:),  intent(inout) :: b(:)
 integer                                   :: m,i, l
 complex(dpc)                              :: s,aiii
 !=============================================================================
@@ -810,13 +810,13 @@ do i=1,m
    b(l)=b(i)
    s = s - sum(b(1:i-1)*a(i,1:i-1))
    b(i)=s
-enddo
+end do
 b(m)=b(m)/a(m,m)
 do i=m-1,1,-1
    aiii=1/a(i,i)
    b(i) = b(i) - sum(b(i+1:m)*a(i,i+1:m))
    b(i)=b(i)*aiii
-enddo
+end do
 end subroutine cudlmv
 
 !=============================================================================
@@ -829,7 +829,7 @@ real(sp), intent(inout) :: b(:,:)
 !-----------------------------------------------------------------------------
 logical:: ff
 call sl1lmf(a,b,ff)
-if(ff)stop 'In sl1lm; matrix singular, unable to continue'
+if(ff)stop "In sl1lm; matrix singular, unable to continue"
 end subroutine sl1lm
 !=============================================================================
 subroutine dl1lm(a,b) !                                                 [l1lm]
@@ -841,11 +841,11 @@ real(dp), intent(inout) :: b(:,:)
 !-----------------------------------------------------------------------------
 logical:: ff
 call dl1lmf(a,b,ff)
-if(ff)stop 'In dl1lm; matrix singular, unable to continue'
+if(ff)stop "In dl1lm; matrix singular, unable to continue"
 end subroutine dl1lm
 
 !=============================================================================
-subroutine sl1lmf(a,b,ff)!                                              [L1Lm] 
+subroutine sl1lmf(a,b,ff)!                                              [L1Lm]
 !=============================================================================
 ! Cholesky, M -> L*U, U(i,j)=L(j,i)
 !=============================================================================
@@ -866,21 +866,21 @@ do j=1,m
   if(ff)then
      print '("sL1Lmf detects nonpositive a, rank=",i6)',jm
      return
-  endif
+  end if
   b(j,j)=sqrt(s)
   bjji=1/b(j,j)
   do i=jp,m
     s = a(i,j) - sum(b(i,1:jm)*b(j,1:jm))
     b(i,j)=s*bjji
-  enddo
+  end do
   b(1:jm,j) = 0
-enddo
+end do
 end subroutine sl1lmf
 !=============================================================================
 subroutine dl1lmf(a,b,ff) !                                             [L1Lm]
 !=============================================================================
-real(dp), intent(IN   ) :: a(:,:) 
-real(dp), intent(INOUT) :: b(:,:) 
+real(dp), intent(IN   ) :: a(:,:)
+real(dp), intent(INOUT) :: b(:,:)
 logical                 :: ff
 !-----------------------------------------------------------------------------
 integer                 :: m,j, jm, jp, i
@@ -896,15 +896,15 @@ do j=1,m
   if(ff)then
      print '("dL1LMF detects nonpositive A, rank=",i6)',jm
      return
-  endif
+  end if
   b(j,j)=sqrt(s)
   bjji=1/b(j,j)
   do i=jp,m
     s = a(i,j) - sum(b(i,1:jm)*b(j,1:jm))
     b(i,j)=s*bjji
-  enddo
+  end do
   b(1:jm,j) = 0
-enddo
+end do
 return
 end subroutine dl1lmf
 
@@ -919,7 +919,7 @@ real(sp), intent(  OUT):: d(:)
 !-----------------------------------------------------------------------------
 logical:: ff
 call sldlmf(a,b,d,ff)
-if(ff)stop 'In sldlm; matrix singular, unable to continue'
+if(ff)stop "In sldlm; matrix singular, unable to continue"
 end subroutine sldlm
 !=============================================================================
 subroutine dldlm(a,b,d)!                                                [LdLm]
@@ -930,7 +930,7 @@ real(dp), intent(  OUT):: d(:)
 !-----------------------------------------------------------------------------
 logical:: ff
 call dldlmf(a,b,d,ff)
-if(ff)stop 'In dldlm; matrix singular, unable to continue'
+if(ff)stop "In dldlm; matrix singular, unable to continue"
 end subroutine dldlm
 
 !=============================================================================
@@ -958,14 +958,14 @@ do j=1,m
      print '("In sldlmf; singularity of matrix detected")'
      print '("Rank of matrix: ",i6)',jm
      return
-  endif
+  end if
   bjji=1/d(j)
   do i=jp,m
      b(j,i)=a(i,j) - dot_product(b(1:jm,j),b(i,1:jm))
      b(i,j)=b(j,i)*bjji
-  enddo
+  end do
   b(1:jm,j)=0
-enddo
+end do
 end subroutine sldlmf
 !=============================================================================
 subroutine dldlmf(a,b,d,ff) !                                           [LDLM]
@@ -990,14 +990,14 @@ do j=1,m; jm=j-1; jp=j+1
      print '("In dldlmf; singularity of matrix detected")'
      print '("Rank of matrix: ",i6)',jm
      return
-  endif
+  end if
   bjji=1/d(j)
   do i=jp,m
      b(j,i)=a(i,j) - dot_product(b(1:jm,j),b(i,1:jm))
      b(i,j)=b(j,i)*bjji
-  enddo
+  end do
   b(1:jm,j)=0
-enddo
+end do
 end subroutine dldlmf
 
 !==============================================================================
@@ -1020,7 +1020,7 @@ subroutine sinvl(a)!                                                     [invl]
 !==============================================================================
 !     Invert lower triangular matrix in place
 !==============================================================================
-real(sp), intent(inout) :: a(:,:) 
+real(sp), intent(inout) :: a(:,:)
 integer                 :: m,j, i
 m=size(a,1)
 do j=m,1,-1
@@ -1028,13 +1028,13 @@ do j=m,1,-1
   a(j,j)=1./a(j,j)
   do i=j+1,m
     a(i,j)=-a(i,i)*sum(a(j:i-1,j)*a(i,j:i-1))
-  enddo
-enddo
+  end do
+end do
 end subroutine sinvl
 !==============================================================================
 subroutine dinvl(a)!                                                     [invl]
 !==============================================================================
-real(dp), intent(inout) :: a(:,:) 
+real(dp), intent(inout) :: a(:,:)
 integer                 :: m,j, i
 m=size(a,1)
 do j=m,1,-1
@@ -1042,8 +1042,8 @@ do j=m,1,-1
   a(j,j)=1./a(j,j)
   do i=j+1,m
     a(i,j)=-a(i,i)*sum(a(j:i-1,j)*a(i,j:i-1))
-  enddo
-enddo
+  end do
+end do
 end subroutine dinvl
 
 !==============================================================================
@@ -1055,8 +1055,8 @@ real,     intent(in   ) :: a(:,:)
 real,     intent(inout) :: u(:)
 integer                 :: i
 if(size(a,1) /= size(a,2) .or. size(a,1) /= size(u))&
-     stop 'In slinlv; incompatible array dimensions'
-do i=1,size(u); u(i)=(u(i) - sum(u(:i-1)*a(i,:i-1)))/a(i,i); enddo
+     stop "In slinlv; incompatible array dimensions"
+do i=1,size(u); u(i)=(u(i) - sum(u(:i-1)*a(i,:i-1)))/a(i,i); end do
 end subroutine slinlv
 !==============================================================================
 subroutine dlinlv(a,u)!                                                  [invl]
@@ -1065,8 +1065,8 @@ real(dp), intent(in   ) :: a(:,:)
 real(dp), intent(inout) :: u(:)
 integer                 :: i
 if(size(a,1) /= size(a,2) .or. size(a,1) /= size(u))&
-     stop 'In dlinlv; incompatible array dimensions'
-do i=1,size(u); u(i)=(u(i) - sum(u(:i-1)*a(i,:i-1)))/a(i,i); enddo
+     stop "In dlinlv; incompatible array dimensions"
+do i=1,size(u); u(i)=(u(i) - sum(u(:i-1)*a(i,:i-1)))/a(i,i); end do
 end subroutine dlinlv
 
 !==============================================================================
@@ -1078,8 +1078,8 @@ real,    intent(in   ) :: a(:,:)
 real,    intent(inout) :: u(:)
 integer             :: i
 if(size(a,1) /= size(a,2) .or. size(a,1) /= size(u))&
-     stop 'In linuv; incompatible array dimensions'
-do i=size(u),1,-1; u(i)=(u(i) - sum(a(i+1:,i)*u(i+1:)))/a(i,i); enddo
+     stop "In linuv; incompatible array dimensions"
+do i=size(u),1,-1; u(i)=(u(i) - sum(a(i+1:,i)*u(i+1:)))/a(i,i); end do
 end subroutine slinuv
 !==============================================================================
 subroutine dlinuv(a,u)!                                                  [invu]
@@ -1088,8 +1088,8 @@ real(dp), intent(in   ) :: a(:,:)
 real(dp), intent(inout) :: u(:)
 integer                 :: i
 if(size(a,1) /= size(a,2) .or. size(a,1) /= size(u))&
-     stop 'In dlinuv; incompatible array dimensions'
-do i=size(u),1,-1; u(i)=(u(i) - sum(a(i+1:,i)*u(i+1:)))/a(i,i); enddo
+     stop "In dlinuv; incompatible array dimensions"
+do i=size(u),1,-1; u(i)=(u(i) - sum(a(i+1:,i)*u(i+1:)))/a(i,i); end do
 end subroutine dlinuv
 
 end module jp_pmat
