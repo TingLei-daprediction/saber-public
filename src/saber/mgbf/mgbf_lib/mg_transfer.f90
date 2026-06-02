@@ -35,11 +35,9 @@ public
 !   machine:
 !
 !$$$ end documentation block
-!> fortitude: disable=C121
 use mpi
 use mg_timers
 use phint1
-!> fortitude: enable=C121
 
 use mgbf_kinds, only: r_kind,i_kind
 use mgbf_utils,only : contains_nonzero
@@ -57,7 +55,7 @@ module subroutine anal_to_filt_allmap(this,WORKA)
 !***********************************************************************
 implicit none
 class(mg_intstate_type), intent(inout), target :: this
-real(r_kind):: WORKA(this%km_a_all,1:this%nm,1:this%mm)
+real(r_kind), intent(inout) :: WORKA(this%km_a_all,1:this%nm,1:this%mm)
 include "type_parameter_locpointer.inc"
 include "type_intstat_locpointer.inc"
 include "type_parameter_point2this.inc"
@@ -95,7 +93,7 @@ module subroutine anal_to_filt_all(this,WORKA)
 !***********************************************************************
 implicit none
 class(mg_intstate_type), intent(inout), target :: this
-real(r_kind):: WORKA(this%km_a_all,1:this%nm,1:this%mm)
+real(r_kind), intent(inout) :: WORKA(this%km_a_all,1:this%nm,1:this%mm)
 real(r_kind),allocatable,dimension(:,:,:,:):: A3D
 real(r_kind),allocatable,dimension(:,:,:,:):: F3D
 real(r_kind),allocatable,dimension(:,:,:):: WORK
@@ -170,7 +168,7 @@ module subroutine filt_to_anal_all(this,WORKA)
 !***********************************************************************
 implicit none
 class(mg_intstate_type), intent(inout), target :: this
-real(r_kind):: WORKA(this%km_a_all,1:this%nm,1:this%mm)
+real(r_kind), intent(inout) :: WORKA(this%km_a_all,1:this%nm,1:this%mm)
 real(r_kind),allocatable,dimension(:,:,:,:):: A3D
 real(r_kind),allocatable,dimension(:,:,:,:):: F3D
 real(r_kind),allocatable,dimension(:,:,:):: WORK
@@ -214,7 +212,7 @@ module subroutine anal_to_filt_all2(this,WORKA)
 !***********************************************************************
 implicit none
 class(mg_intstate_type), intent(inout), target :: this
-real(r_kind):: WORKA(this%km_a_all,1:this%nm,1:this%mm)
+real(r_kind), intent(inout) :: WORKA(this%km_a_all,1:this%nm,1:this%mm)
 real(r_kind),allocatable,dimension(:,:,:):: WORK
 include "type_parameter_locpointer.inc"
 include "type_intstat_locpointer.inc"
@@ -428,7 +426,7 @@ module subroutine anal_to_filt(this,WORK)
 !***********************************************************************
 implicit none
 class(mg_intstate_type), intent(inout), target :: this
-real(r_kind):: WORK(this%km_all,1:this%nm,1:this%mm)
+real(r_kind), intent(inout) :: WORK(this%km_all,1:this%nm,1:this%mm)
 integer(i_kind):: ibm,jbm
 include "type_parameter_locpointer.inc"
 include "type_intstat_locpointer.inc"

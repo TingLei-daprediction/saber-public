@@ -9,6 +9,9 @@ exclude = [
 ]
 
 [check.per-file-ignores]
+"src/saber/mgbf/mgbf_lib/mg_transfer.f90" = [
+    "C121", # use-missing-only - intentionally imports all from mpi, mg_timers, phint1
+]
 "src/saber/gsi/covariance/gsi_covariance_mod.f90" = [
     "C072", # assumed-size-character-intent
     "C082", # pointer-initialisation-in-declaration
