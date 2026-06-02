@@ -215,7 +215,6 @@ contains
                                        mg_filt_to_anal_time%time_cpu,   &
                                        mg_postprocess_time%time_cpu, &   
                                   mg_interface_multiply_time%icount 
-!    end if
 
     bufsize1 = LEN(TRIM(buffer1)) + 1
     bufsize2 = LEN(TRIM(buffer2)) + 1
