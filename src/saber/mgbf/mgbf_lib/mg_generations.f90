@@ -96,7 +96,7 @@ module subroutine upsending_all &
 (this,V,H,lquart)
 !-----------------------------------------------------------------------
 implicit none
-class (mg_intstate_type),target:: this
+class(mg_intstate_type), intent(inout), target :: this
 real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(in):: V
 real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(out):: H
 logical, intent(in):: lquart
@@ -123,7 +123,7 @@ module subroutine downsending_all &
 (this,H,V,lquart)
 !-----------------------------------------------------------------------
 implicit none
-class (mg_intstate_type),target:: this
+class(mg_intstate_type), intent(inout), target :: this
 real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: H
 real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: V
 logical, intent(in):: lquart
@@ -148,7 +148,7 @@ module subroutine weighting_all &
 (this,V,H,lhelm)
 !-----------------------------------------------------------------------
 implicit none
-class (mg_intstate_type),target:: this
+class(mg_intstate_type), intent(inout), target :: this
 real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: V
 real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: H
 logical, intent(in):: lhelm
@@ -175,7 +175,7 @@ module subroutine upsending &
 (this,V,H)
 !-----------------------------------------------------------------------
 implicit none
-class (mg_intstate_type),target:: this
+class(mg_intstate_type), intent(inout), target :: this
 real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(in):: V
 real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(out):: H
 real(r_kind),dimension(this%km,-1:this%imL+2,-1:this%jmL+2):: V_INT
@@ -220,8 +220,8 @@ module subroutine upsending_normalized &
 (this,nz,V,H)
 !-----------------------------------------------------------------------
 implicit none
-class (mg_intstate_type),target:: this
-integer (i_kind):: nz
+class(mg_intstate_type), intent(inout), target :: this
+integer (i_kind), intent(inout) :: nz
 real(r_kind),dimension(nz,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(in):: V
 real(r_kind),dimension(nz,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(out):: H
 real(r_kind),dimension(nz,-1:this%imL+2,-1:this%jmL+2):: V_INT
@@ -268,7 +268,7 @@ module subroutine downsending &
 (this,H,V)
 !-----------------------------------------------------------------------
 implicit none
-class (mg_intstate_type),target:: this
+class(mg_intstate_type), intent(inout), target :: this
 real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: H
 real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: V
 real(r_kind),dimension(this%km,-1:this%imL+2,-1:this%jmL+2):: H_INT
@@ -323,7 +323,7 @@ module subroutine upsending_highest &
 (this,V,H)
 !-----------------------------------------------------------------------
 implicit none
-class (mg_intstate_type),target:: this
+class(mg_intstate_type), intent(inout), target :: this
 real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(in):: V
 real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(out):: H
 real(r_kind),dimension(this%km,-1:this%imL+2,-1:this%jmL+2):: H_INT
@@ -357,7 +357,7 @@ module subroutine downsending_highest &
 (this,H,V)
 !-----------------------------------------------------------------------
 implicit none
-class (mg_intstate_type),target:: this
+class(mg_intstate_type), intent(inout), target :: this
 real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: H
 real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: V
 real(r_kind),dimension(this%km,-1:this%imL+2,-1:this%jmL+2):: H_INT
@@ -392,7 +392,7 @@ module subroutine upsending2 &
 (this,V,H)
 !-----------------------------------------------------------------------
 implicit none
-class (mg_intstate_type),target:: this
+class(mg_intstate_type), intent(inout), target :: this
 real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(in):: V
 real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(out):: H
 real(r_kind),dimension(this%km,0:this%imL+1,0:this%jmL+1):: V_INT
@@ -438,7 +438,7 @@ module subroutine downsending2 &
 (this,H,V)
 !-----------------------------------------------------------------------
 implicit none
-class (mg_intstate_type),target:: this
+class(mg_intstate_type), intent(inout), target :: this
 real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: H
 real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: V
 real(r_kind),dimension(this%km,0:this%imL+1,0:this%jmL+1):: H_INT
@@ -493,7 +493,7 @@ module subroutine upsending_ens &
 (this,V,H,kmx)
 !-----------------------------------------------------------------------
 implicit none
-class (mg_intstate_type),target:: this
+class(mg_intstate_type), intent(inout), target :: this
 integer(i_kind), intent(in):: kmx
 real(r_kind),dimension(kmx,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(in):: V
 real(r_kind),dimension(kmx,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(out):: H
@@ -540,7 +540,7 @@ module subroutine downsending_ens &
 (this,H,V,kmx)
 !-----------------------------------------------------------------------
 implicit none
-class (mg_intstate_type),target:: this
+class(mg_intstate_type), intent(inout), target :: this
 integer(i_kind), intent(in):: kmx
 real(r_kind),dimension(kmx,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: H
 real(r_kind),dimension(kmx,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: V
@@ -597,7 +597,7 @@ module subroutine upsending_ens_nearest &
 (this,V,H,kmx)
 !-----------------------------------------------------------------------
 implicit none
-class (mg_intstate_type),target:: this
+class(mg_intstate_type), intent(inout), target :: this
 integer(i_kind), intent(in):: kmx
 real(r_kind),dimension(kmx,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(in):: V
 real(r_kind),dimension(kmx,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(out):: H
@@ -644,7 +644,7 @@ module subroutine downsending_ens_nearest &
 (this,H,V,kmx)
 !-----------------------------------------------------------------------
 implicit none
-class (mg_intstate_type),target:: this
+class(mg_intstate_type), intent(inout), target :: this
 integer(i_kind), intent(in):: kmx
 real(r_kind),dimension(kmx,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: H
 real(r_kind),dimension(kmx,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: V
@@ -701,7 +701,7 @@ module subroutine upsending2_ens &
 (this,V,H,kmx)
 !-----------------------------------------------------------------------
 implicit none
-class (mg_intstate_type),target:: this
+class(mg_intstate_type), intent(inout), target :: this
 integer(i_kind), intent(in):: kmx
 real(r_kind),dimension(kmx,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(in):: V
 real(r_kind),dimension(kmx,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(out):: H
@@ -748,7 +748,7 @@ module subroutine downsending2_ens &
 (this,H,V,kmx)
 !-----------------------------------------------------------------------
 implicit none
-class (mg_intstate_type),target:: this
+class(mg_intstate_type), intent(inout), target :: this
 integer(i_kind), intent(in):: kmx
 real(r_kind),dimension(kmx,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: H
 real(r_kind),dimension(kmx,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: V
@@ -807,7 +807,7 @@ module subroutine upsending_loc_g3 &
 (this,V,H,Z,km_in,km_4_in,km_16_in)
 !-----------------------------------------------------------------------
 implicit none
-class (mg_intstate_type),target:: this
+class(mg_intstate_type), intent(inout), target :: this
 integer(i_kind),intent(in):: km_in,km_4_in,km_16_in
 real(r_kind),dimension(km_in   ,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(in):: V
 real(r_kind),dimension(km_4_in ,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(out):: H
@@ -860,7 +860,7 @@ module subroutine upsending_loc_g4 &
 (this,V,H,Z,W,km_in,km_4_in,km_16_in,km_64_in)
 !-----------------------------------------------------------------------
 implicit none
-class (mg_intstate_type),target:: this
+class(mg_intstate_type), intent(inout), target :: this
 integer(i_kind),intent(in):: km_in,km_4_in,km_16_in,km_64_in
 real(r_kind),dimension(km_in   ,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(in):: V
 real(r_kind),dimension(km_4_in ,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(out):: H
@@ -927,7 +927,7 @@ module subroutine downsending_loc_g3 &
 (this,Z,H,V,km_in,km_4_in,km_16_in)
 !-----------------------------------------------------------------------
 implicit none
-class (mg_intstate_type),target:: this
+class(mg_intstate_type), intent(inout), target :: this
 integer(i_kind),intent(in):: km_in,km_4_in,km_16_in
 real(r_kind),dimension(km_16_in,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: Z
 real(r_kind),dimension(km_4_in ,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: H
@@ -991,7 +991,7 @@ module subroutine downsending_loc_g4 &
 (this,W,Z,H,V,km_in,km_4_in,km_16_in,km_64_in)
 !-----------------------------------------------------------------------
 implicit none
-class (mg_intstate_type),target:: this
+class(mg_intstate_type), intent(inout), target :: this
 integer(i_kind),intent(in):: km_in,km_4_in,km_16_in,km_64_in
 real(r_kind),dimension(km_64_in,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: W
 real(r_kind),dimension(km_16_in,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: Z
@@ -1069,7 +1069,7 @@ module subroutine weighting_helm &
 (this,V,H)
 !-----------------------------------------------------------------------
 implicit none
-class (mg_intstate_type),target:: this
+class(mg_intstate_type), intent(inout), target :: this
 real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: V
 real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: H
 real(r_kind),dimension(this%km,0:this%im, 1:this%jm):: DIFX
@@ -1150,7 +1150,7 @@ module subroutine weighting &
 (this,V,H)
 !-----------------------------------------------------------------------
 implicit none
-class (mg_intstate_type),target:: this
+class(mg_intstate_type), intent(inout), target :: this
 real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: V
 real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: H
 integer(i_kind):: i,j,l,k,imx,jmx
@@ -1192,7 +1192,7 @@ module subroutine weighting_highest &
 (this,H)
 !-----------------------------------------------------------------------
 implicit none
-class (mg_intstate_type),target:: this
+class(mg_intstate_type), intent(inout), target :: this
 real(r_kind),dimension(this%km,1-this%hx:this%imH+this%hx,1-this%hy:this%jmH+this%hy),intent(inout):: H
 integer(i_kind):: i,j,imx,jmx
 !-----------------------------------------------------------------------
@@ -1219,7 +1219,7 @@ module subroutine weighting_ens &
 (this,V,H,kmx)
 !-----------------------------------------------------------------------
 implicit none
-class (mg_intstate_type),target:: this
+class(mg_intstate_type), intent(inout), target :: this
 integer(i_kind),intent(in):: kmx
 real(r_kind),dimension(kmx,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: V
 real(r_kind),dimension(kmx,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: H
@@ -1263,7 +1263,7 @@ module subroutine weighting_loc_g3 &
 (this,V,H04,H16,km_in,km_4_in,km_16_in)
 !-----------------------------------------------------------------------
 implicit none
-class (mg_intstate_type),target:: this
+class(mg_intstate_type), intent(inout), target :: this
 integer(i_kind), intent(in):: km_in,km_4_in,km_16_in
 real(r_kind),dimension(km_in   ,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: V
 real(r_kind),dimension(km_4_in ,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: H04
@@ -1293,7 +1293,7 @@ module subroutine weighting_loc_g4 &
 (this,V,H04,H16,H64,km_in,km_4_in,km_16_in,km_64_in)
 !-----------------------------------------------------------------------
 implicit none
-class (mg_intstate_type),target:: this
+class(mg_intstate_type), intent(inout), target :: this
 integer(i_kind), intent(in):: km_in,km_4_in,km_16_in,km_64_in
 real(r_kind),dimension(km_in   ,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: V
 real(r_kind),dimension(km_4_in ,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: H04
@@ -1326,7 +1326,7 @@ module subroutine adjoint &
 (this,F,W,km_in,g)
 !-----------------------------------------------------------------------
 implicit none
-class (mg_intstate_type),target:: this
+class(mg_intstate_type), intent(inout), target :: this
 integer(i_kind),intent(in):: g
 integer(i_kind),intent(in):: km_in
 real(r_kind), dimension(km_in,1:this%im,1:this%jm), intent(in):: F
@@ -1394,7 +1394,7 @@ module subroutine adjoint_normalized &
 (this,F,W,km_in,g)
 !-----------------------------------------------------------------------
 implicit none
-class (mg_intstate_type),target:: this
+class(mg_intstate_type), intent(inout), target :: this
 integer(i_kind),intent(in):: g
 integer(i_kind),intent(in):: km_in
 real(r_kind), dimension(km_in,1:this%im,1:this%jm), intent(in):: F
@@ -1478,7 +1478,7 @@ module subroutine direct1 &
 (this,W,F,km_in,g)
 !-----------------------------------------------------------------------
 implicit none
-class (mg_intstate_type),target:: this
+class(mg_intstate_type), intent(inout), target :: this
 integer(i_kind),intent(in):: g
 integer(i_kind),intent(in):: km_in
 real(r_kind), dimension(km_in,-1:this%imL+2,-1:this%jmL+2), intent(in):: W
@@ -1537,7 +1537,7 @@ module subroutine adjoint2 &
 (this,F,W,km_in,g)
 !-----------------------------------------------------------------------
 implicit none
-class (mg_intstate_type),target:: this
+class(mg_intstate_type), intent(inout), target :: this
 integer(i_kind),intent(in):: g
 integer(i_kind),intent(in):: km_in
 real(r_kind), dimension(km_in,1:this%im,1:this%jm), intent(in):: F
@@ -1604,7 +1604,7 @@ module subroutine direct2 &
 (this,W,F,km_in,g)
 !-----------------------------------------------------------------------
 implicit none
-class (mg_intstate_type),target:: this
+class(mg_intstate_type), intent(inout), target :: this
 integer(i_kind),intent(in):: g
 integer(i_kind),intent(in):: km_in
 real(r_kind), dimension(km_in,0:this%imL+1,0:this%jmL+1), intent(in):: W
@@ -1663,7 +1663,7 @@ module subroutine adjoint_nearest &
 (this,F,W,km_in,g)
 !-----------------------------------------------------------------------
 implicit none
-class (mg_intstate_type),target:: this
+class(mg_intstate_type), intent(inout), target :: this
 integer(i_kind),intent(in):: g
 integer(i_kind),intent(in):: km_in
 real(r_kind), dimension(km_in,1:this%im,1:this%jm), intent(in):: F
@@ -1722,7 +1722,7 @@ module subroutine direct_nearest &
 (this,W,F,km_in,g)
 !-----------------------------------------------------------------------
 implicit none
-class (mg_intstate_type),target:: this
+class(mg_intstate_type), intent(inout), target :: this
 integer(i_kind),intent(in):: g
 integer(i_kind),intent(in):: km_in
 real(r_kind), dimension(km_in,-1:this%imL+2,-1:this%jmL+2), intent(in):: W
@@ -1777,7 +1777,7 @@ module subroutine adjoint_highest &
 (this,F,W,km_in,g)
 !-----------------------------------------------------------------------
 implicit none
-class (mg_intstate_type),target:: this
+class(mg_intstate_type), intent(inout), target :: this
 integer(i_kind),intent(in):: g
 integer(i_kind),intent(in):: km_in
 real(r_kind), dimension(km_in,1:this%im0(g),1:this%jm0(g)), intent(in):: F
@@ -1848,7 +1848,7 @@ module subroutine direct_highest &
 (this,W,F,km_in,g)
 !-----------------------------------------------------------------------
 implicit none
-class (mg_intstate_type),target:: this
+class(mg_intstate_type), intent(inout), target :: this
 integer(i_kind),intent(in):: g
 integer(i_kind),intent(in):: km_in
 real(r_kind), dimension(km_in,-1:this%im0(g+1)+2,-1:this%jm0(g+1)+2), intent(in):: W

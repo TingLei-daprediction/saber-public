@@ -105,7 +105,7 @@ module subroutine filtering_rad3(this)
 !***********************************************************************
 !-----------------------------------------------------------------------
 implicit none
-class (mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 real(r_kind), allocatable, dimension(:,:,:):: VM2D
 real(r_kind), allocatable, dimension(:,:,:):: HM2D
 real(r_kind), allocatable, dimension(:,:,:,:):: VM3D
@@ -206,7 +206,7 @@ use, intrinsic :: ieee_arithmetic
 !TEST
 use jp_pkind2, only: fpi
 implicit none
-class (mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 integer(i_kind) :: k,i,j,L
 integer(i_kind) :: icol,iout,jout,lout
 logical:: ff
@@ -447,7 +447,7 @@ end subroutine filtering_lin3
 !                                                                      !
 !***********************************************************************
 implicit none
-class (mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 
 real(r_kind), allocatable, dimension(:,:,:):: VM2D
 real(r_kind), allocatable, dimension(:,:,:):: HM2D
@@ -591,7 +591,7 @@ module subroutine filtering_rad2_bkg(this)
 !                                                                      !
 !***********************************************************************
 implicit none
-class (mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 integer(i_kind) :: L,i,j
 include "type_parameter_locpointer.inc"
 include "type_intstat_locpointer.inc"
@@ -674,7 +674,7 @@ end subroutine filtering_rad2_bkg
 !                                                                      !
 !***********************************************************************
 implicit none
-class (mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 
 integer(i_kind) :: L,i,j
 integer(i_kind) :: icol,iout,jout
@@ -849,7 +849,7 @@ module subroutine filtering_lin2_bkg(this)
 !                                                                      !
 !***********************************************************************
 implicit none
-class (mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 integer(i_kind) :: L,i,j
 integer(i_kind) :: icol,iout,jout
 logical:: ff
@@ -957,7 +957,7 @@ module subroutine filtering_fast_bkg(this)
 !                                                                      !
 !***********************************************************************
 implicit none
-class (mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 integer(i_kind) :: L,i,j,k,lev1,lev2
 include "type_parameter_locpointer.inc"
 include "type_intstat_locpointer.inc"
@@ -1209,7 +1209,7 @@ module subroutine filtering_rad2_ens(this,mg_filt_flag)
 !                                                                      !
 !***********************************************************************
 implicit none
-class (mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 integer(i_kind),intent(in):: mg_filt_flag
 integer(i_kind) :: L,i,j
 include "type_parameter_locpointer.inc"
@@ -1323,7 +1323,7 @@ module subroutine filtering_lin2_ens(this,mg_filt_flag)
 !                                                                      !
 !***********************************************************************
 implicit none
-class (mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 integer(i_kind),intent(in):: mg_filt_flag
 integer(i_kind) :: L,i,j
 integer(i_kind) :: icol,iout,jout
@@ -1455,7 +1455,7 @@ module subroutine filtering_fast_ens(this,mg_filt_flag)
 !                                                                      !
 !***********************************************************************
 implicit none
-class (mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 integer(i_kind),intent(in):: mg_filt_flag
 integer(i_kind) :: L,i,j
 include "type_parameter_locpointer.inc"
@@ -1614,7 +1614,7 @@ module subroutine filtering_rad_highest(this)
 !                                                                      !
 !***********************************************************************
 implicit none
-class(mg_intstate_type),target:: this
+class(mg_intstate_type), intent(inout), target :: this
 include "type_parameter_locpointer.inc"
 include "type_intstat_locpointer.inc"
 include "type_parameter_point2this.inc"

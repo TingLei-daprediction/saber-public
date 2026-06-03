@@ -41,12 +41,12 @@ implicit none
 !   Initialization subroutine                                          !
 !                                                     M. Rancic (2020) !
 !***********************************************************************
-class (mg_intstate_type):: this
-integer(i_kind),optional,intent(in)::n_owned_anl
-real(r_kind),optional,intent(in)::anl_lonlat1d(:,:)
+class (mg_intstate_type), intent(inout) :: this
+integer(i_kind),optional,intent(in):: n_owned_anl
+real(r_kind),optional,intent(in):: anl_lonlat1d(:,:)
 character(len=*),optional,intent(in) :: inputfilename
 
-class(mg_parameter_type),optional,intent(in)::obj_parameter
+class(mg_parameter_type),optional,intent(in):: obj_parameter
 
 !---------------------------------------------------------------------------
 !
@@ -156,7 +156,7 @@ module subroutine mg_finalize(this)
 !                                                     M. Rancic (2020) !
 !***********************************************************************
 implicit none
-class (mg_intstate_type)::this
+class (mg_intstate_type), intent(inout) :: this
 
 real(r_kind), allocatable, dimension(:,:):: PA, VA
 integer(i_kind):: n,m,L

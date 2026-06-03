@@ -44,7 +44,7 @@ module subroutine init_mg_domain(this)
 !                                                                      *
 !***********************************************************************
 implicit none
-class(mg_parameter_type)::this
+class(mg_parameter_type), intent(inout) :: this
 
 call init_domain(this)
 call init_topology_2d(this)

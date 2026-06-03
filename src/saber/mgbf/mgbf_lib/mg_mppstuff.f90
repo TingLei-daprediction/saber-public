@@ -44,7 +44,7 @@ module subroutine init_mg_MPI(this)
 use mpi
 
 implicit none
-class (mg_parameter_type),target:: this
+class(mg_parameter_type), intent(inout), target :: this
 integer(i_kind):: g,m
 integer(i_kind), dimension(this%npes_filt):: out_ranks
 integer(i_kind):: nf

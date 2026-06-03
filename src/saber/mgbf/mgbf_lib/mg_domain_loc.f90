@@ -45,7 +45,7 @@ module subroutine init_domain_loc(this)
 !                                                                      !
 !***********************************************************************
 implicit none
-class(mg_parameter_type)::this
+class(mg_parameter_type), intent(inout) :: this
 !----------------------------------------------------------------------
 
 call sidesend_loc(this)

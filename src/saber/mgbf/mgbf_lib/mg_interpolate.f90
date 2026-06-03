@@ -725,7 +725,7 @@ module subroutine lsqr_adjoint_offset &
 !-----------------------------------------------------------------------
 implicit none
 class(mg_intstate_type), intent(inout), target :: this
-integer(i_kind):: km_in,ibm,jbm
+integer(i_kind), intent(inout) :: km_in,ibm,jbm
 real(r_kind), dimension(km_in,1:this%nm,1:this%mm),intent(in):: W
 real(r_kind), dimension(km_in,1-ibm:this%im+ibm,1-jbm:this%jm+jbm), intent(out):: V_out
 real(r_kind), dimension(km_in,1:this%nm,1-jbm:this%jm+jbm):: VX
@@ -783,7 +783,7 @@ module subroutine lsqr_adjoint_offset_add &
 !-----------------------------------------------------------------------
 implicit none
 class(mg_intstate_type), intent(inout), target :: this
-integer(i_kind):: km_in,ibm,jbm
+integer(i_kind), intent(inout) :: km_in,ibm,jbm
 real(r_kind), dimension(km_in,1:this%nm,1:this%mm),intent(in):: W
 real(r_kind), dimension(km_in,1-ibm:this%im+ibm,1-jbm:this%jm+jbm), intent(out):: V_out
 real(r_kind), dimension(km_in,1:this%nm,1-jbm:this%jm+jbm):: VX
@@ -885,7 +885,7 @@ module subroutine quad_adjoint_offset &
 !-----------------------------------------------------------------------
 implicit none
 class(mg_intstate_type), intent(inout), target :: this
-integer(i_kind):: km_in,ibm,jbm
+integer(i_kind), intent(inout) :: km_in,ibm,jbm
 real(r_kind), dimension(km_in,1:this%nm,1:this%mm),intent(in):: W
 real(r_kind), dimension(km_in,1-ibm:this%im+ibm,1-jbm:this%jm+jbm), intent(out):: V_out
 real(r_kind), dimension(km_in,1:this%nm,1-jbm:this%jm+jbm):: VX
@@ -1029,7 +1029,7 @@ module subroutine lin_adjoint_offset &
 !-----------------------------------------------------------------------
 implicit none
 class(mg_intstate_type), intent(inout), target :: this
-integer(i_kind):: km_in,ibm,jbm
+integer(i_kind), intent(inout) :: km_in,ibm,jbm
 real(r_kind), dimension(km_in,1:this%nm,1:this%mm),intent(in):: W
 real(r_kind), dimension(km_in,1-ibm:this%im+ibm,1-jbm:this%jm+jbm), intent(out):: V_out
 real(r_kind), dimension(km_in,1:this%nm,1-jbm:this%jm+jbm):: VX
@@ -1080,7 +1080,7 @@ module subroutine lin_adjoint_offset_add &
 !-----------------------------------------------------------------------
 implicit none
 class(mg_intstate_type), intent(inout), target :: this
-integer(i_kind):: km_in,ibm,jbm
+integer(i_kind), intent(inout) :: km_in,ibm,jbm
 real(r_kind), dimension(km_in,1:this%nm,1:this%mm),intent(in):: W
 real(r_kind), dimension(km_in,1-ibm:this%im+ibm,1-jbm:this%jm+jbm), intent(out):: V_out
 real(r_kind), dimension(km_in,1:this%nm,1-jbm:this%jm+jbm):: VX
@@ -1197,7 +1197,7 @@ end subroutine l_vertical_direct_spec2
 module subroutine test_vertical_interpolation_adj(this, km_in, nm_in, imin, imax, jmin, jmax, adj_F, adj_W)
   implicit none
   !-----------------------------------------------------------------------
-  class(mg_intstate_type), target :: this
+  class(mg_intstate_type), intent(inout), target :: this
   integer(i_kind), intent(in) :: km_in, nm_in, imin, imax, jmin, jmax
   real(r_kind), intent(inout) :: adj_F(1:km_in, imin:imax, jmin:jmax)
   real(r_kind), intent(in) :: adj_W(1:nm_in, imin:imax, jmin:jmax)
@@ -1232,7 +1232,7 @@ end subroutine test_vertical_interpolation_adj
 module subroutine test_vertical_interpolation(this, km_in, nm_in, imin, imax, jmin, jmax, F, W)
   implicit none
   !-----------------------------------------------------------------------
-  class(mg_intstate_type), target :: this
+  class(mg_intstate_type), intent(inout), target :: this
   integer(i_kind), intent(in) :: km_in, nm_in, imin, imax, jmin, jmax
   real(r_kind), intent(in) :: F(1:km_in, imin:imax, jmin:jmax)
   real(r_kind), intent(out) :: W(1:nm_in, imin:imax, jmin:jmax)
