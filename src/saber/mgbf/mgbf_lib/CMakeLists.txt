@@ -2,6 +2,8 @@
 # Explicit ordering required: parent modules must compile before their submodules
 # so Intel Fortran can find the correct .smod files.
 #
+include(GNUInstallDirs)
+
 # Dependency tree:
 #   mg_parameter.f90  ->  jp_pbfil.f90, mg_domain.f90, mg_domain_loc.f90,
 #                         mg_mppstuff.f90
@@ -45,4 +47,8 @@ set_target_properties(mgbflib PROPERTIES
 target_include_directories(mgbflib PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/modules>)
 target_link_libraries(mgbflib PUBLIC MPI::MPI_Fortran)
-
+install(TARGETS mgbflib
+        EXPORT saber-targets
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
