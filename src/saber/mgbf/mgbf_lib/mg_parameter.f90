@@ -528,33 +528,33 @@ real(r_kind):: mg_weig1,mg_weig2,mg_weig3,mg_weig4
 integer(i_kind):: mgbf_proc
 logical:: mgbf_line
 integer(i_kind):: nxPE,nyPE,im_filt,jm_filt
-logical:: lquart=.false.,lhelm=.false. !clt what should be the default
-logical:: ldelta=.false.
-logical:: l_for_localization=.false.
-logical:: l_mgbf_inhomogeneous=.false.
+logical, save :: lquart=.false.,lhelm=.false. !clt what should be the default
+logical, save :: ldelta=.false.
+logical, save :: l_for_localization=.false.
+logical, save :: l_mgbf_inhomogeneous=.false.
 
 integer(i_kind):: lm_a          ! number of vertical layers in analysis fields
 integer(i_kind):: lm            ! number of vertical layers in filter grids
-real(r_kind):: coef_normalization(lm_max)=1 !normalizaton coefficients
-real(r_kind):: coef_normalization_const=-9999.0 ! constant, if set, this contant will be
+real(r_kind), save :: coef_normalization(lm_max)=1 !normalizaton coefficients
+real(r_kind), save :: coef_normalization_const=-9999.0 ! constant, if set, this contant will be
  ! The control filtering grid intervals corresponding to the constant horizontal aspect tensor.
- real(r_kind):: dxfmctrl=35000,dyfmctrl=35000
-logical :: l_constant_aspt2 =.true. ! using constant horizontal aspect tensor : ampl02
-character(len=256) ::file_coef_normalization="XXXX"
-character(len=256) ::dir_coef_normalization="XXXX"
+ real(r_kind), save :: dxfmctrl=35000,dyfmctrl=35000
+logical, save :: l_constant_aspt2 =.true. ! using constant horizontal aspect tensor : ampl02
+character(len=256), save ::file_coef_normalization="XXXX"
+character(len=256), save ::dir_coef_normalization="XXXX"
 integer(i_kind):: km2           ! number of 2d variables for filtering
 integer(i_kind):: km3           ! number of 3d variables for filtering
-integer(i_kind):: n_ens=1         ! number of ensemble members
-logical :: l_loc=.false.
-logical :: l_filt_g1=.false.            ! logical flag for filtering of generation one
-logical :: l_lin_vertical=.false.       ! logical flag for linear interpolation in vertcial
-logical :: l_lin_horizontal=.false.     ! logical flag for linear interpolation in horizontal
-logical :: l_quad_horizontal=.false.    ! logical flag for quadratic interpolation in horizontal
-logical :: l_new_map=.false.            ! logical flag for new mapping between analysis and filter grid
-logical :: l_vertical_filter=.true.    ! logical flag for vertical filtering
-logical ::  l_anal_sub_of_filt=.false.
-logical ::  l_vert_stretched_filtgrid=.false.
-integer(i_kind):: gm_max=4   !clt by defaul
+integer(i_kind), save :: n_ens=1         ! number of ensemble members
+logical, save :: l_loc=.false.
+logical, save :: l_filt_g1=.false.            ! logical flag for filtering of generation one
+logical, save :: l_lin_vertical=.false.       ! logical flag for linear interpolation in vertcial
+logical, save :: l_lin_horizontal=.false.     ! logical flag for linear interpolation in horizontal
+logical, save :: l_quad_horizontal=.false.    ! logical flag for quadratic interpolation in horizontal
+logical, save :: l_new_map=.false.            ! logical flag for new mapping between analysis and filter grid
+logical, save :: l_vertical_filter=.true.    ! logical flag for vertical filtering
+logical, save ::  l_anal_sub_of_filt=.false.
+logical, save ::  l_vert_stretched_filtgrid=.false.
+integer(i_kind), save :: gm_max=4   !clt by defaul
 
 ! Global number of data on Analysis grid
 integer(i_kind):: nm0
@@ -562,7 +562,7 @@ integer(i_kind):: mm0
 
 integer(i_kind):: hx,hy,hz
 integer(i_kind):: p
-logical:: l_mg_weig_readin=.false.
+logical, save :: l_mg_weig_readin=.false.
 integer(i_kind), parameter       :: nf=20! refinement factor for z grid,used in make_ssgrid
 integer(i_kind) :: myunit,i,item,mype,ierr
 character(len=4) :: str_rank

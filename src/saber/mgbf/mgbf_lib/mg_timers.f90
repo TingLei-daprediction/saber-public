@@ -27,7 +27,6 @@ module mg_timers
 !
 !$$$ end documentation block
 
-  use mpi
   use mgbf_kinds, only: r_kind,i_kind
   implicit none
 
@@ -139,7 +138,9 @@ contains
   end subroutine etim
 !-----------------------------------------------------------------------
   subroutine print_mg_timers(filename, print_type,mype)
-    use mpi
+    use mpi, only: MPI_OFFSET_KIND, MPI_STATUS_SIZE, MPI_COMM_WORLD, &
+                   MPI_MODE_WRONLY, MPI_MODE_CREATE, MPI_INFO_NULL, MPI_BYTE, &
+                   MPI_Comm_size, MPI_File_open, MPI_File_write_at, MPI_File_close
     implicit none
     integer(i_kind),intent(in):: mype
 
@@ -269,7 +270,7 @@ contains
   end subroutine print_mg_timers
 !-----------------------------------------------------------------------
   function wtime()
-    use mpi
+    use mpi, only: MPI_Wtime
     real(r_kind) :: wtime
     wtime = MPI_Wtime()
   end function wtime

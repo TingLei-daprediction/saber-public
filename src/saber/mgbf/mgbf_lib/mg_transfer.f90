@@ -1,4 +1,5 @@
 submodule(mg_intstate) mg_transfer
+implicit none
 public
 !$$$  submodule documentation block
 !                .      .    .                                       .
