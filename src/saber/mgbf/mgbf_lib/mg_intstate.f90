@@ -1087,6 +1087,7 @@ interface
    end subroutine filt_to_anal
 !from mg_entrymod.f90
    module subroutine mg_initialize(this,n_owned_anl,anl_lonlat1d,inputfilename,obj_parameter)
+     implicit none
      class (mg_intstate_type), intent(inout) :: this
      integer(i_kind),optional,intent(in):: n_owned_anl
      real(r_kind),optional,intent(in):: anl_lonlat1d(:,:)

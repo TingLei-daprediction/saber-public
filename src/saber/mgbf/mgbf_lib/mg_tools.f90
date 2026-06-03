@@ -1,5 +1,4 @@
 module mg_tools
-public
 !!from codex :
 !the filtering grid is anchored to the same physical domain as the analysis grid,
 !with both sharing the left/right boundaries at 0 and lengthx (and top/bottom at lengthy).
@@ -10,14 +9,13 @@ public
 !convention: xf(i) = xf0 + dxf*(i-1) with xf0 = dxf/2
 !(src/saber/mgbf/mgbf_lib/mg_parameter.f90:952-964).
 !So both grids start half a grid spacing from the boundary; no global offset is applied.
-use mgbf_kinds, only: r_kind,i_kind
 
+use mgbf_kinds, only: r_kind,i_kind
+public
 contains
 subroutine interp_analysis_to_filter(yy, nm, mm, im, jm, zz)
   ! Bilinear interpolation from analysis grid (nm×mm) to filter grid (im×jm).
   ! Assumes both grids span the same physical domain and are cell-centered.
-  implicit none
-
   implicit none
   integer(i_kind), intent(in) :: nm, mm        ! analysis grid dimensions
   integer(i_kind), intent(in) :: im, jm        ! filter grid dimensions
