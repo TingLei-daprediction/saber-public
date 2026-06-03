@@ -42,5 +42,7 @@ set( mgbf_lib_src_files
 add_library(mgbflib STATIC ${mgbf_lib_src_files})
 set_target_properties(mgbflib PROPERTIES
     Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules)
-
+target_include_directories(mgbflib PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/modules>)
+target_link_libraries(mgbflib PUBLIC MPI::MPI_Fortran)
 

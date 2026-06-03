@@ -18,6 +18,11 @@ ecbuild_add_library( TARGET ${PROJECT_NAME}
                      HEADER_DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}
                      LINKER_LANGUAGE CXX )
 
+if( TARGET mgbflib )
+    add_dependencies( ${PROJECT_NAME} mgbflib )
+    target_link_libraries( ${PROJECT_NAME} PUBLIC mgbflib )
+endif()
+
 if( OpenMP_FOUND )
     target_link_libraries( ${PROJECT_NAME} PUBLIC OpenMP::OpenMP_Fortran OpenMP::OpenMP_CXX )
 endif()
