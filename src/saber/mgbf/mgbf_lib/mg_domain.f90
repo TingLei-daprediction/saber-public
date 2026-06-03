@@ -1,4 +1,4 @@
-submodule(mg_parameter) mg_domain
+﻿submodule(mg_parameter) mg_domain
 !$$$  submodule documentation block
 !                .      .    .                                       .
 ! module:   mg_domain
@@ -60,7 +60,7 @@ module subroutine init_domain(this)
 !                                                                      *
 !***********************************************************************
 implicit none
-class(mg_parameter_type),target::this
+class(mg_parameter_type), intent(inout), target :: this
 
 integer(i_kind) :: n,nstrd,i,j
 logical:: F=.false., T=.true.
@@ -169,7 +169,7 @@ module subroutine init_topology_2d(this)
 !                                                                      *
 !***********************************************************************
 implicit none
-class(mg_parameter_type),target::this
+class(mg_parameter_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
 logical:: F=.false., T=.true.
 
@@ -626,7 +626,7 @@ module subroutine real_itarg &
 (this,itarg)
 !-----------------------------------------------------------------------
 implicit none
-class(mg_parameter_type),target::this
+class(mg_parameter_type), intent(inout), target :: this
 integer(i_kind), intent(inout):: itarg
 include "type_parameter_locpointer.inc"
 include "type_parameter_point2this.inc"

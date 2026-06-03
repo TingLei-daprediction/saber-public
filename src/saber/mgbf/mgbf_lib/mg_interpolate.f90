@@ -1,4 +1,4 @@
-submodule(mg_intstate) mg_interpolate
+﻿submodule(mg_intstate) mg_interpolate
 !$$$  submodule documentation block
 !                .      .    .                                       .
 ! module:   mg_interpolate
@@ -53,7 +53,7 @@ contains
 module subroutine def_offset_coef (this)
 !***********************************************************************
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 
 real(r_kind):: r64,r32,r128
 !-----------------------------------------------------------------------
@@ -87,7 +87,7 @@ module subroutine lsqr_mg_coef (this)
 !                                                                      !
 !***********************************************************************
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 real(r_kind), dimension(1:this%nm):: xa
 real(r_kind), dimension(1-this%ib:this%im+this%ib):: xf
 real(r_kind), dimension(1:this%mm):: ya
@@ -312,7 +312,7 @@ module subroutine lwq_vertical_coef &
 !***********************************************************************
 (this,nm_in,im_in,c1,c2,c3,c4,iref_out)
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 
 integer(i_kind), intent(in):: nm_in,im_in
 real(r_kind), dimension(1:nm_in), intent(out):: c1,c2,c3,c4
@@ -389,7 +389,7 @@ module subroutine lwq_vertical_adjoint &
 (this,nm_in,km_in,imin,imax,jmin,jmax,c1,c2,c3,c4,kref,w,f)
 implicit none
 !-----------------------------------------------------------------------
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 integer(i_kind), intent(in):: nm_in,km_in,imin,imax,jmin,jmax
 real(r_kind), dimension(1:nm_in), intent(in):: c1,c2,c3,c4
 integer(i_kind), dimension(1:nm_in), intent(in):: kref
@@ -437,7 +437,7 @@ module subroutine lwq_vertical_direct &
 (this,km_in,nm_in,imin,imax,jmin,jmax,c1,c2,c3,c4,kref,f,w)
 implicit none
 !-----------------------------------------------------------------------
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 integer(i_kind), intent(in):: km_in,nm_in,imin,imax,jmin,jmax
 real(r_kind), dimension(1:nm_in), intent(in):: c1,c2,c3,c4
 integer(i_kind), dimension(1:nm_in), intent(in):: kref
@@ -478,7 +478,7 @@ module subroutine lwq_vertical_adjoint_spec &
 (this,km3_in,nm_in,km_in,imin,imax,jmin,jmax,c1,c2,c3,c4,kref,W,F)
 implicit none
 !-----------------------------------------------------------------------
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 integer(i_kind), intent(in):: km3_in,nm_in,km_in,imin,imax,jmin,jmax
 real(r_kind), dimension(1:nm_in), intent(in):: c1,c2,c3,c4
 integer(i_kind), dimension(1:nm_in), intent(in):: kref
@@ -525,7 +525,7 @@ module subroutine lwq_vertical_direct_spec &
 (this,km3_in,km_in,nm_in,imin,imax,jmin,jmax,c1,c2,c3,c4,kref,F,W)
 implicit none
 !-----------------------------------------------------------------------
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 integer(i_kind), intent(in):: km3_in,km_in,nm_in,imin,imax,jmin,jmax
 real(r_kind), dimension(1:nm_in), intent(in):: c1,c2,c3,c4
 integer(i_kind), dimension(1:nm_in), intent(in):: kref
@@ -565,7 +565,7 @@ module subroutine l_vertical_adjoint_spec &
 (this,km3_in,nm_in,km_in,imin,imax,jmin,jmax,W,F)
 implicit none
 !-----------------------------------------------------------------------
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 integer(i_kind), intent(in):: km3_in,nm_in,km_in,imin,imax,jmin,jmax
 real(r_kind), dimension(1:km3_in,imin:imax,jmin:jmax,1:nm_in), intent(in):: W
 real(r_kind), dimension(1:km3_in,imin:imax,jmin:jmax,1:km_in), intent(out):: F
@@ -602,7 +602,7 @@ module subroutine l_vertical_direct_spec &
 (this,km3_in,km_in,nm_in,imin,imax,jmin,jmax,F,W)
 implicit none
 !-----------------------------------------------------------------------
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 integer(i_kind), intent(in):: km3_in,km_in,nm_in,imin,imax,jmin,jmax
 real(r_kind), dimension(1:km3_in,imin:imax,jmin:jmax,1:km_in), intent(in):: F
 real(r_kind), dimension(1:km3_in,imin:imax,jmin:jmax,1:nm_in), intent(out):: W
@@ -634,7 +634,7 @@ module subroutine lsqr_direct_offset &
 (this,V_in,W,km_in,ibm,jbm)
 !-----------------------------------------------------------------------
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 integer(i_kind),intent(in):: km_in,ibm,jbm
 real(r_kind), dimension(km_in,1-ibm:this%im+ibm,1-jbm:this%jm+jbm), intent(in):: V_in
 real(r_kind), dimension(km_in,1:this%nm,1:this%mm),intent(out):: W
@@ -678,7 +678,7 @@ module subroutine lsqr_direct_offset_add&
 (this,V_in,W,km_in,ibm,jbm)
 !-----------------------------------------------------------------------
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 integer(i_kind),intent(in):: km_in,ibm,jbm
 real(r_kind), dimension(km_in,1-ibm:this%im+ibm,1-jbm:this%jm+jbm), intent(in):: V_in
 real(r_kind), dimension(km_in,1:this%nm,1:this%mm),intent(out):: W
@@ -724,7 +724,7 @@ module subroutine lsqr_adjoint_offset &
 (this,W,V_out,km_in,ibm,jbm)
 !-----------------------------------------------------------------------
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 integer(i_kind):: km_in,ibm,jbm
 real(r_kind), dimension(km_in,1:this%nm,1:this%mm),intent(in):: W
 real(r_kind), dimension(km_in,1-ibm:this%im+ibm,1-jbm:this%jm+jbm), intent(out):: V_out
@@ -782,7 +782,7 @@ module subroutine lsqr_adjoint_offset_add &
 (this,W,V_out,km_in,ibm,jbm)
 !-----------------------------------------------------------------------
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 integer(i_kind):: km_in,ibm,jbm
 real(r_kind), dimension(km_in,1:this%nm,1:this%mm),intent(in):: W
 real(r_kind), dimension(km_in,1-ibm:this%im+ibm,1-jbm:this%jm+jbm), intent(out):: V_out
@@ -841,7 +841,7 @@ module subroutine quad_direct_offset &
 (this,V_in,W,km_in,ibm,jbm)
 !-----------------------------------------------------------------------
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 integer(i_kind),intent(in):: km_in,ibm,jbm
 real(r_kind), dimension(km_in,1-ibm:this%im+ibm,1-jbm:this%jm+jbm), intent(in):: V_in
 real(r_kind), dimension(km_in,1:this%nm,1:this%mm),intent(out):: W
@@ -884,7 +884,7 @@ module subroutine quad_adjoint_offset &
 (this,W,V_out,km_in,ibm,jbm)
 !-----------------------------------------------------------------------
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 integer(i_kind):: km_in,ibm,jbm
 real(r_kind), dimension(km_in,1:this%nm,1:this%mm),intent(in):: W
 real(r_kind), dimension(km_in,1-ibm:this%im+ibm,1-jbm:this%jm+jbm), intent(out):: V_out
@@ -940,7 +940,7 @@ module subroutine lin_direct_offset &
 (this,V_in,W,km_in,ibm,jbm)
 !-----------------------------------------------------------------------
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 integer(i_kind),intent(in):: km_in,ibm,jbm
 real(r_kind), dimension(km_in,1-ibm:this%im+ibm,1-jbm:this%jm+jbm), intent(in):: V_in
 real(r_kind), dimension(km_in,1:this%nm,1:this%mm),intent(out):: W
@@ -982,7 +982,7 @@ module subroutine lin_direct_offset_add &
 (this,V_in,W,km_in,ibm,jbm)
 !-----------------------------------------------------------------------
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 integer(i_kind),intent(in):: km_in,ibm,jbm
 real(r_kind), dimension(km_in,1-ibm:this%im+ibm,1-jbm:this%jm+jbm), intent(in):: V_in
 real(r_kind), dimension(km_in,1:this%nm,1:this%mm),intent(out):: W
@@ -1028,7 +1028,7 @@ module subroutine lin_adjoint_offset &
 (this,W,V_out,km_in,ibm,jbm)
 !-----------------------------------------------------------------------
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 integer(i_kind):: km_in,ibm,jbm
 real(r_kind), dimension(km_in,1:this%nm,1:this%mm),intent(in):: W
 real(r_kind), dimension(km_in,1-ibm:this%im+ibm,1-jbm:this%jm+jbm), intent(out):: V_out
@@ -1079,7 +1079,7 @@ module subroutine lin_adjoint_offset_add &
 (this,W,V_out,km_in,ibm,jbm)
 !-----------------------------------------------------------------------
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 integer(i_kind):: km_in,ibm,jbm
 real(r_kind), dimension(km_in,1:this%nm,1:this%mm),intent(in):: W
 real(r_kind), dimension(km_in,1-ibm:this%im+ibm,1-jbm:this%jm+jbm), intent(out):: V_out
@@ -1131,7 +1131,7 @@ module subroutine l_vertical_adjoint_spec2 &
 (this,en,nm_in,km_in,imin,imax,jmin,jmax,W,F)
 implicit none
 !-----------------------------------------------------------------------
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 integer(i_kind), intent(in):: en,nm_in,km_in,imin,imax,jmin,jmax
 real(r_kind), dimension(1:nm_in*en,imin:imax,jmin:jmax), intent(in):: W
 real(r_kind), dimension(1:km_in*en,imin:imax,jmin:jmax), intent(out):: F
@@ -1172,7 +1172,7 @@ module subroutine l_vertical_direct_spec2 &
 (this,en,km_in,nm_in,imin,imax,jmin,jmax,F,W)
 implicit none
 !-----------------------------------------------------------------------
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 integer(i_kind), intent(in):: en,km_in,nm_in,imin,imax,jmin,jmax
 real(r_kind), dimension(1:km_in*en,imin:imax,jmin:jmax), intent(in):: F
 real(r_kind), dimension(1:nm_in*en,imin:imax,jmin:jmax), intent(out):: W

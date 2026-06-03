@@ -1,4 +1,4 @@
-submodule(mg_parameter) mg_mppstuff
+﻿submodule(mg_parameter) mg_mppstuff
 !$$$  submodule documentation block
 !                .      .    .                                       .
 ! module:   mg_mppstuff
@@ -154,7 +154,7 @@ module subroutine barrierMPI(this)
 use mpi
 
 implicit none
-class(mg_parameter_type),target::this
+class(mg_parameter_type), intent(inout), target :: this
 integer(i_kind):: ierr
 include "type_parameter_locpointer.inc"
 include "type_parameter_point2this.inc"
@@ -175,7 +175,7 @@ module subroutine finishMPI(this)
 use mpi
 
 implicit none
-class(mg_parameter_type),target::this
+class(mg_parameter_type), intent(inout), target :: this
 !
 ! don't need mpi_finalize if mgbf is a lib to be called from outside
    write(6,*) "mggbf%finishmpi should not be invoked  if mgbf is used as a lib"

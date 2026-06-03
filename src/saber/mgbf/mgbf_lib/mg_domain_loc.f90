@@ -1,4 +1,4 @@
-submodule(mg_parameter) mg_domain_loc
+﻿submodule(mg_parameter) mg_domain_loc
 !$$$  submodule documentation block
 !                .      .    .                                       .
 ! module:   mg_domain_loc
@@ -66,7 +66,7 @@ module subroutine sidesend_loc(this)
 !                                                                      !
 !***********************************************************************
 implicit none
-class(mg_parameter_type),target::this
+class(mg_parameter_type), intent(inout), target :: this
 integer(i_kind):: ix_0,jy_0
 integer(i_kind):: ix_c,jy_c
 integer(i_kind):: ix_cc,jy_cc
@@ -280,7 +280,7 @@ module subroutine targup_loc(this)
 !                                                                      !
 !***********************************************************************
 implicit none
-class(mg_parameter_type),target::this
+class(mg_parameter_type), intent(inout), target :: this
 integer(i_kind):: ix_0,jy_0
 integer(i_kind):: ix_c,jy_c,mype_c
 integer(i_kind):: ix_prox,jy_prox,targup
@@ -369,7 +369,7 @@ module subroutine targdn21_loc(this)
 !                                                                      !
 !***********************************************************************
 implicit none
-class(mg_parameter_type),target::this
+class(mg_parameter_type), intent(inout), target :: this
 integer:: ix_t,jy_t
 integer:: ix_l,jy_l
 integer:: ix_sw,jy_sw
@@ -448,7 +448,7 @@ module subroutine targdn32_loc(this)
 !                                                                      !
 !***********************************************************************
 implicit none
-class(mg_parameter_type),target::this
+class(mg_parameter_type), intent(inout), target :: this
 integer(i_kind):: ix_t,jy_t
 integer(i_kind):: ix_l,jy_l
 integer(i_kind):: ix_sw,jy_sw
@@ -657,7 +657,7 @@ module subroutine targdn43_loc(this)
 !                                                                      !
 !***********************************************************************
 implicit none
-class(mg_parameter_type),target::this
+class(mg_parameter_type), intent(inout), target :: this
 integer(i_kind):: ix_t,jy_t
 integer(i_kind):: ix_l,jy_l
 integer(i_kind):: ix_sw,jy_sw

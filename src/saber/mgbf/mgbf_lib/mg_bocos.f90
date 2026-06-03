@@ -1,4 +1,4 @@
-submodule(mg_intstate) mg_bocos
+﻿submodule(mg_intstate) mg_bocos
 !$$$  submodule documentation block
 !                .      .    .                                       .
 ! module:   mg_bocos
@@ -124,7 +124,7 @@ module subroutine boco_2d_g1 &
 !-----------------------------------------------------------------------
 use mpi
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
 integer(i_kind), intent(in):: km_in,im_in,jm_in,nbx,nby
 real(r_kind),dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
@@ -492,7 +492,7 @@ module subroutine boco_2d_gh &
 !-----------------------------------------------------------------------
 use mpi
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
 integer(i_kind), intent(in):: km_in,im_in,jm_in,nbx,nby,mygen_min,mygen_max
 real(r_kind),dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
@@ -874,7 +874,7 @@ module subroutine bocoT_2d_g1 &
 !-----------------------------------------------------------------------
 use mpi
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
 integer(i_kind), intent(in):: km_in,im_in,jm_in,nbx,nby
 real(r_kind), dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
@@ -1196,7 +1196,7 @@ module subroutine bocoT_2d_gh &
 !-----------------------------------------------------------------------
 use mpi
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
 integer(i_kind), intent(in):: km_in,im_in,jm_in,nbx,nby,mygen_min,mygen_max
 real(r_kind), dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
@@ -1540,7 +1540,7 @@ module subroutine boco_3d_g1 &
 !-----------------------------------------------------------------------
 use mpi
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
 integer(i_kind), intent(in):: km3_in,im_in,jm_in,Lm_in,nbx,nby,nbz
 real(r_kind),dimension(km3_in,1-nbx:im_in+nbx,1-nby:jm_in+nby,1-nbz:Lm_in+nbz)    &
@@ -1913,7 +1913,7 @@ module subroutine boco_3d_gh &
 !-----------------------------------------------------------------------
 use mpi
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
 integer(i_kind), intent(in):: km3_in,im_in,jm_in,Lm_in,nbx,nby,nbz,mygen_min,mygen_max
 real(r_kind),dimension(km3_in,1-nbx:im_in+nbx,1-nby:jm_in+nby,1-nbz:Lm_in+nbz)    &
@@ -2330,7 +2330,7 @@ module subroutine bocoT_3d_g1 &
 !-----------------------------------------------------------------------
 use mpi
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
 integer(i_kind), intent(in):: km3_in,im_in,jm_in,Lm_in,nbx,nby,nbz
 real(r_kind), dimension(km3_in,1-nbx:im_in+nbx,1-nby:jm_in+nby,1-nbz:Lm_in+nbz)   &
@@ -2708,7 +2708,7 @@ module subroutine bocoT_3d_gh &
 !-----------------------------------------------------------------------
 use mpi
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
 integer(i_kind), intent(in):: km_in,im_in,jm_in,Lm_in,nbx,nby,nbz,mygen_min,mygen_max
 real(r_kind), dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby,1-nbz:Lm_in+nbz)    &
@@ -3106,7 +3106,7 @@ module subroutine upsend_all_g1 &
 !-----------------------------------------------------------------------
 use mpi
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
 integer(i_kind), intent(in):: km_in
 real(r_kind), dimension(km_in,1:this%imL,1:this%jmL),intent(in):: Harray
@@ -3407,7 +3407,7 @@ module subroutine upsend_all_gh &
 !-----------------------------------------------------------------------
 use mpi
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
 integer(i_kind), intent(in):: km_in
 real(r_kind), dimension(km_in,1:this%imL,1:this%jmL),intent(in):: Harray
@@ -3666,7 +3666,7 @@ module subroutine downsend_all_gh &
 !-----------------------------------------------------------------------
 use mpi
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
 integer(i_kind), intent(in):: km_in
 real(r_kind), dimension(km_in,1:this%im,1:this%jm),intent(in):: Warray
@@ -3917,7 +3917,7 @@ module subroutine downsend_all_g2 &
 !-----------------------------------------------------------------------
 use mpi
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
 integer(i_kind), intent(in):: km_in
 real(r_kind), dimension(km_in,1:this%im,1:this%jm),intent(in):: Warray
@@ -4216,7 +4216,7 @@ module subroutine bocox_2d_g1 &
 !-----------------------------------------------------------------------
 use mpi
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
 integer(i_kind), intent(in):: km_in,im_in,jm_in,nbx,nby
 real(r_kind),dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
@@ -4424,7 +4424,7 @@ module subroutine bocox_2d_gh &
 !-----------------------------------------------------------------------
 use mpi
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
 integer(i_kind), intent(in):: km_in,im_in,jm_in,nbx,nby,mygen_min,mygen_max
 real(r_kind),dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
@@ -4655,7 +4655,7 @@ module subroutine bocoy_2d_g1 &
 !-----------------------------------------------------------------------
 use mpi
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
 integer(i_kind), intent(in):: km_in,im_in,jm_in,nbx,nby
 real(r_kind),dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
@@ -4859,7 +4859,7 @@ module subroutine bocoy_2d_gh &
 !-----------------------------------------------------------------------
 use mpi
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
 integer(i_kind), intent(in):: km_in,im_in,jm_in,nbx,nby,mygen_min,mygen_max
 real(r_kind),dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
@@ -5088,7 +5088,7 @@ module subroutine bocoTx_2d_g1 &
 !-----------------------------------------------------------------------
 use mpi
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
 integer(i_kind), intent(in):: km_in,im_in,jm_in,nbx,nby
 real(r_kind), dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
@@ -5283,7 +5283,7 @@ module subroutine bocoTx_2d_gh &
 !-----------------------------------------------------------------------
 use mpi
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
 integer(i_kind), intent(in):: km_in,im_in,jm_in,nbx,nby,mygen_min,mygen_max
 real(r_kind), dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
@@ -5502,7 +5502,7 @@ module subroutine bocoTy_2d_g1 &
 !-----------------------------------------------------------------------
 use mpi
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
 integer(i_kind), intent(in):: km_in,im_in,jm_in,nbx,nby
 real(r_kind), dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
@@ -5694,7 +5694,7 @@ module subroutine bocoTy_2d_gh &
 !-----------------------------------------------------------------------
 use mpi
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
 integer(i_kind), intent(in):: km_in,im_in,jm_in,nbx,nby,mygen_min,mygen_max
 real(r_kind), dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
@@ -5915,7 +5915,7 @@ module subroutine boco_2d_loc &
 !-----------------------------------------------------------------------
 use mpi
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
 integer(i_kind), intent(in):: km_in,im_in,jm_in,nbx,nby,g
 real(r_kind),dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
@@ -6273,7 +6273,7 @@ module subroutine bocoT_2d_loc &
 !-----------------------------------------------------------------------
 use mpi
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
 integer(i_kind), intent(in):: km_in,im_in,jm_in,nbx,nby,g
 real(r_kind), dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
@@ -6596,7 +6596,7 @@ module subroutine upsend_loc_g12 &
 !-----------------------------------------------------------------------
 use mpi
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
 integer(i_kind), intent(in):: km_4_in,flag
 real(r_kind), dimension(km_4_in,1:this%imL,1:this%jmL),intent(in):: V_in
@@ -6890,7 +6890,7 @@ module subroutine upsend_loc_g23 &
 !-----------------------------------------------------------------------
 use mpi
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
 integer(i_kind), intent(in):: km_16_in,flag
 real(r_kind), dimension(km_16_in,1:this%imL,1:this%jmL),intent(in):: V_in
@@ -7184,7 +7184,7 @@ module subroutine upsend_loc_g34 &
 !-----------------------------------------------------------------------
 use mpi
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
 integer(i_kind), intent(in):: km_64_in,flag
 real(r_kind), dimension(km_64_in,1:this%imL,1:this%jmL),intent(in):: V_in
@@ -7478,7 +7478,7 @@ module subroutine downsend_loc_g43 &
 !-----------------------------------------------------------------------
 use mpi
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
 integer(i_kind), intent(in):: km_64_in,flag
 real(r_kind), dimension(km_64_in,1:this%im,1:this%jm),intent(in):: W
@@ -7721,7 +7721,7 @@ module subroutine downsend_loc_g32 &
 !-----------------------------------------------------------------------
 use mpi
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
 integer(i_kind), intent(in):: km_16_in,flag
 real(r_kind), dimension(km_16_in,1:this%im,1:this%jm),intent(in):: Z
@@ -7965,7 +7965,7 @@ module subroutine downsend_loc_g21 &
 !-----------------------------------------------------------------------
 use mpi
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
 integer(i_kind), intent(in):: km_4_in,flag
 real(r_kind), dimension(km_4_in,1:this%im,1:this%jm),intent(in):: H

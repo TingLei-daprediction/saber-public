@@ -1,4 +1,4 @@
-module mg_parameter
+﻿module mg_parameter
 !$$$  submodule documentation block
 !                .      .    .                                       .
 ! module:   mg_parameter
@@ -273,13 +273,13 @@ interface
      class(mg_parameter_type)::this
    end subroutine init_mg_domain
    module subroutine init_domain(this)
-     class(mg_parameter_type),target::this
+     class(mg_parameter_type), intent(inout), target :: this
    end subroutine init_domain
    module subroutine init_topology_2d(this)
-     class(mg_parameter_type),target::this
+     class(mg_parameter_type), intent(inout), target :: this
    end subroutine init_topology_2d
    module subroutine real_itarg (this,itarg)
-     class(mg_parameter_type),target::this
+     class(mg_parameter_type), intent(inout), target :: this
      integer(i_kind), intent(inout):: itarg
    end subroutine real_itarg
 !from mg_domain_loc.f90
@@ -287,19 +287,19 @@ interface
      class(mg_parameter_type)::this
    end subroutine init_domain_loc
    module subroutine sidesend_loc(this)
-     class(mg_parameter_type),target::this
+     class(mg_parameter_type), intent(inout), target :: this
    end subroutine sidesend_loc
    module subroutine targup_loc(this)
-     class(mg_parameter_type),target::this
+     class(mg_parameter_type), intent(inout), target :: this
    end subroutine targup_loc
    module subroutine targdn21_loc(this)
-     class(mg_parameter_type),target::this
+     class(mg_parameter_type), intent(inout), target :: this
    end subroutine targdn21_loc
    module subroutine targdn32_loc(this)
-     class(mg_parameter_type),target::this
+     class(mg_parameter_type), intent(inout), target :: this
    end subroutine targdn32_loc
    module subroutine targdn43_loc(this)
-     class(mg_parameter_type),target::this
+     class(mg_parameter_type), intent(inout), target :: this
    end subroutine targdn43_loc
 !from jp_pbfil.f90
    module subroutine cholaspect1(lx,mx, el)
