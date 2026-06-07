@@ -11,6 +11,7 @@ module mg_tools
 !So both grids start half a grid spacing from the boundary; no global offset is applied.
 
 use mgbf_kinds, only: r_kind,i_kind
+implicit none
 public
 real(r_kind), parameter :: pi     = acos(-1.0_r_kind)
 real(r_kind), parameter :: deg2rad = pi/180.0_r_kind

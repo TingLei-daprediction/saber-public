@@ -69,6 +69,8 @@ use mg_timers
 use, intrinsic:: ieee_arithmetic
 !TEST
 
+implicit none
+
 interface weighting_loc
   module procedure weighting_loc_g3
   module procedure weighting_loc_g4

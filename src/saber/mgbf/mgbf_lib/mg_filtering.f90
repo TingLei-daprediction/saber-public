@@ -46,6 +46,8 @@ use mgbf_kinds, only: r_kind,i_kind
 use jp_pbfil3, only: dibetat,dibeta
 use mpi
 
+implicit none
+
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 contains
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
