@@ -41,7 +41,6 @@ use phint1
 use mgbf_kinds, only: r_kind,i_kind
 use mgbf_utils,only : contains_nonzero
 implicit none
-public
 
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 contains
