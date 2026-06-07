@@ -86,6 +86,8 @@ if(this%nxm*this%nym>1) then
       call this%filtering_lin2_ens(mg_filt_flag)
    case(8)
       call this%filtering_fast_ens(mg_filt_flag)
+   case default
+      error stop "invalid mg_filt in filtering_procedure"
    end select
 else
   call this%filtering_rad_highest

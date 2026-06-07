@@ -9,6 +9,9 @@ exclude = [
 ]
 
 [check.per-file-ignores]
+"src/saber/mgbf/mgbf_lib/mg_domain.f90" = [
+    "C011", # missing-default-case - g is bounded by do g = 1,2
+]
 "src/saber/mgbf/mgbf_lib/mg_transfer.f90" = [
     "C121", # use-missing-only - intentionally imports all from mpi, mg_timers, phint1
 ]
