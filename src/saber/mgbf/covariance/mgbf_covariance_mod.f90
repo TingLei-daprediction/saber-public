@@ -101,7 +101,7 @@ logical :: central
 integer :: layout(2)
 integer :: myunit
 integer :: iscale,ivargrp
-integer :: nscale=1, nvargrp=1
+integer :: nscale, nvargrp
 type(atlas_field) :: afield, lonlat_field
 type(atlas_functionspace_structuredcolumns) :: fs_sc
 real(r_kind), pointer :: lonlat_ptr(:,:)
@@ -110,9 +110,9 @@ integer :: npts_owned
 integer :: npts_total
 
 character(len=80) :: readin_mgbf_nml_group(99)
-real :: readin_multigrp_cor(99)=1.0
-integer :: readin_iscalegroup(99)=999
-integer :: readin_ivargroup(99)=999
+real :: readin_multigrp_cor(99)
+integer :: readin_iscalegroup(99)
+integer :: readin_ivargroup(99)
 integer ::i,j,k, ii,nz3d
 namelist /parameters_mgbf_init/ nscale,nvargrp,readin_mgbf_nml_group ,readin_multigrp_cor,readin_iscalegroup,readin_ivargroup
 
@@ -138,6 +138,11 @@ end if
 call config%get_or_die("saber block name", centralblockname)
 if (config%has("mgbf sdl and vdl init namelist file")) then
      call config%get_or_die("mgbf sdl and vdl init namelist file",  mgbf_nml)
+  nscale = 1
+  nvargrp = 1
+  readin_multigrp_cor = 1.0
+  readin_iscalegroup = 999
+  readin_ivargroup = 999
   open(newunit=myunit,file=trim(mgbf_nml),status="old")
   read(myunit,nml=parameters_mgbf_init)
   close(unit=myunit)
@@ -399,8 +404,8 @@ integer(kind=i_kind):: i,ivar,jvar,j,k,ij,lev1,lev2,iounit
 integer(kind=i_kind):: n2d
 integer(kind=i_kind), pointer :: varvlev_index(:,:)
 logical  ::  l2d_encountered
-logical :: test_once=.false.
-integer(kind=i_kind)::itest=0
+logical :: test_once
+integer(kind=i_kind) :: itest
 character(len=32) :: fileoutput
 character(len=4) :: str_rank
 integer :: n_owned_size
@@ -414,6 +419,8 @@ integer :: ii,nvargrp
 integer :: ilev1,ilev2
 integer ::  loc(2)
 
+          test_once = .false.
+          itest = 0
           if(index_member_in >= 999)  then ! not set previously and should not be used,
           member_index=1  ! the privous ensemble index starts from 0)
           else

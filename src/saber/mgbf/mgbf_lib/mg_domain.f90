@@ -63,12 +63,14 @@ implicit none
 class(mg_parameter_type), intent(inout), target :: this
 
 integer(i_kind) :: n,nstrd,i,j
-logical:: F=.false., T=.true.
+logical :: F, T
 
 integer(i_kind):: loc_pe,g
 include "type_parameter_locpointer.inc"
 include "type_parameter_point2this.inc"
 !-----------------------------------------------------------------------
+      F = .false.
+      T = .true.
 
       Flwest(1)=nx==1
       Fleast(1)=nx==nxm
@@ -171,13 +173,15 @@ module subroutine init_topology_2d(this)
 implicit none
 class(mg_parameter_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
-logical:: F=.false., T=.true.
+logical :: F, T
 
 integer(i_kind) :: mx2,my2,ix_up,jy_up,ix_dn,jy_dn
 integer(i_kind) :: g,naux,nx_up,my_up
 include "type_parameter_locpointer.inc"
 include "type_parameter_point2this.inc"
 !-----------------------------------------------------------------------
+      F = .false.
+      T = .true.
 !
 !     Topology of generations of the squared domain
 !

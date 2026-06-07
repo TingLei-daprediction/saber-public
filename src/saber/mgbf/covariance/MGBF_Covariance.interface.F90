@@ -152,7 +152,7 @@ type(c_ptr), value, intent(in) :: c_afieldset
 
 type(mgbf_covariance), pointer :: f_self
 type(atlas_fieldset)          :: f_fieldset
-integer                       :: index_member_in=0
+integer                       :: index_member_in
 call btim(mg_interface_multiply_time)
 index_member_in=int(c_index_member_in,kind=kind(index_member_in))
 ! LinkedList
