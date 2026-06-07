@@ -33,9 +33,7 @@ use mgbf_kinds, only: r_kind,i_kind
 use jp_pkind2, only: fpi
 use jp_pbfil3, only: inimomtab,t22_to_3,tritform,t33_to_6,hextform
 use mg_parameter,only: mg_parameter_type
-use mg_tools,only : interp_analysis_to_filter,mg_sphere_dist
-use tools_func, only:sphere_dist
-use  tools_const, only: req,deg2rad
+use mg_tools,only :deg2rad, interp_analysis_to_filter,mg_sphere_dist
 implicit none
 type,extends( mg_parameter_type):: mg_intstate_type
 real(r_kind), allocatable,dimension(:,:,:):: V

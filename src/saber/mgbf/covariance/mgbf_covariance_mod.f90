@@ -15,8 +15,6 @@ use atlas_module, only : atlas_functionspace,                      &
                          atlas_functionspace_structuredcolumns,    &
                          atlas_mesh_nodes, atlas_field
 
-use tools_func, only : sphere_dist
-use tools_const, only : req          ! Earth radius (m)
 
 ! fckit
 use fckit_mpi_module,               only: fckit_mpi_comm
