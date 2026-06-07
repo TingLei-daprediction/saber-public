@@ -604,14 +604,12 @@ logical :: l_exist
   allocate(this%isofz(lm_a))
   write(6,*)"thinkdeb999 filgrid is ",l_vert_stretched_filtgrid
   this%l_vert_stretched_filtgrid=l_vert_stretched_filtgrid
-#if 1
 
   if(lm_a /= lm ) then
     write(6,*)"thinkdeb999 l_vert_stretched_filtgrid ",this%l_vert_stretched_filtgrid
    call convert_vert_varied_aspt
 !in which the mg_ampl01 will be re-defined
   end if
-#endif
 !-----------------------------------------------------------------
 !for safety, copy all namelist loc vars to them of this object
   this%mg_ampl01=mg_ampl01

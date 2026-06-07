@@ -153,7 +153,7 @@ module subroutine getlinesum1(this,hx,lx,mx, el, ss)            ! [getlinesum]
 ! so it can be used subsequently in the normalized version of this
 ! filter.
 !=============================================================================
-class(mg_parameter_type)::this
+class(mg_parameter_type),intent(inout) ::this
 integer,                  intent(in   ):: hx,Lx,mx
 real(dp),dimension(1,1,Lx:Mx),intent(in   ):: el
 real(dp),dimension(lx:mx),intent(  out):: ss
@@ -187,7 +187,7 @@ module subroutine getlinesum1d(this,hx,lx,mx, el, ss)            ! [getlinesum]
 ! so it can be used subsequently in the normalized version of this
 ! filter.
 !=============================================================================
-class(mg_parameter_type)::this
+class(mg_parameter_type),intent(inout)::this
 integer,                  intent(in   ):: hx,Lx,mx
 real(dp),dimension(Lx:Mx),intent(in   ):: el
 real(dp),dimension(lx:mx),intent(  out):: ss
@@ -219,7 +219,7 @@ end subroutine getlinesum1d
 !=============================================================================
 module subroutine getlinesum2(this,hx,lx,mx, hy,ly,my, el, ss)  ! [getlinesum]
 !=============================================================================
-class(mg_parameter_type)::this
+class(mg_parameter_type),intent(inout)::this
 integer,                            intent(in   ):: hx,Lx,mx, &
                                                     hy,ly,my
 real(dp),dimension(2,2,Lx:Mx,Ly:My),intent(in   ):: el
@@ -258,7 +258,7 @@ end subroutine getlinesum2
 !=============================================================================
 module subroutine getlinesum3(this,hx,lx,mx, hy,ly,my, hz,lz,mz, el, ss) ! [getlinesum]
 !=============================================================================
-class(mg_parameter_type)::this
+class(mg_parameter_type),intent(inout)::this
 integer,                                  intent(in   ):: hx,Lx,mx, &
                                                           hy,ly,my, &
                                                           hz,lz,mz
@@ -310,7 +310,7 @@ end subroutine getlinesum3
 module subroutine getlinesum4(this,hx,lx,mx, hy,ly,my, hz,lz,mz, hw,lw,mw, &
      el, ss)                                                    ! [getlinesum]
 !=============================================================================
-class(mg_parameter_type)::this
+class(mg_parameter_type),intent(inout)::this
 integer,                                  intent(in   ):: hx,Lx,mx, &
                                                           hy,ly,my, &
                                                           hz,lz,mz, &
@@ -382,7 +382,7 @@ module subroutine rbeta1(this,hx,lx,mx, el,ss, a)                    ! [rbeta]
 ! The output data occupy the central region
 ! Lx <= ix <= Mx.
 !=============================================================================
-class(mg_parameter_type)::this
+class(mg_parameter_type),intent(inout)::this
 integer,                        intent(in   ):: hx,Lx,mx
 real(dp),dimension(   Lx:Mx),   intent(in   ):: el
 real(dp),dimension(   Lx:Mx),   intent(in   ):: ss
@@ -420,7 +420,7 @@ module subroutine rbeta3d_1(this,nz,hx,lx,mx, el,ss, a)                    ! [rb
 ! The output data occupy the central region
 ! Lx <= ix <= Mx.
 !=============================================================================
-class(mg_parameter_type)::this
+class(mg_parameter_type),intent(inout)::this
 integer,                        intent(in   ):: nz,hx,Lx,mx
 real(dp),dimension(nz, Lx:Mx),   intent(in   ):: el
 real(dp),dimension(nz, Lx:Mx),   intent(in   ):: ss
@@ -460,7 +460,7 @@ module subroutine rbeta2(this,hx,lx,mx, hy,ly,my, el,ss, a)          ! [rbeta]
 ! The output data occupy the central region
 ! Lx <= ix <= Mx, Ly <= iy <= My.
 !=============================================================================
-class(mg_parameter_type)::this
+class(mg_parameter_type),intent(inout)::this
 integer,                                    intent(in   ):: hx,Lx,mx, &
                                                             hy,ly,my
 real(dp),dimension(2,2,Lx:Mx,Ly:My),        intent(in   ):: el
@@ -508,7 +508,7 @@ module subroutine rbeta3(this,hx,lx,mx, hy,ly,my, hz,lz,mz, el,ss,a) ! [rbeta]
 ! The output data occupy the central region
 ! Lx <= ix <= Mx, Ly <= iy <= My, Lz <= iz <= Mz.
 !=============================================================================
-class(mg_parameter_type)::this
+class(mg_parameter_type),intent(inout)::this
 integer,                                   intent(in   ):: hx,Lx,mx,&
                                                            hy,ly,my,&
                                                            hz,lz,mz
@@ -564,7 +564,7 @@ module subroutine rbeta4(this,hx,lx,mx, hy,ly,my, hz,lz,mz, hw,lw,mw, el,ss,a) !
 ! The output data occupy the central region
 ! Lx <= ix <= Mx, Ly <= iy <= My, Lz <= iz <= Mz, Lw <= iw <= Mw.
 !=============================================================================
-class(mg_parameter_type)::this
+class(mg_parameter_type),intent(inout)::this
 integer,                                        intent(in   ):: hx,Lx,mx,&
                                                                 hy,ly,my,&
                                                                 hz,lz,mz,&
@@ -625,7 +625,7 @@ module subroutine vrbeta4(this,nv,hx,lx,mx, hy,ly,my, hz,lz,mz, hw,lw,mw, &
 !=============================================================================
 ! Vector version of rbeta4 filtering nv fields at once.
 !=============================================================================
-class(mg_parameter_type)::this
+class(mg_parameter_type),intent(inout)::this
 integer,                                       intent(in   ):: nv, &
                                                                hx,Lx,mx,&
                                                                hy,ly,my,&
@@ -692,7 +692,7 @@ module subroutine rbeta1T(this,hx,lx,mx, el,ss, a)                  ! [rbetat]
 ! the extended domain,
 ! Lx-hx <= jx <= mx+hx.
 !=============================================================================
-class(mg_parameter_type)::this
+class(mg_parameter_type),intent(inout)::this
 integer,                        intent(in   ):: hx,Lx,mx
 real(dp),dimension(1,1,Lx:Mx),  intent(in   ):: el
 real(dp),dimension(  Lx:Mx),    intent(in   ):: ss
@@ -728,7 +728,7 @@ module subroutine rbeta3d_1T(this,nz,hx,lx,mx, el,ss, a)                  ! [rbe
 ! the extended domain,
 ! Lx-hx <= jx <= mx+hx.
 !=============================================================================
-class(mg_parameter_type)::this
+class(mg_parameter_type),intent(inout)::this
 integer,                        intent(in   )::nz, hx,Lx,mx
 real(dp),dimension(nz,Lx:Mx),  intent(in   ):: el
 real(dp),dimension(nz,  Lx:Mx),    intent(in   ):: ss
@@ -766,7 +766,7 @@ module subroutine rbeta2T(this,hx,lx,mx, hy,ly,my, el,ss, a)        ! [rbetat]
 ! the extended domain,
 ! Lx-hx <= jx <= mx+hx, Ly-hy <= Jy <= my+hy
 !=============================================================================
-class(mg_parameter_type)::this
+class(mg_parameter_type),intent(inout)::this
 integer,                                    intent(in   ):: hx,Lx,mx, &
                                                             hy,ly,my
 real(dp),dimension(2,2,Lx:Mx,Ly:My),        intent(in   ):: el
@@ -812,7 +812,7 @@ module subroutine rbeta3T(this,hx,lx,mx, hy,ly,my, hz,lz,mz, el,ss, a) ! [rbetat
 ! the extended domain,
 ! Lx-hx <= jx <= Mx+hx, Ly-hy <= Jy <= My+hy, Lz-hz <= Jz <= Mz+hz.
 !=============================================================================
-class(mg_parameter_type)::this
+class(mg_parameter_type),intent(inout)::this
 integer,                                    intent(in   ):: hx,Lx,mx,&
                                                             hy,ly,my,&
                                                             hz,lz,mz
@@ -867,7 +867,7 @@ module subroutine rbeta4T(this,hx,lx,mx, hy,ly,my, hz,lz,mz, hw,lw,mw, &
 ! Lx-hx <= jx <= Mx+hx, Ly-hy <= Jy <= My+hy, Lz-hz <= Jz <= Mz+hz,
 !     Lw-hw <= Jw <= Mw+hw.
 !=============================================================================
-class(mg_parameter_type)::this
+class(mg_parameter_type),intent(inout)::this
 integer,                                        intent(in   ):: hx,Lx,mx,&
                                                                 hy,ly,my,&
                                                                 hz,lz,mz,&
@@ -926,7 +926,7 @@ module subroutine vrbeta4t(this,nv,hx,lx,mx, hy,ly,my, hz,lz,mz, &
 !=============================================================================
 ! Vector version of rbeta4t filtering nv fields at once.
 !=============================================================================
-class(mg_parameter_type)::this
+class(mg_parameter_type),intent(inout)::this
 integer,                                        intent(in   ):: nv, &
                                                                 hx,Lx,mx,&
                                                                 hy,ly,my,&
@@ -986,7 +986,7 @@ module subroutine vrbeta1(this,nv,hx,lx,mx, el,ss, a)                ! [rbeta]
 !=============================================================================
 ! Vector version of rbeta1 filtering nv fields at once.
 !=============================================================================
-class(mg_parameter_type)::this
+class(mg_parameter_type),intent(inout)::this
 integer,                           intent(in   ):: nv,hx,Lx,mx
 real(dp),dimension(1,1, Lx:Mx),    intent(in   ):: el
 real(dp),dimension(   Lx:Mx),      intent(in   ):: ss
@@ -1019,7 +1019,7 @@ module subroutine vrbeta2(this,nv,hx,lx,mx, hy,ly,my, el,ss, a)      ! [rbeta]
 !=============================================================================
 ! Vector version of rbeta2 filtering nv fields at once.
 !=============================================================================
-class(mg_parameter_type)::this
+class(mg_parameter_type),intent(inout)::this
 integer,                                       intent(in   ):: nv, &
                                                                hx,Lx,mx, &
                                                                hy,ly,my
@@ -1063,7 +1063,7 @@ module subroutine vrbeta3(this,nv, hx,lx,mx, hy,ly,my, hz,lz,mz, el,ss,a) ! [rbe
 !=============================================================================
 ! Vector version of rbeta3 filtering nv fields at once.
 !=============================================================================
-class(mg_parameter_type)::this
+class(mg_parameter_type),intent(inout)::this
 integer,                                       intent(in   ):: nv, &
                                                                hx,Lx,mx,&
                                                                hy,ly,my,&
@@ -1115,7 +1115,7 @@ module subroutine vrbeta1T(this,nv, hx,lx,mx, el,ss, a)             ! [rbetat]
 !=============================================================================
 ! Vector version of rbeta1t filtering nv fields at once.
 !=============================================================================
-class(mg_parameter_type)::this
+class(mg_parameter_type),intent(inout)::this
 integer,                           intent(in   ):: nv,hx,Lx,mx
 real(dp),dimension(1,1,Lx:Mx),     intent(in   ):: el
 real(dp),dimension(   Lx:Mx),      intent(in   ):: ss
@@ -1146,7 +1146,7 @@ module subroutine vrbeta2T(this,nv,hx,lx,mx, hy,ly,my, el,ss, a)    ! [rbetat]
 !=============================================================================
 ! Vector version of rbeta2t filtering nv fields at once.
 !=============================================================================
-class(mg_parameter_type)::this
+class(mg_parameter_type),intent(inout)::this
 integer,                                       intent(in   ):: nv, &
                                                                hx,Lx,mx, &
                                                                hy,ly,my
@@ -1189,7 +1189,7 @@ module subroutine vrbeta3T(this,nv,hx,lx,mx, hy,ly,my, hz,lz,mz, el,ss, a) ! [rb
 !=============================================================================
 ! Vector version of rbeta3t filtering nv fields at once.
 !=============================================================================
-class(mg_parameter_type)::this
+class(mg_parameter_type),intent(inout)::this
 integer,                                    intent(in   ):: nv,      &
                                                             hx,Lx,mx,&
                                                             hy,ly,my,&

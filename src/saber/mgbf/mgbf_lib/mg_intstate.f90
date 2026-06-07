@@ -1446,7 +1446,6 @@ if (this%l_constant_aspt2 ) then
      this%paspx=this%pasp02
      this%paspy=this%pasp02  !paspx and paspy will be replaced by paspx4d/paspy4d when the x/y filter
                              ! is used ( filtering_fast_bkg )
-#if 1
    allocate (lonlat2d_anl(this%nm,this%mm,2))
    allocate (lonlat2d_filt(this%im,this%jm,2))
    lonlat2d_anl(:,:,1)=reshape(lonlat1d_anl(:,1),[size(lonlat2d_anl,1),size(lonlat2d_anl,2)])
@@ -1507,10 +1506,8 @@ if (this%l_constant_aspt2 ) then
 
    deallocate (lonlat2d_anl)
    deallocate (lonlat2d_filt)
-#else
      this%paspx4d(:,:,:,1)=this%pasp02
      this%paspy4d(:,:,:,1)=this%pasp02
-#endif
 
 end if
 !$omp parallel do private(i,j) schedule(static)
