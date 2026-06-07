@@ -1,4 +1,4 @@
-﻿submodule(mg_intstate) mg_interpolate
+submodule(mg_intstate) mg_interpolate
 !$$$  submodule documentation block
 !                .      .    .                                       .
 ! module:   mg_interpolate

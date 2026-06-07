@@ -1,4 +1,4 @@
-﻿module mg_parameter
+module mg_parameter
 !$$$  submodule documentation block
 !                .      .    .                                       .
 ! module:   mg_parameter

@@ -1,4 +1,4 @@
-﻿submodule(mg_parameter) mg_mppstuff
+submodule(mg_parameter) mg_mppstuff
 !$$$  submodule documentation block
 !                .      .    .                                       .
 ! module:   mg_mppstuff

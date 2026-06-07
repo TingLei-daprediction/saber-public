@@ -1,4 +1,4 @@
-﻿submodule(mg_parameter) mg_domain
+submodule(mg_parameter) mg_domain
 !$$$  submodule documentation block
 !                .      .    .                                       .
 ! module:   mg_domain

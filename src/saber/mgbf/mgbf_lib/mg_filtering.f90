@@ -1,4 +1,4 @@
-﻿submodule(mg_intstate) mg_filtering
+submodule(mg_intstate) mg_filtering
 !$$$  submodule documentation block
 !                .      .    .                                       .
 ! module:   mg_filtering

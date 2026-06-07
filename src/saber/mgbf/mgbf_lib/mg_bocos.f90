@@ -1,4 +1,4 @@
-﻿submodule(mg_intstate) mg_bocos
+submodule(mg_intstate) mg_bocos
 !$$$  submodule documentation block
 !                .      .    .                                       .
 ! module:   mg_bocos

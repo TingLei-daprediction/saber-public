@@ -1,4 +1,4 @@
-﻿module mg_intstate
+module mg_intstate
 !$$$  submodule documentation block
 !                .      .    .                                       .
 ! module:   mg_intstate
