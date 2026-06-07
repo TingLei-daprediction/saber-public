@@ -9,7 +9,15 @@ include(GNUInstallDirs)
 #                         mg_mppstuff.f90
 #   mg_intstate.f90   ->  mg_bocos.f90, mg_entrymod.f90, mg_filtering.f90,
 #                         mg_generations.f90, mg_interpolate.f90, mg_transfer.f90
-set( mgbf_lib_src_files
+#
+# CMake cannot infer SUBMODULE(parent) compile-time ordering within a single
+# target on older generators/compilers. Split into two targets so that
+# add_dependencies enforces a hard TARGET-level barrier: every file in
+# mgbflib_parents (including mg_parameter.f90 and mg_intstate.f90) is fully
+# compiled — and their .mod/.smod files written — before a single file in
+# mgbflib starts.
+
+set( mgbf_lib_parent_src_files
   # standalone utility modules (no submodule dependencies)
   mgbf_kind.f90
   mgbf_util.f90
@@ -28,6 +36,9 @@ set( mgbf_lib_src_files
   # parent modules (must come before their submodules)
   mg_parameter.f90
   mg_intstate.f90
+)
+
+set( mgbf_lib_submodule_src_files
   # submodules of mg_parameter
   jp_pbfil.f90
   mg_domain.f90
@@ -41,13 +52,30 @@ set( mgbf_lib_src_files
   mg_interpolate.f90
   mg_transfer.f90
 )
-add_library(mgbflib STATIC ${mgbf_lib_src_files})
+
+set(mgbf_lib_module_dir ${CMAKE_CURRENT_BINARY_DIR}/modules)
+
+# --- Parent modules target ---------------------------------------------------
+# Compiles all plain modules first; Intel ifort writes .mod AND .smod here.
+add_library(mgbflib_parents STATIC ${mgbf_lib_parent_src_files})
+set_target_properties(mgbflib_parents PROPERTIES
+    Fortran_MODULE_DIRECTORY ${mgbf_lib_module_dir})
+target_include_directories(mgbflib_parents PUBLIC
+    $<BUILD_INTERFACE:${mgbf_lib_module_dir}>)
+target_link_libraries(mgbflib_parents PUBLIC MPI::MPI_Fortran)
+
+# --- Submodule target --------------------------------------------------------
+# add_dependencies creates a hard barrier: mgbflib_parents must be 100 %
+# complete (all .mod/.smod written) before any file in mgbflib is touched.
+add_library(mgbflib STATIC ${mgbf_lib_submodule_src_files})
+add_dependencies(mgbflib mgbflib_parents)
 set_target_properties(mgbflib PROPERTIES
-    Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules)
+    Fortran_MODULE_DIRECTORY ${mgbf_lib_module_dir})
 target_include_directories(mgbflib PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/modules>)
-target_link_libraries(mgbflib PUBLIC MPI::MPI_Fortran)
-install(TARGETS mgbflib
+    $<BUILD_INTERFACE:${mgbf_lib_module_dir}>)
+target_link_libraries(mgbflib PUBLIC mgbflib_parents MPI::MPI_Fortran)
+
+install(TARGETS mgbflib mgbflib_parents
         EXPORT saber-targets
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
