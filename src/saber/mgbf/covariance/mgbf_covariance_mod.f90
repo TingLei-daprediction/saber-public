@@ -295,7 +295,7 @@ end subroutine create
 subroutine delete(self)
 
 ! Arguments
-class(mgbf_covariance) :: self
+class(mgbf_covariance), intent(inout) :: self
 integer:: iscale,ivargrp
 
 ! Locals
