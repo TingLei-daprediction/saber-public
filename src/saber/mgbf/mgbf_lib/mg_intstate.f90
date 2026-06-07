@@ -209,9 +209,11 @@ end type mg_intstate_type
 interface
 !from mg_interpolate.f90
    module subroutine def_offset_coef(this)
+     implicit none
      class(mg_intstate_type), intent(inout), target :: this
    end subroutine def_offset_coef
    module subroutine lsqr_mg_coef(this)
+     implicit none
      class(mg_intstate_type), intent(inout), target :: this
    end subroutine lsqr_mg_coef
    module subroutine lwq_vertical_coef &
@@ -625,6 +627,7 @@ interface
 !from mg_generations.f90
    module subroutine upsending_all &
         (this,V,H,lquart)
+     implicit none
      class(mg_intstate_type), intent(inout), target :: this
      real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(in):: V
      real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(out):: H
@@ -916,44 +919,56 @@ interface
    end subroutine direct_highest
 !from mg_filtering
    module subroutine filtering_procedure(this,mg_filt,mg_filt_flag)
+     implicit none
      class(mg_intstate_type), intent(inout), target :: this
      integer(i_kind),intent(in):: mg_filt
      integer(i_kind),intent(in):: mg_filt_flag
    end subroutine filtering_procedure
    module subroutine filtering_rad3(this)
+     implicit none
      class(mg_intstate_type), intent(inout), target :: this
    end subroutine filtering_rad3
    module subroutine filtering_lin3(this)
+     implicit none
      class(mg_intstate_type), intent(inout), target :: this
    end subroutine filtering_lin3
    module subroutine filtering_rad2(this)
+     implicit none
      class(mg_intstate_type), intent(inout), target :: this
    end subroutine filtering_rad2
    module subroutine filtering_rad2_bkg(this)
+     implicit none
      class(mg_intstate_type), intent(inout), target :: this
    end subroutine filtering_rad2_bkg
    module subroutine filtering_lin2_bkg(this)
+     implicit none
      class(mg_intstate_type), intent(inout), target :: this
    end subroutine filtering_lin2_bkg
    module subroutine filtering_lin2(this)
+     implicit none
      class(mg_intstate_type), intent(inout), target :: this
    end subroutine filtering_lin2
    module subroutine filtering_fast_bkg(this)
+     implicit none
      class(mg_intstate_type), intent(inout), target :: this
    end subroutine filtering_fast_bkg
    module subroutine filtering_rad2_ens(this,mg_filt_flag)
+     implicit none
      class(mg_intstate_type), intent(inout), target :: this
      integer(i_kind),intent(in):: mg_filt_flag
    end subroutine filtering_rad2_ens
    module subroutine filtering_lin2_ens(this,mg_filt_flag)
+     implicit none
      class(mg_intstate_type), intent(inout), target :: this
      integer(i_kind),intent(in):: mg_filt_flag
    end subroutine filtering_lin2_ens
    module subroutine filtering_fast_ens(this,mg_filt_flag)
+     implicit none
      class(mg_intstate_type), intent(inout), target :: this
      integer(i_kind),intent(in):: mg_filt_flag
    end subroutine filtering_fast_ens
    module subroutine filtering_rad_highest(this)
+     implicit none
      class(mg_intstate_type), intent(inout), target :: this
    end subroutine filtering_rad_highest
    module subroutine sup_vrbeta1 &
@@ -967,6 +982,7 @@ interface
    end subroutine sup_vrbeta1
    module subroutine sup_vrbeta1T &
      (this,kmax,hx,hy,hz,im,jm,lm,  pasp,ss, V)
+     implicit none
      class(mg_intstate_type), intent(inout), target :: this
      integer(i_kind),intent(in):: kmax,hx,hy,hz,im,jm,lm
      real(r_kind),dimension(1:kmax,1-hx:im+hx,1-hy:jm+hy,1:lm),intent(inout):: V
@@ -975,6 +991,7 @@ interface
    end subroutine sup_vrbeta1T
    module subroutine sup_vrbeta3 &
         (this,kmax,hx,hy,hz,im,jm,lm, pasp,ss, V)
+     implicit none
      class(mg_intstate_type), intent(inout), target :: this
      integer(i_kind),intent(in):: kmax,hx,hy,hz,im,jm,lm
      real(r_kind),dimension(1:kmax,1-hx:im+hx,1-hy:jm+hy,1:lm),intent(inout):: V
@@ -1028,58 +1045,70 @@ interface
    end subroutine sup_vrbeta1T_bkg
 !from mg_transfer.f90
    module subroutine anal_to_filt_allmap(this,WORKA)
+     implicit none
      class(mg_intstate_type), intent(inout), target :: this
      real (r_kind), intent(inout) :: WORKA(this%km_a_all,1:this%nm,1:this%mm)
    end subroutine anal_to_filt_allmap
    module subroutine filt_to_anal_allmap(this,WORKA)
+     implicit none
      class(mg_intstate_type), intent(inout), target :: this
      real (r_kind), intent(inout) :: WORKA(this%km_a_all,1:this%nm,1:this%mm)
    end subroutine filt_to_anal_allmap
    module subroutine anal_to_filt_all(this,WORKA)
+     implicit none
      class(mg_intstate_type), intent(inout), target :: this
      real (r_kind), intent(inout) :: WORKA(this%km_a_all,1:this%nm,1:this%mm)
    end subroutine anal_to_filt_all
    module subroutine filt_to_anal_all(this,WORKA)
+     implicit none
      class(mg_intstate_type), intent(inout), target :: this
      real (r_kind), intent(inout) :: WORKA(this%km_a_all,1:this%nm,1:this%mm)
    end subroutine filt_to_anal_all
    module subroutine anal_to_filt_all2(this,WORKA)
+     implicit none
      class(mg_intstate_type), intent(inout), target :: this
      real (r_kind), intent(inout) :: WORKA(this%km_a_all,1:this%nm,1:this%mm)
    end subroutine anal_to_filt_all2
    module subroutine filt_to_anal_all2(this,WORKA)
+     implicit none
      class(mg_intstate_type), intent(inout), target :: this
      real (r_kind), intent(inout) :: WORKA(this%km_a_all,1:this%nm,1:this%mm)
    end subroutine filt_to_anal_all2
    module subroutine stack_to_composite(this,ARR_ALL,A2D,A3D)
+     implicit none
      class(mg_intstate_type), intent(inout), target :: this
      real(r_kind),dimension(this%km ,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),   intent(in):: ARR_ALL
      real(r_kind),dimension(this%km3,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,this%lm),intent(out):: A3D
      real(r_kind),dimension(this%km2,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)   ,intent(out):: A2D
    end subroutine stack_to_composite
    module subroutine composite_to_stack(this,A2D,A3D,ARR_ALL)
+     implicit none
      class(mg_intstate_type), intent(inout), target :: this
      real(r_kind),dimension(this%km2,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),   intent(in):: A2D
      real(r_kind),dimension(this%km3,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,this%lm),intent(in):: A3D
      real(r_kind),dimension(this%km ,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),   intent(out):: ARR_ALL
    end subroutine composite_to_stack
    module subroutine S2C_ens(this,ARR_ALL,A3D,imn,imx,jmn,jmx,lmx,kmx,kmx_all)
+     implicit none
      class(mg_intstate_type), intent(inout), target :: this
      integer, intent(in):: imn,imx,jmn,jmx,lmx,kmx,kmx_all
      real(r_kind),dimension(kmx_all,imn:imx,jmn:jmx)    ,intent(in):: ARR_ALL
      real(r_kind),dimension(this%km3_all,imn:imx,jmn:jmx,lmx),intent(out):: A3D
    end subroutine S2C_ens
    module subroutine C2S_ens(this,A3D,ARR_ALL,imn,imx,jmn,jmx,lmx,kmx,kmx_all)
+     implicit none
      class(mg_intstate_type), intent(inout), target :: this
      integer, intent(in):: imn,imx,jmn,jmx,lmx,kmx,kmx_all
      real(r_kind),dimension(this%km3_all,imn:imx,jmn:jmx,lmx),intent(in):: A3D
      real(r_kind),dimension(kmx_all,imn:imx,jmn:jmx)    ,intent(out):: ARR_ALL
    end subroutine C2S_ens
    module subroutine anal_to_filt(this,WORK)
+     implicit none
      class(mg_intstate_type), intent(inout), target :: this
      real (r_kind), intent(inout) :: WORK(this%km_all,1:this%nm,1:this%mm)
    end subroutine anal_to_filt
    module subroutine filt_to_anal(this,WORK)
+     implicit none
      class(mg_intstate_type), intent(inout), target :: this
      real (r_kind), intent(inout) :: WORK(this%km_all,1:this%nm,1:this%mm)
    end subroutine filt_to_anal

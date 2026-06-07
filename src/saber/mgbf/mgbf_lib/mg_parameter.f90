@@ -260,73 +260,91 @@ end type  mg_parameter_type
 interface
 !from mg_mppstuff.f90
    module subroutine init_mg_MPI(this)
+     implicit none
      class(mg_parameter_type), intent(inout), target :: this
    end subroutine init_mg_MPI
    module subroutine finishMPI(this)
+     implicit none
      class(mg_parameter_type), intent(inout), target :: this
    end subroutine finishMPI
    module subroutine barrierMPI(this)
+     implicit none
      class(mg_parameter_type), intent(inout), target :: this
    end subroutine barrierMPI
 !from mg_domain.f90
    module subroutine init_mg_domain(this)
+     implicit none
      class(mg_parameter_type), intent(inout) :: this
    end subroutine init_mg_domain
    module subroutine init_domain(this)
+     implicit none
      class(mg_parameter_type), intent(inout), target :: this
    end subroutine init_domain
    module subroutine init_topology_2d(this)
+     implicit none
      class(mg_parameter_type), intent(inout), target :: this
    end subroutine init_topology_2d
    module subroutine real_itarg (this,itarg)
+     implicit none
      class(mg_parameter_type), intent(inout), target :: this
      integer(i_kind), intent(inout):: itarg
    end subroutine real_itarg
 !from mg_domain_loc.f90
    module subroutine init_domain_loc(this)
+     implicit none
      class(mg_parameter_type), intent(inout) :: this
    end subroutine init_domain_loc
    module subroutine sidesend_loc(this)
+     implicit none
      class(mg_parameter_type), intent(inout), target :: this
    end subroutine sidesend_loc
    module subroutine targup_loc(this)
+     implicit none
      class(mg_parameter_type), intent(inout), target :: this
    end subroutine targup_loc
    module subroutine targdn21_loc(this)
+     implicit none
      class(mg_parameter_type), intent(inout), target :: this
    end subroutine targdn21_loc
    module subroutine targdn32_loc(this)
+     implicit none
      class(mg_parameter_type), intent(inout), target :: this
    end subroutine targdn32_loc
    module subroutine targdn43_loc(this)
+     implicit none
      class(mg_parameter_type), intent(inout), target :: this
    end subroutine targdn43_loc
 !from jp_pbfil.f90
    module subroutine cholaspect1(lx,mx, el)
      use mgbf_kinds, only: dp=>r_kind
+     implicit none
      integer,                      intent(in   ):: lx,mx
      real(dp),dimension(1,1,lx:mx),intent(inout):: el
    end subroutine cholaspect1
    module subroutine cholaspect2(lx,mx, ly,my, el)
      use mgbf_kinds, only: dp=>r_kind
+     implicit none
      integer,                            intent(in   ):: lx,mx, ly,my
      real(dp),dimension(2,2,lx:mx,ly:my),intent(inout):: el
      real(dp),dimension(2,2):: tel
    end subroutine cholaspect2
    module subroutine cholaspect3(lx,mx, ly,my, lz,mz, el)
      use mgbf_kinds, only: dp=>r_kind
+     implicit none
      integer,                                  intent(in   ):: lx,mx, ly,my, lz,mz
      real(dp),dimension(3,3,lx:mx,ly:my,lz:mz),intent(inout):: el
      real(dp),dimension(3,3):: tel
    end subroutine cholaspect3
    module subroutine cholaspect4(lx,mx, ly,my, lz,mz, lw,mw,el)
      use mgbf_kinds, only: dp=>r_kind
+     implicit none
      integer,                                        intent(in   ):: lx,mx, ly,my, lz,mz, lw,mw
      real(dp),dimension(4,4,lx:mx,ly:my,lz:mz,lw:mw),intent(inout):: el
      real(dp),dimension(4,4):: tel
    end subroutine cholaspect4
    module subroutine getlinesum1(this,hx,lx,mx, el, ss)
      use mgbf_kinds, only: dp=>r_kind
+     implicit none
      class(mg_parameter_type), intent(inout) :: this
      integer,                      intent(in   ):: hx,Lx,mx
      real(dp),dimension(1,1,Lx:Mx),intent(in   ):: el
@@ -334,6 +352,7 @@ interface
    end subroutine getlinesum1
    module subroutine getlinesum1d(this,hx,lx,mx, el, ss)
      use mgbf_kinds, only: dp=>r_kind
+     implicit none
      class(mg_parameter_type), intent(inout) :: this
      integer,                      intent(in   ):: hx,Lx,mx
      real(dp),dimension(Lx:Mx),intent(in   ):: el
@@ -341,6 +360,7 @@ interface
    end subroutine getlinesum1d
    module subroutine getlinesum2(this,hx,lx,mx, hy,ly,my, el, ss)
      use mgbf_kinds, only: dp=>r_kind
+     implicit none
      class(mg_parameter_type), intent(inout) :: this
      integer,                            intent(in   ):: hx,Lx,mx, hy,ly,my
      real(dp),dimension(2,2,Lx:Mx,Ly:My),intent(in   ):: el
@@ -348,6 +368,7 @@ interface
    end subroutine getlinesum2
    module subroutine getlinesum3(this,hx,lx,mx, hy,ly,my, hz,lz,mz, el, ss)
      use mgbf_kinds, only: dp=>r_kind
+     implicit none
      class(mg_parameter_type), intent(inout) :: this
      integer,                                  intent(in   ):: hx,Lx,mx, hy,ly,my, hz,lz,mz
      real(dp),dimension(3,3,Lx:Mx,Ly:My,Lz:Mz),intent(in   ):: el
@@ -355,6 +376,7 @@ interface
    end subroutine getlinesum3
    module subroutine getlinesum4(this,hx,lx,mx, hy,ly,my, hz,lz,mz, hw,lw,mw, el, ss)
      use mgbf_kinds, only: dp=>r_kind
+     implicit none
      class(mg_parameter_type), intent(inout) :: this
      integer,                                        intent(in   ):: hx,Lx,mx, hy,ly,my, hz,lz,mz, hw,lw,mw
      real(dp),dimension(4,4,Lx:Mx,Ly:My,Lz:Mz,Lw:Mw),intent(in   ):: el
@@ -362,6 +384,7 @@ interface
    end subroutine getlinesum4
    module subroutine rbeta1(this,hx,lx,mx, el,ss, a)
      use mgbf_kinds, only: dp=>r_kind
+     implicit none
      class(mg_parameter_type), intent(inout) :: this
      integer,                  intent(in   ):: hx,Lx,mx
      real(dp),dimension(Lx:Mx),intent(in   ):: el
@@ -370,6 +393,7 @@ interface
    end subroutine rbeta1
    module subroutine rbeta3d_1(this,nz,hx,lx,mx, el,ss, a)
      use mgbf_kinds, only: dp=>r_kind
+     implicit none
      class(mg_parameter_type), intent(inout) :: this
      integer,                  intent(in   ):: nz, hx,Lx,mx
      real(dp),dimension(nz,Lx:Mx),intent(in   ):: el
@@ -378,6 +402,7 @@ interface
    end subroutine rbeta3d_1
    module subroutine rbeta2(this,hx,lx,mx, hy,ly,my, el,ss, a)
      use mgbf_kinds, only: dp=>r_kind
+     implicit none
      class(mg_parameter_type), intent(inout) :: this
      integer,                            intent(in   ):: hx,Lx,mx, hy,ly,my
      real(dp),dimension(2,2,Lx:Mx,Ly:My),intent(in   ):: el
@@ -386,6 +411,7 @@ interface
    end subroutine rbeta2
    module subroutine rbeta3(this,hx,lx,mx, hy,ly,my, hz,lz,mz, el,ss,a)
      use mgbf_kinds, only: dp=>r_kind
+     implicit none
      class(mg_parameter_type), intent(inout) :: this
      integer,                                  intent(in   ):: hx,Lx,mx, hy,ly,my, hz,lz,mz
      real(dp),dimension(3,3,Lx:Mx,Ly:My,Lz:Mz),intent(in   ):: el
@@ -394,6 +420,7 @@ interface
    end subroutine rbeta3
    module subroutine rbeta4(this,hx,lx,mx, hy,ly,my, hz,lz,mz, hw,lw,mw, el,ss,a)
      use mgbf_kinds, only: dp=>r_kind
+     implicit none
      class(mg_parameter_type), intent(inout) :: this
      integer,                                        intent(in   ):: hx,Lx,mx, hy,ly,my, hz,lz,mz, hw,lw,mw
      real(dp),dimension(4,4,Lx:Mx,Ly:My,Lz:Mz,Lw:Mw),intent(in   ):: el
@@ -402,6 +429,7 @@ interface
    end subroutine rbeta4
    module subroutine rbeta1T(this,hx,lx,mx, el,ss, a)
      use mgbf_kinds, only: dp=>r_kind
+     implicit none
      class(mg_parameter_type), intent(inout) :: this
      integer,                      intent(in   ):: hx,Lx,mx
      real(dp),dimension(1,1,Lx:Mx),intent(in   ):: el
@@ -410,6 +438,7 @@ interface
    end subroutine rbeta1T
    module subroutine rbeta3d_1T(this,nz,hx,lx,mx, el,ss, a)
      use mgbf_kinds, only: dp=>r_kind
+     implicit none
      class(mg_parameter_type), intent(inout) :: this
      integer,                      intent(in   ):: nz, hx,Lx,mx
      real(dp),dimension(nz,Lx:Mx),intent(in   ):: el
@@ -418,6 +447,7 @@ interface
    end subroutine rbeta3d_1T
    module subroutine rbeta2T(this,hx,lx,mx, hy,ly,my, el,ss, a)
      use mgbf_kinds, only: dp=>r_kind
+     implicit none
      class(mg_parameter_type), intent(inout) :: this
      integer,                            intent(in   ):: hx,Lx,mx, hy,ly,my
      real(dp),dimension(2,2,Lx:Mx,Ly:My),intent(in   ):: el
@@ -426,6 +456,7 @@ interface
    end subroutine rbeta2T
    module subroutine rbeta3T(this,hx,lx,mx, hy,ly,my, hz,lz,mz, el,ss, a)
      use mgbf_kinds, only: dp=>r_kind
+     implicit none
      class(mg_parameter_type), intent(inout) :: this
      integer,                                  intent(in   ):: hx,Lx,mx, hy,ly,my, hz,lz,mz
      real(dp),dimension(3,3,Lx:Mx,Ly:My,Lz:Mz),intent(in   ):: el
@@ -434,6 +465,7 @@ interface
    end subroutine rbeta3T
    module subroutine rbeta4T(this,hx,lx,mx, hy,ly,my, hz,lz,mz, hw,lw,mw, el,ss, a)
      use mgbf_kinds, only: dp=>r_kind
+     implicit none
      class(mg_parameter_type), intent(inout) :: this
      integer,                                        intent(in   ):: hx,Lx,mx, hy,ly,my, hz,lz,mz, hw,lw,mw
      real(dp),dimension(4,4,Lx:Mx,Ly:My,Lz:Mz,Lw:Mw),intent(in   ):: el
@@ -442,6 +474,7 @@ interface
    end subroutine rbeta4T
    module subroutine vrbeta1(this,nv,hx,lx,mx, el,ss, a)
      use mgbf_kinds, only: dp=>r_kind
+     implicit none
      class(mg_parameter_type), intent(inout) :: this
      integer,                      intent(in   ):: nv,hx,Lx,mx
      real(dp),dimension(1,1,Lx:Mx),intent(in   ):: el
@@ -450,6 +483,7 @@ interface
    end subroutine vrbeta1
    module subroutine vrbeta2(this,nv,hx,lx,mx, hy,ly,my, el,ss, a)
      use mgbf_kinds, only: dp=>r_kind
+     implicit none
      class(mg_parameter_type), intent(inout) :: this
      integer,                            intent(in   ):: nv, hx,Lx,mx, hy,ly,my
      real(dp),dimension(2,2,Lx:Mx,Ly:My),intent(in   ):: el
@@ -458,6 +492,7 @@ interface
    end subroutine vrbeta2
    module subroutine vrbeta3(this,nv, hx,lx,mx, hy,ly,my, hz,lz,mz, el,ss,a)
      use mgbf_kinds, only: dp=>r_kind
+     implicit none
      class(mg_parameter_type), intent(inout) :: this
      integer,                                  intent(in   ):: nv, hx,Lx,mx, hy,ly,my, hz,lz,mz
      real(dp),dimension(3,3,Lx:Mx,Ly:My,Lz:Mz),intent(in   ):: el
@@ -466,6 +501,7 @@ interface
    end subroutine vrbeta3
    module subroutine vrbeta4(this,nv,hx,lx,mx, hy,ly,my, hz,lz,mz, hw,lw,mw, el,ss,a)
      use mgbf_kinds, only: dp=>r_kind
+     implicit none
      class(mg_parameter_type), intent(inout) :: this
      integer,                                        intent(in   ):: nv, hx,Lx,mx, hy,ly,my, hz,lz,mz, hw,lw,mw
      real(dp),dimension(4,4,Lx:Mx,Ly:My,Lz:Mz,Lw:Mw),intent(in   ):: el
@@ -474,6 +510,7 @@ interface
    end subroutine vrbeta4
    module subroutine vrbeta1T(this,nv, hx,lx,mx, el,ss, a)
      use mgbf_kinds, only: dp=>r_kind
+     implicit none
      class(mg_parameter_type), intent(inout) :: this
      integer,                      intent(in   ):: nv,hx,Lx,mx
      real(dp),dimension(1,1,Lx:Mx),intent(in   ):: el
@@ -482,6 +519,7 @@ interface
    end subroutine vrbeta1T
    module subroutine vrbeta2T(this,nv,hx,lx,mx, hy,ly,my, el,ss, a)
      use mgbf_kinds, only: dp=>r_kind
+     implicit none
      class(mg_parameter_type), intent(inout) :: this
      integer,                            intent(in   ):: nv, hx,Lx,mx, hy,ly,my
      real(dp),dimension(2,2,Lx:Mx,Ly:My),intent(in   ):: el
@@ -490,6 +528,7 @@ interface
    end subroutine vrbeta2T
    module subroutine vrbeta3T(this,nv,hx,lx,mx, hy,ly,my, hz,lz,mz, el,ss, a)
      use mgbf_kinds, only: dp=>r_kind
+     implicit none
      class(mg_parameter_type), intent(inout) :: this
      integer,                                  intent(in   ):: nv, hx,Lx,mx, hy,ly,my, hz,lz,mz
      real(dp),dimension(3,3,Lx:Mx,Ly:My,Lz:Mz),intent(in   ):: el
@@ -498,6 +537,7 @@ interface
    end subroutine vrbeta3T
    module subroutine vrbeta4T(this,nv,hx,lx,mx, hy,ly,my, hz,lz,mz, hw,lw,mw, el,ss, a)
      use mgbf_kinds, only: dp=>r_kind
+     implicit none
      class(mg_parameter_type), intent(inout) :: this
      integer,                                        intent(in   ):: nv, hx,Lx,mx, hy,ly,my, hz,lz,mz, hw,lw,mw
      real(dp),dimension(4,4,Lx:Mx,Ly:My,Lz:Mz,Lw:Mw),intent(in   ):: el
