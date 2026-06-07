@@ -12,8 +12,9 @@ module mg_tools
 
 use mgbf_kinds, only: r_kind,i_kind
 public
-real(r_kind), parameter :: pi = acos(-1.0_r_kind)
+real(r_kind), parameter :: pi     = acos(-1.0_r_kind)
 real(r_kind), parameter :: deg2rad = pi/180.0_r_kind
+real(r_kind), parameter :: req     = 6371229.0_r_kind  !< Earth radius (m)
 contains
 subroutine interp_analysis_to_filter(yy, nm, mm, im, jm, zz)
   ! Bilinear interpolation from analysis grid (nm×mm) to filter grid (im×jm).
