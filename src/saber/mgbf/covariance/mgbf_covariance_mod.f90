@@ -344,33 +344,6 @@ integer, parameter :: rseed = 3
 write(6,*)"thinkdeb this is to be implemente"
 call flush(6)
 stop
-! Get Atlas field
-afield = fields%field("stream_function")
-call afield%data(psi)
-
-afield = fields%field("velocity_potential")
-call afield%data(chi)
-
-afield = fields%field("air_temperature")
-call afield%data(t)
-
-afield = fields%field("surface_pressure")
-call afield%data(ps)
-
-afield = fields%field("specific_humidity")
-call afield%data(q)
-
-afield = fields%field("cloud_liquid_ice")
-call afield%data(qi)
-
-afield = fields%field("cloud_liquid_water")
-call afield%data(ql)
-
-afield = fields%field("ozone_mass_mixing_ratio")
-call afield%data(o3)
-
-! Set fields to random numbers
-call normal_distribution(psi, 0.0_r_kind, 1.0_r_kind, rseed)
 
 end subroutine randomize
 
@@ -764,7 +737,6 @@ integer ::  loc(2)
                             write(6,*)"suspicous situation while n_owned_szie =0 ,stop"
                             call flush(6)
                             stop
-                            ptr_2d(1,:)=work2d_mgbf(lev1,:)!if nz=1, only the first level is used (like for surface pressure)
                         end if
 
                      end if
@@ -777,7 +749,6 @@ integer ::  loc(2)
                   call flush(6)
                   stop
 
-                  ilev=ilev+nz
                 else
                   write(6,*)"wrong in mgbf_covariance_mod.f90 " !todo
                   call flush(6)
