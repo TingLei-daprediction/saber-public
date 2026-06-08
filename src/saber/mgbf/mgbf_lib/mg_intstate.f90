@@ -1302,7 +1302,8 @@ real(r_kind),allocatable :: lonlat2d_filt(:,:,:)
 !*************************************************real(r_kind),allocatable :: lonlat2d_filt(:,:,:)
 integer :: rank, size, ierr, comm2d
 integer,allocatable,dimension(:) :: sendcounts, displs
-integer :: dims(2), periods(2), coords(2)
+integer :: dims(2), coords(2)
+logical :: periods(2)
 integer(i_kind):: nxloc,nyloc,nz,nt,start_idx,end_idx
 integer(i_kind):: ig
 character(len=72)  :: tmpfilename
@@ -1343,7 +1344,7 @@ allocate(weigh_tmp(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%
 if(this%l_mgbf_inhomogeneous ) then
   if(this%l_mg_weig_readin) then
    dims=[this%nxpe,this%nype]
-   periods=[0,0]
+   periods=[.false.,.false.]
    nxloc=this%im
    nyloc=this%jm
    nz=this%km
