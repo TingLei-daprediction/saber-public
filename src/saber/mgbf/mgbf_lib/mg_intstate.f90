@@ -1536,9 +1536,6 @@ if (this%l_constant_aspt2 ) then
 
    deallocate (lonlat2d_anl)
    deallocate (lonlat2d_filt)
-     this%paspx4d(:,:,:,1)=this%pasp02
-     this%paspy4d(:,:,:,1)=this%pasp02
-
 end if
 !$omp parallel do private(i,j) schedule(static)
 do j=1,this%jm
