@@ -122,7 +122,7 @@ module subroutine boco_2d_g1 &
 !**********************************************************************!
 (this,W,km_in,im_in,jm_in,nbx,nby)
 !-----------------------------------------------------------------------
-use mpi
+use mpi, only: MPI_IRECV, MPI_ISEND, MPI_STATUS_SIZE, MPI_WAIT, MPI_WAITALL
 implicit none
 class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
@@ -490,7 +490,7 @@ module subroutine boco_2d_gh &
 !**********************************************************************!
 (this,W,km_in,im_in,jm_in,nbx,nby,Fimax_in,Fjmax_in,mygen_min,mygen_max)
 !-----------------------------------------------------------------------
-use mpi
+use mpi, only: MPI_IRECV, MPI_ISEND, MPI_STATUS_SIZE, MPI_WAIT, MPI_WAITALL
 implicit none
 class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
@@ -872,7 +872,7 @@ module subroutine bocoT_2d_g1 &
 !***********************************************************************
 (this,W,km_in,im_in,jm_in,nbx,nby)
 !-----------------------------------------------------------------------
-use mpi
+use mpi, only: MPI_IRECV, MPI_ISEND, MPI_STATUS_SIZE, MPI_WAIT, MPI_WAITALL
 implicit none
 class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
@@ -1194,7 +1194,7 @@ module subroutine bocoT_2d_gh &
 !***********************************************************************
 (this,W,km_in,im_in,jm_in,nbx,nby,Fimax_in,Fjmax_in,mygen_min,mygen_max)
 !-----------------------------------------------------------------------
-use mpi
+use mpi, only: MPI_IRECV, MPI_ISEND, MPI_STATUS_SIZE, MPI_WAIT, MPI_WAITALL
 implicit none
 class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
@@ -1538,7 +1538,7 @@ module subroutine boco_3d_g1 &
 !**********************************************************************!
 (this,W,km3_in,im_in,jm_in,Lm_in,nbx,nby,nbz,Fimax_in,Fjmax_in)
 !-----------------------------------------------------------------------
-use mpi
+use mpi, only: MPI_IRECV, MPI_ISEND, MPI_STATUS_SIZE, MPI_WAIT, MPI_WAITALL
 implicit none
 class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
@@ -1911,7 +1911,7 @@ module subroutine boco_3d_gh &
 !**********************************************************************!
 (this,W,km3_in,im_in,jm_in,Lm_in,nbx,nby,nbz,Fimax_in,Fjmax_in,mygen_min,mygen_max)
 !-----------------------------------------------------------------------
-use mpi
+use mpi, only: MPI_IRECV, MPI_ISEND, MPI_STATUS_SIZE, MPI_WAIT, MPI_WAITALL
 implicit none
 class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
@@ -2328,7 +2328,7 @@ module subroutine bocoT_3d_g1 &
 !***********************************************************************
 (this,W,km3_in,im_in,jm_in,Lm_in,nbx,nby,nbz,Fimax_in,Fjmax_in)
 !-----------------------------------------------------------------------
-use mpi
+use mpi, only: MPI_IRECV, MPI_ISEND, MPI_STATUS_SIZE, MPI_WAIT, MPI_WAITALL
 implicit none
 class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
@@ -2706,7 +2706,7 @@ module subroutine bocoT_3d_gh &
 !***********************************************************************
 (this,W,km_in,im_in,jm_in,Lm_in,nbx,nby,nbz,Fimax_in,Fjmax_in,mygen_min,mygen_max)
 !-----------------------------------------------------------------------
-use mpi
+use mpi, only: MPI_IRECV, MPI_ISEND, MPI_STATUS_SIZE, MPI_WAIT, MPI_WAITALL
 implicit none
 class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
@@ -3104,7 +3104,7 @@ module subroutine upsend_all_g1 &
 !***********************************************************************
 (this,Harray,Warray,km_in)
 !-----------------------------------------------------------------------
-use mpi
+use mpi, only: MPI_IRECV, MPI_ISEND, MPI_STATUS_SIZE, MPI_WAIT, MPI_WAITALL
 implicit none
 class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
@@ -3405,7 +3405,7 @@ module subroutine upsend_all_gh &
 !***********************************************************************
 (this,Harray,Warray,km_in,mygen_dn,mygen_up)
 !-----------------------------------------------------------------------
-use mpi
+use mpi, only: MPI_IRECV, MPI_ISEND, MPI_STATUS_SIZE, MPI_WAIT, MPI_WAITALL
 implicit none
 class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
@@ -3664,7 +3664,7 @@ module subroutine downsend_all_gh &
 !***********************************************************************
 (this,Warray,Harray,km_in,mygen_up,mygen_dn)
 !-----------------------------------------------------------------------
-use mpi
+use mpi, only: MPI_IRECV, MPI_ISEND, MPI_STATUS_SIZE, MPI_WAIT, MPI_WAITALL
 implicit none
 class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
@@ -3915,7 +3915,7 @@ module subroutine downsend_all_g2 &
 !***********************************************************************
 (this,Warray,Harray,km_in)
 !-----------------------------------------------------------------------
-use mpi
+use mpi, only: MPI_IRECV, MPI_ISEND, MPI_STATUS_SIZE, MPI_WAIT, MPI_WAITALL
 implicit none
 class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
@@ -4214,7 +4214,7 @@ module subroutine bocox_2d_g1 &
 !**********************************************************************!
 (this,W,km_in,im_in,jm_in,nbx,nby)
 !-----------------------------------------------------------------------
-use mpi
+use mpi, only: MPI_IRECV, MPI_ISEND, MPI_STATUS_SIZE, MPI_WAIT, MPI_WAITALL
 implicit none
 class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
@@ -4422,7 +4422,7 @@ module subroutine bocox_2d_gh &
 !**********************************************************************!
 (this,W,km_in,im_in,jm_in,nbx,nby,Fimax_in,Fjmax_in,mygen_min,mygen_max)
 !-----------------------------------------------------------------------
-use mpi
+use mpi, only: MPI_IRECV, MPI_ISEND, MPI_STATUS_SIZE, MPI_WAIT, MPI_WAITALL
 implicit none
 class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
@@ -4653,7 +4653,7 @@ module subroutine bocoy_2d_g1 &
 !**********************************************************************!
 (this,W,km_in,im_in,jm_in,nbx,nby)
 !-----------------------------------------------------------------------
-use mpi
+use mpi, only: MPI_IRECV, MPI_ISEND, MPI_STATUS_SIZE, MPI_WAIT, MPI_WAITALL
 implicit none
 class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
@@ -4857,7 +4857,7 @@ module subroutine bocoy_2d_gh &
 !**********************************************************************!
 (this,W,km_in,im_in,jm_in,nbx,nby,Fimax_in,Fjmax_in,mygen_min,mygen_max)
 !-----------------------------------------------------------------------
-use mpi
+use mpi, only: MPI_IRECV, MPI_ISEND, MPI_STATUS_SIZE, MPI_WAIT, MPI_WAITALL
 implicit none
 class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
@@ -5086,7 +5086,7 @@ module subroutine bocoTx_2d_g1 &
 !***********************************************************************
 (this,W,km_in,im_in,jm_in,nbx,nby)
 !-----------------------------------------------------------------------
-use mpi
+use mpi, only: MPI_IRECV, MPI_ISEND, MPI_STATUS_SIZE, MPI_WAIT, MPI_WAITALL
 implicit none
 class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
@@ -5281,7 +5281,7 @@ module subroutine bocoTx_2d_gh &
 !***********************************************************************
 (this,W,km_in,im_in,jm_in,nbx,nby,Fimax_in,Fjmax_in,mygen_min,mygen_max)
 !-----------------------------------------------------------------------
-use mpi
+use mpi, only: MPI_IRECV, MPI_ISEND, MPI_STATUS_SIZE, MPI_WAIT, MPI_WAITALL
 implicit none
 class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
@@ -5500,7 +5500,7 @@ module subroutine bocoTy_2d_g1 &
 !***********************************************************************
 (this,W,km_in,im_in,jm_in,nbx,nby)
 !-----------------------------------------------------------------------
-use mpi
+use mpi, only: MPI_IRECV, MPI_ISEND, MPI_STATUS_SIZE, MPI_WAIT, MPI_WAITALL
 implicit none
 class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
@@ -5692,7 +5692,7 @@ module subroutine bocoTy_2d_gh &
 !***********************************************************************
 (this,W,km_in,im_in,jm_in,nbx,nby,Fimax_in,Fjmax_in,mygen_min,mygen_max)
 !-----------------------------------------------------------------------
-use mpi
+use mpi, only: MPI_IRECV, MPI_ISEND, MPI_STATUS_SIZE, MPI_WAIT, MPI_WAITALL
 implicit none
 class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
@@ -5913,7 +5913,7 @@ module subroutine boco_2d_loc &
 !**********************************************************************!
 (this,W,km_in,im_in,jm_in,nbx,nby,Fimax_in,Fjmax_in,g)
 !-----------------------------------------------------------------------
-use mpi
+use mpi, only: MPI_IRECV, MPI_ISEND, MPI_STATUS_SIZE, MPI_WAIT, MPI_WAITALL
 implicit none
 class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
@@ -6271,7 +6271,7 @@ module subroutine bocoT_2d_loc &
 !***********************************************************************
 (this,W,km_in,im_in,jm_in,nbx,nby,Fimax_in,Fjmax_in,g)
 !-----------------------------------------------------------------------
-use mpi
+use mpi, only: MPI_IRECV, MPI_ISEND, MPI_STATUS_SIZE, MPI_WAIT, MPI_WAITALL
 implicit none
 class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
@@ -6594,7 +6594,7 @@ module subroutine upsend_loc_g12 &
 !***********************************************************************
 (this,V_in,H,km_4_in,flag)
 !-----------------------------------------------------------------------
-use mpi
+use mpi, only: MPI_IRECV, MPI_ISEND, MPI_STATUS_SIZE, MPI_WAIT, MPI_WAITALL
 implicit none
 class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
@@ -6888,7 +6888,7 @@ module subroutine upsend_loc_g23 &
 !***********************************************************************
 (this,V_in,H,km_16_in,flag)
 !-----------------------------------------------------------------------
-use mpi
+use mpi, only: MPI_IRECV, MPI_ISEND, MPI_STATUS_SIZE, MPI_WAIT, MPI_WAITALL
 implicit none
 class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
@@ -7182,7 +7182,7 @@ module subroutine upsend_loc_g34 &
 !***********************************************************************
 (this,V_in,H,km_64_in,flag)
 !-----------------------------------------------------------------------
-use mpi
+use mpi, only: MPI_IRECV, MPI_ISEND, MPI_STATUS_SIZE, MPI_WAIT, MPI_WAITALL
 implicit none
 class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
@@ -7476,7 +7476,7 @@ module subroutine downsend_loc_g43 &
 !***********************************************************************
 (this,W,Z,km_64_in,flag)
 !-----------------------------------------------------------------------
-use mpi
+use mpi, only: MPI_IRECV, MPI_ISEND, MPI_STATUS_SIZE, MPI_WAIT, MPI_WAITALL
 implicit none
 class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
@@ -7719,7 +7719,7 @@ module subroutine downsend_loc_g32 &
 !***********************************************************************
 (this,Z,H,km_16_in,flag)
 !-----------------------------------------------------------------------
-use mpi
+use mpi, only: MPI_IRECV, MPI_ISEND, MPI_STATUS_SIZE, MPI_WAIT, MPI_WAITALL
 implicit none
 class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------
@@ -7963,7 +7963,7 @@ module subroutine downsend_loc_g21 &
 !***********************************************************************
 (this,H,V_out,km_4_in,flag)
 !-----------------------------------------------------------------------
-use mpi
+use mpi, only: MPI_IRECV, MPI_ISEND, MPI_STATUS_SIZE, MPI_WAIT, MPI_WAITALL
 implicit none
 class(mg_intstate_type), intent(inout), target :: this
 !-----------------------------------------------------------------------

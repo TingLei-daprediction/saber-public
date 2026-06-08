@@ -26,7 +26,6 @@ submodule(mg_intstate) mg_entrymod
 !
 !$$$ end documentation block
 
-use mpi
 use mgbf_kinds, only: r_kind,i_kind
 
 implicit none

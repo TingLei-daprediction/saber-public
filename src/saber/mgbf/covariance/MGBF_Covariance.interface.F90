@@ -6,7 +6,7 @@
 module mgbf_covariance_interface_mod
 
 ! iso
-use iso_c_binding
+use iso_c_binding, only: c_int, c_ptr
 
 ! atlas
 use atlas_module,               only: atlas_functionspace, atlas_fieldset
@@ -17,7 +17,8 @@ use fckit_configuration_module, only: fckit_configuration
 
 ! saber
 use mgbf_covariance_mod,         only: mgbf_covariance
-use mg_timers
+use mg_timers, only: btim, etim, mg_interface_multiply_time, &
+                     mg_interface_registry_get_time, mg_interface_fldset_time
 
 
 implicit none

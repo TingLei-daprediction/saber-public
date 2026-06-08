@@ -27,7 +27,6 @@ submodule(mg_parameter) mg_domain
 !
 !$$$ end documentation block
 
-use mpi
 use mgbf_kinds, only: i_kind
 
 implicit none

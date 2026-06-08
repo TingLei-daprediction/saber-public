@@ -41,7 +41,10 @@ module subroutine init_mg_MPI(this)
 !     Create group for filter grid                                     !
 !                                                                      !
 !***********************************************************************
-use mpi
+use mpi, only: MPI_BARRIER, MPI_COMM_CREATE, MPI_COMM_GROUP, &
+               MPI_COMM_RANK, MPI_COMM_SIZE, MPI_COMM_SPLIT, &
+               MPI_COMM_WORLD, MPI_DOUBLE, MPI_GROUP_INCL, &
+               MPI_INTEGER, MPI_REAL
 
 implicit none
 class(mg_parameter_type), intent(inout), target :: this
@@ -151,7 +154,7 @@ module subroutine barrierMPI(this)
 !                                                                      !
 !                                                                      !
 !***********************************************************************
-use mpi
+use mpi, only: MPI_BARRIER
 
 implicit none
 class(mg_parameter_type), intent(inout), target :: this
@@ -172,7 +175,6 @@ module subroutine finishMPI(this)
 !     Finalize MPI                                                     !
 !                                                                      !
 !***********************************************************************
-use mpi
 
 implicit none
 class(mg_parameter_type), intent(inout), target :: this

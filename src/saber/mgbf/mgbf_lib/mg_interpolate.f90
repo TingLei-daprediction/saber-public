@@ -41,7 +41,7 @@ submodule(mg_intstate) mg_interpolate
 !
 !$$$ end documentation block
 
-use mgbf_kinds
+use mgbf_kinds, only: r_kind,i_kind
 use jp_pkind2, only: fpi
 
 implicit none

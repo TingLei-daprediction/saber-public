@@ -22,13 +22,13 @@ use fckit_configuration_module,     only: fckit_configuration
 
 ! oops
 use mgbf_kinds,                          only: r_kind,i_kind
-use random_mod
+use random_mod, only: normal_distribution
 
 ! saber
 use mg_intstate , only:            mg_intstate_type
-use mg_timers
-use mpi
-use, intrinsic :: ieee_arithmetic
+use mg_timers, only: btim, etim, print_mg_timers, mg_multiply_time, &
+                    mg_preprocess_time, mg_anal_to_filt_time, &
+                    mg_filtering_time, mg_filt_to_anal_time, mg_postprocess_time
 implicit none
 private
 public mgbf_covariance

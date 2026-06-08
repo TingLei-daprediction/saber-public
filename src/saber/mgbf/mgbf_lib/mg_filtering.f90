@@ -41,10 +41,11 @@ submodule(mg_intstate) mg_filtering
 !
 !$$$ end documentation block
 
-use mg_timers
+use mg_timers, only: btim, etim, upsend_tim, hfiltT_tim, bocoT_tim, &
+                    weight_tim, boco_tim, hfilt_tim, dnsend_tim, &
+                    bfiltT_tim, bfilt_tim, vfiltT_tim, vfilt_tim
 use mgbf_kinds, only: r_kind,i_kind
 use jp_pbfil3, only: dibetat,dibeta
-use mpi
 
 implicit none
 
@@ -206,7 +207,6 @@ module subroutine filtering_lin3(this)
 !                                                                      !
 !***********************************************************************
 !TEST
-use, intrinsic :: ieee_arithmetic
 !TEST
 use jp_pkind2, only: fpi
 implicit none
