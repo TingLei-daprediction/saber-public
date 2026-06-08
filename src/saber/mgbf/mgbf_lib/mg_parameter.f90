@@ -34,8 +34,7 @@ module mg_parameter
 use mgbf_kinds, only: i_kind,r_kind
 use jp_pietc, only: u1
 use phint1, only: make_ssgrid, zsigtossig
-use mpi, only: MPI_COMM_RANK, MPI_COMM_WORLD, MPI_TYPE_MATCH_SIZE, &
-               MPI_TYPECLASS_REAL, MPI_SUCCESS, MPI_ABORT, MPI_BCAST
+use mpi
 
 implicit none
 public
