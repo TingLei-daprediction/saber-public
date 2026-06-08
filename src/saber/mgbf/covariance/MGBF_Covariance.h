@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <iostream>
 #include <memory>
 #include <string>
 #include <utility>
@@ -21,9 +22,7 @@
 #include "saber/blocks/SaberBlockParametersBase.h"
 #include "saber/blocks/SaberCentralBlockBase.h"
 
-
 #include "saber/mgbf/covariance/MGBF_Covariance.interface.h"
-#include <iostream>
 #include "saber/oops/Utilities.h"
 
 
@@ -36,11 +35,15 @@ namespace oops {
 
 namespace saber {
 namespace mgbf {
- typedef int MGBF_CovarianceKey;
+
+typedef int MGBF_CovarianceKey;
+
 // -------------------------------------------------------------------------------------------------
-class MGBF_CovarianceParameters: public SaberBlockParametersBase  {
-  OOPS_CONCRETE_PARAMETERS(MGBF_CovarianceParameters,SaberBlockParametersBase)
-  public:
+
+class MGBF_CovarianceParameters : public SaberBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(MGBF_CovarianceParameters, SaberBlockParametersBase)
+
+ public:
   oops::OptionalParameter<std::string> SDL_MGBFNML{"mgbf sdl and vdl init namelist file", this};
   oops::OptionalParameter<std::string> MGBFNML{"mgbf namelist file", this};
   oops::OptionalParameter<bool> debugPrint{"debug print", this};
@@ -51,7 +54,6 @@ class MGBF_CovarianceParameters: public SaberBlockParametersBase  {
 // -------------------------------------------------------------------------------------------------
 
 class MGBF_Covariance : public SaberCentralBlockBase {
-
  public:
   static const std::string classname() {return "saber::mgbf::Covariance";}
   typedef MGBF_CovarianceParameters Parameters_;
@@ -82,7 +84,7 @@ class MGBF_Covariance : public SaberCentralBlockBase {
 
 
  private:
-  void print(std::ostream &) const override ;
+  void print(std::ostream &) const override;
   // Fortran LinkedList key
   MGBF_CovarianceKey keySelf_;
   // Parameter
