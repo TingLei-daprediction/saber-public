@@ -1019,8 +1019,6 @@ logical :: l_exist
   this%rmom2_2=u1/sqrt(this%pee2+4)
   this%rmom2_3=u1/sqrt(this%pee2+5)
   this%rmom2_4=u1/sqrt(this%pee2+6)
-#if 1
-
   write(6,*)"thinkdeb999 2 10 ",this%l_vert_stretched_filtgrid  ," ","l_use",this%l_vert_stretched_filtgrid
   call flush(6)
 contains
@@ -1107,14 +1105,12 @@ subroutine convert_vert_varied_aspt
 !clttodo need to access this from mgbf lib too
      this%zofis=this%zofis(lm:1:-1)
 
-!#   endif
 
 
 
   deallocate(sigofz,sigofis)
 end subroutine convert_vert_varied_aspt
 
-#endif
 
 
 !----------------------------------------------------------------------
