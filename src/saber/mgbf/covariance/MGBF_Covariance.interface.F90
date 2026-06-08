@@ -6,7 +6,7 @@
 module mgbf_covariance_interface_mod
 
 ! iso
-use iso_c_binding, only: c_int, c_ptr
+use intrinsic, iso_c_binding, only: c_int, c_ptr
 
 ! atlas
 use atlas_module,               only: atlas_functionspace, atlas_fieldset
