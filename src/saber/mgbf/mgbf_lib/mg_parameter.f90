@@ -38,6 +38,7 @@ use mpi, only: MPI_COMM_RANK, MPI_COMM_WORLD, MPI_TYPE_MATCH_SIZE, &
                MPI_TYPECLASS_REAL, MPI_SUCCESS, MPI_ABORT, MPI_BCAST
 
 implicit none
+public
 integer(i_kind),parameter :: lm_max=200
 type::  mg_parameter_type
 !-----------------------------------------------------------------------

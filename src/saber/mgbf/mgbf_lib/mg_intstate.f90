@@ -36,6 +36,7 @@ use jp_pbfil3, only: inimomtab,t22_to_3,tritform,t33_to_6,hextform
 use mg_parameter,only: mg_parameter_type
 use mg_tools,only :deg2rad, req, interp_analysis_to_filter,mg_sphere_dist
 implicit none
+public
 type,extends( mg_parameter_type):: mg_intstate_type
 real(r_kind), allocatable,dimension(:,:,:):: V
 !
