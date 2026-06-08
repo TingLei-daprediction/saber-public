@@ -28,8 +28,7 @@ module mg_intstate
 !
 !$$$ end documentation block
 
-use mpi, only: MPI_CART_CREATE, MPI_COMM_WORLD, MPI_COMM_RANK, &
-               MPI_CART_COORDS, MPI_SCATTERV, MPI_REAL, MPI_COMM_FREE
+use mpi
 use mgbf_kinds, only: r_kind,i_kind
 use jp_pkind2, only: fpi
 use jp_pbfil3, only: inimomtab,t22_to_3,tritform,t33_to_6,hextform
