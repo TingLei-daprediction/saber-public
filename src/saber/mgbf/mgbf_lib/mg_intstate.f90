@@ -49,7 +49,9 @@ real(r_kind), allocatable,dimension(:,:,:):: VALL
 real(r_kind), allocatable,dimension(:,:,:):: HALL
 
 real(r_kind), allocatable,dimension(:,:,:):: a_diff_f
+real(r_kind), allocatable,dimension(:,:,:):: sqrt_a_diff_f
 real(r_kind), allocatable,dimension(:,:,:):: a_diff_h
+real(r_kind), allocatable,dimension(:,:,:):: sqrt_a_diff_h
 real(r_kind), allocatable,dimension(:,:,:):: b_diff_f
 real(r_kind), allocatable,dimension(:,:,:):: b_diff_h
 real(r_kind), allocatable, dimension(:,:,:,:):: weig_var ! 3D weights in each sub domain 
@@ -186,6 +188,7 @@ contains
   generic :: downsending_loc => downsending_loc_g3,downsending_loc_g4
   procedure:: downsending_loc_g3,downsending_loc_g4
   procedure:: weighting_helm,weighting,weighting_highest,weighting_ens
+  procedure:: weighting_sqrt
   generic :: weighting_loc => weighting_loc_g3,weighting_loc_g4
   procedure:: weighting_loc_g3,weighting_loc_g4
   procedure:: adjoint,direct1
@@ -197,6 +200,7 @@ contains
   procedure :: filtering_procedure
   procedure :: filtering_rad3,filtering_lin3
   procedure :: filtering_rad2_bkg,filtering_lin2_bkg,filtering_fast_bkg,filtering_fast_bkg_new_jim
+  procedure :: filtering_fast_bkg_new_jim_new_order
   procedure :: filtering_rad2,filtering_lin2
   procedure :: filtering_rad2_ens,filtering_lin2_ens,filtering_fast_ens
   procedure :: filtering_rad_highest
@@ -809,6 +813,13 @@ interface
      real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: V
      real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: H
    end subroutine
+   module subroutine weighting_sqrt &
+        (this,V,H)
+     implicit none
+     class (mg_intstate_type),target:: this
+     real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: V
+     real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: H
+   end subroutine
    module subroutine weighting_highest &
         (this,H)
      implicit none
@@ -951,6 +962,9 @@ interface
      class(mg_intstate_type),target::this
    end subroutine
    module subroutine filtering_fast_bkg_new_jim(this)
+     class(mg_intstate_type),target::this
+   end subroutine
+   module subroutine filtering_fast_bkg_new_jim_new_order(this)
      class(mg_intstate_type),target::this
    end subroutine
    module subroutine filtering_rad2_ens(this,mg_filt_flag)
@@ -1169,7 +1183,9 @@ allocate(this%VALL(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%
 allocate(this%HALL(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this%HALL=0.
 
 allocate(this%a_diff_f(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this%a_diff_f=0. 
+allocate(this%sqrt_a_diff_f(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this%sqrt_a_diff_f=0. 
 allocate(this%a_diff_h(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this%a_diff_h=0. 
+allocate(this%sqrt_a_diff_h(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this%sqrt_a_diff_h=0. 
 allocate(this%b_diff_f(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this%b_diff_f=0. 
 allocate(this%b_diff_h(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this%b_diff_h=0. 
 
@@ -1491,6 +1507,10 @@ end select
 
 endif
 
+
+this%sqrt_a_diff_f=sqrt(this%a_diff_f)
+this%sqrt_a_diff_h=sqrt(this%a_diff_h)
+
 do L=1,this%lm
    this%pasp1(1,1,L)=this%pasp01
 enddo
@@ -1811,7 +1831,9 @@ deallocate(this%V)
 deallocate(this%HALL,this%VALL)
 
 deallocate(this%a_diff_f,this%b_diff_f)
+deallocate(this%sqrt_a_diff_f)
 deallocate(this%a_diff_h,this%b_diff_h)
+deallocate(this%sqrt_a_diff_h)
 deallocate(this%p_eps,this%p_del,this%p_sig,this%p_rho,this%pasp1,this%pasp2,this%pasp3,this%ss1,this%ss2,this%ss3)
 deallocate(this%dixs,this%diys)
 deallocate(this%dixs3,this%diys3,this%dizs3)
