@@ -9,10 +9,13 @@ BinnedFieldSetHelpers.cc
 BinnedFieldSetHelpers.h
 Calibration.cc
 Calibration.h
+defines.h
 HorizontalProfiles.cc
 HorizontalProfiles.h
 mo_cvtcoord_mod.F90
 mo_netcdf_mod.F90
+Randomization.cc
+Randomization.h
 )
 
 set( util_src_files ${util_src_files_list} PARENT_SCOPE )

@@ -546,6 +546,7 @@ integer ::  loc(2)
              varvlev_index => self%varvlev_index(:,:,jscale)
              if (self%l_multiply_first_call(jscale))  varvlev_index = 0
           
+             call btim(mg_pack_fields_time)
                 ilev=1
              do isize=1,fields%size()
                 
@@ -659,11 +660,14 @@ integer ::  loc(2)
                     stop
                 endif 
              enddo
+             call etim(mg_pack_fields_time)
+             call btim(mg_reshape_to_mgbf_time)
 !$omp parallel do private(k) schedule(static)
              do k=1,nzloc
                 work_mgbf(k,:,:) = reshape(work2d_mgbf(k,:),[dim3d(2),dim3d(3)])
              enddo
 !$omp end parallel do
+             call etim(mg_reshape_to_mgbf_time)
                
              if(self%intstate(jscale,ivargrp0)%km2.ne.n2d.and. .not.self%intstate(jscale,ivargrp0)%l_for_localization ) then 
                 write(6,*)'The numbers of 2d variables is different from  mgbf-expected ,stop'
@@ -673,7 +677,9 @@ integer ::  loc(2)
                 call etim(mg_preprocess_time)
              ii=1
              do ivargrp=1,nvargrp
+                call btim(mg_group_copy_time)
                 vargrp_work_mgbf(1:nlev_vargrp(ivargrp),:,:) = work_mgbf(ii:ii+nlev_vargrp(ivargrp)-1,:,:)
+                call etim(mg_group_copy_time)
 
                 call btim(mg_anal_to_filt_time)
                 call self%intstate(jscale,ivargrp)%anal_to_filt_allmap & 
@@ -691,15 +697,18 @@ integer ::  loc(2)
       !clt#        work_mgbf=999.0 !thinkdeb for debug
        
                 call btim(mg_postprocess_time)
+                call btim(mg_normalize_copy_time)
 !$omp parallel do private(k) schedule(static)
                 do k=1,nlev_vargrp(ivargrp)
                  vargrp_work_mgbf2(k,:,:) = vargrp_work_mgbf2(k,:,:) / rnormalization(k,ivargrp)
                 enddo
 !$omp end parallel do
                 work_mgbf(ii:ii+nlev_vargrp(ivargrp)-1,:,:) = vargrp_work_mgbf2(1:nlev_vargrp(ivargrp),:,:)
+                call etim(mg_normalize_copy_time)
                 ii=ii+nlev_vargrp(ivargrp)
              enddo ! ivargrp
              if(self%intstate(jscale,ivargrp0)%l_for_localization ) then   !clthinkdebxxx
+               call btim(mg_localization_mix_time)
                if(nvargrp == 1 ) then
                    work1var_mgbf = 0.0
                    do ivar=1,nvar
@@ -731,13 +740,17 @@ integer ::  loc(2)
                    work_mgbf(lev1:lev2,:,:)=work1var_mgbf
                  enddo
                endif
+               call etim(mg_localization_mix_time)
                nullify(work1var_mgbf)
              endif
+             call btim(mg_reshape_to_fields_time)
 !$omp parallel do private(k) schedule(static)
              do k=1,nzloc
                work2d_mgbf(k,:) = reshape(work_mgbf(k,:,:),[dim2d(2)])
              enddo
 !$omp end parallel do
+             call etim(mg_reshape_to_fields_time)
+             call btim(mg_unpack_fields_time)
                 ilev=1
                      n_owned_size=0
              do isize=1,fields%size()
@@ -810,6 +823,7 @@ integer ::  loc(2)
                   stop
                 endif 
               enddo
+             call etim(mg_unpack_fields_time)
 
              call etim(mg_postprocess_time)
 

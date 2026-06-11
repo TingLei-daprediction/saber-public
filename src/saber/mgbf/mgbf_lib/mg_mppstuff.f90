@@ -180,9 +180,10 @@ implicit none
 class(mg_parameter_type),target::this
 !
 ! don't need mpi_finalize if mgbf is a lib to be called from outside
+   write(6,*) "mggbf%finishmpi should not be invoked  if mgbf is used as a lib" 
 !
-      call MPI_FINALIZE(this%ierr)
-      stop
+!clt      call MPI_FINALIZE(this%ierr)
+!clt      stop
 !
 !-----------------------------------------------------------------------
 endsubroutine finishMPI
