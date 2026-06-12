@@ -214,7 +214,8 @@ real(dp),parameter:: eps=1.e-12
 real(dp)          :: s,rr,rrc,exx,x
 integer           :: ix,gxl,gxm,gx
 !=============================================================================
-!clt  write(6,*)'thinkdebss Lx,MX = ',Lx, ' ',Mx
+  write(6,*)'thinkdebss Lx,MX = ',Lx, ' ',Mx
+  call flush(6)
 do ix=Lx,Mx
    s=0
    exx=el(ix)*this%rmom2_1
@@ -240,8 +241,10 @@ do ix=Lx,Mx
       s=s+rrc**this%p
    enddo
    ss(ix)=u1/s
-!clt   write(6,*)'thinkdebss is ',ss(ix)
+
 enddo
+   write(6,*)'thinkdebss end  '
+   call flush(6)
 end subroutine getlinesum1d
 !=============================================================================
 module subroutine getlinesum2(this,hx,lx,mx, hy,ly,my, el, ss)  ! [getlinesum]
