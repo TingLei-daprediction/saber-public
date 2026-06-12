@@ -109,7 +109,7 @@ do iy=ly,my; do ix=lx,mx
    tel=el(:,:,ix,iy); call inv(tel); call l1lm(tel,el(:,:,ix,iy))
    if (any(abs(el(:,:,ix,iy)) < 1.e-20)) then
       write(error_unit,'(A,I8,A,I8,A)') 'WARNING cholaspect2: near-zero output at ix=',ix,' iy=',iy
-      write(error_unit,'(A,2ES15.6)') '  el(1,1)=',el(1,1,ix,iy),' el(2,2)=',el(2,2,ix,iy)
+      write(error_unit,'(A,ES15.6,A,ES15.6)') '  el(1,1)=',el(1,1,ix,iy),' el(2,2)=',el(2,2,ix,iy)
       call flush(error_unit)
    endif
 enddo;       enddo
@@ -133,7 +133,7 @@ do iz=lz,mz; do iy=ly,my; do ix=lx,mx
    tel=el(:,:,ix,iy,iz); call inv(tel); call l1lm(tel,el(:,:,ix,iy,iz))
    if (any(abs(el(:,:,ix,iy,iz)) < 1.e-20)) then
       write(error_unit,'(A,I8,A,I8,A,I8,A)') 'WARNING cholaspect3: near-zero output at ix=',ix,' iy=',iy,' iz=',iz
-      write(error_unit,'(A,3ES15.6)') '  el(1,1)=',el(1,1,ix,iy,iz),' el(2,2)=',el(2,2,ix,iy,iz),' el(3,3)=',el(3,3,ix,iy,iz)
+      write(error_unit,'(A,ES15.6,A,ES15.6,A,ES15.6)') '  el(1,1)=',el(1,1,ix,iy,iz),' el(2,2)=',el(2,2,ix,iy,iz),' el(3,3)=',el(3,3,ix,iy,iz)
       call flush(error_unit)
    endif
 enddo;       enddo;       enddo
@@ -214,8 +214,6 @@ real(dp),parameter:: eps=1.e-12
 real(dp)          :: s,rr,rrc,exx,x
 integer           :: ix,gxl,gxm,gx
 !=============================================================================
-  write(6,*)'thinkdebss Lx,MX = ',Lx, ' ',Mx
-  call flush(6)
 do ix=Lx,Mx
    s=0
    exx=el(ix)*this%rmom2_1
