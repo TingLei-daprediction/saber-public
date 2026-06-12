@@ -1622,6 +1622,7 @@ include "type_intstat_locpointer.inc"
 include "type_parameter_point2this.inc"
 include "type_intstat_point2this.inc"
 !-----------------------------------------------------------------------
+write(6,*)'thinkdeb1000  filtering_fast_bkg_new_jim_new_orde'
 as_jim_norm=real(lm*im*jm,r_kind)
 aspx_jim_avg(1)=sum(this%paspx4d(1:lm,1:im,1:jm,1))/as_jim_norm
 aspy_jim_avg(1)=sum(this%paspy4d(1:lm,1:im,1:jm,1))/as_jim_norm
