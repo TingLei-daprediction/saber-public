@@ -1738,6 +1738,10 @@ do igbin=1,2
        call this%rcalib1_jim_new(this%hx,1,this%im,this%Flwest(igbin),this%Fleast(igbin), &
             loc_paspx4d(k,1:this%im,j,igbin),xLb_jim,xmb_jim, &
             this%paspx4d_jim_new(:,k,1:this%im,j,igbin),hwork_jim(1:this%im))
+       if(k==1 .and. j==1 .and. igbin==1) then
+          write(*,'(A,I0,A,2E15.6)') 'DEBUG rcalib1_jim x-dir k=',k,' paspx4d_jim_new(0:1,k,1,j,igbin)=', &
+             this%paspx4d_jim_new(0,k,1,j,igbin), this%paspx4d_jim_new(1,k,1,j,igbin)
+       endif
      enddo
    enddo
    do k=1,this%lm
@@ -1745,6 +1749,10 @@ do igbin=1,2
        call this%rcalib1_jim_new(this%hy,1,this%jm,this%Flsouth(igbin),this%Flnorth(igbin), &
             loc_paspy4d(k,i,1:this%jm,igbin),xLb_jim,xmb_jim, &
             this%paspy4d_jim_new(:,k,i,1:this%jm,igbin),hwork_jim(1:this%jm))
+       if(k==1 .and. i==1 .and. igbin==1) then
+          write(*,'(A,I0,A,2E15.6)') 'DEBUG rcalib1_jim y-dir k=',k,' paspy4d_jim_new(0:1,k,i,1,igbin)=', &
+             this%paspy4d_jim_new(0,k,i,1,igbin), this%paspy4d_jim_new(1,k,i,1,igbin)
+       endif
      enddo
    enddo
 enddo

@@ -1455,16 +1455,24 @@ endwhere
                                                  call btim(boco_tim)
         call this%bocox(VALL,km,im,jm,hx,hy)
                                                  call etim(boco_tim)
+        write(*,'(A)') 'DEBUG: Starting direct x-pass filtering for VALL in filtering_fast_bkg_new_jim'
                                                  call btim(hfilt_tim)
 !$omp parallel do private(j,k,lev1,lev2) schedule(static)
      do j=1,jm
         do k=1,km3
            lev1=(k-1)*lm+1
            lev2=k*lm
-        
+
+          if(j==1 .and. k==1) then
+             write(*,'(A,E15.6,A,2E15.6)') 'DEBUG: VALL before x-filter at j=1,k=1: ', VALL(lev1,1,j), &
+                ' coeff=', this%paspx4d_jim_new(0,1,1,j,1), this%paspx4d_jim_new(1,1,1,j,1)
+          endif
           call this%rflip3d_1_jim_new(lm,hx,1,im,this%Flwest(1),this%Fleast(1), &
                xLb_jim_x(1),xmb_jim_x(1),VALL(lev1:lev2,:,j))
           call this%rbeta3d_1_jim_new(lm,hx,1,im,this%paspx4d_jim_new(:,:,1:im,j,1),VALL(lev1:lev2,:,j))
+          if(j==1 .and. k==1) then
+             write(*,'(A,E15.6)') 'DEBUG: VALL after x-filter at j=1,k=1: ', VALL(lev1,1,j)
+          endif
         enddo
 !cltorg        call this%rbeta(km,hx,1,im,paspx,ssx,VALL(:,:,j))
         do k=1,km2
@@ -1482,16 +1490,24 @@ endwhere
                                                  call btim(boco_tim)
         call this%bocoy(VALL,km,im,jm,hx,hy)
                                                  call etim(boco_tim)
+        write(*,'(A)') 'DEBUG: Starting direct y-pass filtering for VALL in filtering_fast_bkg_new_jim'
                                                  call btim(hfilt_tim)
 !$omp parallel do private(i,k,lev1,lev2) schedule(static)
      do i=1,im
         do k=1,km3
            lev1=(k-1)*lm+1
            lev2=k*lm
-        
+
+          if(i==1 .and. k==1) then
+             write(*,'(A,E15.6,A,2E15.6)') 'DEBUG: VALL before y-filter at i=1,k=1: ', VALL(lev1,i,1), &
+                ' coeff=', this%paspy4d_jim_new(0,1,i,1,1), this%paspy4d_jim_new(1,1,i,1,1)
+          endif
           call this%rflip3d_1_jim_new(lm,hy,1,jm,this%Flsouth(1),this%Flnorth(1), &
                xLb_jim_y(1),xmb_jim_y(1),VALL(lev1:lev2,i,:))
           call this%rbeta3d_1_jim_new(lm,hy,1,jm,this%paspy4d_jim_new(:,:,i,1:jm,1),VALL(lev1:lev2,i,:))
+          if(i==1 .and. k==1) then
+             write(*,'(A,E15.6)') 'DEBUG: VALL after y-filter at i=1,k=1: ', VALL(lev1,i,1)
+          endif
         enddo
 !cltorg        call this%rbeta(km,hy,1,jm,paspy,ssy,VALL(:,i,:))
 !clt assuming 2d variables are suface variable
