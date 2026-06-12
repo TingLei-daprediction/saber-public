@@ -81,7 +81,13 @@ real(dp),dimension(1,1,lx:mx),intent(inout):: el
 integer :: ix
 !=============================================================================
 !$omp parallel do private(ix) schedule(static)
-do ix=lx,mx; el(1,1,ix)=u1/sqrt(el(1,1,ix)); enddo
+do ix=lx,mx
+   el(1,1,ix)=u1/sqrt(el(1,1,ix))
+   if (abs(el(1,1,ix)) < 1.e-20) then
+      write(error_unit,'(A,I8,A,ES15.6)') 'WARNING cholaspect1: output near zero at ix=',ix,' el=',el(1,1,ix)
+      call flush(error_unit)
+   endif
+enddo
 !$omp end parallel do
 end subroutine cholaspect1
 !=============================================================================
@@ -101,6 +107,11 @@ integer                :: ix,iy
 !=============================================================================
 do iy=ly,my; do ix=lx,mx
    tel=el(:,:,ix,iy); call inv(tel); call l1lm(tel,el(:,:,ix,iy))
+   if (any(abs(el(:,:,ix,iy)) < 1.e-20)) then
+      write(error_unit,'(A,I8,A,I8,A)') 'WARNING cholaspect2: near-zero output at ix=',ix,' iy=',iy
+      write(error_unit,'(A,2ES15.6)') '  el(1,1)=',el(1,1,ix,iy),' el(2,2)=',el(2,2,ix,iy)
+      call flush(error_unit)
+   endif
 enddo;       enddo
 end subroutine cholaspect2
 !=============================================================================
@@ -120,6 +131,11 @@ integer                :: ix,iy,iz
 !=============================================================================
 do iz=lz,mz; do iy=ly,my; do ix=lx,mx
    tel=el(:,:,ix,iy,iz); call inv(tel); call l1lm(tel,el(:,:,ix,iy,iz))
+   if (any(abs(el(:,:,ix,iy,iz)) < 1.e-20)) then
+      write(error_unit,'(A,I8,A,I8,A,I8,A)') 'WARNING cholaspect3: near-zero output at ix=',ix,' iy=',iy,' iz=',iz
+      write(error_unit,'(A,3ES15.6)') '  el(1,1)=',el(1,1,ix,iy,iz),' el(2,2)=',el(2,2,ix,iy,iz),' el(3,3)=',el(3,3,ix,iy,iz)
+      call flush(error_unit)
+   endif
 enddo;       enddo;       enddo
 end subroutine cholaspect3
 !=============================================================================
@@ -202,6 +218,13 @@ integer           :: ix,gxl,gxm,gx
 do ix=Lx,Mx
    s=0
    exx=el(ix)*this%rmom2_1
+   if (abs(exx) < 1.e-20) then
+      write(error_unit,'(A,I8,A,ES15.6)') 'WARNING getlinesum1d: exx near zero at ix=',ix,' exx=',exx
+      write(error_unit,'(A,ES15.6)') '  el(ix)=',el(ix)
+      write(error_unit,'(A,ES15.6)') '  rmom2_1=',this%rmom2_1
+      call flush(error_unit)
+      exx = 1.e-20
+   endif
    x=u1/exx
    gxl=ceiling(-x+eps); gxm=floor( x-eps)
    if(gxl<-hx.or.gxm>hx) then
@@ -748,6 +771,15 @@ do k=1,nz
 do ix=Lx,Mx
    ta=a(k,ix); s=ss(k,ix)
    exx=el(k,ix)*this%rmom2_1
+   if (abs(exx) < 1.e-20) then
+      write(error_unit,'(A,I5,A,I5,A,ES15.6)') 'ERROR rbeta3d_1T: exx near zero at k=',k,' ix=',ix,' exx=',exx
+      write(error_unit,'(A,ES15.6)') '  el(k,ix)=',el(k,ix)
+      write(error_unit,'(A,ES15.6)') '  rmom2_1=',this%rmom2_1
+      write(error_unit,'(A,ES15.6)') '  ss(k,ix)=',ss(k,ix)
+      write(error_unit,'(A,ES15.6)') '  ta=',ta
+      call flush(error_unit)
+      stop 'rbeta3d_1T: exx near zero - DIVIDE BY ZERO IMMINENT'
+   endif
    x=u1/exx
    do gx=ceiling(-x+eps),floor( x-eps)
       jx=ix+gx;      x=gx
