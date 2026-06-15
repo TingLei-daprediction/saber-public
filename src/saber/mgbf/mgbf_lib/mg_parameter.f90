@@ -261,6 +261,11 @@ contains
   procedure :: rbeta1t_jim_new,rbeta3d_1t_jim_new
   procedure :: rflip1_jim_new,rflip3d_1_jim_new
   procedure :: rflip1t_jim_new,rflip3d_1t_jim_new
+! codex debug/develop for new jim's calibrated function (wbfil variant)
+  procedure :: inip_jim_new_wbfil,bfmoms_jim_new_wbfil
+  procedure :: nm2ofh_jim_new_wbfil,hofnm2_jim_new_wbfil
+  procedure :: rcalib1_jim_new_wbfil
+  procedure :: rbeta3d_1_jim_new_wbfil,rbeta3d_1t_jim_new_wbfil
 end type  mg_parameter_type
 
 interface
@@ -493,6 +498,50 @@ interface
      integer,                           intent(in   ):: nz,hx,Lx,mx
      logical,                           intent(in   ):: Lb,mb
      real(dp),                          intent(in   ):: xLb,xmb
+     real(dp),dimension(nz,lx-hx:mx+hx),intent(inout):: a
+   end subroutine
+   ! codex debug/develop for new jim's calibrated function (wbfil variant)
+   module subroutine inip_jim_new_wbfil(this)
+     class(mg_parameter_type)::this
+   end subroutine
+   module subroutine bfmoms_jim_new_wbfil(this,h,mom0,mom2,dmom0,dmom2)
+     use mgbf_kinds, only: dp=>r_kind
+     class(mg_parameter_type)::this
+     real(dp),intent(in ):: h
+     real(dp),intent(out):: mom0,mom2,dmom0,dmom2
+   end subroutine
+   module subroutine nm2ofh_jim_new_wbfil(this,h,nm2,dnm2)
+     use mgbf_kinds, only: dp=>r_kind
+     class(mg_parameter_type)::this
+     real(dp),intent(in ):: h
+     real(dp),intent(out):: nm2,dnm2
+   end subroutine
+   module subroutine hofnm2_jim_new_wbfil(this,nm2t,h)
+     use mgbf_kinds, only: dp=>r_kind
+     class(mg_parameter_type)::this
+     real(dp),intent(in ):: nm2t
+     real(dp),intent(out):: h
+   end subroutine
+   module subroutine rcalib1_jim_new_wbfil(this,hx,Lx,mx,as,el,hxm)
+     use mgbf_kinds, only: dp=>r_kind
+     class(mg_parameter_type)::this
+     integer,                      intent(in   ):: hx,Lx,mx
+     real(dp),dimension(Lx:Mx),    intent(in   ):: as
+     real(dp),dimension(0:1,Lx:Mx),intent(  out):: el
+     integer,dimension(Lx:Mx),     intent(  out):: hxm
+   end subroutine
+   module subroutine rbeta3d_1_jim_new_wbfil(this,nz,hx,lx,mx, el, a)
+     use mgbf_kinds, only: dp=>r_kind
+     class(mg_parameter_type)::this
+     integer,                           intent(in   ):: nz,hx,Lx,mx
+     real(dp),dimension(0:1,nz,Lx:Mx),  intent(in   ):: el
+     real(dp),dimension(nz,lx-hx:mx+hx),intent(inout):: a
+   end subroutine
+   module subroutine rbeta3d_1T_jim_new_wbfil(this,nz,hx,lx,mx, el, a)
+     use mgbf_kinds, only: dp=>r_kind
+     class(mg_parameter_type)::this
+     integer,                           intent(in   ):: nz,hx,Lx,mx
+     real(dp),dimension(0:1,nz,Lx:Mx),  intent(in   ):: el
      real(dp),dimension(nz,lx-hx:mx+hx),intent(inout):: a
    end subroutine
    module subroutine rbeta2T(this,hx,lx,mx, hy,ly,my, el,ss, a)

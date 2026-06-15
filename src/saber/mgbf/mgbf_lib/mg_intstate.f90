@@ -73,10 +73,14 @@ real(r_kind), allocatable,dimension(:,:,:):: paspx
 real(r_kind), allocatable,dimension(:,:,:,:):: paspx4d
 ! codex debug/develop for new jim's calibrated function
 real(r_kind), allocatable,dimension(:,:,:,:,:):: paspx4d_jim_new
+! codex debug/develop for new jim's calibrated function (wbfil variant)
+real(r_kind), allocatable,dimension(:,:,:,:,:):: paspx4d_jim_new_wbfil
 real(r_kind), allocatable,dimension(:,:,:):: paspy
 real(r_kind), allocatable,dimension(:,:,:,:):: paspy4d
 ! codex debug/develop for new jim's calibrated function
 real(r_kind), allocatable,dimension(:,:,:,:,:):: paspy4d_jim_new
+! codex debug/develop for new jim's calibrated function (wbfil variant)
+real(r_kind), allocatable,dimension(:,:,:,:,:):: paspy4d_jim_new_wbfil
 real(r_kind), allocatable,dimension(:,:,:):: pasp1
 real(r_kind), allocatable,dimension(:,:,:):: pasp1_store
 real(r_kind), allocatable,dimension(:,:):: pasp1_jim_new
@@ -201,6 +205,7 @@ contains
   procedure :: filtering_rad3,filtering_lin3
   procedure :: filtering_rad2_bkg,filtering_lin2_bkg,filtering_fast_bkg,filtering_fast_bkg_new_jim
   procedure :: filtering_fast_bkg_new_jim_new_order
+  procedure :: filtering_fast_bkg_new_jim_new_order_wbfil
   procedure :: filtering_rad2,filtering_lin2
   procedure :: filtering_rad2_ens,filtering_lin2_ens,filtering_fast_ens
   procedure :: filtering_rad_highest
@@ -967,6 +972,9 @@ interface
    module subroutine filtering_fast_bkg_new_jim_new_order(this)
      class(mg_intstate_type),target::this
    end subroutine
+   module subroutine filtering_fast_bkg_new_jim_new_order_wbfil(this)
+     class(mg_intstate_type),target::this
+   end subroutine
    module subroutine filtering_rad2_ens(this,mg_filt_flag)
      class(mg_intstate_type),target::this
      integer(i_kind),intent(in):: mg_filt_flag
@@ -1198,10 +1206,14 @@ allocate(this%paspx(1,1,1:this%im)) ; this%paspx=0.
 allocate(this%paspx4d(this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,2)) ; this%paspx4d=0.
 ! codex debug/develop for new jim's calibrated function
 allocate(this%paspx4d_jim_new(0:1,this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,2)) ; this%paspx4d_jim_new=0.
+! codex debug/develop for new jim's calibrated function (wbfil variant)
+allocate(this%paspx4d_jim_new_wbfil(0:1,this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,2)) ; this%paspx4d_jim_new_wbfil=0.
 allocate(this%paspy(1,1,1:this%jm)) ; this%paspy=0.
 allocate(this%paspy4d(this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,2)) ; this%paspy4d=0.
 ! codex debug/develop for new jim's calibrated function
 allocate(this%paspy4d_jim_new(0:1,this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,2)) ; this%paspy4d_jim_new=0.
+! codex debug/develop for new jim's calibrated function (wbfil variant)
+allocate(this%paspy4d_jim_new_wbfil(0:1,this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,2)) ; this%paspy4d_jim_new_wbfil=0.
 
 allocate(this%pasp1(1,1,1:this%lm))                     ; this%pasp1=0.
 allocate(this%pasp1_store(1,1,1:this%lm))                     ; this%pasp1_store=0.
@@ -1753,6 +1765,28 @@ do igbin=1,2
           write(*,'(A,I0,A,2E15.6)') 'DEBUG rcalib1_jim y-dir k=',k,' paspy4d_jim_new(0:1,k,i,1,igbin)=', &
              this%paspy4d_jim_new(0,k,i,1,igbin), this%paspy4d_jim_new(1,k,i,1,igbin)
        endif
+     enddo
+   enddo
+enddo
+! codex debug/develop for new jim's calibrated function (wbfil variant)
+! Populate the separate wbfil coefficient arrays from the same L**2 aspect input
+! (loc_paspx4d/loc_paspy4d) using wbfil's exact, table-free calibration. wbfil's
+! rcalib1 carries no boundary (flip) arguments, so the existing _jim_new arrays
+! and their setup above are left untouched.
+call this%inip_jim_new_wbfil()
+do igbin=1,2
+   do k=1,this%lm
+     do j=1,this%jm
+       call this%rcalib1_jim_new_wbfil(this%hx,1,this%im, &
+            loc_paspx4d(k,1:this%im,j,igbin), &
+            this%paspx4d_jim_new_wbfil(:,k,1:this%im,j,igbin),hwork_jim(1:this%im))
+     enddo
+   enddo
+   do k=1,this%lm
+     do i=1,this%im
+       call this%rcalib1_jim_new_wbfil(this%hy,1,this%jm, &
+            loc_paspy4d(k,i,1:this%jm,igbin), &
+            this%paspy4d_jim_new_wbfil(:,k,i,1:this%jm,igbin),hwork_jim(1:this%jm))
      enddo
    enddo
 enddo
