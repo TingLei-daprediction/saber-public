@@ -1750,11 +1750,13 @@ end do
    end if
 !cltorg  end if
 !cltthinkdeb10000
+   if(.not.this%l_constant_aspt2) then 
    call this%boco_2d(this%paspx4d(1:this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,1),this%lm,this%im,this%jm,this%hx,this%hy)
    call this%upsending_normalized(this%lm,this%paspx4d(:,:,:,1),this%paspx4d(:,:,:,2))
 
    call this%boco_2d(this%paspy4d(1:this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,1),this%lm,this%im,this%jm,this%hx,this%hy)
    call this%upsending_normalized(this%lm,this%paspy4d(:,:,:,1),this%paspy4d(:,:,:,2))
+   endif
 
 
 
