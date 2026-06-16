@@ -3135,6 +3135,7 @@ real(r_kind),dimension(1:km3,1-hz:lm+hz):: W
 integer(i_kind):: i,j,L,k,k_ind,kloc
 !----------------------------------------------------------------------
 
+!$omp parallel do collapse(2) private(i,j,L,k,k_ind,kloc,W) schedule(static)
     do j=1,jm
     do i=1,im
       do k=1,km3
@@ -3160,6 +3161,7 @@ integer(i_kind):: i,j,L,k,k_ind,kloc
       enddo
    enddo
    enddo
+!$omp end parallel do
 
 !----------------------------------------------------------------------
 endsubroutine sup_vrbeta1_bkg
@@ -3283,6 +3285,7 @@ real(r_kind),dimension(1:km3,1-hz:lm+hz):: W
 integer(i_kind):: i,j,L,k,k_ind,kloc
 !----------------------------------------------------------------------
 
+!$omp parallel do collapse(2) private(i,j,L,k,k_ind,kloc,W) schedule(static)
         do j=1,jm
         do i=1,im
 
@@ -3317,6 +3320,7 @@ integer(i_kind):: i,j,L,k,k_ind,kloc
 
         end do
         end do
+!$omp end parallel do
 
 !----------------------------------------------------------------------
 endsubroutine sup_vrbeta1T_bkg

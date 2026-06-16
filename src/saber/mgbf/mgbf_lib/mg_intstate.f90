@@ -81,6 +81,18 @@ real(r_kind), allocatable,dimension(:,:,:,:):: paspy4d
 real(r_kind), allocatable,dimension(:,:,:,:,:):: paspy4d_jim_new
 ! codex debug/develop for new jim's calibrated function (wbfil variant)
 real(r_kind), allocatable,dimension(:,:,:,:,:):: paspy4d_jim_new_wbfil
+! codex debug/develop: persistent per-object halo-exchange buffers for the 2D
+! side-send routines (bocox/bocoy/bocoTx/bocoTy, generations g1 and gh). Each is
+! lazily allocated per object to its exact message size on first use and reused
+! thereafter, replacing the previous per-call allocate/deallocate.
+real(r_kind), allocatable,dimension(:,:,:):: bcxg1_sBuf_W,bcxg1_sBuf_E,bcxg1_rBuf_W,bcxg1_rBuf_E
+real(r_kind), allocatable,dimension(:,:,:):: bcxgh_sBuf_W,bcxgh_sBuf_E,bcxgh_rBuf_W,bcxgh_rBuf_E
+real(r_kind), allocatable,dimension(:,:,:):: bcyg1_sBuf_S,bcyg1_sBuf_N,bcyg1_rBuf_S,bcyg1_rBuf_N
+real(r_kind), allocatable,dimension(:,:,:):: bcygh_sBuf_S,bcygh_sBuf_N,bcygh_rBuf_S,bcygh_rBuf_N
+real(r_kind), allocatable,dimension(:,:,:):: bctxg1_sBuf_W,bctxg1_sBuf_E,bctxg1_rBuf_W,bctxg1_rBuf_E
+real(r_kind), allocatable,dimension(:,:,:):: bctxgh_sBuf_W,bctxgh_sBuf_E,bctxgh_rBuf_W,bctxgh_rBuf_E
+real(r_kind), allocatable,dimension(:,:,:):: bctyg1_sBuf_S,bctyg1_sBuf_N,bctyg1_rBuf_S,bctyg1_rBuf_N
+real(r_kind), allocatable,dimension(:,:,:):: bctygh_sBuf_S,bctygh_sBuf_N,bctygh_rBuf_S,bctygh_rBuf_N
 real(r_kind), allocatable,dimension(:,:,:):: pasp1
 real(r_kind), allocatable,dimension(:,:,:):: pasp1_store
 real(r_kind), allocatable,dimension(:,:):: pasp1_jim_new

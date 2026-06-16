@@ -4221,8 +4221,6 @@ class(mg_intstate_type),target::this
 integer(i_kind), intent(in):: km_in,im_in,jm_in,nbx,nby
 real(r_kind),dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
 !-----------------------------------------------------------------------
-real(r_kind), allocatable, dimension(:,:,:):: sBuf_E,sBuf_W             &
-                                             ,rBuf_E,rBuf_W           
 
 integer(i_kind) itarg_w,itarg_e,imax,jmax
 logical:: lwest,least
@@ -4270,15 +4268,15 @@ include "type_intstat_point2this.inc"
       if( itarg_w >= 0) then
         nebpe = itarg_w
 
-              allocate( sBuf_W(1:km_in,nbx,1:jmax), stat = iaerr )
+              if(.not.allocated(this%bcxg1_sBuf_W)) allocate( this%bcxg1_sBuf_W(1:km_in,nbx,1:jmax), stat = iaerr )
 
                 do j=1,jmax
                   do i=1,nbx
-                    sBuf_W(:,i,j) = W(:,i,j)
+                    this%bcxg1_sBuf_W(:,i,j) = W(:,i,j)
                   enddo
                 enddo
 
-              call MPI_ISEND( sBuf_W, ndatax, dtype, nebpe, mype, &
+              call MPI_ISEND( this%bcxg1_sBuf_W, ndatax, dtype, nebpe, mype, &
                               mpi_comm_comp, sHandle(4), isend)
 
       end if
@@ -4288,15 +4286,15 @@ include "type_intstat_point2this.inc"
       if( itarg_e >= 0 ) then
         nebpe = itarg_e
 
-              allocate( sBuf_E(1:km_in,nbx,1:jmax), stat = iaerr )
+              if(.not.allocated(this%bcxg1_sBuf_E)) allocate( this%bcxg1_sBuf_E(1:km_in,nbx,1:jmax), stat = iaerr )
 
                 do j=1,jmax
                   do i=1,nbx
-                    sBuf_E(:,i,j) = W(:,imax-nbx+i,j)
+                    this%bcxg1_sBuf_E(:,i,j) = W(:,imax-nbx+i,j)
                   enddo
                 enddo
 
-              call MPI_ISEND( sBuf_E, ndatax, dtype, nebpe, mype, &
+              call MPI_ISEND( this%bcxg1_sBuf_E, ndatax, dtype, nebpe, mype, &
                               mpi_comm_comp, sHandle(2), isend)
 
       end if
@@ -4310,8 +4308,8 @@ include "type_intstat_point2this.inc"
       if( itarg_e >= 0 ) then
         nebpe = itarg_e
 
-          allocate( rBuf_E(1:km_in,nbx,1:jmax), stat = iaerr )
-          call MPI_IRECV( rBuf_E, ndatax, dtype, nebpe, nebpe,  &
+          if(.not.allocated(this%bcxg1_rBuf_E)) allocate( this%bcxg1_rBuf_E(1:km_in,nbx,1:jmax), stat = iaerr )
+          call MPI_IRECV( this%bcxg1_rBuf_E, ndatax, dtype, nebpe, nebpe,  &
                        mpi_comm_comp, rHandle(2), irecv)
 
       end if
@@ -4321,8 +4319,8 @@ include "type_intstat_point2this.inc"
       if( itarg_w >= 0 ) then
         nebpe = itarg_w
 
-          allocate( rBuf_W(1:km_in,nbx,1:jmax), stat = iaerr )
-          call MPI_IRECV( rBuf_W, ndatax, dtype, nebpe, nebpe,  &
+          if(.not.allocated(this%bcxg1_rBuf_W)) allocate( this%bcxg1_rBuf_W(1:km_in,nbx,1:jmax), stat = iaerr )
+          call MPI_IRECV( this%bcxg1_rBuf_W, ndatax, dtype, nebpe, nebpe,  &
                        mpi_comm_comp, rHandle(4), irecv)
 
       end if
@@ -4347,7 +4345,7 @@ include "type_intstat_point2this.inc"
       if( itarg_w >= 0 ) call MPI_WAIT( rHandle(4), istat, ierr )
       do j=1,jmax
       do i=1,nbx
-        W(:,-nbx+i,j)= rBuf_W(:,i,j)
+        W(:,-nbx+i,j)= this%bcxg1_rBuf_W(:,i,j)
      enddo
      enddo
 
@@ -4369,7 +4367,7 @@ include "type_intstat_point2this.inc"
       if( itarg_e >= 0 ) call MPI_WAIT( rHandle(2), istat, ierr )
       do j=1,jmax
       do i=1,nbx
-        W(:,imax+i,j)=rBuf_E(:,i,j)
+        W(:,imax+i,j)=this%bcxg1_rBuf_E(:,i,j)
      enddo
      enddo
 
@@ -4384,10 +4382,8 @@ include "type_intstat_point2this.inc"
       if( lwest .and. itarg_w >= 0 ) call MPI_WAIT( rHandle(4), istat, ierr )
 
       if( itarg_e >= 0 ) then
-        deallocate( rBuf_E, stat = iderr)
       endif
       if( itarg_w >= 0 ) then
-        deallocate( rBuf_W, stat = iderr)
       endif
 
 !
@@ -4396,11 +4392,9 @@ include "type_intstat_point2this.inc"
 
       if( itarg_e >= 0 ) then
         call MPI_WAIT( sHandle(2), istat, ierr )
-        deallocate( sBuf_E, stat = ierr )
       end if
       if( itarg_w >= 0 ) then
         call MPI_WAIT( sHandle(4), istat, ierr )
-        deallocate( sBuf_W, stat = ierr )
       end if
 
 
@@ -4430,8 +4424,6 @@ integer(i_kind), intent(in):: km_in,im_in,jm_in,nbx,nby,mygen_min,mygen_max
 real(r_kind),dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
 integer(i_kind), dimension(this%gm), intent(in):: Fimax_in,Fjmax_in
 !-----------------------------------------------------------------------
-real(r_kind), allocatable, dimension(:,:,:):: sBuf_E,sBuf_W             &
-                                             ,rBuf_E,rBuf_W           
 
 integer(i_kind) itarg_w,itarg_e,imax,jmax
 logical:: lwest,least,lsouth,lnorth
@@ -4500,15 +4492,15 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_w >= 0) then
         nebpe = itarg_w
 
-              allocate( sBuf_W(1:km_in,nbx,1:jmax), stat = iaerr )
+              if(.not.allocated(this%bcxgh_sBuf_W)) allocate( this%bcxgh_sBuf_W(1:km_in,nbx,1:jmax), stat = iaerr )
 
                 do j=1,jmax
                   do i=1,nbx
-                    sBuf_W(:,i,j) = W(:,i,j)
+                    this%bcxgh_sBuf_W(:,i,j) = W(:,i,j)
                   enddo
                 enddo
 
-              call MPI_ISEND( sBuf_W, ndatax, dtype, nebpe, mype, &
+              call MPI_ISEND( this%bcxgh_sBuf_W, ndatax, dtype, nebpe, mype, &
                               mpi_comm_work, sHandle(4), isend)
 
       end if
@@ -4518,15 +4510,15 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_e >= 0 ) then
         nebpe = itarg_e
 
-              allocate( sBuf_E(1:km_in,nbx,1:jmax), stat = iaerr )
+              if(.not.allocated(this%bcxgh_sBuf_E)) allocate( this%bcxgh_sBuf_E(1:km_in,nbx,1:jmax), stat = iaerr )
 
                 do j=1,jmax
                   do i=1,nbx
-                    sBuf_E(:,i,j) = W(:,imax-nbx+i,j)
+                    this%bcxgh_sBuf_E(:,i,j) = W(:,imax-nbx+i,j)
                   enddo
                 enddo
 
-              call MPI_ISEND( sBuf_E, ndatax, dtype, nebpe, mype, &
+              call MPI_ISEND( this%bcxgh_sBuf_E, ndatax, dtype, nebpe, mype, &
                               mpi_comm_work, sHandle(2), isend)
 
       end if
@@ -4540,8 +4532,8 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_e >= 0 ) then
         nebpe = itarg_e
 
-          allocate( rBuf_E(1:km_in,nbx,1:jmax), stat = iaerr )
-          call MPI_IRECV( rBuf_E, ndatax, dtype, nebpe, nebpe,  &
+          if(.not.allocated(this%bcxgh_rBuf_E)) allocate( this%bcxgh_rBuf_E(1:km_in,nbx,1:jmax), stat = iaerr )
+          call MPI_IRECV( this%bcxgh_rBuf_E, ndatax, dtype, nebpe, nebpe,  &
                        mpi_comm_work, rHandle(2), irecv)
 
       end if
@@ -4551,8 +4543,8 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_w >= 0 ) then
         nebpe = itarg_w
 
-          allocate( rBuf_W(1:km_in,nbx,1:jmax), stat = iaerr )
-          call MPI_IRECV( rBuf_W, ndatax, dtype, nebpe, nebpe,  &
+          if(.not.allocated(this%bcxgh_rBuf_W)) allocate( this%bcxgh_rBuf_W(1:km_in,nbx,1:jmax), stat = iaerr )
+          call MPI_IRECV( this%bcxgh_rBuf_W, ndatax, dtype, nebpe, nebpe,  &
                        mpi_comm_work, rHandle(4), irecv)
 
       end if
@@ -4576,7 +4568,7 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_w >= 0 ) call MPI_WAIT( rHandle(4), istat, ierr )
       do j=1,jmax
       do i=1,nbx
-        W(:,-nbx+i,j)= rBuf_W(:,i,j)
+        W(:,-nbx+i,j)= this%bcxgh_rBuf_W(:,i,j)
      enddo
      enddo
 
@@ -4598,7 +4590,7 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_e >= 0 ) call MPI_WAIT( rHandle(2), istat, ierr )
       do j=1,jmax
       do i=1,nbx
-        W(:,imax+i,j)=rBuf_E(:,i,j)
+        W(:,imax+i,j)=this%bcxgh_rBuf_E(:,i,j)
      enddo
      enddo
 
@@ -4612,10 +4604,8 @@ FILT_GRID:    if(l_sidesend) then
       if( lwest .and. itarg_w >= 0 ) call MPI_WAIT( rHandle(4), istat, ierr )
 
       if( itarg_e >= 0 ) then
-        deallocate( rBuf_E, stat = iderr)
       endif
       if( itarg_w >= 0 ) then
-        deallocate( rBuf_W, stat = iderr)
       endif
 
 !
@@ -4624,11 +4614,9 @@ FILT_GRID:    if(l_sidesend) then
 
       if( itarg_e >= 0 ) then
         call MPI_WAIT( sHandle(2), istat, ierr )
-        deallocate( sBuf_E, stat = ierr )
       end if
       if( itarg_w >= 0 ) then
         call MPI_WAIT( sHandle(4), istat, ierr )
-        deallocate( sBuf_W, stat = ierr )
       end if
 
 !fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
@@ -4660,8 +4648,6 @@ class(mg_intstate_type),target::this
 integer(i_kind), intent(in):: km_in,im_in,jm_in,nbx,nby
 real(r_kind),dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
 !-----------------------------------------------------------------------
-real(r_kind), allocatable, dimension(:,:,:):: sBuf_N,sBuf_S             &
-                                             ,rBuf_N,rBuf_S
 
 integer(i_kind) itarg_n,itarg_s,imax,jmax
 logical:: lsouth,lnorth                                      
@@ -4709,15 +4695,15 @@ include "type_intstat_point2this.inc"
       if( itarg_s >= 0 ) then
         nebpe = itarg_s
 
-            allocate( sBuf_S(1:km_in,1:imax,nby), stat = iaerr )
+            if(.not.allocated(this%bcyg1_sBuf_S)) allocate( this%bcyg1_sBuf_S(1:km_in,1:imax,nby), stat = iaerr )
 
                 do j=1,nby
                   do i=1,imax
-                    sBuf_S(:,i,j) = W(:,i,j)
+                    this%bcyg1_sBuf_S(:,i,j) = W(:,i,j)
                   enddo
                 enddo
 
-              call MPI_ISEND( sBuf_S, ndatay, dtype, nebpe, mype,  &
+              call MPI_ISEND( this%bcyg1_sBuf_S, ndatay, dtype, nebpe, mype,  &
                               mpi_comm_comp, sHandle(3), isend)
       end if
 
@@ -4726,15 +4712,15 @@ include "type_intstat_point2this.inc"
       if( itarg_n >= 0 ) then
         nebpe = itarg_n
 
-            allocate( sBuf_N(1:km_in,1:imax,nby), stat = iaerr )
+            if(.not.allocated(this%bcyg1_sBuf_N)) allocate( this%bcyg1_sBuf_N(1:km_in,1:imax,nby), stat = iaerr )
 
                 do j=1,nby
                   do i=1,imax
-                    sBuf_N(:,i,j)=W(:,i,jmax-nby+j)
+                    this%bcyg1_sBuf_N(:,i,j)=W(:,i,jmax-nby+j)
                   enddo
                 enddo
 
-              call MPI_ISEND( sBuf_N, ndatay, dtype, nebpe, mype,        &
+              call MPI_ISEND( this%bcyg1_sBuf_N, ndatay, dtype, nebpe, mype,        &
                               mpi_comm_comp, sHandle(1), isend)
 
       end if
@@ -4748,8 +4734,8 @@ include "type_intstat_point2this.inc"
       if( itarg_n >= 0 ) then
         nebpe = itarg_n
 
-          allocate( rBuf_N(1:km_in,1:imax,nby), stat = iaerr )
-          call MPI_IRECV( rBuf_N, ndatay, dtype, nebpe, nebpe, &
+          if(.not.allocated(this%bcyg1_rBuf_N)) allocate( this%bcyg1_rBuf_N(1:km_in,1:imax,nby), stat = iaerr )
+          call MPI_IRECV( this%bcyg1_rBuf_N, ndatay, dtype, nebpe, nebpe, &
                       mpi_comm_comp, rHandle(1), irecv)
 
       end if
@@ -4759,8 +4745,8 @@ include "type_intstat_point2this.inc"
       if( itarg_s >= 0 ) then
         nebpe = itarg_s
 
-          allocate( rBuf_S(1:km_in,1:imax,nby), stat = iaerr )
-          call MPI_IRECV( rBuf_S, ndatay, dtype, nebpe, nebpe,  &
+          if(.not.allocated(this%bcyg1_rBuf_S)) allocate( this%bcyg1_rBuf_S(1:km_in,1:imax,nby), stat = iaerr )
+          call MPI_IRECV( this%bcyg1_rBuf_S, ndatay, dtype, nebpe, nebpe,  &
                        mpi_comm_comp, rHandle(3), irecv)
 
       end if
@@ -4783,7 +4769,7 @@ include "type_intstat_point2this.inc"
       if( itarg_n >= 0 ) call MPI_WAIT( rHandle(1), istat, ierr )
       do j=1,nby
       do i=1,imax
-        W(:,i,jmax+j)=rBuf_N(:,i,j)
+        W(:,i,jmax+j)=this%bcyg1_rBuf_N(:,i,j)
      enddo
      enddo
 
@@ -4804,7 +4790,7 @@ include "type_intstat_point2this.inc"
       if( itarg_s >= 0 ) call MPI_WAIT( rHandle(3), istat, ierr )
       do j=1,nby
       do i=1,imax
-        W(:,i,-nby+j)=rBuf_S(:,i,j)
+        W(:,i,-nby+j)=this%bcyg1_rBuf_S(:,i,j)
      enddo
      enddo
 
@@ -4820,10 +4806,8 @@ include "type_intstat_point2this.inc"
       if( lsouth .and. itarg_s >= 0 ) call MPI_WAIT( rHandle(3), istat, ierr )
 
       if( itarg_s >= 0 ) then
-        deallocate( rBuf_S, stat = iderr)
       endif
       if( itarg_n >= 0 ) then
-        deallocate( rBuf_N, stat = iderr)
       endif
 
 !
@@ -4832,11 +4816,9 @@ include "type_intstat_point2this.inc"
 
       if( itarg_s >= 0 ) then
         call MPI_WAIT( sHandle(3), istat, ierr )
-        deallocate( sBuf_S, stat = ierr )
       end if
       if( itarg_n >= 0 ) then
         call MPI_WAIT( sHandle(1), istat, ierr )
-        deallocate( sBuf_N, stat = ierr )
       end if
 
 !fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
@@ -4865,8 +4847,6 @@ integer(i_kind), intent(in):: km_in,im_in,jm_in,nbx,nby,mygen_min,mygen_max
 real(r_kind),dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
 integer(i_kind), dimension(this%gm), intent(in):: Fimax_in,Fjmax_in
 !-----------------------------------------------------------------------
-real(r_kind), allocatable, dimension(:,:,:):: sBuf_N,sBuf_S             &
-                                             ,rBuf_N,rBuf_S
 
 integer(i_kind) itarg_n,itarg_s,imax,jmax
 logical:: lwest,least,lsouth,lnorth                                      
@@ -4935,15 +4915,15 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_s >= 0 ) then
         nebpe = itarg_s
 
-            allocate( sBuf_S(1:km_in,1:imax,nby), stat = iaerr )
+            if(.not.allocated(this%bcygh_sBuf_S)) allocate( this%bcygh_sBuf_S(1:km_in,1:imax,nby), stat = iaerr )
 
                 do j=1,nby
                   do i=1,imax
-                    sBuf_S(:,i,j) = W(:,i,j)
+                    this%bcygh_sBuf_S(:,i,j) = W(:,i,j)
                   enddo
                 enddo
 
-              call MPI_ISEND( sBuf_S, ndatay, dtype, nebpe, mype,  &
+              call MPI_ISEND( this%bcygh_sBuf_S, ndatay, dtype, nebpe, mype,  &
                               mpi_comm_work, sHandle(3), isend)
       end if
 
@@ -4952,15 +4932,15 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_n >= 0 ) then
         nebpe = itarg_n
 
-            allocate( sBuf_N(1:km_in,1:imax,nby), stat = iaerr )
+            if(.not.allocated(this%bcygh_sBuf_N)) allocate( this%bcygh_sBuf_N(1:km_in,1:imax,nby), stat = iaerr )
 
                 do j=1,nby
                   do i=1,imax
-                    sBuf_N(:,i,j)=W(:,i,jmax-nby+j)
+                    this%bcygh_sBuf_N(:,i,j)=W(:,i,jmax-nby+j)
                   enddo
                 enddo
 
-              call MPI_ISEND( sBuf_N, ndatay, dtype, nebpe, mype,        &
+              call MPI_ISEND( this%bcygh_sBuf_N, ndatay, dtype, nebpe, mype,        &
                               mpi_comm_work, sHandle(1), isend)
 
       end if
@@ -4973,8 +4953,8 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_n >= 0 ) then
         nebpe = itarg_n
 
-          allocate( rBuf_N(1:km_in,1:imax,nby), stat = iaerr )
-          call MPI_IRECV( rBuf_N, ndatay, dtype, nebpe, nebpe, &
+          if(.not.allocated(this%bcygh_rBuf_N)) allocate( this%bcygh_rBuf_N(1:km_in,1:imax,nby), stat = iaerr )
+          call MPI_IRECV( this%bcygh_rBuf_N, ndatay, dtype, nebpe, nebpe, &
                       mpi_comm_work, rHandle(1), irecv)
 
       end if
@@ -4984,8 +4964,8 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_s >= 0 ) then
         nebpe = itarg_s
 
-          allocate( rBuf_S(1:km_in,1:imax,nby), stat = iaerr )
-          call MPI_IRECV( rBuf_S, ndatay, dtype, nebpe, nebpe,  &
+          if(.not.allocated(this%bcygh_rBuf_S)) allocate( this%bcygh_rBuf_S(1:km_in,1:imax,nby), stat = iaerr )
+          call MPI_IRECV( this%bcygh_rBuf_S, ndatay, dtype, nebpe, nebpe,  &
                        mpi_comm_work, rHandle(3), irecv)
 
       end if
@@ -5009,7 +4989,7 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_n >= 0 ) call MPI_WAIT( rHandle(1), istat, ierr )
       do j=1,nby
       do i=1,imax
-        W(:,i,jmax+j)=rBuf_N(:,i,j)
+        W(:,i,jmax+j)=this%bcygh_rBuf_N(:,i,j)
      enddo
      enddo
 
@@ -5030,7 +5010,7 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_s >= 0 ) call MPI_WAIT( rHandle(3), istat, ierr )
       do j=1,nby
       do i=1,imax
-        W(:,i,-nby+j)=rBuf_S(:,i,j)
+        W(:,i,-nby+j)=this%bcygh_rBuf_S(:,i,j)
      enddo
      enddo
 
@@ -5044,10 +5024,8 @@ FILT_GRID:    if(l_sidesend) then
       if( lsouth .and. itarg_s >= 0 ) call MPI_WAIT( rHandle(3), istat, ierr )
 
       if( itarg_s >= 0 ) then
-        deallocate( rBuf_S, stat = iderr)
       endif
       if( itarg_n >= 0 ) then
-        deallocate( rBuf_N, stat = iderr)
       endif
 
 !
@@ -5056,11 +5034,9 @@ FILT_GRID:    if(l_sidesend) then
 
       if( itarg_s >= 0 ) then
         call MPI_WAIT( sHandle(3), istat, ierr )
-        deallocate( sBuf_S, stat = ierr )
       end if
       if( itarg_n >= 0 ) then
         call MPI_WAIT( sHandle(1), istat, ierr )
-        deallocate( sBuf_N, stat = ierr )
       end if
 
 !fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
@@ -5093,8 +5069,6 @@ class(mg_intstate_type),target::this
 integer(i_kind), intent(in):: km_in,im_in,jm_in,nbx,nby
 real(r_kind), dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
 !-----------------------------------------------------------------------
-real(r_kind), allocatable, dimension(:,:,:):: sBuf_E,sBuf_W             &
-                                             ,rBuf_E,rBuf_W   
 
 integer(i_kind) itarg_w,itarg_e,imax,jmax
 logical lwest,least
@@ -5141,15 +5115,15 @@ include "type_intstat_point2this.inc"
       if( itarg_w >= 0) then
         nebpe = itarg_w
 
-              allocate( sBuf_W(1:km_in,1:nbx,1:jmax), stat = iaerr )
+              if(.not.allocated(this%bctxg1_sBuf_W)) allocate( this%bctxg1_sBuf_W(1:km_in,1:nbx,1:jmax), stat = iaerr )
 
               do j=1,jmax
               do i=1-nbx,0
-                sBuf_W(:,i+nbx,j) = W(:,i,j)
+                this%bctxg1_sBuf_W(:,i+nbx,j) = W(:,i,j)
               enddo
               enddo
 
-              call MPI_ISEND( sBuf_W, ndatax, dtype, nebpe, mype,       &
+              call MPI_ISEND( this%bctxg1_sBuf_W, ndatax, dtype, nebpe, mype,       &
                               mpi_comm_comp, sHandle(1), isend)
 
       end if
@@ -5159,15 +5133,15 @@ include "type_intstat_point2this.inc"
       if( itarg_e >= 0 ) then
         nebpe = itarg_e
 
-              allocate( sBuf_E(1:km_in,1:nbx,1:jmax), stat = iaerr )
+              if(.not.allocated(this%bctxg1_sBuf_E)) allocate( this%bctxg1_sBuf_E(1:km_in,1:nbx,1:jmax), stat = iaerr )
 
               do j=1,jmax
               do i=1,nbx
-                sBuf_E(:,i,j) = W(:,imax+i,j)
+                this%bctxg1_sBuf_E(:,i,j) = W(:,imax+i,j)
               enddo
               enddo
 
-              call MPI_ISEND( sBuf_E, ndatax, dtype, nebpe, mype,       &
+              call MPI_ISEND( this%bctxg1_sBuf_E, ndatax, dtype, nebpe, mype,       &
                               mpi_comm_comp, sHandle(2), isend)
 
       end if
@@ -5182,8 +5156,8 @@ include "type_intstat_point2this.inc"
         nebpe = itarg_e
 
 
-          allocate( rBuf_E(1:km_in,1:nbx,1:jmax), stat = iaerr )
-          call MPI_IRECV( rBuf_E, ndatax, dtype, nebpe, nebpe,          &
+          if(.not.allocated(this%bctxg1_rBuf_E)) allocate( this%bctxg1_rBuf_E(1:km_in,1:nbx,1:jmax), stat = iaerr )
+          call MPI_IRECV( this%bctxg1_rBuf_E, ndatax, dtype, nebpe, nebpe,          &
                        mpi_comm_comp, rHandle(2), irecv)
 
       end if
@@ -5194,8 +5168,8 @@ include "type_intstat_point2this.inc"
         nebpe = itarg_w
 
 
-         allocate( rBuf_W(1:km_in,1:nbx,1:jmax), stat = iaerr )
-          call MPI_IRECV( rBuf_W, ndatax, dtype, nebpe, nebpe,          &
+         if(.not.allocated(this%bctxg1_rBuf_W)) allocate( this%bctxg1_rBuf_W(1:km_in,1:nbx,1:jmax), stat = iaerr )
+          call MPI_IRECV( this%bctxg1_rBuf_W, ndatax, dtype, nebpe, nebpe,          &
                        mpi_comm_comp, rHandle(1), irecv)
 
 
@@ -5217,7 +5191,7 @@ include "type_intstat_point2this.inc"
       if( itarg_w >= 0 ) call MPI_WAIT( rHandle(1), istat, ierr )
       do j=1,jmax
       do i=1,nbx
-       W(:,i,j)= W(:,i,j)+rBuf_W(:,i,j)
+       W(:,i,j)= W(:,i,j)+this%bctxg1_rBuf_W(:,i,j)
      end do
      end do
    endif
@@ -5234,7 +5208,7 @@ include "type_intstat_point2this.inc"
       if( itarg_e >= 0 ) call MPI_WAIT( rHandle(2), istat, ierr )
       do j=1,jmax
       do i=1,nbx  
-        W(:,imax-nbx+i,j)= W(:,imax-nbx+i,j)+rBuf_E(:,i,j)
+        W(:,imax-nbx+i,j)= W(:,imax-nbx+i,j)+this%bctxg1_rBuf_E(:,i,j)
      end do
      end do
    endif
@@ -5247,10 +5221,8 @@ include "type_intstat_point2this.inc"
       if( least .and. itarg_e  >= 0 ) call MPI_WAIT( rHandle(2), istat, ierr )
 
       if( itarg_w  >= 0 ) then
-        deallocate( rBuf_W, stat = iderr)
       endif
       if( itarg_e  >= 0 ) then
-        deallocate( rBuf_E, stat = iderr)
       endif
 
 !
@@ -5289,8 +5261,6 @@ integer(i_kind), intent(in):: km_in,im_in,jm_in,nbx,nby,mygen_min,mygen_max
 real(r_kind), dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
 integer(i_kind), dimension(this%gm), intent(in):: Fimax_in,Fjmax_in
 !-----------------------------------------------------------------------
-real(r_kind), allocatable, dimension(:,:,:):: sBuf_E,sBuf_W             &
-                                             ,rBuf_E,rBuf_W   
 integer(i_kind) itarg_w,itarg_e,imax,jmax
 logical lwest,least,lnorth
 
@@ -5359,15 +5329,15 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_w >= 0) then
         nebpe = itarg_w
 
-              allocate( sBuf_W(1:km_in,1:nbx,1:jmax), stat = iaerr )
+              if(.not.allocated(this%bctxgh_sBuf_W)) allocate( this%bctxgh_sBuf_W(1:km_in,1:nbx,1:jmax), stat = iaerr )
 
               do j=1,jmax
               do i=1-nbx,0
-                sBuf_W(:,i+nbx,j) = W(:,i,j)
+                this%bctxgh_sBuf_W(:,i+nbx,j) = W(:,i,j)
               enddo
               enddo
 
-              call MPI_ISEND( sBuf_W, ndatax, dtype, nebpe, mype,       &
+              call MPI_ISEND( this%bctxgh_sBuf_W, ndatax, dtype, nebpe, mype,       &
                               mpi_comm_work, sHandle(4), isend)
 
       end if
@@ -5377,15 +5347,15 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_e >= 0 ) then
         nebpe = itarg_e
 
-              allocate( sBuf_E(1:km_in,1:nbx,1:jmax), stat = iaerr )
+              if(.not.allocated(this%bctxgh_sBuf_E)) allocate( this%bctxgh_sBuf_E(1:km_in,1:nbx,1:jmax), stat = iaerr )
 
               do j=1,jmax
               do i=1,nbx
-                sBuf_E(:,i,j) = W(:,imax+i,j)
+                this%bctxgh_sBuf_E(:,i,j) = W(:,imax+i,j)
               enddo
               enddo
 
-              call MPI_ISEND( sBuf_E, ndatax, dtype, nebpe, mype,       &
+              call MPI_ISEND( this%bctxgh_sBuf_E, ndatax, dtype, nebpe, mype,       &
                               mpi_comm_work, sHandle(2), isend)
 
       end if
@@ -5399,8 +5369,8 @@ FILT_GRID:    if(l_sidesend) then
       if(  itarg_e >= 0 ) then
         nebpe = itarg_e
 
-          allocate( rBuf_E(1:km_in,1:nbx,1:jmax), stat = iaerr )
-          call MPI_IRECV( rBuf_E, ndatax, dtype, nebpe, nebpe,          &
+          if(.not.allocated(this%bctxgh_rBuf_E)) allocate( this%bctxgh_rBuf_E(1:km_in,1:nbx,1:jmax), stat = iaerr )
+          call MPI_IRECV( this%bctxgh_rBuf_E, ndatax, dtype, nebpe, nebpe,          &
                        mpi_comm_work, rHandle(2), irecv)
 
       end if
@@ -5410,8 +5380,8 @@ FILT_GRID:    if(l_sidesend) then
       if(  itarg_w >= 0 ) then
         nebpe = itarg_w
 
-          allocate( rBuf_W(1:km_in,1:nbx,1:jmax), stat = iaerr )
-          call MPI_IRECV( rBuf_W, ndatax, dtype, nebpe, nebpe,          &
+          if(.not.allocated(this%bctxgh_rBuf_W)) allocate( this%bctxgh_rBuf_W(1:km_in,1:nbx,1:jmax), stat = iaerr )
+          call MPI_IRECV( this%bctxgh_rBuf_W, ndatax, dtype, nebpe, nebpe,          &
                        mpi_comm_work, rHandle(4), irecv)
 
       end if
@@ -5431,7 +5401,7 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_w >= 0 ) call MPI_WAIT( rHandle(4), istat, ierr )
       do j=1,jmax
       do i=1,nbx
-       W(:,i,j)= W(:,i,j)+rBuf_W(:,i,j)
+       W(:,i,j)= W(:,i,j)+this%bctxgh_rBuf_W(:,i,j)
      end do
      end do
    endif
@@ -5448,7 +5418,7 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_e >= 0 ) call MPI_WAIT( rHandle(2), istat, ierr )
       do j=1,jmax
       do i=1,nbx  
-        W(:,imax-nbx+i,j)= W(:,imax-nbx+i,j)+rBuf_E(:,i,j)
+        W(:,imax-nbx+i,j)= W(:,imax-nbx+i,j)+this%bctxgh_rBuf_E(:,i,j)
      end do
      end do
    endif
@@ -5461,10 +5431,8 @@ FILT_GRID:    if(l_sidesend) then
       if( least .and. itarg_e  >= 0 ) call MPI_WAIT( rHandle(2), istat, ierr )
 
       if( itarg_w  >= 0 ) then
-        deallocate( rBuf_W, stat = iderr)
       end if
       if( itarg_e  >= 0 ) then
-        deallocate( rBuf_E, stat = iderr)
       end if
 
 !                           DEALLOCATE sBufferes
@@ -5507,8 +5475,6 @@ class(mg_intstate_type),target::this
 integer(i_kind), intent(in):: km_in,im_in,jm_in,nbx,nby
 real(r_kind), dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
 !-----------------------------------------------------------------------
-real(r_kind), allocatable, dimension(:,:,:):: sBuf_N,sBuf_S             &
-                                             ,rBuf_N,rBuf_S
 
 integer(i_kind) itarg_n,itarg_s,imax,jmax
 logical lsouth,lnorth                                       
@@ -5553,15 +5519,15 @@ include "type_intstat_point2this.inc"
       if( itarg_s >= 0 ) then
         nebpe = itarg_s
 
-              allocate( sBuf_S(1:km_in,1:imax,1:nby), stat = iaerr )
+              if(.not.allocated(this%bctyg1_sBuf_S)) allocate( this%bctyg1_sBuf_S(1:km_in,1:imax,1:nby), stat = iaerr )
 
               do j=1-nby,0
               do i=1,imax
-                sBuf_S(:,i,j+nby) = W(:,i,j)
+                this%bctyg1_sBuf_S(:,i,j+nby) = W(:,i,j)
               enddo
               enddo
 
-              call MPI_ISEND( sBuf_S, ndatay, dtype, nebpe, mype,  &
+              call MPI_ISEND( this%bctyg1_sBuf_S, ndatay, dtype, nebpe, mype,  &
                               mpi_comm_comp, sHandle(1), isend)
       end if
 
@@ -5570,15 +5536,15 @@ include "type_intstat_point2this.inc"
       if( itarg_n >= 0 ) then
         nebpe = itarg_n
 
-             allocate( sBuf_N(1:km_in,1:imax,1:nby), stat = iaerr )
+             if(.not.allocated(this%bctyg1_sBuf_N)) allocate( this%bctyg1_sBuf_N(1:km_in,1:imax,1:nby), stat = iaerr )
 
               do j=1,nby
               do i=1,imax
-                sBuf_N(:,i,j)=W(:,i,jmax+j)
+                this%bctyg1_sBuf_N(:,i,j)=W(:,i,jmax+j)
               enddo
               enddo
 
-             call MPI_ISEND( sBuf_N, ndatay, dtype, nebpe, mype,        &
+             call MPI_ISEND( this%bctyg1_sBuf_N, ndatay, dtype, nebpe, mype,        &
                              mpi_comm_comp, sHandle(2), isend)
 
       end if
@@ -5592,8 +5558,8 @@ include "type_intstat_point2this.inc"
         nebpe = itarg_n
 
 
-          allocate( rBuf_N(1:km_in,1:imax,1:nby), stat = iaerr )
-          call MPI_IRECV( rBuf_N, ndatay, dtype, nebpe, nebpe,          &
+          if(.not.allocated(this%bctyg1_rBuf_N)) allocate( this%bctyg1_rBuf_N(1:km_in,1:imax,1:nby), stat = iaerr )
+          call MPI_IRECV( this%bctyg1_rBuf_N, ndatay, dtype, nebpe, nebpe,          &
                       mpi_comm_comp, rHandle(1), irecv)
 
       end if
@@ -5604,8 +5570,8 @@ include "type_intstat_point2this.inc"
         nebpe = itarg_s
 
 
-          allocate( rBuf_S(1:km_in,1:imax,1:nby), stat = iaerr )
-          call MPI_IRECV( rBuf_S, ndatay, dtype, nebpe, nebpe,          &
+          if(.not.allocated(this%bctyg1_rBuf_S)) allocate( this%bctyg1_rBuf_S(1:km_in,1:imax,1:nby), stat = iaerr )
+          call MPI_IRECV( this%bctyg1_rBuf_S, ndatay, dtype, nebpe, nebpe,          &
                        mpi_comm_comp, rHandle(2), irecv)
 
 
@@ -5627,7 +5593,7 @@ include "type_intstat_point2this.inc"
       if( itarg_s >= 0 ) call MPI_WAIT( rHandle(2), istat, ierr )
       do j=1,nby
       do i=1,imax
-        W(:,i,j)= W(:,i,j)+rBuf_S(:,i,j)
+        W(:,i,j)= W(:,i,j)+this%bctyg1_rBuf_S(:,i,j)
      end do
      end do
    endif
@@ -5644,7 +5610,7 @@ include "type_intstat_point2this.inc"
       if( itarg_n >= 0 ) call MPI_WAIT( rHandle(1), istat, ierr )
       do j=1,nby
       do i=1,imax
-        W(:,i,jmax-nby+j)= W(:,i,jmax-nby+j)+rBuf_N(:,i,j)
+        W(:,i,jmax-nby+j)= W(:,i,jmax-nby+j)+this%bctyg1_rBuf_N(:,i,j)
      enddo
      enddo
    endif
@@ -5657,10 +5623,8 @@ include "type_intstat_point2this.inc"
       if( lnorth .and. itarg_n  >= 0 ) call MPI_WAIT( rHandle(1), istat, ierr )
 
       if( itarg_s  >= 0 ) then
-        deallocate( rBuf_S, stat = iderr)
       end if
       if( itarg_n  >= 0 ) then
-        deallocate( rBuf_N, stat = iderr)
       end if
 
 !
@@ -5700,8 +5664,6 @@ integer(i_kind), intent(in):: km_in,im_in,jm_in,nbx,nby,mygen_min,mygen_max
 real(r_kind), dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
 integer(i_kind), dimension(this%gm), intent(in):: Fimax_in,Fjmax_in
 !-----------------------------------------------------------------------
-real(r_kind), allocatable, dimension(:,:,:)::  sBuf_N,sBuf_S            &
-                                              ,rBuf_N,rBuf_S
 integer(i_kind) itarg_n,itarg_s,itarg_e,imax,jmax
 logical least,lsouth,lnorth                                       
 
@@ -5770,15 +5732,15 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_s >= 0 ) then
         nebpe = itarg_s
 
-              allocate( sBuf_S(1:km_in,1:imax,1:nby), stat = iaerr )
+              if(.not.allocated(this%bctygh_sBuf_S)) allocate( this%bctygh_sBuf_S(1:km_in,1:imax,1:nby), stat = iaerr )
 
               do j=1-nby,0
               do i=1,imax
-                sBuf_S(:,i,j+nby) = W(:,i,j)
+                this%bctygh_sBuf_S(:,i,j+nby) = W(:,i,j)
               enddo
               enddo
 
-              call MPI_ISEND( sBuf_S, ndatay, dtype, nebpe, mype,  &
+              call MPI_ISEND( this%bctygh_sBuf_S, ndatay, dtype, nebpe, mype,  &
                               mpi_comm_work, sHandle(1), isend)
       end if
 
@@ -5787,15 +5749,15 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_n >= 0 ) then
         nebpe = itarg_n
 
-             allocate( sBuf_N(1:km_in,1:imax,1:nby), stat = iaerr )
+             if(.not.allocated(this%bctygh_sBuf_N)) allocate( this%bctygh_sBuf_N(1:km_in,1:imax,1:nby), stat = iaerr )
 
               do j=1,nby
               do i=1,imax
-                sBuf_N(:,i,j)=W(:,i,jmax+j)
+                this%bctygh_sBuf_N(:,i,j)=W(:,i,jmax+j)
               enddo
               enddo
 
-             call MPI_ISEND( sBuf_N, ndatay, dtype, nebpe, mype,        &
+             call MPI_ISEND( this%bctygh_sBuf_N, ndatay, dtype, nebpe, mype,        &
                              mpi_comm_work, sHandle(2), isend)
 
       end if
@@ -5810,8 +5772,8 @@ FILT_GRID:    if(l_sidesend) then
         nebpe = itarg_n
 
 
-          allocate( rBuf_N(1:km_in,1:imax,1:nby), stat = iaerr )
-          call MPI_IRECV( rBuf_N, ndatay, dtype, nebpe, nebpe,          &
+          if(.not.allocated(this%bctygh_rBuf_N)) allocate( this%bctygh_rBuf_N(1:km_in,1:imax,1:nby), stat = iaerr )
+          call MPI_IRECV( this%bctygh_rBuf_N, ndatay, dtype, nebpe, nebpe,          &
                       mpi_comm_work, rHandle(2), irecv)
 
       end if
@@ -5822,8 +5784,8 @@ FILT_GRID:    if(l_sidesend) then
         nebpe = itarg_s
 
 
-          allocate( rBuf_S(1:km_in,1:imax,1:nby), stat = iaerr )
-          call MPI_IRECV( rBuf_S, ndatay, dtype, nebpe, nebpe,          &
+          if(.not.allocated(this%bctygh_rBuf_S)) allocate( this%bctygh_rBuf_S(1:km_in,1:imax,1:nby), stat = iaerr )
+          call MPI_IRECV( this%bctygh_rBuf_S, ndatay, dtype, nebpe, nebpe,          &
                        mpi_comm_work, rHandle(1), irecv)
 
 
@@ -5845,7 +5807,7 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_s >= 0 ) call MPI_WAIT( rHandle(1), istat, ierr )
       do j=1,nby
       do i=1,imax
-        W(:,i,j)= W(:,i,j)+rBuf_S(:,i,j)
+        W(:,i,j)= W(:,i,j)+this%bctygh_rBuf_S(:,i,j)
      end do
      end do
    endif
@@ -5862,7 +5824,7 @@ FILT_GRID:    if(l_sidesend) then
       if( itarg_n >= 0 ) call MPI_WAIT( rHandle(2), istat, ierr )
       do j=1,nby
       do i=1,imax
-        W(:,i,jmax-nby+j)= W(:,i,jmax-nby+j)+rBuf_N(:,i,j)
+        W(:,i,jmax-nby+j)= W(:,i,jmax-nby+j)+this%bctygh_rBuf_N(:,i,j)
      enddo
      enddo
    endif
@@ -5875,10 +5837,8 @@ FILT_GRID:    if(l_sidesend) then
       if( lnorth .and. itarg_n  >= 0 ) call MPI_WAIT( rHandle(2), istat, ierr )
 
       if( itarg_s  >= 0 ) then
-        deallocate( rBuf_S, stat = iderr)
       end if
       if( itarg_n  >= 0 ) then
-        deallocate( rBuf_N, stat = iderr)
       end if
 
 !                           DEALLOCATE sBufferes
@@ -5922,8 +5882,7 @@ real(r_kind),dimension(km_in,1-nbx:im_in+nbx,1-nby:jm_in+nby),intent(inout):: W
 integer(i_kind), dimension(this%gm), intent(in):: Fimax_in,Fjmax_in
 !-----------------------------------------------------------------------
 real(r_kind), allocatable, dimension(:,:,:)::                           &
-                                  sBuf_N,sBuf_E,sBuf_S,sBuf_W           &
-                                 ,rBuf_N,rBuf_E,rBuf_S,rBuf_W
+                                  this%bctygh_sBuf_N,sBuf_E,this%bctygh_sBuf_S,sBuf_W           &
 
 integer(i_kind) itarg_n,itarg_s,itarg_w,itarg_e,imax,jmax
 logical:: lwest,least,lsouth,lnorth
