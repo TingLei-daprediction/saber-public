@@ -96,9 +96,12 @@ real(dp),parameter :: sres3_jim_new(0:nsres_jim_new) = (/ &
 ! and read by bfmoms_jim_new_wbfil / hofnm2_jim_new_wbfil / rcalib1_jim_new_wbfil.
 integer,parameter :: nbcof_jim_new_wbfil=9
 integer,parameter :: np_jim_new_wbfil=6
-real(dp) :: bcofs_jim_new_wbfil(0:nbcof_jim_new_wbfil,0:nbcof_jim_new_wbfil)
+integer  :: p_jim_new_wbfil
+integer  :: p2p3_jim_new_wbfil,p2p4_jim_new_wbfil
 real(dp) :: op_jim_new_wbfil,nm2x_jim_new_wbfil
-integer  :: p2p3_jim_new_wbfil
+real(dp) :: rpp3o2_jim_new_wbfil,rpp4o2_jim_new_wbfil,rpp5o2_jim_new_wbfil,rpp6o2_jim_new_wbfil
+real(dp) :: rsg_jim_new_wbfil
+real(dp) :: bcofs_jim_new_wbfil(0:nbcof_jim_new_wbfil,0:nbcof_jim_new_wbfil)
 logical  :: linit_jim_new_wbfil=.false.
 
 contains
@@ -1123,18 +1126,26 @@ end subroutine rflip3d_1T_jim_new
 ! the moment scheme (inip/bfmoms/nm2ofh/hofnm2) instead of the sres lookup
 ! tables, and rcalib carries no boundary (flip) treatment (wbfil design).
 !=============================================================================
-module subroutine inip_jim_new_wbfil(this)
+module subroutine inip_jim_new_wbfil(this,p_prescribe,ff)
 !=============================================================================
-! One-time initialization of the wbfil moment-calibration constants from this%p.
+! One-time initialization of the wbfil moment-calibration constants.
 ! Fills bcofs (Euler-Maclaurin end-correction coefficients), op=1/p, the
-! normalized 2nd moment nm2x at half-span 2, and p2p3=2p+3.
+! normalized 2nd moment nm2x at half-span 2, p2p3=2p+3, p2p4=2p+4,
+! and scaling factors rpp3o2, rpp4o2, rpp5o2, rpp6o2, rsg.
+! Ported from wbfil.f90 inip subroutine.
 !=============================================================================
 class(mg_parameter_type)::this
+integer,intent(in) :: p_prescribe
+logical,intent(out) :: ff
 integer :: p,i
 integer,dimension(0:nbcof_jim_new_wbfil,0:nbcof_jim_new_wbfil):: inums
 integer,dimension(0:nbcof_jim_new_wbfil):: idens
-real(dp),parameter :: u2=2.0_dp,u3=3.0_dp,u4=4.0_dp
-real(dp) :: u4o3
+real(dp),parameter :: u2=2.0_dp,u3=3.0_dp,u4=4.0_dp,u5=5.0_dp,u16=16.0_dp
+real(dp),parameter :: o2=0.5_dp,o3=1.0_dp/3.0_dp
+real(dp),parameter :: u4o3=u4*o3,u3o2=u3*o2,u5o2=u5*o2
+real(dp),dimension(np_jim_new_wbfil*4+1) :: ffac
+real(dp),dimension(np_jim_new_wbfil) :: fac
+real(dp) :: u4o3_local
 data inums/2,9*0, 1,2,8*0, -1,10,6,7*0, 1,-7,21,6,6*0, -3,20,-42,60,10,5*0,&
      5,-33,66,-66,55,6,4*0, -691,4550,-9009,8580,-5005,2730,210,3*0,       &
      105,-691,1365,-1287,715,-273,105,6,0,0,                               &
@@ -1142,11 +1153,30 @@ data inums/2,9*0, 1,2,8*0, -1,10,6,7*0, 1,-7,21,6,6*0, -3,20,-42,60,10,5*0,&
      219335,-1443183,2848860,-2678316,1469650,-529074,135660,-27132,5985,210/
 data idens/1,3,15,21,45,33,1365,45,255,1995/
 !=============================================================================
-p=this%p
-u4o3=u4/u3
+ff=(p_prescribe<1 .or. p_prescribe>np_jim_new_wbfil)
+if(ff)then
+   print'(" In inip_jim_new_wbfil; prescribed exponent p out of bounds")'
+   return
+endif
+p_jim_new_wbfil=p_prescribe
+p=p_prescribe
 op_jim_new_wbfil=u1/p
-nm2x_jim_new_wbfil=u2/(u4o3**p+u2)! normalized 2nd moment of a half-span-2 filter
+nm2x_jim_new_wbfil=u2/(u4o3**p+u2)
 p2p3_jim_new_wbfil=p*2+3
+p2p4_jim_new_wbfil=p*2+4
+rpp3o2_jim_new_wbfil=sqrt(p+u3o2)
+rpp4o2_jim_new_wbfil=sqrt(p+u2)
+rpp5o2_jim_new_wbfil=sqrt(p+u5o2)
+rpp6o2_jim_new_wbfil=sqrt(p+u3)
+ffac(1)=u1
+do i=3,p*4+1,2
+   ffac(i)=ffac(i-2)*i
+enddo
+fac(1)=u1
+do i=2,p
+   fac(i)=fac(i-1)*i
+enddo
+rsg_jim_new_wbfil=ffac(p*4+1)*u2**(p-1)/(ffac(p*2-1)*fac(p)*u16**p)
 bcofs_jim_new_wbfil=inums
 do i=0,nbcof_jim_new_wbfil; bcofs_jim_new_wbfil(:,i)=bcofs_jim_new_wbfil(:,i)/idens(i); enddo
 linit_jim_new_wbfil=.true.
@@ -1155,7 +1185,8 @@ end subroutine inip_jim_new_wbfil
 module subroutine bfmoms_jim_new_wbfil(this,h,mom0,mom2,dmom0,dmom2)
 !=============================================================================
 ! Exact 0th and 2nd moments (and their h-derivatives) of a beta line filter of
-! exponent this%p and half-span h, via the residual-free Euler-Maclaurin scheme.
+! exponent p_jim_new_wbfil and half-span h, via the residual-free Euler-Maclaurin scheme.
+! Ported from wbfil.f90 bfmoms subroutine.
 !=============================================================================
 class(mg_parameter_type)::this
 real(dp),intent(in ):: h
@@ -1165,7 +1196,7 @@ real(dp),parameter :: o2=0.5_dp
 real(dp) :: ho2,hh,c,dc,q0,q2,enn
 integer  :: j,jm,jp,k,n,p
 !=============================================================================
-p=this%p
+p=p_jim_new_wbfil
 pchoose(0)=u1
 do j=1,p; jm=j-1; pchoose(j)=(pchoose(jm)*(p-jm))/j; enddo
 ho2=h*o2; hh=h*h; n=h; enn=n*n
@@ -1227,6 +1258,7 @@ module subroutine rcalib1_jim_new_wbfil(this,hx,Lx,mx,as,el,hxm)
 ! wbfil 1D calibration: for each aspect as, find the exact half-span whose
 ! single beta filter has normalized 2nd moment as/2, store its reciprocal in
 ! el(1,:) and the amplitude normalization in el(0,:). No boundary treatment.
+! Ported from wbfil.f90 rcalib1 subroutine.
 !=============================================================================
 class(mg_parameter_type)::this
 integer,                      intent(in ):: hx,Lx,mx
@@ -1238,6 +1270,7 @@ real(dp),parameter        :: o2=0.5_dp
 real(dp)                  :: exx,f,rrc,s
 integer                   :: ix,gx,gxm
 !=============================================================================
+if(p_jim_new_wbfil==0)stop 'In rcalib1_jim_new_wbfil: inip_jim_new_wbfil has not been called'
 do ix=Lx,mx
    call this%hofnm2_jim_new_wbfil(as(ix)*o2,s)
    exx=u1/s
@@ -1247,7 +1280,7 @@ do ix=Lx,mx
    fs(0)=u1
    do gx=-gxm,-1
       rrc=u1-(gx*exx)**2
-      f=rrc**this%p; fs(-gx)=f; fs(gx)=f
+      f=rrc**p_jim_new_wbfil; fs(-gx)=f; fs(gx)=f
    enddo
    el(0,ix)=u1/sqrt(sum(fs(-gxm:gxm)**2))
 enddo
@@ -1275,7 +1308,7 @@ do ix=Lx,Mx
       ixp=ix+gx
       ixm=ix-gx
       rrc=u1-(gx*exx)**2
-      tb=tb+rrc**this%p*(a(k,ixp)+a(k,ixm))
+      tb=tb+rrc**p_jim_new_wbfil*(a(k,ixp)+a(k,ixm))
    enddo
    b(k,ix)=tb*el(0,k,ix)
 enddo
@@ -1304,7 +1337,7 @@ do ix=Lx,Mx
    do gx=ceiling(-u1/exx),-1
       jx=ix+gx
       rrc=u1-(gx*exx)**2
-      tafrow=ta*rrc**this%p
+      tafrow=ta*rrc**p_jim_new_wbfil
       b(k,jx)=b(k,jx)+tafrow
       b(k,ix-gx)=b(k,ix-gx)+tafrow
    enddo

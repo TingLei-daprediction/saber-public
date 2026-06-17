@@ -1785,13 +1785,24 @@ enddo
 ! (loc_paspx4d/loc_paspy4d) using wbfil's exact, table-free calibration. wbfil's
 ! rcalib1 carries no boundary (flip) arguments, so the existing _jim_new arrays
 ! and their setup above are left untouched.
-call this%inip_jim_new_wbfil()
+! Initialize wbfil calibration with p=2
+logical :: ff_wbfil
+call this%inip_jim_new_wbfil(2, ff_wbfil)
+if(ff_wbfil) then
+   write(*,'(A)') 'ERROR: inip_jim_new_wbfil failed - p out of bounds'
+else
+   write(*,'(A)') 'DEBUG: inip_jim_new_wbfil initialized successfully with p=2'
+endif
 do igbin=1,2
    do k=1,this%lm
      do j=1,this%jm
        call this%rcalib1_jim_new_wbfil(this%hx,1,this%im, &
             loc_paspx4d(k,1:this%im,j,igbin), &
             this%paspx4d_jim_new_wbfil(:,k,1:this%im,j,igbin),hwork_jim(1:this%im))
+       if(k==1 .and. j==1 .and. igbin==1) then
+          write(*,'(A,I0,A,2E15.6)') 'DEBUG rcalib1_jim_new_wbfil x-dir k=',k,' paspx4d_jim_new_wbfil(0:1,k,1,j,igbin)=', &
+             this%paspx4d_jim_new_wbfil(0,k,1,j,igbin), this%paspx4d_jim_new_wbfil(1,k,1,j,igbin)
+       endif
      enddo
    enddo
    do k=1,this%lm
@@ -1799,6 +1810,10 @@ do igbin=1,2
        call this%rcalib1_jim_new_wbfil(this%hy,1,this%jm, &
             loc_paspy4d(k,i,1:this%jm,igbin), &
             this%paspy4d_jim_new_wbfil(:,k,i,1:this%jm,igbin),hwork_jim(1:this%jm))
+       if(k==1 .and. i==1 .and. igbin==1) then
+          write(*,'(A,I0,A,2E15.6)') 'DEBUG rcalib1_jim_new_wbfil y-dir k=',k,' paspy4d_jim_new_wbfil(0:1,k,i,1,igbin)=', &
+             this%paspy4d_jim_new_wbfil(0,k,i,1,igbin), this%paspy4d_jim_new_wbfil(1,k,i,1,igbin)
+       endif
      enddo
    enddo
 enddo
