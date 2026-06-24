@@ -266,6 +266,7 @@ contains
   procedure :: nm2ofh_jim_new_wbfil,hofnm2_jim_new_wbfil
   procedure :: rcalib1_jim_new_wbfil
   procedure :: rbeta3d_1_jim_new_wbfil,rbeta3d_1t_jim_new_wbfil
+  procedure :: rbeta1_jim_new_wbfil,rbeta1t_jim_new_wbfil
 end type  mg_parameter_type
 
 interface
@@ -543,6 +544,20 @@ interface
      integer,                           intent(in   ):: nz,hx,Lx,mx
      real(dp),dimension(0:1,nz,Lx:Mx),  intent(in   ):: el
      real(dp),dimension(nz,lx-hx:mx+hx),intent(inout):: a
+   end subroutine
+   module subroutine rbeta1_jim_new_wbfil(this,hx,lx,mx, el, a)
+     use mgbf_kinds, only: dp=>r_kind
+     class(mg_parameter_type)::this
+     integer,                        intent(in   ):: hx,Lx,mx
+     real(dp),dimension(0:1,Lx:Mx),  intent(in   ):: el
+     real(dp),dimension(lx-hx:mx+hx),intent(inout):: a
+   end subroutine
+   module subroutine rbeta1T_jim_new_wbfil(this,hx,lx,mx, el, a)
+     use mgbf_kinds, only: dp=>r_kind
+     class(mg_parameter_type)::this
+     integer,                        intent(in   ):: hx,Lx,mx
+     real(dp),dimension(0:1,Lx:Mx),  intent(in   ):: el
+     real(dp),dimension(lx-hx:mx+hx),intent(inout):: a
    end subroutine
    module subroutine rbeta2T(this,hx,lx,mx, hy,ly,my, el,ss, a)
      use mgbf_kinds, only: dp=>r_kind

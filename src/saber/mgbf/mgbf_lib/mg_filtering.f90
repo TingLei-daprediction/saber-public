@@ -2212,13 +2212,13 @@ endwhere
   endif
   if(l_vertical_filter) then
                                                  call btim(vfiltT_tim)
-     call this%sup_vrbeta1T_bkg_new_jim(km,km3,hx,hy,hz,im,jm,lm,this%pasp1_store,this%pasp1_jim_new,VALL)
-     call this%sup_vrbeta1_bkg_new_jim(km,km3,hx,hy,hz,im,jm,lm,this%pasp1_store,this%pasp1_jim_new,VALL)
-     if(this%l_hgen) then 
-       call this%sup_vrbeta1T_bkg_new_jim(km,km3,hx,hy,hz,im,jm,lm,this%pasp1_store,this%pasp1_jim_new,HALL)
-       call this%sup_vrbeta1_bkg_new_jim(km,km3,hx,hy,hz,im,jm,lm,this%pasp1_store,this%pasp1_jim_new,HALL)
+     call this%sup_vrbeta1T_bkg_new_jim_wbfil(km,km3,hx,hy,hz,im,jm,lm,this%pasp1_store,this%pasp1_jim_new_wbfil,VALL)
+     call this%sup_vrbeta1_bkg_new_jim_wbfil(km,km3,hx,hy,hz,im,jm,lm,this%pasp1_store,this%pasp1_jim_new_wbfil,VALL)
+     if(this%l_hgen) then
+       call this%sup_vrbeta1T_bkg_new_jim_wbfil(km,km3,hx,hy,hz,im,jm,lm,this%pasp1_store,this%pasp1_jim_new_wbfil,HALL)
+       call this%sup_vrbeta1_bkg_new_jim_wbfil(km,km3,hx,hy,hz,im,jm,lm,this%pasp1_store,this%pasp1_jim_new_wbfil,HALL)
      endif
-  
+
                                                  call etim(vfiltT_tim)
   endif
 !***
@@ -2233,7 +2233,7 @@ endwhere
         do k=1,km3
            lev1=(k-1)*lm+1
            lev2=k*lm
-        
+
           call this%rflip3d_1_jim_new(lm,hx,1,im,this%Flwest(1),this%Fleast(1), &
                xLb_jim_x(1),xmb_jim_x(1),VALL(lev1:lev2,:,j))
           call this%rbeta3d_1_jim_new_wbfil(lm,hx,1,im,this%paspx4d_jim_new_wbfil(:,:,1:im,j,1),VALL(lev1:lev2,:,j))
@@ -3263,6 +3263,109 @@ integer(i_kind):: i,j,L,k,k_ind,kloc
 
 !----------------------------------------------------------------------
 endsubroutine sup_vrbeta1T_bkg_new_jim
+
+!&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+module subroutine sup_vrbeta1_bkg_new_jim_wbfil &
+!**********************************************************************
+!                                                                     *
+!     wbfil variant of sup_vrbeta1_bkg_new_jim: same structure, but    *
+!     the beta line filter is rbeta1_jim_new_wbfil (paired with the    *
+!     rcalib1_jim_new_wbfil calibrated elp). The boundary reflection   *
+!     rflip1_jim_new is kept (no wbfil flip exists in wbfil.f90).      *
+!                                                                     *
+!**********************************************************************
+(this,km,km3,hx,hy,hz,im,jm,lm,pasp1_store,elp,VALL)
+!----------------------------------------------------------------------
+implicit none
+class(mg_intstate_type),target::this
+integer(i_kind),intent(in):: km,km3,hx,hy,hz,im,jm,lm
+real(r_kind),dimension(1:km,1-hx:im+hx,1-hy:jm+hy),intent(inout):: VALL
+real(r_kind),dimension(1,1,1:lm), intent(in):: pasp1_store
+real(r_kind),dimension(0:1,1:lm), intent(in):: elp
+real(r_kind),dimension(1-hz:lm+hz,1:km3):: W
+real(r_kind):: xLb,xmb
+integer(i_kind):: i,j,L,k,k_ind,kloc
+!----------------------------------------------------------------------
+
+    xLb=0.0_r_kind
+    xmb=0.0_r_kind
+    if(pasp1_store(1,1,1)>0.0_r_kind) xLb=1.0_r_kind/sqrt(pasp1_store(1,1,1))
+    if(pasp1_store(1,1,lm)>0.0_r_kind) xmb=1.0_r_kind/sqrt(pasp1_store(1,1,lm))
+
+    do j=1,jm
+    do i=1,im
+      W=0.0_r_kind
+      do k=1,km3
+        k_ind=(k-1)*lm
+        do L=1,lm
+          kloc=k_ind+L
+          W(L,k)=VALL(kloc,i,j)
+        enddo
+        call this%rflip1_jim_new(hz,1,lm,.true.,.true.,xLb,xmb,W(1-hz:lm+hz,k))
+        call this%rbeta1_jim_new_wbfil(hz,1,lm,elp,W(1-hz:lm+hz,k))
+      enddo
+      do k=1,km3
+        k_ind=(k-1)*lm
+        do L=1,lm
+          kloc=k_ind+L
+          VALL(kloc,i,j)=W(L,k)
+        enddo
+      enddo
+    enddo
+    enddo
+
+!----------------------------------------------------------------------
+endsubroutine sup_vrbeta1_bkg_new_jim_wbfil
+
+!&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+module subroutine sup_vrbeta1T_bkg_new_jim_wbfil &
+!**********************************************************************
+!                                                                     *
+!     Adjoint of sup_vrbeta1_bkg_new_jim_wbfil                        *
+!                                                                     *
+!**********************************************************************
+(this,km,km3,hx,hy,hz,im,jm,lm,pasp1_store,elp,VALL)
+!----------------------------------------------------------------------
+implicit none
+class(mg_intstate_type),target::this
+integer(i_kind),intent(in):: km,km3,hx,hy,hz,im,jm,lm
+real(r_kind),dimension(1:km,1-hx:im+hx,1-hy:jm+hy),intent(inout):: VALL
+real(r_kind),dimension(1,1,1:lm), intent(in):: pasp1_store
+real(r_kind),dimension(0:1,1:lm), intent(in):: elp
+real(r_kind),dimension(1-hz:lm+hz,1:km3):: W
+real(r_kind):: xLb,xmb
+integer(i_kind):: i,j,L,k,k_ind,kloc
+!----------------------------------------------------------------------
+
+    xLb=0.0_r_kind
+    xmb=0.0_r_kind
+    if(pasp1_store(1,1,1)>0.0_r_kind) xLb=1.0_r_kind/sqrt(pasp1_store(1,1,1))
+    if(pasp1_store(1,1,lm)>0.0_r_kind) xmb=1.0_r_kind/sqrt(pasp1_store(1,1,lm))
+
+    do j=1,jm
+    do i=1,im
+      W=0.0_r_kind
+      do k=1,km3
+        k_ind=(k-1)*lm
+        do L=1,lm
+          kloc=k_ind+L
+          W(L,k)=VALL(kloc,i,j)
+        enddo
+        call this%rbeta1T_jim_new_wbfil(hz,1,lm,elp,W(1-hz:lm+hz,k))
+        call this%rflip1T_jim_new(hz,1,lm,.true.,.true.,xLb,xmb,W(1-hz:lm+hz,k))
+      enddo
+      do k=1,km3
+        k_ind=(k-1)*lm
+        do L=1,lm
+          kloc=k_ind+L
+          VALL(kloc,i,j)=W(L,k)
+        enddo
+      enddo
+    enddo
+    enddo
+
+!----------------------------------------------------------------------
+endsubroutine sup_vrbeta1T_bkg_new_jim_wbfil
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine sup_vrbeta1T_bkg &

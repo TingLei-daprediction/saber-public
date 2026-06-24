@@ -84,6 +84,7 @@ real(r_kind), allocatable,dimension(:,:,:,:,:):: paspy4d_jim_new_wbfil
 real(r_kind), allocatable,dimension(:,:,:):: pasp1
 real(r_kind), allocatable,dimension(:,:,:):: pasp1_store
 real(r_kind), allocatable,dimension(:,:):: pasp1_jim_new
+real(r_kind), allocatable,dimension(:,:):: pasp1_jim_new_wbfil
 real(r_kind), allocatable,dimension(:,:,:,:):: pasp2
 real(r_kind), allocatable,dimension(:,:,:,:,:):: pasp3
 
@@ -213,6 +214,7 @@ contains
   procedure :: sup_vrbeta1_ens,sup_vrbeta1T_ens
   procedure :: sup_vrbeta1_bkg,sup_vrbeta1T_bkg
   procedure :: sup_vrbeta1_bkg_new_jim,sup_vrbeta1T_bkg_new_jim
+  procedure :: sup_vrbeta1_bkg_new_jim_wbfil,sup_vrbeta1T_bkg_new_jim_wbfil
 !from mg_transfer.f90
   procedure :: anal_to_filt_allmap,filt_to_anal_allmap
   procedure :: anal_to_filt_all,filt_to_anal_all
@@ -1089,6 +1091,24 @@ interface
      real(r_kind),dimension(1,1,1:lm), intent(in):: pasp1_store
      real(r_kind),dimension(0:1,1:lm), intent(in):: elp
    end subroutine
+   module subroutine sup_vrbeta1_bkg_new_jim_wbfil &
+        (this,km,km3,hx,hy,hz,im,jm,lm,pasp1_store,elp,VALL)
+     implicit none
+     class(mg_intstate_type),target::this
+     integer(i_kind),intent(in):: km,km3,hx,hy,hz,im,jm,lm
+     real(r_kind),dimension(1:km,1-hx:im+hx,1-hy:jm+hy),intent(inout):: VALL
+     real(r_kind),dimension(1,1,1:lm), intent(in):: pasp1_store
+     real(r_kind),dimension(0:1,1:lm), intent(in):: elp
+   end subroutine
+   module subroutine sup_vrbeta1T_bkg_new_jim_wbfil &
+        (this,km,km3,hx,hy,hz,im,jm,lm,pasp1_store,elp,VALL)
+     implicit none
+     class(mg_intstate_type),target::this
+     integer(i_kind),intent(in):: km,km3,hx,hy,hz,im,jm,lm
+     real(r_kind),dimension(1:km,1-hx:im+hx,1-hy:jm+hy),intent(inout):: VALL
+     real(r_kind),dimension(1,1,1:lm), intent(in):: pasp1_store
+     real(r_kind),dimension(0:1,1:lm), intent(in):: elp
+   end subroutine
 !from mg_transfer.f90
    module subroutine anal_to_filt_allmap(this,WORKA)
      class(mg_intstate_type),target::this
@@ -1218,6 +1238,7 @@ allocate(this%paspy4d_jim_new_wbfil(0:1,this%lm,1-this%hx:this%im+this%hx,1-this
 allocate(this%pasp1(1,1,1:this%lm))                     ; this%pasp1=0.
 allocate(this%pasp1_store(1,1,1:this%lm))                     ; this%pasp1_store=0.
 allocate(this%pasp1_jim_new(0:1,1:this%lm))                     ; this%pasp1_jim_new=0.
+allocate(this%pasp1_jim_new_wbfil(0:1,1:this%lm))               ; this%pasp1_jim_new_wbfil=0.
 allocate(this%pasp2(2,2,1:this%im,1:this%jm))           ; this%pasp2=0.
 allocate(this%pasp3(3,3,1:this%im,1:this%jm,1:this%lm)) ; this%pasp3=0.
 
@@ -1774,6 +1795,11 @@ enddo
 ! rcalib1 carries no boundary (flip) arguments, so the existing _jim_new arrays
 ! and their setup above are left untouched.
 call this%inip_jim_new_wbfil()
+! Vertical wbfil calibration: same L**2 aspect input (pasp1_store) as the
+! _jim_new vertical calibration above, but using wbfil's table-free rcalib1.
+call this%rcalib1_jim_new_wbfil(this%hz,1,this%lm, &
+     this%pasp1_store(1,1,1:this%lm), &
+     this%pasp1_jim_new_wbfil(:,1:this%lm),hwork_jim(1:this%lm))
 do igbin=1,2
    do k=1,this%lm
      do j=1,this%jm

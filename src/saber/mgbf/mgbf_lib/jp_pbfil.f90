@@ -1313,6 +1313,63 @@ enddo
 a=b
 end subroutine rbeta3d_1T_jim_new_wbfil
 !=============================================================================
+module subroutine rbeta1_jim_new_wbfil(this,hx,lx,mx, el, a)
+!=============================================================================
+! wbfil variant of rbeta1_jim_new (1D direct beta line filter). Body is
+! identical to rbeta1_jim_new; it is paired with the rcalib1_jim_new_wbfil
+! (hofnm2) calibrated coefficients for the jim_new_wbfil path.
+!=============================================================================
+class(mg_parameter_type)::this
+integer,                        intent(in   ):: hx,Lx,mx
+real(dp),dimension(0:1,Lx:Mx),  intent(in   ):: el
+real(dp),dimension(lx-hx:mx+hx),intent(inout):: a
+real(dp),dimension(lx-hx:mx+hx):: b
+real(dp)                       :: tb,exx,rrc
+integer                        :: gx,ix,ixp,ixm
+!=============================================================================
+b=0
+do ix=Lx,Mx
+   exx=el(1,ix)
+   tb=a(ix)
+   do gx=ceiling(-u1/exx),-1
+      ixp=ix+gx
+      ixm=ix-gx
+      rrc=u1-(gx*exx)**2
+      tb=tb+rrc**this%p*(a(ixp)+a(ixm))
+   enddo
+   b(ix)=tb*el(0,ix)
+enddo
+a=b
+end subroutine rbeta1_jim_new_wbfil
+!=============================================================================
+module subroutine rbeta1T_jim_new_wbfil(this,hx,lx,mx, el, a)
+!=============================================================================
+! Adjoint of rbeta1_jim_new_wbfil. Body matches rbeta1T_jim_new.
+!=============================================================================
+class(mg_parameter_type)::this
+integer,                        intent(in   ):: hx,Lx,mx
+real(dp),dimension(0:1,Lx:Mx),  intent(in   ):: el
+real(dp),dimension(lx-hx:mx+hx),intent(inout):: a
+real(dp),dimension(lx-hx:mx+hx):: b
+real(dp)                       :: ta,exx,rrc,tafrow
+integer                        :: ix,jx,gx
+!=============================================================================
+b=0
+do ix=Lx,Mx
+   ta=a(ix)*el(0,ix)
+   exx=el(1,ix)
+   b(ix)=b(ix)+ta
+   do gx=ceiling(-u1/exx),-1
+      jx=ix+gx
+      rrc=u1-(gx*exx)**2
+      tafrow=ta*rrc**this%p
+      b(jx)=b(jx)+tafrow
+      b(ix-gx)=b(ix-gx)+tafrow
+   enddo
+enddo
+a=b
+end subroutine rbeta1T_jim_new_wbfil
+!=============================================================================
 module subroutine rbeta2T(this,hx,lx,mx, hy,ly,my, el,ss, a)        ! [rbetat]
 !=============================================================================
 ! Perform an ADJOINT radial beta-function filter in 2D.
