@@ -36,7 +36,7 @@ endif()
 #   grep Fortran_FLAGS <build>/saber/src/saber/CMakeFiles/saber.dir/flags.make
 # --------------------------------------------------------------------------
 if(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
-  ecbuild_add_fortran_flags("-heap-arrays 0")
+  ecbuild_add_fortran_flags("-heap-arrays 0" BUILD DEBUG)
   # Optional extra diagnostics (uncomment one at a time):
   #   ecbuild_add_fortran_flags("-gen-interfaces -warn interfaces") # catch dummy/actual mismatches at compile
   #   ecbuild_add_fortran_flags("-fsanitize=address -fno-omit-frame-pointer") # also needs -DCMAKE_EXE_LINKER_FLAGS=-fsanitize=address
