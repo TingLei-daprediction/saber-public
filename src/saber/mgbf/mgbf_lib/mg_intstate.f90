@@ -1606,9 +1606,15 @@ if (this%l_constant_aspt2 ) then
       this%dyfm(i,j)=dist_rad*req
     enddo
    enddo
-      
-       
-      rtem1=this%pasp02  
+   write(6,*) 'thinkdeb dxfm min/max =',minval(this%dxfm(1:this%im,1:this%jm)), &
+              maxval(this%dxfm(1:this%im,1:this%jm)), &
+              ' dyfm min/max =',minval(this%dyfm(1:this%im,1:this%jm)), &
+              maxval(this%dyfm(1:this%im,1:this%jm)), &
+              ' dxfmctrl,dyfmctrl =',this%dxfmctrl,this%dyfmctrl
+   call flush(6)
+
+
+      rtem1=this%pasp02
       rtem2=this%pasp02
      
       do i=1,this%im
