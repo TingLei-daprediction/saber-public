@@ -28,3 +28,16 @@ if(HAVE_WARNING)
     ecbuild_add_fortran_flags("-Wall -Wextra")
   endif()
 endif()
+
+# --------------------------------------------------------------------------
+# SABER debug instrumentation knob (Intel). Edit the flag string below.
+# Appended last, so it overrides earlier flags (e.g. -heap-arrays 0 beats
+# the inherited -heap-arrays 32). Verify with:
+#   grep Fortran_FLAGS <build>/saber/src/saber/CMakeFiles/saber.dir/flags.make
+# --------------------------------------------------------------------------
+if(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
+  ecbuild_add_fortran_flags("-heap-arrays 0")
+  # Optional extra diagnostics (uncomment one at a time):
+  #   ecbuild_add_fortran_flags("-gen-interfaces -warn interfaces") # catch dummy/actual mismatches at compile
+  #   ecbuild_add_fortran_flags("-fsanitize=address -fno-omit-frame-pointer") # also needs -DCMAKE_EXE_LINKER_FLAGS=-fsanitize=address
+endif()

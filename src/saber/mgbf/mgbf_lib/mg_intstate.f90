@@ -1249,9 +1249,9 @@ allocate(this%vpasp3(1:6,1:this%im,1:this%jm,1:this%lm)) ; this%vpasp3=0.
 allocate(this%hss3(1:this%im,1:this%jm,1:this%lm,1:6))   ; this%hss3=0.
 !clt ssx and ssy are all 0 for filtering_fast_bkg, hence, they are not changed for the inhomogeneous case
 allocate(this%ssx(1:this%im))                     ; this%ssx=0.
-allocate(this%ssx4d(this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,2)) ; this%ssx=0.
+allocate(this%ssx4d(this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,2)) ; this%ssx4d=0.
 allocate(this%ssy(1:this%jm))                     ; this%ssy=0.
-allocate(this%ssy4d(this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,2)) ; this%ssy=0.
+allocate(this%ssy4d(this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,2)) ; this%ssy4d=0.
 allocate(this%ss1(1:this%lm))                     ; this%ss1=0.
 allocate(this%ss2(1:this%im,1:this%jm))           ; this%ss2=0.
 allocate(this%ss3(1:this%im,1:this%jm,1:this%lm)) ; this%ss3=0.
@@ -1845,8 +1845,9 @@ deallocate(hwork_jim)
    call this%upsending_normalized(this%lm,this%ssy4d(:,:,:,1),this%ssy4d(:,:,:,2))
 
 
-deallocate(this%weig_var) 
+deallocate(this%weig_var)
 
+write(6,*)'DBG def_mg_weights completed on rank ',this%mype; call flush(6)
 
 !-----------------------------------------------------------------------
 endsubroutine def_mg_weights
