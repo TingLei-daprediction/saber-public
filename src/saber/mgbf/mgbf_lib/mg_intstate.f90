@@ -1395,6 +1395,7 @@ endif
     end if
   else
     this%l_constant_aspt2=.true.
+    write(6,*)'thinkdeb l_consant_aspt2 is set to true in def_mg_weights'
    
   end if
  if (present(n_owned_anl)) then

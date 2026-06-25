@@ -128,7 +128,7 @@ real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%
 real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: V
 logical, intent(in):: lquart
 !-----------------------------------------------------------------------
-
+        write(6,*)'thinkdeb990 in downsending_all lquaart ',lquart
         if(lquart) then
            call this%downsending2(H,V) 
         else
@@ -302,6 +302,7 @@ integer(i_kind):: iL,jL,i,j
           H(:,:,:)=0.
 
         call this%boco_2d(V_INT,this%km,this%imL,this%jmL,2,2)
+        write(6,*)'thinkdeb99 max vint ',maxval(v_int)
 
         call this%direct1(V_INT,V_PROX,this%km,1)
 
@@ -472,7 +473,6 @@ integer(i_kind):: iL,jL,i,j
           H(:,:,:)=0.
 
         call this%boco_2d(V_INT,this%km,this%imL,this%jmL,1,1)
-
         call this%direct2(V_INT,V_PROX,this%km,1)
 
           V(1:this%km,1:this%im,1:this%jm)=V     (1:this%km,1:this%im,1:this%jm) &
