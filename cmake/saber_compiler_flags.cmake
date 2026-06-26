@@ -37,7 +37,11 @@ endif()
 # --------------------------------------------------------------------------
 if(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
   ecbuild_add_fortran_flags("-heap-arrays 0" BUILD DEBUG)
-  # Optional extra diagnostics (uncomment one at a time):
-  #   ecbuild_add_fortran_flags("-gen-interfaces -warn interfaces") # catch dummy/actual mismatches at compile
-  #   ecbuild_add_fortran_flags("-fsanitize=address -fno-omit-frame-pointer") # also needs -DCMAKE_EXE_LINKER_FLAGS=-fsanitize=address
+  # AddressSanitizer for saber, to pinpoint the over-write. Keep -heap-arrays 0
+  # so the suspect array temporary is a heap allocation ASan can wrap in redzones.
+  # NOTE: the executable link also needs ASan; reconfigure the build dir once with
+  #   cmake -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address" .
+  ecbuild_add_fortran_flags("-fsanitize=address -fno-omit-frame-pointer" BUILD DEBUG)
+  # Optional: catch dummy/actual mismatches at compile time
+  #   ecbuild_add_fortran_flags("-gen-interfaces -warn interfaces" BUILD DEBUG)
 endif()

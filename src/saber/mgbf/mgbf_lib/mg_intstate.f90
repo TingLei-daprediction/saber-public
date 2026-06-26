@@ -1800,6 +1800,7 @@ do igbin=1,2
      enddo
    enddo
 enddo
+write(6,*)'DBG-A after rcalib1_jim_new, rank ',this%mype; call flush(6)
 ! codex debug/develop for new jim's calibrated function (wbfil variant)
 ! Populate the separate wbfil coefficient arrays from the same L**2 aspect input
 ! (loc_paspx4d/loc_paspy4d) using wbfil's exact, table-free calibration. wbfil's
