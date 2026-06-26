@@ -1597,7 +1597,8 @@ end do
       else
          call this%cholaspect(1,this%lm,this%pasp1)
          call this%cholaspect(1,this%im,1,this%jm,this%pasp2)
-         call this%cholaspect(1,this%im,1,this%jm,1,this%lm,this%pasp3)
+         call this%cholaspect(1,this%im,1,this%jm,1,this%lm,this%pasp3)  !clt this had warnings : WARNING cholaspect2: near-zero output at ix=       5 iy= 
+                                                                         !it may be investigated later since this part is not used (not line filter)
          call this%getlinesum(this%hx,1,this%im,this%paspx,this%ssx)
          call this%getlinesum(this%hy,1,this%jm,this%paspy,this%ssy)
        do k=1,this%lm
