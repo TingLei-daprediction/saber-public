@@ -28,20 +28,3 @@ if(HAVE_WARNING)
     ecbuild_add_fortran_flags("-Wall -Wextra")
   endif()
 endif()
-
-# --------------------------------------------------------------------------
-# SABER debug instrumentation knob (Intel). Edit the flag string below.
-# Appended last, so it overrides earlier flags (e.g. -heap-arrays 0 beats
-# the inherited -heap-arrays 32). Verify with:
-#   grep Fortran_FLAGS <build>/saber/src/saber/CMakeFiles/saber.dir/flags.make
-# --------------------------------------------------------------------------
-if(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
-  ecbuild_add_fortran_flags("-heap-arrays 0" BUILD DEBUG)
-  # AddressSanitizer for saber, to pinpoint the over-write. Keep -heap-arrays 0
-  # so the suspect array temporary is a heap allocation ASan can wrap in redzones.
-  # NOTE: the executable link also needs ASan; reconfigure the build dir once with
-  #   cmake -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address" .
-  ecbuild_add_fortran_flags("-fsanitize=address -fno-omit-frame-pointer" BUILD DEBUG)
-  # Optional: catch dummy/actual mismatches at compile time
-  #   ecbuild_add_fortran_flags("-gen-interfaces -warn interfaces" BUILD DEBUG)
-endif()
