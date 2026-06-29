@@ -668,7 +668,50 @@ integer ::  loc(2)
              enddo
 !$omp end parallel do
              call etim(mg_reshape_to_mgbf_time)
-               
+             ! ##### DEBUG ONLY -- TEMPORARY, REMOVE LATER ##### (BEGIN INPUT TRACE) #####
+             ! TODO(debug): delete this entire block before merge -- impulse tracing only.
+             ! work_mgbf(k,i,j) now holds the input field on the MGBF (nxloc x nyloc)
+             ! grid for this scale, before any filtering. Print the 5 largest elements
+             ! (by magnitude, above a small threshold) with their (i,j,k), per MPI rank.
+             block
+               integer(kind=i_kind) :: ki_dbg, ii_dbg, jj_dbg, m_dbg, p_dbg, nfound_dbg
+               integer(kind=i_kind), parameter :: ntop_dbg = 5
+               integer(kind=i_kind) :: it_dbg(ntop_dbg), jt_dbg(ntop_dbg), kt_dbg(ntop_dbg)
+               real(kind=r_kind) :: vt_dbg(ntop_dbg), val_dbg, thr_dbg
+               thr_dbg = 0.01_r_kind
+               vt_dbg = -huge(1.0_r_kind) ; it_dbg = 0 ; jt_dbg = 0 ; kt_dbg = 0
+               nfound_dbg = 0
+               do jj_dbg=1,nyloc
+                 do ii_dbg=1,nxloc
+                   do ki_dbg=1,nzloc
+                     val_dbg = work_mgbf(ki_dbg,ii_dbg,jj_dbg)
+                     if (abs(val_dbg) <= thr_dbg) cycle
+                     nfound_dbg = nfound_dbg + 1
+                     if (abs(val_dbg) <= abs(vt_dbg(ntop_dbg))) cycle
+                     ! insert into the descending-by-magnitude top list
+                     do p_dbg = ntop_dbg, 2, -1
+                       if (abs(val_dbg) <= abs(vt_dbg(p_dbg-1))) exit
+                       vt_dbg(p_dbg)=vt_dbg(p_dbg-1) ; it_dbg(p_dbg)=it_dbg(p_dbg-1)
+                       jt_dbg(p_dbg)=jt_dbg(p_dbg-1) ; kt_dbg(p_dbg)=kt_dbg(p_dbg-1)
+                     enddo
+                     vt_dbg(p_dbg)=val_dbg
+                     it_dbg(p_dbg)=ii_dbg ; jt_dbg(p_dbg)=jj_dbg ; kt_dbg(p_dbg)=ki_dbg
+                   enddo
+                 enddo
+               enddo
+               write(6,'(A,I4.4,A,I0,A,I0,A,3(1X,I0))') &
+                 'DBG-MGBF[rank ',myrank,'] jscale=',jscale, &
+                 ' INPUT impulse: ',nfound_dbg,' elements above threshold ; grid=', &
+                 nxloc,nyloc,nzloc
+               do m_dbg=1,min(ntop_dbg,nfound_dbg)
+                 write(6,'(A,I4.4,A,I0,A,3(1X,I5),A,ES16.8)') &
+                   'DBG-MGBF[rank ',myrank,'] INPUT top#',m_dbg,' (i,j,k)=', &
+                   it_dbg(m_dbg),jt_dbg(m_dbg),kt_dbg(m_dbg),' value=',vt_dbg(m_dbg)
+               enddo
+               call flush(6)
+             end block
+             ! ##### DEBUG ONLY -- TEMPORARY, REMOVE LATER ##### (END INPUT TRACE) #######
+
              if(self%intstate(jscale,ivargrp0)%km2.ne.n2d.and. .not.self%intstate(jscale,ivargrp0)%l_for_localization ) then 
                 write(6,*)'The numbers of 2d variables is different from  mgbf-expected ,stop'
                 stop   ! a better exception handling is to be added
@@ -743,6 +786,25 @@ integer ::  loc(2)
                call etim(mg_localization_mix_time)
                nullify(work1var_mgbf)
              endif
+             ! ##### DEBUG ONLY -- TEMPORARY, REMOVE LATER ##### (BEGIN OUTPUT TRACE) ####
+             ! TODO(debug): delete this entire block before merge -- response tracing only.
+             ! work_mgbf(k,i,j) now holds the filtered (and localized) response on the
+             ! MGBF grid for this scale, before reshaping back to fields. Print the
+             ! maximum value and its (i,j,k) index, per MPI rank.
+             block
+               integer(kind=i_kind) :: loc_dbg(3)
+               real(kind=r_kind) :: max_dbg, amax_dbg
+               loc_dbg  = maxloc(work_mgbf)
+               max_dbg  = work_mgbf(loc_dbg(1),loc_dbg(2),loc_dbg(3))
+               amax_dbg = maxval(abs(work_mgbf))
+               write(6,'(A,I4.4,A,I0,A,ES16.8,A,3(1X,I5),A,ES16.8)') &
+                 'DBG-MGBF[rank ',myrank,'] jscale=',jscale, &
+                 ' OUTPUT response: work_mgbf max=',max_dbg, &
+                 ' at (i,j,k)=',loc_dbg(2),loc_dbg(3),loc_dbg(1), &
+                 ' ; max|val|=',amax_dbg
+               call flush(6)
+             end block
+             ! ##### DEBUG ONLY -- TEMPORARY, REMOVE LATER ##### (END OUTPUT TRACE) ######
              call btim(mg_reshape_to_fields_time)
 !$omp parallel do private(k) schedule(static)
              do k=1,nzloc
