@@ -674,22 +674,46 @@ integer ::  loc(2)
              ! grid for this scale, before any filtering. Print the 5 largest elements
              ! (by magnitude, above a small threshold) with their (i,j,k), per MPI rank.
              block
-               integer(kind=i_kind) :: i_dbg, j_dbg, k_dbg, imax_dbg, jmax_dbg, kmax_dbg
-               real(kind=r_kind) :: vmax_dbg
-               vmax_dbg = 0.0_r_kind ; imax_dbg = 0 ; jmax_dbg = 0 ; kmax_dbg = 0
+               integer(kind=i_kind), parameter :: ntop_dbg = 5
+               real(kind=r_kind),    parameter :: thresh_dbg = 0.1_r_kind
+               integer(kind=i_kind) :: i_dbg, j_dbg, k_dbg, n_dbg, m_dbg
+               integer(kind=i_kind) :: itop_dbg(ntop_dbg), jtop_dbg(ntop_dbg), ktop_dbg(ntop_dbg)
+               real(kind=r_kind)    :: vtop_dbg(ntop_dbg), vcur_dbg
+               ! Track the top-ntop_dbg elements by magnitude, above thresh_dbg.
+               ! vtop_dbg is kept sorted in descending order of |value|.
+               vtop_dbg = 0.0_r_kind ; itop_dbg = 0 ; jtop_dbg = 0 ; ktop_dbg = 0
                do j_dbg = 1, nyloc
                  do i_dbg = 1, nxloc
                    do k_dbg = 1, nzloc
-                     if (abs(work_mgbf(k_dbg,i_dbg,j_dbg)) > abs(vmax_dbg)) then
-                       vmax_dbg = work_mgbf(k_dbg,i_dbg,j_dbg)
-                       imax_dbg = i_dbg ; jmax_dbg = j_dbg ; kmax_dbg = k_dbg
-                     endif
+                     vcur_dbg = work_mgbf(k_dbg,i_dbg,j_dbg)
+                     if (abs(vcur_dbg) <= thresh_dbg) cycle
+                     if (abs(vcur_dbg) <= abs(vtop_dbg(ntop_dbg))) cycle
+                     ! find insertion slot, then shift the smaller entries down
+                     do n_dbg = 1, ntop_dbg
+                       if (abs(vcur_dbg) > abs(vtop_dbg(n_dbg))) then
+                         do m_dbg = ntop_dbg, n_dbg+1, -1
+                           vtop_dbg(m_dbg) = vtop_dbg(m_dbg-1)
+                           itop_dbg(m_dbg) = itop_dbg(m_dbg-1)
+                           jtop_dbg(m_dbg) = jtop_dbg(m_dbg-1)
+                           ktop_dbg(m_dbg) = ktop_dbg(m_dbg-1)
+                         enddo
+                         vtop_dbg(n_dbg) = vcur_dbg
+                         itop_dbg(n_dbg) = i_dbg
+                         jtop_dbg(n_dbg) = j_dbg
+                         ktop_dbg(n_dbg) = k_dbg
+                         exit
+                       endif
+                     enddo
                    enddo
                  enddo
                enddo
-               write(6,'(A,I4.4,A,I0,A,3(1X,I5),A,ES16.8)') &
-                 'DBG-MGBF[rank ',myrank,'] jscale=',jscale,' INPUT max (i,j,k)=', &
-                 imax_dbg,jmax_dbg,kmax_dbg,' value=',vmax_dbg
+               do n_dbg = 1, ntop_dbg
+                 if (itop_dbg(n_dbg) == 0) cycle   ! fewer than ntop_dbg above threshold
+                 write(6,'(A,I4.4,A,I0,A,I0,A,3(1X,I5),A,ES16.8)') &
+                   'DBG-MGBF[rank ',myrank,'] jscale=',jscale,' INPUT top#',n_dbg, &
+                   ' (i,j,k)=',itop_dbg(n_dbg),jtop_dbg(n_dbg),ktop_dbg(n_dbg), &
+                   ' value=',vtop_dbg(n_dbg)
+               enddo
                call flush(6)
              end block
              ! ##### DEBUG ONLY -- TEMPORARY, REMOVE LATER ##### (END INPUT TRACE) #######

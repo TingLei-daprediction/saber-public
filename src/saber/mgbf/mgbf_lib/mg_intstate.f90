@@ -1762,7 +1762,7 @@ end do
    endif
 
 
-if (this%mg_proc .gt. 10) then 
+if (this%mgbf_proc .gt. 10) then
 ! codex debug/develop for new jim's calibrated function
 ! codex debug/develop for new jim's calibrated function: use the edge-cell aspect
 ! values as the boundary-aspect inputs to rcalib1_jim_new until a separate
