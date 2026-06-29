@@ -1762,7 +1762,7 @@ end do
    endif
 
 
-
+if (this%mg_proc .gt. 10) then 
 ! codex debug/develop for new jim's calibrated function
 ! codex debug/develop for new jim's calibrated function: use the edge-cell aspect
 ! values as the boundary-aspect inputs to rcalib1_jim_new until a separate
@@ -1829,16 +1829,8 @@ do igbin=1,2
    enddo
 enddo
 deallocate(loc_paspx4d,loc_paspy4d)
-
-
-
-
-
-
-
-
-
 deallocate(hwork_jim)
+endif !cltothink , the (::,2) should be obtained from (::1) through upsending_normlized as below
 
    call this%boco_2d(this%ssx4d(1:this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,1),this%lm,this%im,this%jm,this%hx,this%hy)
    call this%upsending_normalized(this%lm,this%ssx4d(:,:,:,1),this%ssx4d(:,:,:,2))
