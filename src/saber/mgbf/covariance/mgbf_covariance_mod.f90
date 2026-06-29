@@ -674,40 +674,22 @@ integer ::  loc(2)
              ! grid for this scale, before any filtering. Print the 5 largest elements
              ! (by magnitude, above a small threshold) with their (i,j,k), per MPI rank.
              block
-               integer(kind=i_kind) :: ki_dbg, ii_dbg, jj_dbg, m_dbg, p_dbg, nfound_dbg
-               integer(kind=i_kind), parameter :: ntop_dbg = 5
-               integer(kind=i_kind) :: it_dbg(ntop_dbg), jt_dbg(ntop_dbg), kt_dbg(ntop_dbg)
-               real(kind=r_kind) :: vt_dbg(ntop_dbg), val_dbg, thr_dbg
-               thr_dbg = 0.01_r_kind
-               vt_dbg = -huge(1.0_r_kind) ; it_dbg = 0 ; jt_dbg = 0 ; kt_dbg = 0
-               nfound_dbg = 0
-               do jj_dbg=1,nyloc
-                 do ii_dbg=1,nxloc
-                   do ki_dbg=1,nzloc
-                     val_dbg = work_mgbf(ki_dbg,ii_dbg,jj_dbg)
-                     if (abs(val_dbg) <= thr_dbg) cycle
-                     nfound_dbg = nfound_dbg + 1
-                     if (abs(val_dbg) <= abs(vt_dbg(ntop_dbg))) cycle
-                     ! insert into the descending-by-magnitude top list
-                     do p_dbg = ntop_dbg, 2, -1
-                       if (abs(val_dbg) <= abs(vt_dbg(p_dbg-1))) exit
-                       vt_dbg(p_dbg)=vt_dbg(p_dbg-1) ; it_dbg(p_dbg)=it_dbg(p_dbg-1)
-                       jt_dbg(p_dbg)=jt_dbg(p_dbg-1) ; kt_dbg(p_dbg)=kt_dbg(p_dbg-1)
-                     enddo
-                     vt_dbg(p_dbg)=val_dbg
-                     it_dbg(p_dbg)=ii_dbg ; jt_dbg(p_dbg)=jj_dbg ; kt_dbg(p_dbg)=ki_dbg
+               integer(kind=i_kind) :: i_dbg, j_dbg, k_dbg, imax_dbg, jmax_dbg, kmax_dbg
+               real(kind=r_kind) :: vmax_dbg
+               vmax_dbg = 0.0_r_kind ; imax_dbg = 0 ; jmax_dbg = 0 ; kmax_dbg = 0
+               do j_dbg = 1, nyloc
+                 do i_dbg = 1, nxloc
+                   do k_dbg = 1, nzloc
+                     if (abs(work_mgbf(k_dbg,i_dbg,j_dbg)) > abs(vmax_dbg)) then
+                       vmax_dbg = work_mgbf(k_dbg,i_dbg,j_dbg)
+                       imax_dbg = i_dbg ; jmax_dbg = j_dbg ; kmax_dbg = k_dbg
+                     endif
                    enddo
                  enddo
                enddo
-               write(6,'(A,I4.4,A,I0,A,I0,A,3(1X,I0))') &
-                 'DBG-MGBF[rank ',myrank,'] jscale=',jscale, &
-                 ' INPUT impulse: ',nfound_dbg,' elements above threshold ; grid=', &
-                 nxloc,nyloc,nzloc
-               do m_dbg=1,min(ntop_dbg,nfound_dbg)
-                 write(6,'(A,I4.4,A,I0,A,3(1X,I5),A,ES16.8)') &
-                   'DBG-MGBF[rank ',myrank,'] INPUT top#',m_dbg,' (i,j,k)=', &
-                   it_dbg(m_dbg),jt_dbg(m_dbg),kt_dbg(m_dbg),' value=',vt_dbg(m_dbg)
-               enddo
+               write(6,'(A,I4.4,A,I0,A,3(1X,I5),A,ES16.8)') &
+                 'DBG-MGBF[rank ',myrank,'] jscale=',jscale,' INPUT max (i,j,k)=', &
+                 imax_dbg,jmax_dbg,kmax_dbg,' value=',vmax_dbg
                call flush(6)
              end block
              ! ##### DEBUG ONLY -- TEMPORARY, REMOVE LATER ##### (END INPUT TRACE) #######
