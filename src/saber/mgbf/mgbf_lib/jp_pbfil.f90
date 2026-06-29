@@ -1248,6 +1248,11 @@ do ix=Lx,mx
    exx=u1/s
    el(1,ix)=exx
    gxm=floor(u1/exx); hxm(ix)=gxm
+   if(gxm>hx) then
+      write(6,*) "rcalib1_jim_new_wbfil: reach gxm exceeds halo hx: gxm,hx,ix,as=",gxm,hx,ix,as(ix)
+      call flush(6)
+      stop "In rcalib1_jim_new_wbfil; filter reach becomes too large for hx"
+   endif
    fs(-gxm:gxm)=0
    fs(0)=u1
    do gx=-gxm,-1
