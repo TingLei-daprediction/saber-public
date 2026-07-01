@@ -670,13 +670,13 @@ integer ::  loc(2)
              call etim(mg_reshape_to_mgbf_time)
              ! ##### DEBUG ONLY -- TEMPORARY, REMOVE LATER ##### (IMPULSE INJECT) #######
              ! TODO(debug): delete this entire block before merge -- impulse response test.
-             ! On rank 100 only, overwrite the input with a single point delta: 1.0 at the
-             ! center column (ic,jc), vertical level k=30; all other points on this rank 0.
-             ! Other ranks are left untouched. Runs for every jscale.
+             ! On ranks 100 and 72 only, overwrite the input with a single point delta:
+             ! 1.0 at the center column (ic,jc), vertical level k=30; all other points on
+             ! that rank 0. Other ranks are left untouched. Runs for every jscale.
              block
                integer(kind=i_kind), parameter :: kimp_dbg = 30
                integer(kind=i_kind) :: ic_dbg, jc_dbg
-               if (myrank == 100) then
+               if (myrank == 100 .or. myrank == 72) then
                  if (kimp_dbg <= nzloc) then
                    ic_dbg = nxloc/2 + 1
                    jc_dbg = nyloc/2 + 1
