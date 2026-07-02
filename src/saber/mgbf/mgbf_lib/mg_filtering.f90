@@ -1002,8 +1002,6 @@ include "type_intstat_point2this.inc"
           lev1=lev2+1
           lev2=lev1
           call this%rbetaT(1,hy,1,jm,this%paspy4d(lm:lm,i,1:jm,1),this%ssy4d(lm:lm,i,1:jm,1),VALL(lev1:lev2,i,:))
-          lev1=lev1+1
-          lev2=lev2+1
         enddo
      enddo
 !$omp end parallel do
@@ -1026,8 +1024,6 @@ include "type_intstat_point2this.inc"
           lev1=lev2+1
           lev2=lev1
           call this%rbetaT(1,hx,1,im,this%paspx4d(lm:lm,1:im,j,1),this%ssx4d(lm:lm,1:im,j,1),VALL(lev1:lev2,:,j))
-          lev1=lev1+1
-          lev2=lev2+1
         enddo
      enddo
 !$omp end parallel do
@@ -1050,8 +1046,6 @@ include "type_intstat_point2this.inc"
           lev1=lev2+1
           lev2=lev1
           call this%rbetaT(1,hy,1,jm,this%paspy4d(lm:lm,i,1:jm,2),this%ssy4d(lm:lm,i,1:jm,2),HALL(lev1:lev2,i,:))
-          lev1=lev1+1
-          lev2=lev2+1
         enddo
      enddo
 !$omp end parallel do
@@ -1076,8 +1070,6 @@ include "type_intstat_point2this.inc"
           lev1=lev2+1
           lev2=lev1
           call this%rbetaT(1,hx,1,im,this%paspx4d(lm:lm,1:im,j,2),this%ssx4d(lm:lm,1:im,j,2),HALL(lev1:lev2,:,j))
-          lev1=lev1+1
-          lev2=lev2+1
         enddo
      enddo
 !$omp end parallel do
@@ -1112,8 +1104,6 @@ include "type_intstat_point2this.inc"
           lev1=lev2+1
           lev2=lev1
           call this%rbeta(1,hx,1,im,this%paspx4d(lm:lm,1:im,j,1),this%ssx4d(lm:lm,1:im,j,1),VALL(lev1:lev2,:,j))
-          lev1=lev1+1
-          lev2=lev2+1
         enddo
      enddo
 !$omp end parallel do
@@ -1136,8 +1126,6 @@ include "type_intstat_point2this.inc"
           lev1=lev2+1
           lev2=lev1
           call this%rbeta(1,hy,1,jm,this%paspy4d(lm:lm,i,1:jm,1),this%ssy4d(lm:lm,i,1:jm,1),VALL(lev1:lev2,i,:))
-          lev1=lev1+1
-          lev2=lev2+1
         enddo
      enddo
 !$omp end parallel do
@@ -1160,8 +1148,6 @@ include "type_intstat_point2this.inc"
           lev1=lev2+1
           lev2=lev1
           call this%rbeta(1,hx,1,im,this%paspx4d(lm:lm,1:im,j,2),this%ssx4d(lm:lm,1:im,j,2),HALL(lev1:lev2,:,j))
-          lev1=lev1+1
-          lev2=lev2+1
         enddo
      enddo
 !$omp end parallel do
@@ -1186,8 +1172,6 @@ include "type_intstat_point2this.inc"
           lev1=lev2+1
           lev2=lev1
           call this%rbeta(1,hy,1,jm,this%paspy4d(lm:lm,i,1:jm,2),this%ssy4d(lm:lm,i,1:jm,2),HALL(lev1:lev2,i,:))
-          lev1=lev1+1
-          lev2=lev2+1
         enddo
      enddo
 !$omp end parallel do
@@ -1991,6 +1975,7 @@ real(r_kind),dimension(1:km3,1-hz:lm+hz):: W
 integer(i_kind):: i,j,L,k,k_ind,kloc
 !----------------------------------------------------------------------
 
+!$omp parallel do collapse(2) private(i,j,L,k,k_ind,kloc,W) schedule(static)
     do j=1,jm
     do i=1,im
       do k=1,km3
@@ -2016,6 +2001,7 @@ integer(i_kind):: i,j,L,k,k_ind,kloc
       enddo
    enddo
    enddo
+!$omp end parallel do
 
 !----------------------------------------------------------------------
 endsubroutine sup_vrbeta1_bkg
@@ -2039,6 +2025,7 @@ real(r_kind),dimension(1:km3,1-hz:lm+hz):: W
 integer(i_kind):: i,j,L,k,k_ind,kloc
 !----------------------------------------------------------------------
 
+!$omp parallel do collapse(2) private(i,j,L,k,k_ind,kloc,W) schedule(static)
         do j=1,jm
         do i=1,im
 
@@ -2073,6 +2060,7 @@ integer(i_kind):: i,j,L,k,k_ind,kloc
 
         end do
         end do
+!$omp end parallel do
 
 !----------------------------------------------------------------------
 endsubroutine sup_vrbeta1T_bkg
