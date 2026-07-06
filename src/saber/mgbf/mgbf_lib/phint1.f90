@@ -20,7 +20,15 @@ use mgbf_kinds, only: i_kind,r_kind
 use phint, only: wint3,whint,v1_wint3,v1_whint
 implicit none
 public:: make_ssf, make_ssgrid, zsigtossig, interpftos, sstosig, intgrid, &
-     logintgrid, wintgrid, monotonicrefine,sofztozofs 
+     logintgrid, wintgrid, monotonicrefine,sofztozofs, &
+     wintgrid_f2a_top2bot, intgrid_f2a_3d_top2bot_apply, &
+     intgrid_f2a_3d_ad_top2bot_apply
+
+! Stencil-type codes shared by wintgrid_f2a_top2bot and the *_apply routines
+! (same values as the local parameters previously used inside the *_fast
+! routines):
+integer(i_kind), parameter, public :: vint_wint3_type=1, vint_wint3_top_type=2, &
+                                      vint_whint_type=3
 
 interface make_ssf
    module procedure make_ssf
@@ -674,12 +682,153 @@ end do
 
 end subroutine intgrid_f2a_3d_top2bot
 
+subroutine wintgrid_f2a_top2bot(nz, ns, zofs, interp_type, src_inds, weights)
+!------------------------------------------------------------------------------
+! Precompute the vertical interpolation stencil (type, source indices, weights)
+! used by intgrid_f2a_3d_top2bot_fast and its adjoint (top-to-bottom storage).
+! Factored out of the *_fast routines so the same stencil can be stored (e.g.
+! as mg_intstate member data) and rescaled, without reimplementing the
+! interpolation logic anywhere else.
+!------------------------------------------------------------------------------
+use phint, only: v1_wint3, v1_whint
+implicit none
+
+integer(i_kind),                    intent(in)  :: nz, ns
+real(r_kind), dimension(0:ns),      intent(in)  :: zofs
+integer(i_kind), dimension(0:nz),   intent(out) :: interp_type
+integer(i_kind), dimension(4,0:nz), intent(out) :: src_inds
+real(r_kind), dimension(4,0:nz),    intent(out) :: weights
+
+! Local
+integer :: k, s
+real(r_kind) :: z
+real(r_kind), dimension(3) :: w3
+real(r_kind), dimension(4) :: w4
+
+!------------------ Precompute indices and weights ----------------------------
+do k = 0, nz
+  z = real(nz - k+1, r_kind)  ! Map k (top-to-bottom) to physical z (bottom-to-top)
+  s = 0
+  do while (s < ns-1 .and. zofs(s+1) > z)
+    s = s + 1
+  end do
+
+  if (s <= 1) then
+    call v1_wint3(zofs(0:2), z, w3)
+    interp_type(k) = vint_wint3_type
+    src_inds(1:3,k) = (/0,1,2/)
+    weights(1:3,k) = w3
+    src_inds(4,k) = -1
+    weights(4,k) = 0.0_r_kind
+  elseif (s >= ns-1) then
+    call v1_wint3(zofs(ns-2:ns), z, w3)
+    interp_type(k) = vint_wint3_top_type
+    src_inds(1:3,k) = (/ns-2, ns-1, ns/)
+    weights(1:3,k) = w3
+    src_inds(4,k) = -1
+    weights(4,k) = 0.0_r_kind
+  else
+    call v1_whint(zofs(s-1:s+2), z, w4)
+    interp_type(k) = vint_whint_type
+    src_inds(1:4,k) = (/s-1, s, s+1, s+2/)
+    weights(1:4,k) = w4
+  end if
+end do
+
+end subroutine wintgrid_f2a_top2bot
+
+subroutine intgrid_f2a_3d_top2bot_apply(nz, ns, nx, ny, interp_type, src_inds, weights, az, as)
+!------------------------------------------------------------------------------
+! Apply the direct vertical interpolation (top-to-bottom storage) using a
+! precomputed stencil from wintgrid_f2a_top2bot. The stencil weights may carry
+! an extra per-target-level normalization factor (N*I).
+!------------------------------------------------------------------------------
+implicit none
+
+integer(i_kind),                    intent(in)  :: nz, ns, nx, ny
+integer(i_kind), dimension(0:nz),   intent(in)  :: interp_type
+integer(i_kind), dimension(4,0:nz), intent(in)  :: src_inds
+real(r_kind), dimension(4,0:nz),    intent(in)  :: weights
+real(r_kind), dimension(0:ns,nx,ny), intent(in)  :: as
+real(r_kind), dimension(0:nz,nx,ny), intent(out) :: az
+
+! Local
+integer :: k, m, i, j
+
+!------------------ Apply interpolation using precomputed weights -------------
+do j = 1, ny
+  do i = 1, nx
+    do k = 0, nz
+      select case (interp_type(k))
+      case (vint_wint3_type, vint_wint3_top_type)
+        az(k,i,j) = 0.0_r_kind
+        do m = 1, 3
+          az(k,i,j) = az(k,i,j) + weights(m,k) * as(src_inds(m,k),i,j)
+        end do
+      case (vint_whint_type)
+        az(k,i,j) = 0.0_r_kind
+        do m = 1, 4
+          az(k,i,j) = az(k,i,j) + weights(m,k) * as(src_inds(m,k),i,j)
+        end do
+      end select
+    end do
+  end do
+end do
+
+end subroutine intgrid_f2a_3d_top2bot_apply
+
+subroutine intgrid_f2a_3d_ad_top2bot_apply(nz, ns, nx, ny, interp_type, src_inds, weights, az_ad, as_ad)
+!------------------------------------------------------------------------------
+! Adjoint of intgrid_f2a_3d_top2bot_apply, using the same precomputed stencil
+! (I^T*N when the weights carry the normalization factor).
+! Input: az_ad(0:nz, nx, ny)
+! Output: as_ad(0:ns, nx, ny) (zeroed, then accumulated)
+!------------------------------------------------------------------------------
+implicit none
+
+integer(i_kind),                    intent(in)  :: nz, ns, nx, ny
+integer(i_kind), dimension(0:nz),   intent(in)  :: interp_type
+integer(i_kind), dimension(4,0:nz), intent(in)  :: src_inds
+real(r_kind), dimension(4,0:nz),    intent(in)  :: weights
+real(r_kind), dimension(0:nz,nx,ny), intent(in)  :: az_ad
+real(r_kind), dimension(0:ns,nx,ny), intent(inout) :: as_ad
+
+! Local
+integer :: k, m, i, j
+
+!------------------ Apply adjoint interpolation using precomputed weights -----
+! as_ad should be initialized to zero before accumulation
+as_ad(:,:,:) = 0.0_r_kind
+
+do j = 1, ny
+  do i = 1, nx
+    do k = 0, nz
+      select case (interp_type(k))
+      case (vint_wint3_type, vint_wint3_top_type)
+        do m = 1, 3
+          if (src_inds(m,k) >= 0 .and. src_inds(m,k) <= ns) then
+            as_ad(src_inds(m,k),i,j) = as_ad(src_inds(m,k),i,j) + weights(m,k) * az_ad(k,i,j)
+          end if
+        end do
+      case (vint_whint_type)
+        do m = 1, 4
+          if (src_inds(m,k) >= 0 .and. src_inds(m,k) <= ns) then
+            as_ad(src_inds(m,k),i,j) = as_ad(src_inds(m,k),i,j) + weights(m,k) * az_ad(k,i,j)
+          end if
+        end do
+      end select
+    end do
+  end do
+end do
+
+end subroutine intgrid_f2a_3d_ad_top2bot_apply
+
 subroutine intgrid_f2a_3d_top2bot_fast(nz, ns, nx, ny, zofs, az, as)
 !------------------------------------------------------------------------------
 ! Optimized vertical interpolation (top-to-bottom storage)
-! Precomputes mapping and weights, then applies to all horizontal points
+! Precomputes mapping and weights (wintgrid_f2a_top2bot), then applies to all
+! horizontal points (intgrid_f2a_3d_top2bot_apply)
 !------------------------------------------------------------------------------
-use phint, only: v1_wint3, v1_whint
 implicit none
 
 integer(i_kind),               intent(in)  :: nz, ns, nx, ny
@@ -688,75 +837,23 @@ real(r_kind), dimension(0:ns,nx,ny), intent(in)  :: as
 real(r_kind), dimension(0:nz,nx,ny), intent(out) :: az
 
 ! Local
-integer :: k, s, m, i, j
-real(r_kind) :: z
-integer, parameter :: wint3_type=1, wint3_top_type=2, whint_type=3
-integer, dimension(0:nz) :: interp_type
-integer, dimension(4,0:nz) :: src_inds
+integer(i_kind), dimension(0:nz) :: interp_type
+integer(i_kind), dimension(4,0:nz) :: src_inds
 real(r_kind), dimension(4,0:nz) :: weights
-real(r_kind), dimension(3) :: w3
-real(r_kind), dimension(4) :: w4
 
-!------------------ Precompute indices and weights ----------------------------
-do k = 0, nz
-  z = real(nz - k+1, r_kind)  ! Map k (top-to-bottom) to physical z (bottom-to-top)
-  s = 0
-  do while (s < ns-1 .and. zofs(s+1) > z)
-    s = s + 1
-  end do
-
-  if (s <= 1) then
-    call v1_wint3(zofs(0:2), z, w3)
-    interp_type(k) = wint3_type
-    src_inds(1:3,k) = (/0,1,2/)
-    weights(1:3,k) = w3
-    src_inds(4,k) = -1
-    weights(4,k) = 0.0_r_kind
-  elseif (s >= ns-1) then
-    call v1_wint3(zofs(ns-2:ns), z, w3)
-    interp_type(k) = wint3_top_type
-    src_inds(1:3,k) = (/ns-2, ns-1, ns/)
-    weights(1:3,k) = w3
-    src_inds(4,k) = -1
-    weights(4,k) = 0.0_r_kind
-  else
-    call v1_whint(zofs(s-1:s+2), z, w4)
-    interp_type(k) = whint_type
-    src_inds(1:4,k) = (/s-1, s, s+1, s+2/)
-    weights(1:4,k) = w4
-  end if
-end do
-
-!------------------ Apply interpolation using precomputed weights -------------
-do j = 1, ny
-  do i = 1, nx
-    do k = 0, nz
-      select case (interp_type(k))
-      case (wint3_type, wint3_top_type)
-        az(k,i,j) = 0.0_r_kind
-        do m = 1, 3
-          az(k,i,j) = az(k,i,j) + weights(m,k) * as(src_inds(m,k),i,j)
-        end do
-      case (whint_type)
-        az(k,i,j) = 0.0_r_kind
-        do m = 1, 4
-          az(k,i,j) = az(k,i,j) + weights(m,k) * as(src_inds(m,k),i,j)
-        end do
-      end select
-    end do
-  end do
-end do
+call wintgrid_f2a_top2bot(nz, ns, zofs, interp_type, src_inds, weights)
+call intgrid_f2a_3d_top2bot_apply(nz, ns, nx, ny, interp_type, src_inds, weights, az, as)
 
 end subroutine intgrid_f2a_3d_top2bot_fast
 
 subroutine intgrid_f2a_3d_ad_top2bot_fast(nz, ns, nx, ny, zofs, az_ad, as_ad)
 !------------------------------------------------------------------------------
 ! Optimized adjoint of vertical interpolation (top-to-bottom storage)
-! Precomputes mapping and weights, then applies to all horizontal points
+! Precomputes mapping and weights (wintgrid_f2a_top2bot), then applies to all
+! horizontal points (intgrid_f2a_3d_ad_top2bot_apply)
 ! Input: az_ad(0:nz, nx, ny)
 ! Output: as_ad(0:ns, nx, ny) (accumulated)
 !------------------------------------------------------------------------------
-use phint, only: wint3, whint
 implicit none
 
 integer(i_kind),               intent(in)  :: nz, ns, nx, ny
@@ -765,69 +862,12 @@ real(r_kind), dimension(0:nz,nx,ny), intent(in)  :: az_ad
 real(r_kind), dimension(0:ns,nx,ny), intent(inout) :: as_ad
 
 ! Local
-integer :: k, s, m, i, j
-real(r_kind) :: z
-integer, parameter :: wint3_type=1, wint3_top_type=2, whint_type=3
-integer, dimension(0:nz) :: interp_type
-integer, dimension(4,0:nz) :: src_inds
+integer(i_kind), dimension(0:nz) :: interp_type
+integer(i_kind), dimension(4,0:nz) :: src_inds
 real(r_kind), dimension(4,0:nz) :: weights
-real(r_kind), dimension(3) :: w3
-real(r_kind), dimension(4) :: w4
 
-!------------------ Precompute indices and weights ----------------------------
-do k = 0, nz
-  z = real(nz - k+1, r_kind)  ! Map k (top-to-bottom) to physical z (bottom-to-top)
-  s = 0
-  do while (s < ns-1 .and. zofs(s+1) > z)
-    s = s + 1
-  end do
-
-  if (s <= 1) then
-    call v1_wint3(zofs(0:2), z, w3)
-    interp_type(k) = wint3_type
-    src_inds(1:3,k) = (/0,1,2/)
-    weights(1:3,k) = w3
-    src_inds(4,k) = -1
-    weights(4,k) = 0.0_r_kind
-  elseif (s >= ns-1) then
-    call v1_wint3(zofs(ns-2:ns), z, w3)
-    interp_type(k) = wint3_top_type
-    src_inds(1:3,k) = (/ns-2, ns-1, ns/)
-    weights(1:3,k) = w3
-    src_inds(4,k) = -1
-    weights(4,k) = 0.0_r_kind
-  else
-    call v1_whint(zofs(s-1:s+2), z, w4)
-    interp_type(k) = whint_type
-    src_inds(1:4,k) = (/s-1, s, s+1, s+2/)
-    weights(1:4,k) = w4
-  end if
-end do
-
-!------------------ Apply adjoint interpolation using precomputed weights -------------
-! as_ad should be initialized to zero before accumulation
-as_ad(:,:,:) = 0.0_r_kind
-
-do j = 1, ny
-  do i = 1, nx
-    do k = 0, nz
-      select case (interp_type(k))
-      case (wint3_type, wint3_top_type)
-        do m = 1, 3
-          if (src_inds(m,k) >= 0 .and. src_inds(m,k) <= ns) then
-            as_ad(src_inds(m,k),i,j) = as_ad(src_inds(m,k),i,j) + weights(m,k) * az_ad(k,i,j)
-          end if
-        end do
-      case (whint_type)
-        do m = 1, 4
-          if (src_inds(m,k) >= 0 .and. src_inds(m,k) <= ns) then
-            as_ad(src_inds(m,k),i,j) = as_ad(src_inds(m,k),i,j) + weights(m,k) * az_ad(k,i,j)
-          end if
-        end do
-      end select
-    end do
-  end do
-end do
+call wintgrid_f2a_top2bot(nz, ns, zofs, interp_type, src_inds, weights)
+call intgrid_f2a_3d_ad_top2bot_apply(nz, ns, nx, ny, interp_type, src_inds, weights, az_ad, as_ad)
 
 end subroutine intgrid_f2a_3d_ad_top2bot_fast
 

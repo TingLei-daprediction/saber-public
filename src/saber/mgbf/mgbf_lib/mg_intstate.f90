@@ -34,6 +34,9 @@ use jp_pkind2, only: fpi
 use jp_pbfil3, only: inimomtab,t22_to_3,tritform,t33_to_6,hextform
 use mg_parameter,only: mg_parameter_type
 use mg_tools,only : interp_analysis_to_filter,mg_sphere_dist
+! codex debug/develop for new jim's calibrated function (wbfil variant):
+! shared vertical-interpolation stencil constructor (also used by mg_transfer)
+use phint1,only : wintgrid_f2a_top2bot
 use tools_func, only:sphere_dist
 use  tools_const, only: req,deg2rad
 implicit none
@@ -85,6 +88,17 @@ real(r_kind), allocatable,dimension(:,:,:):: pasp1
 real(r_kind), allocatable,dimension(:,:,:):: pasp1_store
 real(r_kind), allocatable,dimension(:,:):: pasp1_jim_new
 real(r_kind), allocatable,dimension(:,:):: pasp1_jim_new_wbfil
+! codex debug/develop for new jim's calibrated function (wbfil variant):
+! vertical analysis<->filter interpolation stencil (from wintgrid_f2a_top2bot,
+! 0-based analysis levels 0:lm_a-1) with the exact analysis-grid normalization
+! n_j=1/||M^T I^T e_j|| folded into vint_weights, so that the vertical
+! operator I*M*M^T*I^T has unit diagonal on analysis levels when lm_a>lm.
+! Allocated only for the wbfil path (mgbf_proc=35); mg_transfer falls back to
+! the unnormalized zofis-based interpolation when not allocated.
+integer(i_kind), allocatable,dimension(:):: vint_interp_type
+integer(i_kind), allocatable,dimension(:,:):: vint_src_inds
+real(r_kind), allocatable,dimension(:,:):: vint_weights
+real(r_kind), allocatable,dimension(:):: vint_norm
 real(r_kind), allocatable,dimension(:,:,:,:):: pasp2
 real(r_kind), allocatable,dimension(:,:,:,:,:):: pasp3
 
@@ -1379,6 +1393,11 @@ real (r_kind)::rtem1,rtem2
 real (r_kind) :: dist_rad
 real(r_kind), allocatable,dimension(:,:,:,:):: loc_paspx4d
 real(r_kind), allocatable,dimension(:,:,:,:):: loc_paspy4d
+! codex debug/develop for new jim's calibrated function (wbfil variant):
+! locals for the exact analysis-grid vertical normalization setup
+integer(i_kind):: ka,m_st
+real(r_kind):: xLb_vint,xmb_vint
+real(r_kind), allocatable,dimension(:):: vwork
 
 !-----------------------------------------------------------------------
 allocate(this%weig_var(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,this%gm))        ; this%weig_var=0.
@@ -1828,6 +1847,53 @@ do igbin=1,2
      enddo
    enddo
 enddo
+! codex debug/develop for new jim's calibrated function (wbfil variant):
+! Exact analysis-grid vertical normalization for lm_a>lm (see Jim's Note 51).
+! The analysis-grid vertical operator is B_a = I*M*M^T*I^T, where I is the
+! filter->analysis vertical interpolation and M the vertical square-root
+! filter (rflip1 then rbeta1 with pasp1_jim_new_wbfil, as applied by
+! sup_vrbeta1*_bkg_new_jim_wbfil). Although diag(M*M^T)=1 by wbfil's row
+! normalization, diag(B_a)/=1 because I mixes neighboring rows of M. The
+! exact diagonal is d_j=||M^T*I^T*e_j||^2; we compute it here per analysis
+! level (I^T*e_j is just that level's interpolation stencil, and zofis /
+! pasp1 are horizontally homogeneous so one column suffices) and fold
+! n_j=1/sqrt(d_j) into the stored stencil weights, so mg_transfer applies
+! N*I (direct) and I^T*N (adjoint) with no dirac-test-based rnormalization.
+if(this%mgbf_proc==35 .and. this%lm_a>this%lm) then
+   allocate(this%vint_interp_type(0:this%lm_a-1))
+   allocate(this%vint_src_inds(4,0:this%lm_a-1))
+   allocate(this%vint_weights(4,0:this%lm_a-1))
+   allocate(this%vint_norm(0:this%lm_a-1))
+   call wintgrid_f2a_top2bot(this%lm_a-1,this%lm-1,this%zofis, &
+        this%vint_interp_type,this%vint_src_inds,this%vint_weights)
+   ! boundary reflection scales exactly as in sup_vrbeta1T_bkg_new_jim_wbfil
+   xLb_vint=0.0_r_kind
+   xmb_vint=0.0_r_kind
+   if(this%pasp1_store(1,1,1)>0.0_r_kind) xLb_vint=1.0_r_kind/sqrt(this%pasp1_store(1,1,1))
+   if(this%pasp1_store(1,1,this%lm)>0.0_r_kind) xmb_vint=1.0_r_kind/sqrt(this%pasp1_store(1,1,this%lm))
+   allocate(vwork(1-this%hz:this%lm+this%hz))
+   do ka=0,this%lm_a-1
+      vwork=0.0_r_kind
+      do m_st=1,4
+         if(this%vint_src_inds(m_st,ka)>=0) &
+            vwork(this%vint_src_inds(m_st,ka)+1)=this%vint_weights(m_st,ka) ! v=I^T e_j (0-based -> 1-based)
+      enddo
+      if(this%l_vertical_filter) then
+         ! M^T v: same call sequence as sup_vrbeta1T_bkg_new_jim_wbfil
+         call this%rbeta1T_jim_new_wbfil(this%hz,1,this%lm, &
+              this%pasp1_jim_new_wbfil(:,1:this%lm),vwork)
+         call this%rflip1T_jim_new(this%hz,1,this%lm,.true.,.true., &
+              xLb_vint,xmb_vint,vwork)
+      endif
+      this%vint_norm(ka)=1.0_r_kind/sqrt(sum(vwork(1:this%lm)**2))
+      this%vint_weights(:,ka)=this%vint_weights(:,ka)*this%vint_norm(ka)
+   enddo
+   deallocate(vwork)
+   if(this%mype==0) then
+      write(6,*)'wbfil vertical normalization n_j (analysis levels, top to bottom):'
+      write(6,'(5E15.7)') this%vint_norm
+   endif
+endif
 deallocate(loc_paspx4d,loc_paspy4d)
 deallocate(hwork_jim)
 endif !cltothink , the (::,2) should be obtained from (::1) through upsending_normlized as below
