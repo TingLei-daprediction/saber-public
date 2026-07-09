@@ -31,7 +31,7 @@ public mgbf_covariance_registry
 #define LISTED_TYPE mgbf_covariance
 
 !> Linked list interface - defines registry_t type
-#include "tlei_tools_linkedlist_interface.fypp"
+#include "mgbf_tools_linkedlist_interface.fypp"
 
 !> Global registry
 
@@ -44,7 +44,7 @@ contains
 ! --------------------------------------------------------------------------------------------------
 
 !> Linked list implementation
-#include "tlei_tools_linkedlist_implementation.fypp"
+#include "mgbf_tools_linkedlist_implementation.fypp"
 
 ! --------------------------------------------------------------------------------------------------
 
@@ -86,6 +86,8 @@ f_fg = atlas_fieldset(c_fg)
 call f_self%create(f_comm, f_conf, f_fs, f_bg, f_fg)
 
 call f_fs%final()
+call f_bg%final()
+call f_fg%final()
 
 end subroutine mgbf_covariance_create_cpp
 
@@ -136,6 +138,7 @@ f_inc = atlas_fieldset(c_inc)
 
 ! -------------------
 call f_self%randomize(f_inc)
+call f_inc.final()
 
 end subroutine mgbf_covariance_randomize_cpp
 
@@ -199,6 +202,7 @@ f_fieldset = atlas_fieldset(c_afieldset)
 
 ! -------------------
 call f_self%multiply_ad(f_fieldset)
+call f_fieldset.final()
 
 end subroutine mgbf_covariance_multiply_ad_cpp
 

@@ -121,7 +121,6 @@ MGBF_Covariance::MGBF_Covariance(const oops::GeometryData & geometryData,
 
   // Function space
 
-  // Need to convert background and first guess to Atlas and MGBF grid.
 
   // Create covariance module
   mgbf_covariance_create_f90(keySelf_, *comm_, mgbf_config,
@@ -145,11 +144,7 @@ void MGBF_Covariance::randomize(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::randomize starting" << std::endl;
   util::Timer timer(classname(), "randomize");
 
-  // Ignore incoming fields and create new ones based on the block function space
-  // ----------------------------------------------------------------------------
-  // atlas::FieldSet newFields = atlas::FieldSet();
 
-  // Loop over saber (model) fields and create corresponding fields on mgbf grid
   for (auto sabField : fset) {
     // Get the name
     const auto fieldName = name(sabField.name());
@@ -160,10 +155,8 @@ void MGBF_Covariance::randomize(oops::FieldSet3D & fset) const {
       ABORT("Field " + fieldNameStr + " not found in the " + classname() + " variables.");
     }
 
-    // Create the mgbf grid field and add to Fieldset
   }
 
-  // Replace whatever fields are coming in with the mgbf grid fields
 
   mgbf_covariance_randomize_f90(keySelf_, fset.get());
   oops::Log::trace() << classname() << "::randomize done" << std::endl;
