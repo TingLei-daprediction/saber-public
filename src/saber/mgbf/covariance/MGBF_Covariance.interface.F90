@@ -138,7 +138,7 @@ f_inc = atlas_fieldset(c_inc)
 
 ! -------------------
 call f_self%randomize(f_inc)
-call f_inc.final()
+call f_inc%final()
 
 end subroutine mgbf_covariance_randomize_cpp
 
@@ -202,7 +202,7 @@ f_fieldset = atlas_fieldset(c_afieldset)
 
 ! -------------------
 call f_self%multiply_ad(f_fieldset)
-call f_fieldset.final()
+call f_fieldset%final()
 
 end subroutine mgbf_covariance_multiply_ad_cpp
 

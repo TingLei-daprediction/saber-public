@@ -7,23 +7,6 @@
 
 #include "saber/mgbf/covariance/MGBF_Covariance.h"
 
-#include <memory>
-#include <string>
-#include <vector>
-
-#include "atlas/field.h"
-#include "atlas/functionspace.h"
-#include "atlas/grid.h"
-#include "atlas/library.h"
-#include "atlas/runtime/Log.h"
-
-#include "oops/base/Variables.h"
-#include "oops/util/abor1_cpp.h"
-#include "oops/util/Logger.h"
-#include "oops/util/Timer.h"
-
-#include "saber/mgbf/covariance/MGBF_Covariance.interface.h"
-
 namespace saber {
 namespace mgbf {
 
@@ -31,5 +14,5 @@ namespace mgbf {
 
 static SaberCentralBlockMaker<MGBF_Covariance> makerCovariance_("MGBF_covariance");
 
-}  // namespace MGBF
+}  // namespace mgbf
 }  // namespace saber

@@ -47,7 +47,8 @@ class MGBF_CovarianceParameters : public SaberBlockParametersBase {
   oops::OptionalParameter<std::string> SDL_MGBFNML{"mgbf sdl and vdl init namelist file", this};
   oops::OptionalParameter<std::string> MGBFNML{"mgbf namelist file", this};
   oops::OptionalParameter<bool> debugPrint{"debug print", this};
-    // Mandatory active variables
+
+  // Mandatory active variables
   oops::Variables mandatoryActiveVars() const override {return oops::Variables();}
 };
 
@@ -68,20 +69,6 @@ class MGBF_Covariance : public SaberCentralBlockBase {
   virtual ~MGBF_Covariance();
   void randomize(oops::FieldSet3D &) const override;
   void multiply(oops::FieldSet3D &) const override;
-
-  void directCalibration(const oops::FieldSets &) override {};
-
-  void iterativeCalibrationInit() override {};
-  void iterativeCalibrationUpdate(const oops::FieldSet3D &) override{};
-  void iterativeCalibrationFinal() override{};
-
-  void write() const override {};
-  std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> fieldsToWrite() const
-    override {};
-
-  void multiplySqrt(const atlas::Field &, oops::FieldSet3D &, const size_t &) const override {};
-  void multiplySqrtAD(const oops::FieldSet3D &, atlas::Field &, const size_t &) const override {};
-
 
  private:
   void print(std::ostream &) const override;
@@ -114,13 +101,8 @@ MGBF_Covariance::MGBF_Covariance(const oops::GeometryData & geometryData,
   util::Timer timer(classname(), "Covariance");
   eckit::LocalConfiguration mgbf_config = params.toConfiguration();
   if (params.doCalibration()) {
-    throw eckit::UserError("doCalibration=.true. is not implemented ", Here());
+    throw eckit::UserError("doCalibration=true is not implemented ", Here());
   }
-
-  // Assert that there is no variable change in this block
-
-  // Function space
-
 
   // Create covariance module
   mgbf_covariance_create_f90(keySelf_, *comm_, mgbf_config,
@@ -144,7 +126,6 @@ void MGBF_Covariance::randomize(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::randomize starting" << std::endl;
   util::Timer timer(classname(), "randomize");
 
-
   for (auto sabField : fset) {
     // Get the name
     const auto fieldName = name(sabField.name());
@@ -154,9 +135,7 @@ void MGBF_Covariance::randomize(oops::FieldSet3D & fset) const {
     if (std::find(variables_.begin(), variables_.end(), fieldNameStr) == variables_.end()) {
       ABORT("Field " + fieldNameStr + " not found in the " + classname() + " variables.");
     }
-
   }
-
 
   mgbf_covariance_randomize_f90(keySelf_, fset.get());
   oops::Log::trace() << classname() << "::randomize done" << std::endl;
@@ -167,6 +146,8 @@ void MGBF_Covariance::randomize(oops::FieldSet3D & fset) const {
 void MGBF_Covariance::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   util::Timer timer(classname(), "multiply");
+
+  // Get member index
   int index_member;
   if (fset.fieldSet().metadata().has("ensemble member index")) {
     index_member = fset.fieldSet().metadata().get<int>("ensemble member index");
@@ -174,33 +155,28 @@ void MGBF_Covariance::multiply(oops::FieldSet3D & fset) const {
     index_member = 9999;
   }
 
+  // Multiply
   mgbf_covariance_multiply_f90(keySelf_, fset.get(), index_member);
+
   // Mark all fields as having dirty halos after modification
   for (const auto & fieldname : fset.field_names()) {
     atlas::Field field = fset[fieldname];
     field.set_dirty();  // Mark field as having dirty halos that need to be synchronized
   }
+
   // Perform the actual halo exchange
   fset.fieldSet().haloExchange();
+
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
 // -------------------------------------------------------------------------------------------------
 
-
-// -------------------------------------------------------------------------------------------------
-
-// -----------------------------------------------------------------------------
-//
-//
-// -------------------------------------------------------------------------------------------------
-
-
 void MGBF_Covariance::print(std::ostream & os) const {
   os << classname();
 }
 
-
+// -------------------------------------------------------------------------------------------------
 
 }  // namespace mgbf
 }  // namespace saber
