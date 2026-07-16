@@ -31,11 +31,11 @@ public mgbf_covariance_registry
 #define LISTED_TYPE mgbf_covariance
 
 !> Linked list interface - defines registry_t type
-#include "mgbf_tools_linkedlist_interface.fypp"
+#include "oops/util/linkedList_i.f"
 
 !> Global registry
 
-type(registry_type) :: mgbf_covariance_registry
+type(registry_t) :: mgbf_covariance_registry
 
 ! --------------------------------------------------------------------------------------------------
 
@@ -44,7 +44,7 @@ contains
 ! --------------------------------------------------------------------------------------------------
 
 !> Linked list implementation
-#include "mgbf_tools_linkedlist_implementation.fypp"
+#include "oops/util/linkedList_c.f"
 
 ! --------------------------------------------------------------------------------------------------
 
@@ -69,8 +69,7 @@ type(atlas_fieldset)          :: f_fg
 
 ! LinkedList
 ! ----------
-f_comm=fckit_mpi_comm(c_comm)
-call mgbf_covariance_registry%init(f_comm)
+call mgbf_covariance_registry%init()
 call mgbf_covariance_registry%add(c_self)
 call mgbf_covariance_registry%get(c_self, f_self)
 
