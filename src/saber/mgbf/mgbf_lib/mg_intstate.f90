@@ -1402,7 +1402,7 @@ endif
 gen_fac=1.
 !cltorg this%a_diff_f(:,:,:)=this%mg_weig1 
 write(tmpfilename, '("mgbf_tmpfile_", I0, ".txt")') this%mype
-open(12,file=trim(tmpfilename),form="formatted")
+!cltorg open(12,file=trim(tmpfilename),form="formatted")
 if(this%l_mgbf_inhomogeneous ) then
 this%a_diff_f(:,:,:)=this%weig_var(:,:,:,1) 
 !cltorg this%a_diff_h(:,:,:)=this%mg_weig1 
@@ -1422,7 +1422,7 @@ case default
 !cltorg   this%a_diff_h(:,:,:)=this%mg_weig4
    this%a_diff_h(:,:,:)=this%weig_var(:,:,:,4)
 end select
-close (12)
+!cltorg close (12)
 else
 this%a_diff_f(:,:,:)=this%mg_weig1 
 
@@ -1466,20 +1466,20 @@ if (this%l_constant_aspt2 ) then
    lonlat2d_anl(:,:,1)=reshape(lonlat1d_anl(:,1),[size(lonlat2d_anl,1),size(lonlat2d_anl,2)])
    lonlat2d_anl(:,:,2)=reshape(lonlat1d_anl(:,2),[size(lonlat2d_anl,1),size(lonlat2d_anl,2)])
    lonlat2d_anl=lonlat2d_anl*deg2rad
-   if(this%mype.eq.0) then 
-     open(13,file='latlon.txt',form="formatted")
-       write(13,*)"lon and lat "
-        do j = 1, this%mm
-           do i = 1, this%nm
-            write(13,'(2I5, 2ES20.10)') i, j, &
-                      lonlat2d_anl(i, j, 1), lonlat2d_anl(i, j, 2)
-            end do
-         end do
+!clt   if(this%mype.eq.0) then 
+!clt     open(13,file='latlon.txt',form="formatted")
+!clt       write(13,*)"lon and lat "
+!clt        do j = 1, this%mm
+!clt           do i = 1, this%nm
+!clt            write(13,'(2I5, 2ES20.10)') i, j, &
+!clt                      lonlat2d_anl(i, j, 1), lonlat2d_anl(i, j, 2)
+!clt            end do
+!clt         end do
 !#       write(13,*)lonlat2d_anl(:,:,1)
 !       write(13,*)"lat "
 !       write(13,*)lonlat2d_anl(:,:,2)
-    close(13)
-   endif
+!clt    close(13)
+!clt   endif
    call interp_analysis_to_filter(lonlat2d_anl(:,:,1),this%nm,this%mm,this%im,this%jm,lonlat2d_filt(:,:,1))
    call interp_analysis_to_filter(lonlat2d_anl(:,:,2),this%nm,this%mm,this%im,this%jm,lonlat2d_filt(:,:,2))
   
@@ -1596,8 +1596,8 @@ end do
          this%VALL(1,1,:)=0.
       else
          call this%cholaspect(1,this%lm,this%pasp1)
-         call this%cholaspect(1,this%im,1,this%jm,this%pasp2)
-         call this%cholaspect(1,this%im,1,this%jm,1,this%lm,this%pasp3)  !clt this had warnings : WARNING cholaspect2: near-zero output at ix=       5 iy= 
+         call this%cholaspect(1,this%im,1,this%jm,this%pasp2)            !clt this had warnings : WARNING cholaspect2: near-zero output 
+         call this%cholaspect(1,this%im,1,this%jm,1,this%lm,this%pasp3)  !clt this had warnings : WARNING cholaspect3: near-zero output 
                                                                          !it may be investigated later since this part is not used (not line filter)
          call this%getlinesum(this%hx,1,this%im,this%paspx,this%ssx)
          call this%getlinesum(this%hy,1,this%jm,this%paspy,this%ssy)

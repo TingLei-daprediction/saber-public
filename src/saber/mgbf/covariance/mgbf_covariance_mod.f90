@@ -539,7 +539,7 @@ integer ::  loc(2)
              nzloc=dim3d(1)
              nvar=fields%size() 
              if(nvar /= self%nvar ) then
-               write(6,*)'wrong, local nvar is not the same as self%nvar stop'
+               write(6,*)'wrong, local nvar ',nvar,' is not the same as self%nvar', self%nvar,' stop'
                call flush(6)
                stop
              endif

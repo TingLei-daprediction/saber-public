@@ -240,8 +240,6 @@ do ix=Lx,Mx
    ss(ix)=u1/s
 
 enddo
-   write(6,*)'thinkdebss end  '
-   call flush(6)
 end subroutine getlinesum1d
 !=============================================================================
 module subroutine getlinesum2(this,hx,lx,mx, hy,ly,my, el, ss)  ! [getlinesum]
