@@ -758,10 +758,19 @@ end subroutine multiply
 !     ier=0
 !  endif
    if (trim(vname) == "oz" .or. trim(vname) == "o3ppmv" ) then
-      if (.not.fields%has("mole_fraction_of_ozone_in_air")) return
-      afield = fields%field("mole_fraction_of_ozone_in_air")
-      call afield%data(rank2)
-      ier=0
+      ! GSI cv/sv name "oz" may be backed by either ozone convention on the
+      ! JEDI side: ppmv (GEOS, met_guess usrname o3ppmv) or kg/kg (FV3/RRFS,
+      ! met_guess usrname o3mr). Units handling is keyed off the met_guess
+      ! usrname in GSIbec (gsi2model_units_/guess_basics3_).
+      if (fields%has("mole_fraction_of_ozone_in_air")) then
+         afield = fields%field("mole_fraction_of_ozone_in_air")
+         call afield%data(rank2)
+         ier=0
+      else if (fields%has("ozone_mass_mixing_ratio")) then
+         afield = fields%field("ozone_mass_mixing_ratio")
+         call afield%data(rank2)
+         ier=0
+      end if
    end if
    if (trim(vname) == "o3mr") then
       if (.not.fields%has("ozone_mass_mixing_ratio")) return
