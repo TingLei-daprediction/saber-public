@@ -58,7 +58,7 @@ module subroutine filtering_procedure(this,mg_filt,mg_filt_flag)
 !                                                                      !
 !***********************************************************************
 implicit none 
-class(mg_intstate_type),target::this
+class(mg_intstate_type),intent(inout),target::this
 integer(i_kind),intent(in):: mg_filt
 integer(i_kind),intent(in):: mg_filt_flag
 include "type_parameter_locpointer.inc"
@@ -105,7 +105,7 @@ module subroutine filtering_rad3(this)
 !***********************************************************************
 !-----------------------------------------------------------------------
 implicit none
-class (mg_intstate_type),target::this
+class (mg_intstate_type),intent(inout),target::this
 real(r_kind), allocatable, dimension(:,:,:):: VM2D
 real(r_kind), allocatable, dimension(:,:,:):: HM2D
 real(r_kind), allocatable, dimension(:,:,:,:):: VM3D
@@ -206,7 +206,7 @@ use, intrinsic :: ieee_arithmetic
 !TEST
 use jp_pkind2, only: fpi
 implicit none
-class (mg_intstate_type),target::this
+class (mg_intstate_type),intent(inout),target::this
 integer(i_kind) k,i,j,L
 integer(i_kind) icol,iout,jout,lout
 logical:: ff
@@ -447,7 +447,7 @@ endsubroutine filtering_lin3
 !                                                                      !
 !***********************************************************************
 implicit none
-class (mg_intstate_type),target::this
+class (mg_intstate_type),intent(inout),target::this
 
 real(r_kind), allocatable, dimension(:,:,:):: VM2D
 real(r_kind), allocatable, dimension(:,:,:):: HM2D
@@ -591,7 +591,7 @@ module subroutine filtering_rad2_bkg(this)
 !                                                                      !
 !***********************************************************************
 implicit none
-class (mg_intstate_type),target::this
+class (mg_intstate_type),intent(inout),target::this
 integer(i_kind) L,i,j
 include "type_parameter_locpointer.inc"
 include "type_intstat_locpointer.inc"
@@ -674,7 +674,7 @@ endsubroutine filtering_rad2_bkg
 !                                                                      !
 !***********************************************************************
 implicit none
-class (mg_intstate_type),target::this
+class (mg_intstate_type),intent(inout),target::this
 
 integer(i_kind) L,i,j
 integer(i_kind) icol,iout,jout
@@ -849,7 +849,7 @@ module subroutine filtering_lin2_bkg(this)
 !                                                                      !
 !***********************************************************************
 implicit none
-class (mg_intstate_type),target::this
+class (mg_intstate_type),intent(inout),target::this
 integer(i_kind) L,i,j
 integer(i_kind) icol,iout,jout
 logical:: ff
@@ -957,7 +957,7 @@ module subroutine filtering_fast_bkg(this)
 !                                                                      !
 !***********************************************************************
 implicit none
-class (mg_intstate_type),target::this
+class (mg_intstate_type),intent(inout),target::this
 integer(i_kind) L,i,j,k,lev1,lev2
 include "type_parameter_locpointer.inc"
 include "type_intstat_locpointer.inc"
@@ -1193,7 +1193,7 @@ module subroutine filtering_rad2_ens(this,mg_filt_flag)
 !                                                                      !
 !***********************************************************************
 implicit none
-class (mg_intstate_type),target::this
+class (mg_intstate_type),intent(inout),target::this
 integer(i_kind),intent(in):: mg_filt_flag
 integer(i_kind) L,i,j
 include "type_parameter_locpointer.inc"
@@ -1307,7 +1307,7 @@ module subroutine filtering_lin2_ens(this,mg_filt_flag)
 !                                                                      !
 !***********************************************************************
 implicit none
-class (mg_intstate_type),target::this
+class (mg_intstate_type),intent(inout),target::this
 integer(i_kind),intent(in):: mg_filt_flag
 integer(i_kind) L,i,j
 integer(i_kind) icol,iout,jout
@@ -1439,7 +1439,7 @@ module subroutine filtering_fast_ens(this,mg_filt_flag)
 !                                                                      !
 !***********************************************************************
 implicit none
-class (mg_intstate_type),target::this
+class (mg_intstate_type),intent(inout),target::this
 integer(i_kind),intent(in):: mg_filt_flag
 integer(i_kind) L,i,j
 include "type_parameter_locpointer.inc"
@@ -1598,7 +1598,7 @@ module subroutine filtering_rad_highest(this)
 !                                                                      !
 !***********************************************************************
 implicit none
-class(mg_intstate_type),target:: this
+class(mg_intstate_type),intent(inout),target:: this
 include "type_parameter_locpointer.inc"
 include "type_intstat_locpointer.inc"
 include "type_parameter_point2this.inc"
@@ -1651,7 +1651,7 @@ module subroutine sup_vrbeta1 &
 (this,kmax,hx,hy,hz,im,jm,lm,pasp,ss,V)
 !----------------------------------------------------------------------
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type),intent(inout),target::this
 integer(i_kind),intent(in):: kmax,hx,hy,hz,im,jm,lm
 real(r_kind),dimension(1:kmax,1-hx:im+hx,1-hy:jm+hy,1:lm),intent(inout):: V
 real(r_kind),dimension(1,1,1:lm), intent(in):: pasp
@@ -1689,7 +1689,7 @@ module subroutine sup_vrbeta1T &
 (this,kmax,hx,hy,hz,im,jm,lm,pasp,ss,V)
 !----------------------------------------------------------------------
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type),intent(inout),target::this
 integer(i_kind),intent(in):: kmax,hx,hy,hz,im,jm,lm
 real(r_kind),dimension(1:kmax,1-hx:im+hx,1-hy:jm+hy,1:lm),intent(inout):: V
 real(r_kind),dimension(1,1,1:lm), intent(in):: pasp
@@ -1734,7 +1734,7 @@ module subroutine sup_vrbeta3 &
 (this,kmax,hx,hy,hz,im,jm,lm,pasp,ss,V)
 !----------------------------------------------------------------------
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type),intent(inout),target::this
 integer(i_kind),intent(in):: kmax,hx,hy,hz,im,jm,lm
 real(r_kind),dimension(1:kmax,1-hx:im+hx,1-hy:jm+hy,1:lm),intent(inout):: V
 real(r_kind),dimension(3,3,1:im,1:jm,1:lm), intent(in):: pasp
@@ -1785,7 +1785,7 @@ module subroutine sup_vrbeta3T &
 (this,kmax,hx,hy,hz,im,jm,lm,pasp,ss,V)
 !----------------------------------------------------------------------
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type),intent(inout),target::this
 integer(i_kind),intent(in):: kmax,hx,hy,hz,im,jm,lm
 real(r_kind),dimension(1:kmax,1-hx:im+hx,1-hy:jm+hy,1:lm),intent(inout):: V
 real(r_kind),dimension(3,3,1:im,1:jm,1:lm), intent(in):: pasp
@@ -1847,7 +1847,7 @@ module subroutine sup_vrbeta1_ens &
 (this,km_en,hx,hy,hz,im,jm,lm,pasp,ss,VALL)
 !----------------------------------------------------------------------
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type),intent(inout),target::this
 integer(i_kind),intent(in):: km_en,hx,hy,hz,im,jm,lm
 real(r_kind),dimension(1:km_en*lm,1-hx:im+hx,1-hy:jm+hy),intent(inout):: VALL
 real(r_kind),dimension(1,1,1:lm), intent(in):: pasp
@@ -1895,7 +1895,7 @@ module subroutine sup_vrbeta1T_ens &
 (this,km_en,hx,hy,hz,im,jm,lm,pasp,ss,VALL)
 !----------------------------------------------------------------------
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type),intent(inout),target::this
 integer(i_kind),intent(in):: km_en,hx,hy,hz,im,jm,lm
 real(r_kind),dimension(1:km_en*lm,1-hx:im+hx,1-hy:jm+hy),intent(inout):: VALL
 real(r_kind),dimension(1,1,1:lm), intent(in):: pasp
@@ -1952,7 +1952,7 @@ module subroutine sup_vrbeta1_bkg &
 (this,km,km3,hx,hy,hz,im,jm,lm,pasp,ss,VALL)
 !----------------------------------------------------------------------
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type),intent(inout),target::this
 integer(i_kind),intent(in):: km,km3,hx,hy,hz,im,jm,lm
 real(r_kind),dimension(1:km,1-hx:im+hx,1-hy:jm+hy),intent(inout):: VALL
 real(r_kind),dimension(1,1,1:lm), intent(in):: pasp
@@ -2002,7 +2002,7 @@ module subroutine sup_vrbeta1T_bkg &
 (this,km,km3,hx,hy,hz,im,jm,lm,pasp,ss,VALL)
 !----------------------------------------------------------------------
 implicit none
-class(mg_intstate_type),target::this
+class(mg_intstate_type),intent(inout),target::this
 integer(i_kind),intent(in):: km,km3,hx,hy,hz,im,jm,lm
 real(r_kind),dimension(1:km,1-hx:im+hx,1-hy:jm+hy),intent(inout):: VALL
 real(r_kind),dimension(1,1,1:lm), intent(in):: pasp
