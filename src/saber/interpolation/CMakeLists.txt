@@ -15,6 +15,8 @@ Rescaling.h
 # Interpolation block
 Geometry.cc
 Geometry.h
+GsiGrid.cc
+GsiGrid.h
 Interpolation.cc
 Interpolation.h
 
@@ -33,6 +35,16 @@ if( atlas_TRANS_FOUND OR atlas_ECTRANS_FOUND )
         GaussToCS.cc
         GaussToCS.h
     )
+
+    if( ${ATLAS_TEST_46_OR_GREATER})
+        list(APPEND interpolation_src_files_list
+            # ATLAS gauss to cubed-sphere-dual with SMV inverse interpolator saber block
+            GaussToCSWithSMV.cc
+            GaussToCSWithSMV.h
+            SMVInterpWrapper.cc
+            SMVInterpWrapper.h
+        )
+    endif()
 endif()
 
 set( interpolation_src_files

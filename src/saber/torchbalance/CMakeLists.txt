@@ -4,12 +4,14 @@
 # This software is licensed under the terms of the Apache Licence Version 2.0
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
-if( Torch_FOUND )
+if( ENABLE_TORCH )
     list( APPEND torchbalance_src_files_list
     TorchBalance.h
     TorchBalance.cc
-    TorchBalanceEmulator.h
-    TorchBalanceEmulator.cc
+    TorchBalanceSurfaceEmulator.h
+    TorchBalanceSurfaceEmulator.cc
+    TorchBalanceVerticalEmulator.h
+    TorchBalanceVerticalEmulator.cc
     )
 endif()
 
