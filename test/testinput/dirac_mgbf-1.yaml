@@ -1,0 +1,82 @@
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: MGBF_covariance #In this test, run in the localizaiton mode
+    mgbf namelist file: testdata/dirac_mgbf.nml  
+
+
+  saber outer blocks:
+  # The quench geometry used in this test has the same gridpoints as the GSI grid, but in atlas's
+  # ordering (north-to-south) instead of GSI's ordering (south-to-north). We use an interpolation
+  # block to reorder the grid points to match GSI order. This is not very efficient, but is fine
+  # for a ctest.
+  - saber block name: interpolation
+    inner geometry:
+      function space: StructuredColumns
+      grid:
+        type: regional
+        nx: 48 
+        ny: 48 
+        dx: 200.0e3 
+        dy: 150.0e3
+        lonlat(centre):
+        - 135 
+        - 35
+        projection:
+          type: lambert_conformal_conic
+          latitude0: 40
+          longitude0: 135 
+          units: degrees
+        y_numbering: 1
+      partitioner: checkerboard
+      halo: 1
+    forward interpolator:
+      local interpolator type: oops unstructured grid interpolator
+    inverse interpolator:
+      local interpolator type: oops unstructured grid interpolator
+    state variables to inverse:  # Make sure to also re-order the state passed to GSI-B constructor
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
+    - air_pressure_at_surface
+dirac:
+  lon:
+  - 135.0
+  lat:
+  - 40.0
+  level:
+  - 30 
+  variable:
+  - air_horizontal_streamfunction
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regional
+    nx: 35
+    ny: 25
+    west: 100.0
+    east: 170.0
+    south: 10.0
+    north: 60.0
+    y_numbering: 1
+  partitioner: checkerboard
+    
+  groups:
+  - variables:
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
+    levels: 65 
+  - variables:
+    - air_pressure_at_surface
+    levels: 1
+background:
+  date: 2010-01-01T12:00:00Z
+  state variables:
+  - air_horizontal_streamfunction
+  - air_horizontal_velocity_potential
+  - air_pressure_at_surface
+output dirac:
+  filepath: testdata/dirac_mgbf-1/_MPI_-_OMP__dirac_%id%
+test:
+  float relative tolerance: 1.5e-06
+  test output filename: dirac_mgbf_1.out 
+  reference filename: testref/dirac_mgbf_1.ref

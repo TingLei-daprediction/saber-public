@@ -1,0 +1,38 @@
+Input Dirac increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: structured [875]
+  Fields:
+  - air_horizontal_streamfunction (65 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 1.7582417582417584e-05
+    + stddev = 4.1931393468869586e-03
+
+  - air_horizontal_velocity_potential (65 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+
+  - air_pressure_at_surface (1 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+
+Covariance(SABER) * Increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: structured [875]
+  Fields:
+  - air_horizontal_streamfunction (65 levels):
+    + min    = -5.8269660297696167e-02
+    + max    = 1.0005159734899653e+00
+    + mean   = 9.1168082740775689e-04
+    + stddev = 1.9184364020434278e-02
+
+  - air_horizontal_velocity_potential (65 levels):
+    + min    = -5.8269660297696167e-02
+    + max    = 1.0005159734899653e+00
+    + mean   = 9.1168082740775689e-04
+    + stddev = 1.9184364020434278e-02
+
+  - air_pressure_at_surface (1 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+
