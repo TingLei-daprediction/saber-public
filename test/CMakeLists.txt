@@ -38,6 +38,9 @@ if( ENABLE_QUENCH )
   if( ENABLE_TORCH )
       set( SABER_TEST_TORCHBALANCE 1 )
   endif()
+  if( ENABLE_MGBF )
+      set( SABER_TEST_MGBF 1 )
+  endif()
 
   # Override test selection variables using environment variables
   if( DEFINED ENV{SABER_TEST_FASTLAM} )
@@ -189,6 +192,9 @@ if( ENABLE_QUENCH )
     if( SABER_TEST_SPECTRALB )
       include( ${CMAKE_CURRENT_LIST_DIR}/testlist/saber_spectralb-vader.cmake )
     endif()
+  endif()
+  if( SABER_TEST_MGBF )
+      include( ${CMAKE_CURRENT_LIST_DIR}/testlist/saber_mgbf.cmake )
   endif()
 
   # --- TorchBalance tests ---
