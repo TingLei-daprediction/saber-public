@@ -79,4 +79,4 @@ output dirac:
 test:
   float relative tolerance: 1.5e-06
   test output filename: dirac_mgbf_1.out 
-  reference filename: testref/dirac_mgbf_1.ref
+  reference filename: testref/dirac_mgbf-1.ref
