@@ -155,6 +155,7 @@ endif !2.gt.3
       enddo
 !$omp end parallel do
       
+!$omp parallel do private(ivar,lev1_a,lev2_a,lev1_f,lev2_f) schedule(static)
       do ivar=1,this%km3
          lev1_a=1+(ivar-1)*this%lm_a
          lev1_f=1+(ivar-1)*this%lm
@@ -172,7 +173,8 @@ endif !2.gt.3
 !          call this%test_vertical_interpolation_adj(this%lm,this%lm_a,1,nm,1,mm, work(lev1_f:lev2_f,:,:), &
 !             worka(lev1_a:lev2_a,:,:))
 !        endif
-       enddo
+      enddo
+!$omp end parallel do
       else
         work=worka
       endif
@@ -214,6 +216,7 @@ include "type_intstat_point2this.inc"
       enddo
 !$omp end parallel do
       
+!$omp parallel do private(ivar,lev1_a,lev2_a,lev1_f,lev2_f) schedule(static)
       do ivar=1,this%km3
          lev1_a=1+(ivar-1)*this%lm_a
          lev1_f=1+(ivar-1)*this%lm
@@ -227,7 +230,8 @@ include "type_intstat_point2this.inc"
 !        call this%test_vertical_interpolation(this%lm,this%lm_a,1,nm,1,mm, work(lev1_f:lev2_f,:,:), &
 !             worka(lev1_a:lev2_a,:,:))
 !        endif
-       enddo
+      enddo
+!$omp end parallel do
       else
         worka=work
       endif

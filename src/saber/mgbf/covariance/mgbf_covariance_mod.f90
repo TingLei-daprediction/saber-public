@@ -420,6 +420,7 @@ integer(kind=i_kind) :: dim2d(2),dim3d(3)
 integer(kind=i_kind):: myrank,nxloc,nyloc,nzloc,nz3d
 integer(kind=i_kind)::nvar
 integer(kind=i_kind):: i,ivar,jvar,j,k,ij,lev1,lev2,iounit
+integer(kind=i_kind):: ilev1_mix,ilev2_mix,jlev1_mix,jlev2_mix
 integer(kind=i_kind):: n2d
 integer(kind=i_kind), pointer :: varvlev_index(:,:)
 logical  ::  l2d_encountered  
@@ -678,7 +679,11 @@ integer ::  loc(2)
              ii=1
              do ivargrp=1,nvargrp
                 call btim(mg_group_copy_time)
-                vargrp_work_mgbf(1:nlev_vargrp(ivargrp),:,:) = work_mgbf(ii:ii+nlev_vargrp(ivargrp)-1,:,:)
+!$omp parallel do private(k) schedule(static)
+                do k=1,nlev_vargrp(ivargrp)
+                  vargrp_work_mgbf(k,:,:) = work_mgbf(ii+k-1,:,:)
+                enddo
+!$omp end parallel do
                 call etim(mg_group_copy_time)
 
                 call btim(mg_anal_to_filt_time)
@@ -700,11 +705,11 @@ integer ::  loc(2)
                 call btim(mg_normalize_copy_time)
 !$omp parallel do private(k) schedule(static)
                 do k=1,nlev_vargrp(ivargrp)
-                 vargrp_work_mgbf2(k,:,:) = vargrp_work_mgbf2(k,:,:) / rnormalization(k,ivargrp)
+                  work_mgbf(ii+k-1,:,:) = vargrp_work_mgbf2(k,:,:) / rnormalization(k,ivargrp)
                 enddo
 !$omp end parallel do
-                work_mgbf(ii:ii+nlev_vargrp(ivargrp)-1,:,:) = vargrp_work_mgbf2(1:nlev_vargrp(ivargrp),:,:)
                 call etim(mg_normalize_copy_time)
+                call etim(mg_postprocess_time)
                 ii=ii+nlev_vargrp(ivargrp)
              enddo ! ivargrp
              if(self%intstate(jscale,ivargrp0)%l_for_localization ) then   !clthinkdebxxx
@@ -726,19 +731,21 @@ integer ::  loc(2)
                else
 !clttodo, further optimizaiton
                 work_mgbf_tmp = work_mgbf
+!$omp parallel do private(jvar,jvargrp,ivar,ivargrp,ilev1_mix,ilev2_mix,jlev1_mix,jlev2_mix) schedule(static)
                  do jvar=1,nvar
-                   work1var_mgbf = 0.0
                    jvargrp=self%ivar2grp(jvar)
+                   jlev1_mix=varvlev_index(jvar,1)
+                   jlev2_mix=varvlev_index(jvar,2)
+                   work_mgbf(jlev1_mix:jlev2_mix,:,:)=0.0
                    do ivar=1,nvar
-                     lev1=varvlev_index(ivar,1)
-                     lev2=varvlev_index(ivar,2)
+                     ilev1_mix=varvlev_index(ivar,1)
+                     ilev2_mix=varvlev_index(ivar,2)
                      ivargrp=self%ivar2grp(ivar)
-                    work1var_mgbf=work1var_mgbf+self%multigrp_cor(jvargrp,ivargrp)*work_mgbf_tmp(lev1:lev2,:,:)
+                     work_mgbf(jlev1_mix:jlev2_mix,:,:)=work_mgbf(jlev1_mix:jlev2_mix,:,:) &
+                       +self%multigrp_cor(jvargrp,ivargrp)*work_mgbf_tmp(ilev1_mix:ilev2_mix,:,:)
                    enddo
-                   lev1=varvlev_index(jvar,1)
-                   lev2=varvlev_index(jvar,2)
-                   work_mgbf(lev1:lev2,:,:)=work1var_mgbf
                  enddo
+!$omp end parallel do
                endif
                call etim(mg_localization_mix_time)
                nullify(work1var_mgbf)
@@ -824,10 +831,6 @@ integer ::  loc(2)
                 endif 
               enddo
              call etim(mg_unpack_fields_time)
-
-             call etim(mg_postprocess_time)
-
-
 
              call afield%final()
 
