@@ -1,5 +1,17 @@
 # codex_context.md
 
+> **2026-07 cleanup note**: the transitional fast paths described below
+> (`filtering_fast_bkg` mg_filt=5-old, `filtering_fast_bkg_new_jim` 15,
+> `filtering_fast_bkg_new_jim_new_order` 25) have been REMOVED. mg_filt=5 now
+> dispatches `filtering_fast_bkg_new_jim_new_order_wbfil` (35 is a deprecated
+> alias). Removed with them: `rcalib1_jim_new`, `rbeta*_jim_new` beta kernels,
+> `sres2/sres3_jim_new` tables, `pasp1/paspx4d/paspy4d_jim_new`, `ssx4d/ssy4d`,
+> `sup_vrbeta1{,T}_bkg_new_jim`. Kept: `rflip*_jim_new`, all `*_jim_new_wbfil`,
+> raw `paspx4d`/`paspy4d`/`pasp1_store` (wbfil calibration inputs; boundary
+> scales now precomputed into `xLb/xmb_wbfil_x/y` members at setup), and all
+> arrays used by the radial/line/ens paths and `filtering_rad_highest`.
+> Sections below predate this cleanup and are kept for history.
+
 ## Scope
 - Package: saber (MGBF components)
 - Focus: memory usage and filtering paths in mgbf_lib and covariance wrappers.
