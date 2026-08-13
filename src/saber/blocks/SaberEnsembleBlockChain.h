@@ -183,8 +183,9 @@ class SaberEnsembleBlockChainParameters: public ErrorCovarianceParametersBase {
   oops::OptionalParameter<eckit::LocalConfiguration> ensembleGeom{
                         "ensemble geometry", this};
 
-  // Sub-ensembles size: if subEnsSize = p, it means that sets of members {0,...,p-1}, {p,...,2p-1},
-  // etc. are distinct sub-ensembles. The mean of each sub-ensemble is subtracted.
+  // Sub-ensembles size: it means that sets of members {0,...,subEnsSize-1},
+  // {subEnsSize,...,2 subEnsSize-1}, etc. are distinct sub-ensembles. The mean of each sub-ensemble
+  // is subtracted from the concerned members to compute perturbations.
   oops::OptionalParameter<size_t> subEnsSize{"sub-ensembles size", this};
 };
 
