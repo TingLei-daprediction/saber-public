@@ -153,8 +153,8 @@ class SaberEnsembleBlockChainParameters: public ErrorCovarianceParametersBase {
   // Vector of scale-specific configurations
   oops::OptionalParameter<std::vector<ScaleParameters>> scales{"scales", this};
 
-  // Recursive filters
-  oops::Parameter<bool> recursiveFilters{"recursive filters", false, this};
+  // Recursive perturbations processing
+  oops::Parameter<bool> recursivePertProcessing{"recursive perturbations processing", false, this};
 
   // Multi-scales strategy (separated or crossed)
   oops::OptionalParameter<std::string> strategy{"multiscale strategy", this};
@@ -653,8 +653,8 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
                 fset4dDx[0] -= fsetI;
                 fset4dDx[0] *= -1.0;
 
-                if (params.recursiveFilters.value()) {
-                  // Recursive filter: xI = xI - x'
+                if (params.recursivePertProcessing.value()) {
+                  // Recursive processing: xI = xI - x'
                   fsetI -= fset4dDx[0];
                 }
 
@@ -670,8 +670,8 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
                   scaleData.interpolator()->applyOuterBlocks(*fset4dDxPtr);
                 }
 
-                if (params.recursiveFilters.value()) {
-                  // Recursive filter: xI = xI - x'
+                if (params.recursivePertProcessing.value()) {
+                  // Recursive processing: xI = xI - x'
                   fsetI -= (*fset4dDxPtr)[0];
                 }
 
