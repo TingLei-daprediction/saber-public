@@ -770,37 +770,40 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
     }
   }
 
-  // Get control vector size
-  if (scaleDataVec_[0].localization()) {
-    // Check that all scales have a localization
-    for (const auto & scaleData : scaleDataVec_) {
-      ASSERT(scaleData.localization());
-    }
-
-    // Compute control vector size
-    if (strategy_ == "separated") {
-      // Separated strategy
+  // Control-vector information is only required by the square-root path.
+  if (fullConf.getBool("square-root test")) {
+    // Get control vector size
+    if (scaleDataVec_[0].localization()) {
+      // Check that all scales have a localization
       for (const auto & scaleData : scaleDataVec_) {
-        ctlVecSize_ += scaleData.ensemble()->ens_size()*scaleData.localization()->ctlVecSize();
+        ASSERT(scaleData.localization());
       }
-    } else if (strategy_ == "crossed") {
-      // Crossed strategy
-      ctlVecSize_ = scaleDataVec_[0].ensemble()->ens_size()
-        *scaleDataVec_[0].localization()->ctlVecSize();
 
-      // Check that all the scales have the same control vector size
-      for (const auto & scaleData : scaleDataVec_) {
-        ASSERT(scaleData.localization()->ctlVecSize() ==
-          scaleDataVec_[0].localization()->ctlVecSize());
+      // Compute control vector size
+      if (strategy_ == "separated") {
+        // Separated strategy
+        for (const auto & scaleData : scaleDataVec_) {
+          ctlVecSize_ += scaleData.ensemble()->ens_size()*scaleData.localization()->ctlVecSize();
+        }
+      } else if (strategy_ == "crossed") {
+        // Crossed strategy
+        ctlVecSize_ = scaleDataVec_[0].ensemble()->ens_size()
+          *scaleDataVec_[0].localization()->ctlVecSize();
+
+        // Check that all the scales have the same control vector size
+        for (const auto & scaleData : scaleDataVec_) {
+          ASSERT(scaleData.localization()->ctlVecSize() ==
+            scaleDataVec_[0].localization()->ctlVecSize());
+        }
       }
+    } else {
+      // Without localization
+      // Only one scale allowed
+      ASSERT(scaleDataVec_.size() == 1);
+
+      // Control vector size = number of members
+      ctlVecSize_ = scaleDataVec_[0].ensemble()->ens_size();
     }
-  } else {
-    // Without localization
-    // Only one scale allowed
-    ASSERT(scaleDataVec_.size() == 1);
-
-    // Control vector size = number of members
-    ctlVecSize_ = scaleDataVec_[0].ensemble()->ens_size();
   }
 
   // Adjoint test
