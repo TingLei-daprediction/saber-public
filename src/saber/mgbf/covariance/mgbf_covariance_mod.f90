@@ -46,7 +46,7 @@ type :: mgbf_covariance
   logical :: cv   ! cv=.true.; sv=.false.
   integer :: mp_comm_world
   integer :: rank
-  character(len=256) :: timer_output_file = "mg_timer_output"
+  character(len=:), allocatable :: timer_output_file
   logical :: l_2dvar_last_vertical_level=.true.  !when used for localization,2dvars are put on the last vertical level
                                           !when the fields in fset are stored from top to bottom
   character(len=:), allocatable :: mgbf_nml
@@ -133,6 +133,7 @@ self%rank = comm%rank()
 
 l_debug_print = .false.
 if (config%has("debug print")) call config%get_or_die("debug print", l_debug_print)
+self%timer_output_file = "mg_timer_output"
 if (config%has("mgbf timer output file")) then
   call config%get_or_die("mgbf timer output file", self%timer_output_file)
 endif
