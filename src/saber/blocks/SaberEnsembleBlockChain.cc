@@ -15,6 +15,34 @@ namespace saber {
 
 // -----------------------------------------------------------------------------
 
+size_t SaberEnsembleBlockChain::computeCtlVecSize() const {
+  ASSERT(scaleDataVec_[0].localization());
+
+  if (strategy_ == "separated") {
+    size_t ctlVecSize = 0;
+    for (const auto & scaleData : scaleDataVec_) {
+      ctlVecSize += scaleData.ensemble()->ens_size()
+        * scaleData.localization()->ctlVecSize();
+    }
+    return ctlVecSize;
+  }
+
+  ASSERT(strategy_ == "crossed");
+  return scaleDataVec_[0].ensemble()->ens_size()
+    * scaleDataVec_[0].localization()->ctlVecSize();
+}
+
+// -----------------------------------------------------------------------------
+
+size_t SaberEnsembleBlockChain::ctlVecSize() const {
+  if (!ctlVecSize_) {
+    ctlVecSize_ = computeCtlVecSize();
+  }
+  return *ctlVecSize_;
+}
+
+// -----------------------------------------------------------------------------
+
 void SaberEnsembleBlockChain::multiply(oops::FieldSet4D & fset4d) const {
   oops::Log::trace() << "saber::SaberEnsembleBlockChain::multiply starting" << std::endl;
 

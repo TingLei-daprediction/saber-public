@@ -8,6 +8,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -205,7 +206,7 @@ class SaberEnsembleBlockChain : public SaberBlockChainBase {
   /// @brief Multiply the increment by this B matrix.
   void multiply(oops::FieldSet4D &) const;
   /// @brief Get this B matrix square-root control vector size.
-  size_t ctlVecSize() const {return ctlVecSize_;}
+  size_t ctlVecSize() const;
   /// @brief Generate a random control vector.
   void randomCtlVec(atlas::Field &, const size_t &) const;
   /// @brief Multiply the control vector by this B matrix square-root.
@@ -219,6 +220,8 @@ class SaberEnsembleBlockChain : public SaberBlockChainBase {
   const oops::Variables & outerVariables() const {return outerVariables_;}
 
  private:
+  /// @brief Compute this B matrix square-root control vector size.
+  size_t computeCtlVecSize() const;
   /// @brief Space communicator
   const eckit::mpi::Comm & comm_;
   /// @brief Outer function space
@@ -231,8 +234,8 @@ class SaberEnsembleBlockChain : public SaberBlockChainBase {
   std::vector<ScaleData> scaleDataVec_;
   /// @brief Multiscales strategy
   std::string strategy_;
-  /// @brief Control vector size.
-  size_t ctlVecSize_;
+  /// @brief Lazily-computed control vector size.
+  mutable std::optional<size_t> ctlVecSize_;
   /// @brief Variables used in the ensemble covariance.
   /// TODO(AS): check whether this is needed or can be inferred from ensemble->
   oops::Variables vars_;
@@ -249,8 +252,7 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
                                                  const eckit::Configuration & conf)
   : comm_(geom.getComm()),
     outerFunctionSpace_(geom.functionSpace()),
-    outerVariables_(outerVars),
-    ctlVecSize_(0) {
+    outerVariables_(outerVars) {
   oops::Log::trace() << "SaberEnsembleBlockChain ctor starting" << std::endl;
 
   // Deserialize parameters and fill configuration with missing values
@@ -770,40 +772,15 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
     }
   }
 
-  // Control-vector information is only required by the square-root path.
-  if (fullConf.getBool("square-root test")) {
-    // Get control vector size
-    if (scaleDataVec_[0].localization()) {
-      // Check that all scales have a localization
-      for (const auto & scaleData : scaleDataVec_) {
-        ASSERT(scaleData.localization());
-      }
-
-      // Compute control vector size
-      if (strategy_ == "separated") {
-        // Separated strategy
-        for (const auto & scaleData : scaleDataVec_) {
-          ctlVecSize_ += scaleData.ensemble()->ens_size()*scaleData.localization()->ctlVecSize();
-        }
-      } else if (strategy_ == "crossed") {
-        // Crossed strategy
-        ctlVecSize_ = scaleDataVec_[0].ensemble()->ens_size()
-          *scaleDataVec_[0].localization()->ctlVecSize();
-
-        // Check that all the scales have the same control vector size
-        for (const auto & scaleData : scaleDataVec_) {
-          ASSERT(scaleData.localization()->ctlVecSize() ==
-            scaleDataVec_[0].localization()->ctlVecSize());
-        }
-      }
-    } else {
-      // Without localization
-      // Only one scale allowed
-      ASSERT(scaleDataVec_.size() == 1);
-
-      // Control vector size = number of members
-      ctlVecSize_ = scaleDataVec_[0].ensemble()->ens_size();
+  // Keep scale/localization consistency checks eager. Only the calls to the
+  // localization square-root interface are deferred until ctlVecSize() is requested.
+  if (scaleDataVec_[0].localization()) {
+    for (const auto & scaleData : scaleDataVec_) {
+      ASSERT(scaleData.localization());
     }
+  } else {
+    ASSERT(scaleDataVec_.size() == 1);
+    ctlVecSize_ = scaleDataVec_[0].ensemble()->ens_size();
   }
 
   // Adjoint test
@@ -848,6 +825,8 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
 
   // Square-root test
   if (fullConf.getBool("square-root test")) {
+    const size_t ctlVecSize = this->ctlVecSize();
+
     // Get tolerance
     const double localSqrtTolerance = params.sqrtTolerance.value();
 
@@ -862,27 +841,27 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
 
     // Create control vector
     oops::Log::info() << "Info     : Control vector size for block Ensemble: "
-                      << ctlVecSize_ << std::endl;
+                      << ctlVecSize << std::endl;
     atlas::Field cv = atlas::Field("genericCtlVec",
                                    atlas::array::make_datatype<double>(),
-                                   atlas::array::make_shape(ctlVecSize_));
-    util::NormalDistribution<double> dist(ctlVecSize_, 0.0, 1.0, seed_);
+                                   atlas::array::make_shape(ctlVecSize));
+    util::NormalDistribution<double> dist(ctlVecSize, 0.0, 1.0, seed_);
     std::vector<double> randVec;
-    for (size_t jnode = 0; jnode < ctlVecSize_; ++jnode) {
+    for (size_t jnode = 0; jnode < ctlVecSize; ++jnode) {
       randVec.push_back(dist[jnode]);
     }
     if (!scaleDataVec_[0].localization()) {
       currentOuterGeom.comm().broadcast(randVec, 0);
     }
     auto view = atlas::array::make_view<double, 1>(cv);
-    for (size_t jnode = 0; jnode < ctlVecSize_; ++jnode) {
+    for (size_t jnode = 0; jnode < ctlVecSize; ++jnode) {
       view(jnode) = randVec[jnode];
     }
 
     // Copy control vector
     atlas::Field ctlVecSave = atlas::Field("genericCtlVec",
                                            atlas::array::make_datatype<double>(),
-                                           atlas::array::make_shape(ctlVecSize_));
+                                           atlas::array::make_shape(ctlVecSize));
     auto viewSave = atlas::array::make_view<double, 1>(ctlVecSave);
     viewSave.assign(view);
 
@@ -895,7 +874,7 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
     // Compute adjoint test
     const double dp1 = fset4d.dot_product_with(fset4dSave, activeVars);
     double dp2 = 0.0;
-    for (size_t jnode = 0; jnode < ctlVecSize_; ++jnode) {
+    for (size_t jnode = 0; jnode < ctlVecSize; ++jnode) {
       dp2 += view(jnode)*viewSave(jnode);
     }
     if (scaleDataVec_[0].localization()) {
