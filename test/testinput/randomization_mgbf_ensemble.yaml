@@ -1,0 +1,41 @@
+# Generate a deterministic ten-member ensemble on the outer geometry used by
+# dirac_mgbf-1.  Both ensemble-localization tests below read these same files.
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regional
+    nx: 35
+    ny: 25
+    west: 100.0
+    east: 170.0
+    south: 10.0
+    north: 60.0
+    y_numbering: 1
+  partitioner: checkerboard
+  groups:
+  - variables:
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
+    levels: 65
+  - variables:
+    - air_pressure_at_surface
+    levels: 1
+
+background:
+  date: 2010-01-01T12:00:00Z
+  state variables: &vars
+  - air_horizontal_streamfunction
+  - air_horizontal_velocity_potential
+  - air_pressure_at_surface
+
+increment variables: *vars
+
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: ID
+  randomization size: 10
+
+output perturbations:
+  member pattern: '%MEM%'
+  filepath: testdata/randomization_mgbf_ensemble/_MPI_-_OMP__member_pert_%MEM%

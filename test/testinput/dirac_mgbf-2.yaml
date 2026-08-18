@@ -1,0 +1,108 @@
+# Reference calculation on eight MPI ranks: all ten members are localized
+# serially by one four-rank MGBF component. A zero-weight ID component occupies
+# the other four ranks so this test and dirac_mgbf-3 use identical resources.
+geometry: &geom
+  function space: StructuredColumns
+  grid:
+    type: regional
+    nx: 35
+    ny: 25
+    west: 100.0
+    east: 170.0
+    south: 10.0
+    north: 60.0
+    y_numbering: 1
+  partitioner: checkerboard
+  groups:
+  - variables:
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
+    levels: 65
+  - variables:
+    - air_pressure_at_surface
+    levels: 1
+
+background:
+  date: &date 2010-01-01T12:00:00Z
+  state variables: &vars
+  - air_horizontal_streamfunction
+  - air_horizontal_velocity_potential
+  - air_pressure_at_surface
+
+background error:
+  covariance model: SABER
+  covariance type: hybrid
+  run components recursively: false
+  run in parallel: true
+  comm redistribution method: straight
+  parallel covariance relative cpu weight: [0.5, 0.5]
+  geometry: *geom
+  adjoint test: false
+  square-root test: false
+  components:
+  - weight:
+      value: 1.0
+    covariance:
+      covariance model: SABER
+      covariance type: ensemble
+      adjoint test: false
+      square-root test: false
+      ensemble pert:
+        members from template:
+          template:
+            date: *date
+            # The preparation test runs with MPI=4 and OMP=1. _MPI_-_OMP_
+            # is expanded when the files are written, so consumers must use
+            # the resulting 4-1 prefix even when their parent job has 8 ranks.
+            filepath: testdata/randomization_mgbf_ensemble/4-1_member_pert_%MEM%
+            state variables: *vars
+          pattern: '%MEM%'
+          nmembers: 10
+      localization:
+        saber central block:
+          saber block name: MGBF_covariance
+          mgbf namelist file: testdata/dirac_mgbf.nml
+          mgbf timer output file: testdata/dirac_mgbf-2_mg_timers
+        saber outer blocks:
+        - saber block name: interpolation
+          inner geometry:
+            function space: StructuredColumns
+            grid:
+              type: regional
+              nx: 48
+              ny: 48
+              dx: 200.0e3
+              dy: 150.0e3
+              lonlat(centre):
+              - 135
+              - 35
+              projection:
+                type: lambert_conformal_conic
+                latitude0: 40
+                longitude0: 135
+                units: degrees
+              y_numbering: 1
+            partitioner: checkerboard
+            halo: 1
+          forward interpolator:
+            local interpolator type: oops unstructured grid interpolator
+          inverse interpolator:
+            local interpolator type: oops unstructured grid interpolator
+          state variables to inverse: *vars
+  - weight:
+      value: 0.0
+    covariance:
+      covariance model: SABER
+      saber central block:
+        saber block name: ID
+
+dirac: &dirac
+  lon: [135.0]
+  lat: [40.0]
+  level: [30]
+  variable: [air_horizontal_streamfunction]
+
+diagnostic points: *dirac
+
+output dirac:
+  filepath: testdata/dirac_mgbf-2/_MPI_-_OMP__dirac_%id%

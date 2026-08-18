@@ -1,0 +1,126 @@
+# Parallel calculation equivalent to dirac_mgbf-2. Parallel B splits eight
+# ranks into two four-rank communicators. Each component reads and localizes
+# five members through one separated multiscale entry.
+geometry: &geom
+  function space: StructuredColumns
+  grid:
+    type: regional
+    nx: 35
+    ny: 25
+    west: 100.0
+    east: 170.0
+    south: 10.0
+    north: 60.0
+    y_numbering: 1
+  partitioner: checkerboard
+  groups:
+  - variables:
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
+    levels: 65
+  - variables:
+    - air_pressure_at_surface
+    levels: 1
+
+background:
+  date: &date 2010-01-01T12:00:00Z
+  state variables: &vars
+  - air_horizontal_streamfunction
+  - air_horizontal_velocity_potential
+  - air_pressure_at_surface
+
+background error:
+  covariance model: SABER
+  covariance type: hybrid
+  run components recursively: false
+  run in parallel: true
+  comm redistribution method: straight
+  parallel covariance relative cpu weight: [0.5, 0.5]
+  geometry: *geom
+  adjoint test: false
+  square-root test: false
+  components:
+  - weight:
+      # Scale-specific ensembles are read without normalization. Applying this
+      # weight on both sides gives the reference factor 1/(10-1).
+      value: 0.1111111111111111
+    covariance:
+      covariance model: SABER
+      covariance type: ensemble
+      adjoint test: false
+      square-root test: false
+      scales:
+      - ensemble pert:
+          members from template:
+            template:
+              date: *date
+              # Produced by the MPI=4, OMP=1 preparation test. This must remain
+              # 4-1 rather than expanding to the eight-rank parent job size.
+              filepath: testdata/randomization_mgbf_ensemble/4-1_member_pert_%MEM%
+              state variables: *vars
+            pattern: '%MEM%'
+            nmembers: 5
+            start: 1
+        localization: &mgbf_localization
+          saber central block:
+            saber block name: MGBF_covariance
+            mgbf namelist file: testdata/dirac_mgbf.nml
+            mgbf timer output file: testdata/dirac_mgbf-3_mg_timers
+          saber outer blocks:
+          - saber block name: interpolation
+            inner geometry:
+              function space: StructuredColumns
+              grid:
+                type: regional
+                nx: 48
+                ny: 48
+                dx: 200.0e3
+                dy: 150.0e3
+                lonlat(centre):
+                - 135
+                - 35
+                projection:
+                  type: lambert_conformal_conic
+                  latitude0: 40
+                  longitude0: 135
+                  units: degrees
+                y_numbering: 1
+              partitioner: checkerboard
+              halo: 1
+            forward interpolator:
+              local interpolator type: oops unstructured grid interpolator
+            inverse interpolator:
+              local interpolator type: oops unstructured grid interpolator
+            state variables to inverse: *vars
+      multiscale strategy: separated
+  - weight:
+      value: 0.1111111111111111
+    covariance:
+      covariance model: SABER
+      covariance type: ensemble
+      adjoint test: false
+      square-root test: false
+      scales:
+      - ensemble pert:
+          members from template:
+            template:
+              date: *date
+              # Same fixed producer prefix as the first member group.
+              filepath: testdata/randomization_mgbf_ensemble/4-1_member_pert_%MEM%
+              state variables: *vars
+            pattern: '%MEM%'
+            nmembers: 5
+            start: 6
+        localization: *mgbf_localization
+      multiscale strategy: separated
+
+dirac: &dirac
+  lon: [135.0]
+  lat: [40.0]
+  level: [30]
+  variable: [air_horizontal_streamfunction]
+
+diagnostic points: *dirac
+
+output dirac:
+  filepath: testdata/dirac_mgbf-3/_MPI_-_OMP__dirac_%id%
