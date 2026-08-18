@@ -138,9 +138,9 @@ contains
   end subroutine etim
 !-----------------------------------------------------------------------
   subroutine print_mg_timers(filename, print_type,mype,mpi_comm_comp)
-    use mpi, only: MPI_OFFSET_KIND, MPI_STATUS_SIZE, MPI_COMM_WORLD, &
-                   MPI_MODE_WRONLY, MPI_MODE_CREATE, MPI_INFO_NULL, MPI_BYTE, &
-                   MPI_Bcast, MPI_Comm_rank, MPI_Comm_size, MPI_INTEGER
+    ! Some legacy Intel MPI `mpi` modules do not expose all generic MPI
+    ! procedures reliably through an ONLY list (notably MPI_Bcast).
+    use mpi
     implicit none
     integer(i_kind),intent(in):: mype
     integer(i_kind),intent(in):: mpi_comm_comp
