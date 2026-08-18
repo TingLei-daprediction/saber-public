@@ -42,8 +42,7 @@ module subroutine init_mg_MPI(this)
 !                                                                      !
 !***********************************************************************
 use mpi, only: MPI_BARRIER, MPI_COMM_CREATE, MPI_COMM_GROUP, &
-               MPI_COMM_RANK, MPI_COMM_SIZE, MPI_COMM_SPLIT, &
-               MPI_COMM_WORLD, MPI_DOUBLE, MPI_GROUP_INCL, &
+               MPI_COMM_RANK, MPI_COMM_SIZE, MPI_DOUBLE, MPI_GROUP_INCL, &
                MPI_INTEGER, MPI_REAL
 
 implicit none
@@ -52,7 +51,6 @@ integer(i_kind):: g,m
 integer(i_kind), dimension(this%npes_filt):: out_ranks
 integer(i_kind):: nf
 integer(i_kind)::ierr
-integer(i_kind):: color
 include "type_parameter_locpointer.inc"
 include "type_parameter_point2this.inc"
 !-----------------------------------------------------------------------
@@ -60,12 +58,7 @@ include "type_parameter_point2this.inc"
 !***
 !***  Initial MPI calls
 !***
-      call MPI_COMM_RANK(MPI_COMM_WORLD,mype,ierr)
-      call MPI_COMM_SIZE(MPI_COMM_WORLD,npes,ierr)
-
-      ! Create a new communicator with MPI_Comm_split
-      color=1  ! just create an communicator now for the whole processes
-      call MPI_Comm_split(MPI_COMM_WORLD, color, mype, mpi_comm_comp, ierr)
+      call MPI_COMM_RANK(mpi_comm_comp,mype,ierr)
       call MPI_COMM_SIZE(mpi_comm_comp,npes,ierr)
 
       rTYPE = MPI_REAL

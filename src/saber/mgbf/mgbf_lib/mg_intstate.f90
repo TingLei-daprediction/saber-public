@@ -1114,13 +1114,14 @@ interface
      real (r_kind), intent(inout) :: WORK(this%km_all,1:this%nm,1:this%mm)
    end subroutine filt_to_anal
 !from mg_entrymod.f90
-   module subroutine mg_initialize(this,n_owned_anl,anl_lonlat1d,inputfilename,obj_parameter)
+   module subroutine mg_initialize(this,n_owned_anl,anl_lonlat1d,inputfilename,obj_parameter,mpi_comm)
      implicit none
      class (mg_intstate_type), intent(inout) :: this
      integer(i_kind),optional,intent(in):: n_owned_anl
      real(r_kind),optional,intent(in):: anl_lonlat1d(:,:)
      character(len=*),optional,intent(in) :: inputfilename
      class(mg_parameter_type),optional,intent(in):: obj_parameter
+     integer(i_kind),intent(in) :: mpi_comm
    end subroutine mg_initialize
    module subroutine mg_finalize(this)
      implicit none
@@ -1350,7 +1351,7 @@ if(this%l_mgbf_inhomogeneous ) then
    nz=this%km
    nt=this%gm
    allocate(loc_a(nxloc,nyloc,nz,nt))
-   call MPI_CART_CREATE(MPI_COMM_WORLD, 2, dims, periods, .false., comm2d, ierr)
+   call MPI_CART_CREATE(this%mpi_comm_comp, 2, dims, periods, .false., comm2d, ierr)
    call MPI_COMM_RANK(comm2d, rank, ierr)
    call MPI_CART_COORDS(comm2d, rank, 2, coords, ierr)
    allocate(loc_a(nxloc,nyloc,nz,nt))

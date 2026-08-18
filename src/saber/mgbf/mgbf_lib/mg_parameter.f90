@@ -675,7 +675,7 @@ logical :: l_exist
       coef_normalization=coef_normalization_const
     else
       if (trim(dir_coef_normalization) /= "XXXX") then
-         call MPI_COMM_RANK(MPI_COMM_WORLD,mype,ierr)
+         call MPI_COMM_RANK(this%mpi_comm_comp,mype,ierr)
          write(str_rank, "(I4.4)") mype
          this%mype=mype
          file_coef_normalization=trim(dir_coef_normalization)//"/profile_subdomain_"//str_rank//".txt"
@@ -1036,7 +1036,7 @@ subroutine convert_vert_varied_aspt
            allocate(this%aspect_vert_profile_angrid(lm_a),this%aspect_vert_profile_filtgrid(lm))
   end if
   allocate(sigofz(lm_a),sigofis(lm))
-  call MPI_COMM_RANK(MPI_COMM_WORLD,mype,ierr)
+  call MPI_COMM_RANK(this%mpi_comm_comp,mype,ierr)
   write(6,*)"thinkdeb999 2.0 ",this%l_vert_stretched_filtgrid  ," ","l_use",this%l_vert_stretched_filtgrid
   call flush(6)
   if(this%l_vert_stretched_filtgrid) then
@@ -1055,9 +1055,10 @@ subroutine convert_vert_varied_aspt
       call MPI_Type_match_size(MPI_TYPECLASS_REAL, kind(this%aspect_vert_profile_angrid(1)), user_mpi_real, ierr)
       if (ierr /= MPI_SUCCESS) then
         write(6,*) "ERROR: No matching MPI type for real kind =", kind(this%aspect_vert_profile_angrid(1))
-        call MPI_Abort(MPI_COMM_WORLD, 1, ierr)
+        call MPI_Abort(this%mpi_comm_comp, 1, ierr)
       end if
-      call MPI_Bcast(this%aspect_vert_profile_angrid, lm_a, user_mpi_real, 0, MPI_COMM_WORLD, ierr)
+      call MPI_Bcast(this%aspect_vert_profile_angrid, lm_a, user_mpi_real, 0, &
+                     this%mpi_comm_comp, ierr)
 
 
    ! calibrate sigscale to make sigofz go to sigbottom at z=0:

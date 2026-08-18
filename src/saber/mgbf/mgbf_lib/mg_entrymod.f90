@@ -35,7 +35,7 @@ contains
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-module subroutine mg_initialize(this,n_owned_anl,anl_lonlat1d,inputfilename,obj_parameter)
+module subroutine mg_initialize(this,n_owned_anl,anl_lonlat1d,inputfilename,obj_parameter,mpi_comm)
 implicit none
 !**********************************************************************!
 !                                                                      !
@@ -48,6 +48,9 @@ real(r_kind),optional,intent(in):: anl_lonlat1d(:,:)
 character(len=*),optional,intent(in) :: inputfilename
 
 class(mg_parameter_type),optional,intent(in):: obj_parameter
+integer(i_kind),intent(in) :: mpi_comm
+integer(i_kind) :: owned_comm
+integer(i_kind) :: ierr
 
 !---------------------------------------------------------------------------
 !
@@ -59,10 +62,15 @@ class(mg_parameter_type),optional,intent(in):: obj_parameter
 !****
 !**** Initialize run multigrid Beta filter parameters
 !****
+call MPI_Comm_dup(mpi_comm, owned_comm, ierr)
+this%mpi_comm_comp=owned_comm
 if (present(inputfilename)) then
    call this%init_mg_parameter(inputfilename)
 else if (present(obj_parameter)) then
    this%mg_parameter_type=obj_parameter
+   ! The derived-type assignment also copies the source communicator handle.
+   ! Restore the private communicator owned by this MGBF instance.
+   this%mpi_comm_comp=owned_comm
 end if
 
  if (present(anl_lonlat1d)) then
@@ -161,6 +169,7 @@ class (mg_intstate_type), intent(inout) :: this
 
 real(r_kind), allocatable, dimension(:,:):: PA, VA
 integer(i_kind):: n,m,L
+integer(i_kind):: ierr
 integer:: nm,mm,lm
 !-----------------------------------------------------------------------
 
@@ -176,6 +185,9 @@ end if
 if(this%nxm*this%nym>1) call this%barrierMPI
 
 call this%deallocate_mg_intstate
+if (this%mpi_comm_comp /= MPI_COMM_NULL) then
+   call MPI_Comm_free(this%mpi_comm_comp, ierr)
+end if
 
 !-----------------------------------------------------------------------
 end subroutine mg_finalize

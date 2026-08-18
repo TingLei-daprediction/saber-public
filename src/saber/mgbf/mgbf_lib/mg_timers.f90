@@ -137,12 +137,13 @@ contains
 
   end subroutine etim
 !-----------------------------------------------------------------------
-  subroutine print_mg_timers(filename, print_type,mype)
+  subroutine print_mg_timers(filename, print_type,mype,mpi_comm_comp)
     use mpi, only: MPI_OFFSET_KIND, MPI_STATUS_SIZE, MPI_COMM_WORLD, &
                    MPI_MODE_WRONLY, MPI_MODE_CREATE, MPI_INFO_NULL, MPI_BYTE, &
-                   MPI_Comm_size
+                   MPI_Bcast, MPI_Comm_rank, MPI_Comm_size, MPI_INTEGER
     implicit none
     integer(i_kind),intent(in):: mype
+    integer(i_kind),intent(in):: mpi_comm_comp
 
     character(len=*), intent(in) :: filename
     integer, intent(in) :: print_type
@@ -155,8 +156,21 @@ contains
     character(len=2048) :: buffer1,buffer2,buffer3,buffer4
     integer :: bufsize1,bufsize2,bufsize3,bufsize4
     integer(i_kind):: num_ranks
-    call MPI_Comm_size(MPI_COMM_WORLD, num_ranks, ierr)
-    call MPI_File_open(MPI_COMM_WORLD, filename, &
+    integer(i_kind):: num_world_ranks, world_rank, component_root
+    character(len=32) :: component_suffix
+    character(len=:), allocatable :: output_filename
+
+    call MPI_Comm_size(mpi_comm_comp, num_ranks, ierr)
+    call MPI_Comm_size(MPI_COMM_WORLD, num_world_ranks, ierr)
+    output_filename = filename
+    if (num_ranks /= num_world_ranks) then
+      call MPI_Comm_rank(MPI_COMM_WORLD, world_rank, ierr)
+      component_root = world_rank
+      call MPI_Bcast(component_root, 1, MPI_INTEGER, 0, mpi_comm_comp, ierr)
+      write(component_suffix, '(A,I0)') '_component_', component_root
+      output_filename = filename//trim(component_suffix)
+    end if
+    call MPI_File_open(mpi_comm_comp, output_filename, &
                        MPI_MODE_WRONLY + MPI_MODE_CREATE, &
                        MPI_INFO_NULL, fh, ierr)
 

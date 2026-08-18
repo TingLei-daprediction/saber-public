@@ -46,6 +46,7 @@ type :: mgbf_covariance
   logical :: cv   ! cv=.true.; sv=.false.
   integer :: mp_comm_world
   integer :: rank
+  character(len=256) :: timer_output_file = "mg_timer_output"
   logical :: l_2dvar_last_vertical_level=.true.  !when used for localization,2dvars are put on the last vertical level
                                           !when the fields in fset are stored from top to bottom
   character(len=:), allocatable :: mgbf_nml
@@ -124,7 +125,7 @@ logical l_debug_print
 
 ! Hold communicator
 ! -----------------
-!self%mp_comm_world=comm%communicator()
+self%mp_comm_world=comm%communicator()
 
 ! Create the grid
 ! ---------------
@@ -132,6 +133,9 @@ self%rank = comm%rank()
 
 l_debug_print = .false.
 if (config%has("debug print")) call config%get_or_die("debug print", l_debug_print)
+if (config%has("mgbf timer output file")) then
+  call config%get_or_die("mgbf timer output file", self%timer_output_file)
+endif
 
 if (l_debug_print .and. self%rank == 0) then
   dump_json = config%json()
@@ -212,7 +216,8 @@ allocate(self%intstate(nscale,nvargrp))
 do iscale=1,nscale
   do ivargrp=1,nvargrp
    call  self%intstate(iscale,ivargrp)%mg_initialize(n_owned_anl=npts_owned, &
-        anl_lonlat1d=lonlat_anl, inputfilename=self%mgbf_nml_group(iscale,ivargrp))  !mgbf_nml like mgbeta.nml
+        anl_lonlat1d=lonlat_anl, inputfilename=self%mgbf_nml_group(iscale,ivargrp), &
+        mpi_comm=self%mp_comm_world)  ! mgbf_nml like mgbeta.nml
   enddo
 enddo
 if (allocated(lonlat_anl)) deallocate(lonlat_anl)
@@ -302,7 +307,7 @@ integer:: iscale,ivargrp
 
 ! Locals
 
-   call  print_mg_timers("mg_timer_output",999,self%rank)
+   call  print_mg_timers(trim(self%timer_output_file),999,self%rank,self%mp_comm_world)
 
 do iscale=1,self%nscale
   do ivargrp=1,self%nvargrp
