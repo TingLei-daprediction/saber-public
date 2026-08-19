@@ -50,6 +50,7 @@ character(len=*),optional,intent(in) :: inputfilename
 class(mg_parameter_type),optional,intent(in):: obj_parameter
 integer(i_kind),intent(in) :: mpi_comm
 integer(i_kind) :: owned_comm
+integer(i_kind) :: comm_size
 integer(i_kind) :: ierr
 
 !---------------------------------------------------------------------------
@@ -75,11 +76,9 @@ end if
 
  if (present(anl_lonlat1d)) then
     if (size(anl_lonlat1d,2) /= 2 .or. size(anl_lonlat1d,1) <  n_owned_anl) then
-      write(6,*)"thinkdeb size(anl_lonlat1d,2) ",size(anl_lonlat1d,2)
-      write(6,*)"thinkdeb size(anl_lonlat1d,1) ",size(anl_lonlat1d,1)
-      write(6,*)"thinkdeb n_owned_anl ) ", n_owned_anl
-      call flush(6)
-      error stop "anl_lonlat1d has wrong shape"
+      write(6,*) "MGBF analysis-coordinate shape mismatch: shape =", &
+                 shape(anl_lonlat1d), ", required owned points =", n_owned_anl
+      call MPI_Abort(MPI_COMM_WORLD, 1, ierr)
     end if
 
  end if
@@ -87,20 +86,27 @@ end if
 !****
 !**** Initialize MPI
 !****
+if (this%nxm <= 0 .or. this%nym <= 0) then
+   write(6,*) "MGBF decomposition is not initialized: nxm =", this%nxm, &
+              ", nym =", this%nym
+   call MPI_Abort(MPI_COMM_WORLD, 1, ierr)
+end if
+call MPI_Comm_size(this%mpi_comm_comp, comm_size, ierr)
+if (comm_size /= this%nxm*this%nym) then
+   write(6,*) "MGBF communicator/decomposition mismatch: communicator size =", comm_size, &
+              ", nxm =", this%nxm, ", nym =", this%nym
+   call MPI_Abort(MPI_COMM_WORLD, 1, ierr)
+end if
 if(this%nxm*this%nym>1) call this%init_mg_MPI
 
 !***
 !*** Initialize integration domain
 !***
-      write(6,*)"thinkdeb in mg_entry,  ", 3
-      call flush(6)
 call this%init_mg_domain
 if(this%l_loc) then
    call this%init_domain_loc
 end if
 
-      write(6,*)"thinkdeb in mg_entry,  ", 4
-      call flush(6)
 !---------------------------------------------------------------------------
 !
 !               All others are function of km2,km3,km,nm,mm,im,jm
@@ -118,35 +124,21 @@ end if
 !***
 
 call this%allocate_mg_intstate
-      write(6,*)"thinkdeb in mg_entry,  ", 5
-      call flush(6)
 
 call this%def_offset_coef
-      write(6,*)"thinkdeb in mg_entry,  ", 6
-      call flush(6)
 if(present(n_owned_anl).and.present(anl_lonlat1d)) then
 call this%def_mg_weights(n_owned_anl=n_owned_anl,lonlat1d_anl=anl_lonlat1d)
 else
 call this%def_mg_weights
 end if
-      write(6,*)"thinkdeb in mg_entry,  ", 7
-      call flush(6)
 
 if(this%mgbf_line) then
-   write(6,*)"thinkdeb init_mg_line is called"
    call this%init_mg_line
 end if
-      write(6,*)"thinkdeb in mg_entry,  ", 8
-      call flush(6)
 
 call this%lsqr_mg_coef
-      write(6,*)"thinkdeb in mg_entry,  ", 9
-      call flush(6)
 
 call this%lwq_vertical_coef(this%lm_a,this%lm,this%cvf1,this%cvf2,this%cvf3,this%cvf4,this%lref)
-
-      write(6,*)"thinkdeb in mg_entry,  ", 10
-      call flush(6)
 !***
 !*** Just for testing of standalone version. In GSI WORKA will be given
 !*** through a separate subroutine
@@ -182,9 +174,20 @@ if(this%ldelta) then
    lm=this%lm
 end if
 
-if(this%nxm*this%nym>1) call this%barrierMPI
+if (this%mpi_comm_comp /= MPI_COMM_NULL) then
+   call this%barrierMPI
+end if
 
 call this%deallocate_mg_intstate
+if (this%mpi_comm_work /= MPI_COMM_NULL) then
+   call MPI_Comm_free(this%mpi_comm_work, ierr)
+end if
+if (this%group_work /= MPI_GROUP_NULL) then
+   call MPI_Group_free(this%group_work, ierr)
+end if
+if (this%group_world /= MPI_GROUP_NULL) then
+   call MPI_Group_free(this%group_world, ierr)
+end if
 if (this%mpi_comm_comp /= MPI_COMM_NULL) then
    call MPI_Comm_free(this%mpi_comm_comp, ierr)
 end if

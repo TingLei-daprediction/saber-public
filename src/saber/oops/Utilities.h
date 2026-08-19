@@ -274,16 +274,23 @@ oops::FieldSets readAndScaleEnsemble(const oops::Geometry<MODEL> & geom,
   oops::Log::trace() << "readAndScaleEnsemble starting" << std::endl;
   oops::FieldSets ensemble = readEnsemble(geom, modelvars, times, commTime, commEns, inputConf);
   // Zero members is valid when perturbations are supplied in scale-specific
-  // configurations. One member is rejected by SaberEnsembleBlockChain after
-  // this function returns. Avoid unsigned underflow and division by zero in
-  // both cases.
-  if (ensemble.ens_size() > 1) {
-    double denom = static_cast<double>(ensemble.ens_size() - 1);
-    if (inputConf.has("denominator for normalizing ensemble covariance")) {
-      denom = inputConf.getDouble("denominator for normalizing ensemble covariance");
-    }
-    scaleEnsemble(ensemble, denom);
+  // configurations.
+  if (ensemble.ens_size() == 0) {
+    oops::Log::trace() << "readAndScaleEnsemble done" << std::endl;
+    return ensemble;
   }
+  // Avoid division by zero before SaberEnsembleBlockChain reports its clearer
+  // one-member error, while preserving an explicitly configured denominator.
+  if (ensemble.ens_size() == 1
+      && !inputConf.has("denominator for normalizing ensemble covariance")) {
+    oops::Log::trace() << "readAndScaleEnsemble done" << std::endl;
+    return ensemble;
+  }
+  double denom = static_cast<double>(ensemble.ens_size() - 1);
+  if (inputConf.has("denominator for normalizing ensemble covariance")) {
+    denom = inputConf.getDouble("denominator for normalizing ensemble covariance");
+  }
+  scaleEnsemble(ensemble, denom);
   oops::Log::trace() << "readAndScaleEnsemble done" << std::endl;
   return ensemble;
 }

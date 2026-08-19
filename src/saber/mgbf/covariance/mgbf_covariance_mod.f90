@@ -44,7 +44,7 @@ type :: mgbf_covariance
   logical :: noMGBF
   logical :: bypassMGBFbe
   logical :: cv   ! cv=.true.; sv=.false.
-  integer :: mp_comm_world
+  integer :: mp_comm_world = MPI_COMM_NULL
   integer :: rank
   character(len=:), allocatable :: timer_output_file
   logical :: l_2dvar_last_vertical_level=.true.  !when used for localization,2dvars are put on the last vertical level
@@ -308,7 +308,9 @@ integer:: iscale,ivargrp
 
 ! Locals
 
-   call  print_mg_timers(trim(self%timer_output_file),999,self%rank,self%mp_comm_world)
+if (allocated(self%timer_output_file) .and. self%mp_comm_world /= MPI_COMM_NULL) then
+  call print_mg_timers(trim(self%timer_output_file),999,self%rank,self%mp_comm_world)
+end if
 
 do iscale=1,self%nscale
   do ivargrp=1,self%nvargrp
@@ -344,9 +346,7 @@ real(kind=r_kind), pointer :: psi(:,:), chi(:,:), t(:,:), q(:,:), qi(:,:), ql(:,
 real(kind=r_kind), pointer :: ps(:)
 
 integer, parameter :: rseed = 3
-write(6,*)'thinkdeb this is to be implemente'
-call flush(6)
-stop
+error stop "MGBF randomize is not implemented"
 ! Get Atlas field
 afield = fields%field('stream_function')
 call afield%data(psi)

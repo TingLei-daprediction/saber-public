@@ -173,6 +173,10 @@ contains
     call MPI_File_open(mpi_comm_comp, output_filename, &
                        MPI_MODE_WRONLY + MPI_MODE_CREATE, &
                        MPI_INFO_NULL, fh, ierr)
+    ! MPI_MODE_CREATE does not truncate an existing file. Reset it collectively
+    ! so a shorter run cannot leave stale timer records at the end.
+    call MPI_File_set_size(fh, 0_MPI_OFFSET_KIND, ierr)
+    call MPI_Barrier(mpi_comm_comp, ierr)
 
        buffer1=" "; buffer2=" ";buffer3=" ";buffer4=" "
     write(buffer1,"(I6,25(',',F10.4),',',I10)") mype,                            &
@@ -211,9 +215,9 @@ contains
                                        hfiltT_tim%time_cpu,           &
                                        hfilt_tim%time_cpu,            &
                                        vfiltT_tim%time_cpu,           &
+                                       vfilt_tim%time_cpu,            &
                                        bocoT_tim%time_cpu,           &
                                        boco_tim%time_cpu,           &
-                                       vfilt_tim%time_cpu,           &
                                        filt2an_tim%time_cpu,          &
                                        aintp_tim%time_cpu,            &
                                        intp_tim%time_cpu,             &

@@ -24,6 +24,9 @@ exclude = [
 "src/saber/mgbf/mgbf_lib/mg_intstate.f90" = [
     "C121", # use-missing-only - MPI procedures are not exposed in legacy mpi module only-list
 ]
+"src/saber/mgbf/mgbf_lib/mg_timers.f90" = [
+    "C121", # use-missing-only - MPI_Bcast is not exposed in legacy mpi module only-list
+]
 "src/saber/gsi/covariance/gsi_covariance_mod.f90" = [
     "C072", # assumed-size-character-intent
     "C082", # pointer-initialisation-in-declaration

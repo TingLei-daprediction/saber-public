@@ -38,4 +38,6 @@ background error:
 
 output perturbations:
   member pattern: '%MEM%'
-  filepath: testdata/randomization_mgbf_ensemble/_MPI_-_OMP__member_pert_%MEM%
+  # Use a producer-independent name so consumers do not need to encode the
+  # MPI/OMP layout of this preparation test.
+  filepath: testdata/randomization_mgbf_ensemble/member_pert_%MEM%

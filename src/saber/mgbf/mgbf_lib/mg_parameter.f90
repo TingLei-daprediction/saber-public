@@ -81,8 +81,8 @@ integer(i_kind):: mm0
 !
 ! Number of PEs on Analysis grid
 !
-integer(i_kind):: nxm
-integer(i_kind):: nym
+integer(i_kind):: nxm = -1
+integer(i_kind):: nym = -1
 
 !
 ! Number of data on local Analysis grid
@@ -195,8 +195,12 @@ logical:: ldelta
 !from mg_mppstuff.f90
 character(len=5):: c_mype
 integer(i_kind):: mype
-integer(i_kind):: npes,iTYPE,rTYPE,dTYPE,mpi_comm_comp,ierr,ierror
-integer(i_kind):: mpi_comm_work,group_world,group_work
+integer(i_kind):: npes,iTYPE,rTYPE,dTYPE
+integer(i_kind):: mpi_comm_comp = MPI_COMM_NULL
+integer(i_kind):: mpi_comm_work = MPI_COMM_NULL
+integer(i_kind):: group_world = MPI_GROUP_NULL
+integer(i_kind):: group_work = MPI_GROUP_NULL
+integer(i_kind):: ierr,ierror
 integer(i_kind):: mype_gr,npes_gr
 integer(i_kind):: my_hgen
 integer(i_kind):: mype_hgen
@@ -643,11 +647,9 @@ logical :: l_exist
 !
   allocate(this%zofis(lm))
   allocate(this%isofz(lm_a))
-  write(6,*)"thinkdeb999 filgrid is ",l_vert_stretched_filtgrid
   this%l_vert_stretched_filtgrid=l_vert_stretched_filtgrid
 
   if(lm_a /= lm ) then
-    write(6,*)"thinkdeb999 l_vert_stretched_filtgrid ",this%l_vert_stretched_filtgrid
    call convert_vert_varied_aspt
 !in which the mg_ampl01 will be re-defined
   end if
@@ -680,7 +682,6 @@ logical :: l_exist
          this%mype=mype
          file_coef_normalization=trim(dir_coef_normalization)//"/profile_subdomain_"//str_rank//".txt"
       end if
-         write(6,*)"thinkdeb888 normalization file is ",trim(file_coef_normalization)
          inquire(file=trim(file_coef_normalization),exist=l_exist)
          if(l_exist) then
            open(newunit=myunit,file=trim(file_coef_normalization),status="old",action="read")
@@ -723,7 +724,6 @@ logical :: l_exist
 
   this%coef_normalization=coef_normalization
   this%dxfmctrl=dxfmctrl; this%dyfmctrl=dyfmctrl
-  write(6,*)"thinkdeb999 readin l_constant_aspt2  ",l_constant_aspt2
   this%l_constant_aspt2 = l_constant_aspt2
   this%km2=km2
   this%km3=km3
@@ -921,8 +921,6 @@ logical :: l_exist
 ! Set number of processors at higher generations
 !
 
-  write(6,*)"thinkdeb999 2 8 ",this%l_vert_stretched_filtgrid  ," ","l_use",this%l_vert_stretched_filtgrid
-  call flush(6)
   allocate(this%ixm(this%gm))
   allocate(this%jym(this%gm))
   allocate(this%nxy(this%gm))
@@ -937,8 +935,6 @@ logical :: l_exist
   call def_ngens(this%ixm,this%gm,this%nxm)
   call def_ngens(this%jym,this%gm,this%nym)
 
-  write(6,*)"thinkdeb999 2 9 ",this%l_vert_stretched_filtgrid  ," ","l_use",this%l_vert_stretched_filtgrid
-  call flush(6)
 !$omp parallel do private(g) schedule(static)
   do g=1,this%gm
     this%nxy(g)=this%ixm(g)*this%jym(g)
@@ -1019,8 +1015,6 @@ logical :: l_exist
   this%rmom2_2=u1/sqrt(this%pee2+4)
   this%rmom2_3=u1/sqrt(this%pee2+5)
   this%rmom2_4=u1/sqrt(this%pee2+6)
-  write(6,*)"thinkdeb999 2 10 ",this%l_vert_stretched_filtgrid  ," ","l_use",this%l_vert_stretched_filtgrid
-  call flush(6)
 contains
 
 subroutine convert_vert_varied_aspt
@@ -1037,8 +1031,6 @@ subroutine convert_vert_varied_aspt
   end if
   allocate(sigofz(lm_a),sigofis(lm))
   call MPI_COMM_RANK(this%mpi_comm_comp,mype,ierr)
-  write(6,*)"thinkdeb999 2.0 ",this%l_vert_stretched_filtgrid  ," ","l_use",this%l_vert_stretched_filtgrid
-  call flush(6)
   if(this%l_vert_stretched_filtgrid) then
       if(mype==0) then
         open(newunit=myunit,file="mgbf_vert_aspt_profile.txt",status="old",iostat=ierr)
@@ -1069,8 +1061,6 @@ subroutine convert_vert_varied_aspt
          end do
          end if
   else
-  write(6,*)"thinkdeb999 2 0.1 ",this%l_vert_stretched_filtgrid  ," "
-  call flush(6)
       sigofz=sqrt(mg_ampl01)
 
   end if

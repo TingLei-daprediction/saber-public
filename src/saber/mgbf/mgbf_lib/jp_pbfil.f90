@@ -202,7 +202,8 @@ do ix=Lx,Mx
    x=u1/exx
    gxl=ceiling(-x+eps); gxm=floor( x-eps)
    if(gxl<-hx.or.gxm>hx) then
-        write(error_unit,*) "thinkdeb7777 exx =",exx," ",this%rmom2_1," ",hx," ",el(ix)
+        write(error_unit,*) "Filter-reach context: exx, rmom2_1, hx, el(ix) =", &
+                            exx, this%rmom2_1, hx, el(ix)
         call flush(error_unit)
         write(error_unit,*) "In getlinesum1dxx; filter reach fx becomes too large for hx"
         call flush(error_unit)

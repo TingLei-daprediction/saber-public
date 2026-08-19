@@ -234,7 +234,8 @@ class SaberEnsembleBlockChain : public SaberBlockChainBase {
   std::vector<ScaleData> scaleDataVec_;
   /// @brief Multiscales strategy
   std::string strategy_;
-  /// @brief Lazily-computed control vector size.
+  /// @brief Lazily-computed control vector size. The current call structure
+  /// initializes this cache serially; concurrent first access is not supported.
   mutable std::optional<size_t> ctlVecSize_;
   /// @brief Variables used in the ensemble covariance.
   /// TODO(AS): check whether this is needed or can be inferred from ensemble->

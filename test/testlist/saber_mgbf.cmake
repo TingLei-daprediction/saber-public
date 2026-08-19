@@ -1,8 +1,8 @@
-message( STATUS "- GSI GFS" )
+message( STATUS "- MGBF" )
 
-# dirac_gsi_gfs_global
+# Basic MGBF Dirac test.
 saber_add_test( TARGET saber_dirac_mgbf-1
-                MPI 4 
+                MPI 4
                 OMP 1
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
                 ARGS testinput/dirac_mgbf-1.yaml
@@ -19,6 +19,8 @@ saber_add_test( TARGET saber_randomization_mgbf_ensemble
                 DEPENDS saber_quench_error_covariance_toolbox.x )
 
 # Eight-rank reference: ten members localized by one four-rank MGBF component.
+# These parallel-ensemble tests also require the companion OOPS change that
+# preserves Atlas field metadata during redistribution to a subcommunicator.
 saber_add_test( TARGET saber_dirac_mgbf-2
                 MPI 8
                 OMP 1

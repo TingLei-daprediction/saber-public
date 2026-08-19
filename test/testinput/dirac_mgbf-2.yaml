@@ -45,16 +45,15 @@ background error:
     covariance:
       covariance model: SABER
       covariance type: ensemble
-      adjoint test: false
+      # Symmetry smoke test through the component communicator; this is not a
+      # forward/adjoint-pair validation and does not require the square root.
+      adjoint test: true
       square-root test: false
       ensemble pert:
         members from template:
           template:
             date: *date
-            # The preparation test runs with MPI=4 and OMP=1. _MPI_-_OMP_
-            # is expanded when the files are written, so consumers must use
-            # the resulting 4-1 prefix even when their parent job has 8 ranks.
-            filepath: testdata/randomization_mgbf_ensemble/4-1_member_pert_%MEM%
+            filepath: testdata/randomization_mgbf_ensemble/member_pert_%MEM%
             state variables: *vars
           pattern: '%MEM%'
           nmembers: 10
@@ -62,7 +61,7 @@ background error:
         saber central block:
           saber block name: MGBF_covariance
           mgbf namelist file: testdata/dirac_mgbf.nml
-          mgbf timer output file: testdata/dirac_mgbf-2_mg_timers
+          mgbf timer output file: testdata/dirac_mgbf-2/mg_timers
         saber outer blocks:
         - saber block name: interpolation
           inner geometry:
@@ -96,13 +95,24 @@ background error:
       saber central block:
         saber block name: ID
 
-dirac: &dirac
+dirac:
   lon: [135.0]
   lat: [40.0]
   level: [30]
   variable: [air_horizontal_streamfunction]
 
-diagnostic points: *dirac
+diagnostic points:
+  # Exercise boundary, seam-adjacent, and low/middle/high-level values.
+  lon: [102.0, 134.0, 136.0, 168.0, 135.0, 150.0]
+  lat: [12.0, 34.0, 36.0, 58.0, 20.0, 35.0]
+  level: [1, 30, 30, 65, 1, 65]
+  variable:
+  - air_horizontal_streamfunction
+  - air_horizontal_streamfunction
+  - air_horizontal_streamfunction
+  - air_horizontal_streamfunction
+  - air_horizontal_streamfunction
+  - air_horizontal_streamfunction
 
 output dirac:
   filepath: testdata/dirac_mgbf-2/_MPI_-_OMP__dirac_%id%

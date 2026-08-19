@@ -29,7 +29,8 @@ where yaml_config has content:
 
   file to compare 1: (...)
   file to compare 2: (...)
-  relative float tolerance: 1e-15  # Optional, default 1e-6
+  relative float tolerance: 1e-15  # Optional, default 1e-10
+  absolute float tolerance: 1e-21  # Optional, default relative tolerance * 1e-6
   absolute integer tolerance: 1    # Optional, default 0
 
 """
@@ -39,7 +40,12 @@ import sys
 import yaml
 
 
-def line_diff(line1, line2, lnum, ftol, idif):
+def float_close(value1, value2, ftol, fatol):
+  """Return whether two floats satisfy the configured combined tolerance."""
+  return abs(value1 - value2) <= fatol + ftol*abs(value1)
+
+
+def line_diff(line1, line2, lnum, ftol, fatol, idif):
   '''
   Method that searches for int and floats in two lines
   and compares them one by one.
@@ -53,6 +59,8 @@ def line_diff(line1, line2, lnum, ftol, idif):
       line number of line2
   ftol : float64
       relative tolerance for floats
+  fatol : float64
+      absolute tolerance for floats
   idif : int
       absolute tolerance for int
     
@@ -96,12 +104,14 @@ def line_diff(line1, line2, lnum, ftol, idif):
         found=found+1
         flt1a = reflte.findall(flt1[0])
         flt2a = reflte.findall(flt2[0])
-        rdiff = abs(float(flt1a[0])-float(flt2a[0]))/(abs(float(flt1a[0]))+1.0e-6)
-        if (not rdiff <= ftol):
+        value1 = float(flt1a[0])
+        value2 = float(flt2a[0])
+        adiff = abs(value1-value2)
+        if not float_close(value1, value2, ftol, fatol):
           lineerror=lineerror+1
           print("Float mismatch at line "+str(lnum)+": "+\
-                flt1a[0]," not equal to ",flt2a[0]," with max relative difference ", ftol,\
-                " Actual relative difference = ",rdiff)
+                flt1a[0]," not equal to ",flt2a[0]," with relative tolerance ", ftol,\
+                " and absolute tolerance ",fatol,". Actual difference = ",adiff)
 
       #Compare if integer
       if int1 and int2:
@@ -129,23 +139,27 @@ def line_diff(line1, line2, lnum, ftol, idif):
         found=found+1
         flt1a = reflte.findall(flt1[0])
         int2a = reinte.findall(int2[0])
-        rdiff = abs(float(flt1a[0])-float(int2a[0]))/(abs(float(flt1a[0]))+1.0e-6)
-        if (not rdiff <= ftol):
+        value1 = float(flt1a[0])
+        value2 = float(int2a[0])
+        adiff = abs(value1-value2)
+        if not float_close(value1, value2, ftol, fatol):
           lineerror=lineerror+1
           print("Float mismatch at line "+str(lnum)+": "+\
-                flt1a[0]," not equal to ",int2a[0]," with max relative difference ", ftol,\
-                " Actual relative difference = ",rdiff)
+                flt1a[0]," not equal to ",int2a[0]," with relative tolerance ", ftol,\
+                " and absolute tolerance ",fatol,". Actual difference = ",adiff)
 
       if int1 and flt2:
         found=found+1
         int1a = reinte.findall(int1[0])
         flt2a = reflte.findall(flt2[0])
-        rdiff = abs(float(int1a[0])-float(flt2a[0]))/(abs(float(int1a[0]))+1.0e-6)
-        if (not rdiff <= ftol):
+        value1 = float(int1a[0])
+        value2 = float(flt2a[0])
+        adiff = abs(value1-value2)
+        if not float_close(value1, value2, ftol, fatol):
           lineerror=lineerror+1
           print("Float mismatch at line "+str(lnum)+": "+\
-                int1a[0]," not equal to ",flt2a[0]," with max relative difference ", ftol,\
-                " Actual relative difference = ",rdiff)
+                int1a[0]," not equal to ",flt2a[0]," with relative tolerance ", ftol,\
+                " and absolute tolerance ",fatol,". Actual difference = ",adiff)
 
       #Exit with error if check has failed
       if found == 0:
@@ -170,6 +184,7 @@ with open(sys.argv[1], "r") as config_file:
 file1 = open(config_dict.get("file to compare 1"), "r")
 file2 = open(config_dict.get("file to compare 2"), "r")
 ftol = float(config_dict.get("relative float tolerance", 1e-10))
+fatol = float(config_dict.get("absolute float tolerance", ftol * 1e-6))
 idif = int(config_dict.get("absolute integer tolerance", 0))
 
 
@@ -195,26 +210,21 @@ reflte = re.compile('([+-]?\d+\.\d+(?:[e][+-]?[\d]+)?)')      #Float extraction 
 reinte = re.compile('([+-]?\d+)')                         #Integer extraction (123, -> 123)
 
 
-# Loop through first file and search for diagnostic string
-iline2 = 0
-error = 0
-diag_found = False
-for line1 in file1:
-    # Check if current line is a Diagnostic line
-    if '  + Value for variable ' in line1:
+# Extract diagnostic lines from both files before comparison. This makes a
+# missing or extra diagnostic an explicit failure instead of silently ignoring
+# extra lines in the second file or indexing past its end.
+diagnostics1 = [line for line in file1 if '  + Value for variable ' in line]
+diagnostics2 = [(iline + 1, line) for iline, line in enumerate(lines2)
+                if '  + Value for variable ' in line]
 
-        # Find associated line in second file if need be
-        while not '  + Value for variable ' in lines2[iline2]:
-            iline2 += 1
-          
-        # Compare strings, integers and double
-        lineerror = line_diff(line1, lines2[iline2], iline2 + 1, ftol, idif)
-        error += lineerror
-          
-        # Go to next line in second file
-        iline2 = iline2 + 1
-          
-        diag_found = True
+error = 0
+if len(diagnostics1) != len(diagnostics2):
+    print("Different numbers of diagnostic lines: "
+          f"{len(diagnostics1)} in first file and {len(diagnostics2)} in second file")
+    error += 1
+
+for line1, (iline2, line2) in zip(diagnostics1, diagnostics2):
+    error += line_diff(line1, line2, iline2, ftol, fatol, idif)
 
 
 file1.close()
@@ -223,7 +233,7 @@ file2.close()
 # Return status
 if error > 0:
   sys.exit(1)  # Return failure
-if not diag_found:
+if not diagnostics1:
   print("Did not find any instances of \'  + Value for variable \' in first file")
   sys.exit(1)  # Return failure
 
