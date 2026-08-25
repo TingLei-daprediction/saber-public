@@ -116,3 +116,7 @@ diagnostic points:
 
 output dirac:
   filepath: testdata/dirac_mgbf-2/_MPI_-_OMP__dirac_%id%
+test:
+  float relative tolerance: 1.5e-06
+  test output filename: dirac_mgbf-2.out
+  reference filename: testref/dirac_mgbf-2.ref
