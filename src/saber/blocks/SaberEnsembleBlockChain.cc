@@ -154,6 +154,18 @@ void SaberEnsembleBlockChain::multiply(oops::FieldSet4D & fset4d) const {
 void SaberEnsembleBlockChain::randomize(oops::FieldSet4D & fset4d) const {
   oops::Log::trace() << "saber::SaberEnsembleBlockChain::randomize starting" << std::endl;
 
+  // With a supplied ensemble this block chain is one component of a parallel
+  // hybrid, and the component results are summed. A correct random draw needs
+  // the components to use independent streams: identical streams would make the
+  // summed sample have covariance (sum of B_g^1/2)(sum of B_g^1/2)^T rather than
+  // the intended sum of B_g. Until independent per-component streams are
+  // assigned, refuse rather than return a plausible but wrong sample.
+  if (suppliedEnsemble_) {
+    throw eckit::NotImplemented("randomize is not supported for a SaberEnsembleBlockChain "
+                                "built from a shared ensemble: independent random streams "
+                                "per hybrid component are not implemented yet.", Here());
+  }
+
   if (strategy_ == "separated") {
     // Central block: randomization with ensemble covariance
     const auto & scaleData = scaleDataVec_[0];

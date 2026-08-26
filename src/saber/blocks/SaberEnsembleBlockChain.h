@@ -188,7 +188,77 @@ class SaberEnsembleBlockChainParameters: public ErrorCovarianceParametersBase {
   // {subEnsSize,...,2 subEnsSize-1}, etc. are distinct sub-ensembles. The mean of each sub-ensemble
   // is subtracted from the concerned members to compute perturbations.
   oops::OptionalParameter<size_t> subEnsSize{"sub-ensembles size", this};
+
+  // Members of the shared ensemble assigned to this component, using the member
+  // numbering of the shared ensemble (1-based). Only meaningful under a parallel
+  // hybrid that declares a `shared ensemble` section: the perturbations are
+  // formed once on the parent communicator, about a single common mean, and
+  // handed to this block chain through the construction context. Present here so
+  // that the mismatch between configuration and context can be detected.
+  oops::OptionalParameter<std::vector<size_t>> sharedEnsembleMembers{
+                        "shared ensemble members", this};
 };
+
+// -----------------------------------------------------------------------------
+
+/// @brief Reject configuration that would silently change or discard a supplied
+/// ensemble.
+///
+/// A supplied ensemble arrives already centred on one common mean, and
+/// unnormalized: the 1/(N-1) factor is carried by the hybrid component weight.
+/// Several existing keys would quietly undo one or other of those properties,
+/// producing a covariance that looks reasonable and is not the one requested.
+inline void checkSharedEnsembleConfiguration(const SaberEnsembleBlockChainParameters & params,
+                                             const eckit::Configuration & conf) {
+  if (params.subEnsSize.value()) {
+    throw eckit::UserError("`sub-ensembles size` cannot be used with a supplied ensemble: it "
+                           "would subtract fresh local sub-ensemble means and destroy the "
+                           "common mean the perturbations were formed about.", Here());
+  }
+
+  if (params.denominatorForNormalizingEnsembleCovariance.value()) {
+    throw eckit::UserError("`denominator for normalizing ensemble covariance` cannot be used "
+                           "with a supplied ensemble: it is read only when the ensemble is "
+                           "scaled at read time, which is bypassed here, so it would be "
+                           "silently ignored. Use `shared ensemble: normalization denominator` "
+                           "and the component weight instead.", Here());
+  }
+
+  if (conf.getBool("iterative ensemble loading", false)) {
+    throw eckit::UserError("`iterative ensemble loading` cannot be used with a supplied "
+                           "ensemble.", Here());
+  }
+
+  // Component-local ensemble sources would be read and then thrown away.
+  if (params.ensemble.value() || params.ensemblePert.value() || params.ensembleBase.value()
+      || params.ensemblePairs.value() || params.ensemblePertOtherGeom.value()) {
+    throw eckit::UserError("A component-local ensemble source cannot be combined with a "
+                           "supplied ensemble: the ensemble source would be ambiguous.",
+                           Here());
+  }
+
+  // Scale-specific sources take precedence over the top-level ensemble, so the
+  // supplied members would never be used.
+  if (params.scales.value()) {
+    const auto & scales = *params.scales.value();
+    for (const auto & scale : scales) {
+      if (scale.ensemblePert.value() || scale.ensemblePertOtherGeom.value()) {
+        throw eckit::UserError("Scale-specific ensemble perturbations cannot be combined with "
+                               "a supplied ensemble: the supplied members would be ignored.",
+                               Here());
+      }
+    }
+
+    // Without a filter on the first scale there is no scale separation, so the
+    // supplied members can only feed a single scale.
+    if (!scales[0].filterParams.value() && scales.size() > 1) {
+      throw eckit::UserError("A supplied ensemble with more than one scale requires a `filter` "
+                             "on the first scale, so that the members can be separated into "
+                             "scales. Without one it is undefined which scale receives them.",
+                             Here());
+    }
+  }
+}
 
 /// Chain of outer (optional) and an ensemble "block".
 class SaberEnsembleBlockChain : public SaberBlockChainBase {
@@ -198,7 +268,8 @@ class SaberEnsembleBlockChain : public SaberBlockChainBase {
                           const oops::Variables & outerVars,
                           oops::FieldSet4D & fset4dXb,
                           oops::FieldSet4D & fset4dFg,
-                          const eckit::Configuration & conf);
+                          const eckit::Configuration & conf,
+                          SaberBlockChainContext && context = SaberBlockChainContext());
   ~SaberEnsembleBlockChain() = default;
 
   /// @brief Randomize the increment according to this B matrix.
@@ -240,6 +311,10 @@ class SaberEnsembleBlockChain : public SaberBlockChainBase {
   /// @brief Variables used in the ensemble covariance.
   /// TODO(AS): check whether this is needed or can be inferred from ensemble->
   oops::Variables vars_;
+  /// @brief Whether the ensemble was supplied by the caller rather than read here.
+  /// Randomization is not supported in that case: components would have to draw
+  /// from independent streams for their sum to have the intended covariance.
+  bool suppliedEnsemble_ = false;
   int seed_ = 7;  // For reproducibility
 };
 
@@ -250,7 +325,8 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
                                                  const oops::Variables & outerVars,
                                                  oops::FieldSet4D & fset4dXb,
                                                  oops::FieldSet4D & fset4dFg,
-                                                 const eckit::Configuration & conf)
+                                                 const eckit::Configuration & conf,
+                                                 SaberBlockChainContext && context)
   : comm_(geom.getComm()),
     outerFunctionSpace_(geom.functionSpace()),
     outerVariables_(outerVars) {
@@ -266,13 +342,43 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
   ErrorCovarianceParametersBase paramsBase;
   paramsBase.deserialize(fullConf);
 
-  // Read ensemble (for non-iterative ensemble loading)
-  std::unique_ptr<oops::FieldSets> ensemble = std::make_unique<oops::FieldSets>(
+  // Obtain the ensemble, either from the caller or by reading it here.
+  //
+  // A supplied ensemble comes from a parallel hybrid that formed perturbations
+  // once, on the parent communicator, about a single common mean. Never fall
+  // back to a component-local read when one was expected: that would silently
+  // produce perturbations about a different mean, which looks plausible and is
+  // wrong.
+  std::unique_ptr<oops::FieldSets> ensemble;
+  const bool usingSuppliedEnsemble = !context.empty();
+  if (params.sharedEnsembleMembers.value() && context.empty()) {
+    throw eckit::UserError("`shared ensemble members` is configured but no ensemble was "
+                           "supplied to SaberEnsembleBlockChain. This block chain must be "
+                           "constructed by a parallel hybrid declaring a `shared ensemble` "
+                           "section.", Here());
+  }
+  if (!context.empty() && !params.sharedEnsembleMembers.value()) {
+    throw eckit::UserError("An ensemble was supplied to SaberEnsembleBlockChain but "
+                           "`shared ensemble members` is not configured, so the members it "
+                           "should hold are undeclared.", Here());
+  }
+
+  if (!context.empty()) {
+    checkSharedEnsembleConfiguration(params, conf);
+    suppliedEnsemble_ = true;
+    ensemble = std::move(context.suppliedEnsemble());
+    oops::Log::info() << "Info     : Using supplied ensemble of " << ensemble->ens_size()
+                      << " members (formed about a common mean on the parent communicator)"
+                      << std::endl;
+  } else {
+    // Read ensemble (for non-iterative ensemble loading)
+    ensemble = std::make_unique<oops::FieldSets>(
                                      readAndScaleEnsemble(
                                        geom,
                                        outerVars,
                                        fset4dXb.times(), fset4dXb.commTime(), fset4dXb.commEns(),
                                        fullConf));
+  }
 
   // Check that there is an ensemble of at least 2 members (or no member).
   if (ensemble->ens_size() == 1) {
@@ -698,6 +804,12 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
           }
         }
       }
+    } else if (usingSuppliedEnsemble) {
+      // Single unfiltered scale: the supplied members are that scale's ensemble.
+      // More than one unfiltered scale is rejected up front, because it would be
+      // undefined which of them receives the members.
+      ASSERT(scaleDataVec_.size() == 1);
+      scaleDataVec_[0].ensemble() = std::move(ensemble);
     } else {
       // Read ensemble perturbations
       for (auto & scaleData : scaleDataVec_) {

@@ -7,8 +7,11 @@
 
 #pragma once
 
+#include <algorithm>
+#include <cmath>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "atlas/field.h"
@@ -71,6 +74,30 @@ class ComponentParameters : public oops::Parameters {
 
 // -----------------------------------------------------------------------------
 
+/// @brief An ensemble read once, on the parent communicator, and shared by all
+/// components of a parallel hybrid.
+///
+/// Only the parent communicator can see every member, so only it can form
+/// perturbations about a single common mean. Each component is then handed the
+/// members assigned to it. The perturbations are passed on unnormalized: the
+/// 1/(N-1) factor is carried by the component weights, which are checked
+/// against `normalization denominator`.
+class SharedEnsembleParameters : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(SharedEnsembleParameters, oops::Parameters)
+ public:
+  /// Ensemble of states. This is the only source form currently supported,
+  /// because it is the only one for which readEnsemble subtracts a mean.
+  oops::RequiredParameter<eckit::LocalConfiguration> ensemble{"ensemble", this};
+
+  /// Denominator of the ensemble covariance normalization, conventionally N-1.
+  oops::RequiredParameter<double> denominator{"normalization denominator", this};
+
+  /// Relative tolerance when checking component weights against 1/denominator.
+  oops::Parameter<double> weightTolerance{"weight tolerance", 1.0e-10, this};
+};
+
+// -----------------------------------------------------------------------------
+
 class SaberHybridBlockChainParameters: public ErrorCovarianceParametersBase {
   OOPS_CONCRETE_PARAMETERS(SaberHybridBlockChainParameters,
                            ErrorCovarianceParametersBase)
@@ -94,7 +121,86 @@ class SaberHybridBlockChainParameters: public ErrorCovarianceParametersBase {
   // and parent communicator.
   oops::Parameter<std::string> commRedistributionMethod{"comm redistribution method",
       "straight", this};
+
+  // Ensemble read once on the parent communicator and shared across components.
+  // Requires `run in parallel`.
+  oops::OptionalParameter<SharedEnsembleParameters> sharedEnsemble{"shared ensemble", this};
 };
+
+// -----------------------------------------------------------------------------
+
+/// @brief Collect and validate the member-to-component mapping for a shared
+/// ensemble.
+///
+/// Every rank holds the full component configuration, so the whole mapping can
+/// be checked before a single file is opened. Returns one ascending member list
+/// per component, using the 1-based numbering of the shared ensemble.
+inline std::vector<std::vector<size_t>> sharedEnsembleMemberMap(
+    const std::vector<ComponentParameters> & components,
+    const SharedEnsembleParameters & sharedParams) {
+  std::vector<std::vector<size_t>> memberMap;
+  memberMap.reserve(components.size());
+
+  for (size_t component = 0; component < components.size(); ++component) {
+    const eckit::LocalConfiguration cmpConf =
+      components[component].covariance.value().toConfiguration();
+    const std::string label = "Component " + std::to_string(component + 1);
+
+    if (!cmpConf.has("shared ensemble members")) {
+      throw eckit::UserError(label + " of a hybrid block declaring `shared ensemble` does not "
+                             "configure `shared ensemble members`.", Here());
+    }
+    const std::vector<int> raw = cmpConf.getIntVector("shared ensemble members");
+    if (raw.empty()) {
+      throw eckit::UserError(label + " has an empty `shared ensemble members` list.", Here());
+    }
+    std::vector<size_t> members;
+    members.reserve(raw.size());
+    for (const int member : raw) {
+      if (member < 1) {
+        throw eckit::UserError(label + " lists member " + std::to_string(member) + " in "
+                               "`shared ensemble members`; members are numbered from 1.",
+                               Here());
+      }
+      members.push_back(static_cast<size_t>(member));
+    }
+    // Ascending order keeps the local member index monotonic in the global one.
+    std::sort(members.begin(), members.end());
+    memberMap.push_back(std::move(members));
+  }
+
+  // Every member exactly once, numbered 1..N with no gaps and no duplicates.
+  std::vector<size_t> all;
+  for (const auto & members : memberMap) {
+    all.insert(all.end(), members.begin(), members.end());
+  }
+  std::sort(all.begin(), all.end());
+  for (size_t jj = 0; jj < all.size(); ++jj) {
+    if (all[jj] != jj + 1) {
+      throw eckit::UserError("`shared ensemble members` across all components must list every "
+                             "member from 1 to " + std::to_string(all.size()) + " exactly once. "
+                             "Found " + std::to_string(all[jj]) + " where " +
+                             std::to_string(jj + 1) + " was expected.", Here());
+    }
+  }
+
+  // Every component weight must carry the global normalization, since a supplied
+  // ensemble bypasses the scaling applied at read time.
+  const double expectedWeight = 1.0/sharedParams.denominator.value();
+  const double tolerance = sharedParams.weightTolerance.value();
+  for (size_t component = 0; component < components.size(); ++component) {
+    const double weight = components[component].weight.value().value.value();
+    if (std::abs(weight - expectedWeight) > tolerance*std::abs(expectedWeight)) {
+      throw eckit::UserError("Component " + std::to_string(component + 1) + " has weight " +
+                             std::to_string(weight) + ", but a shared ensemble with "
+                             "`normalization denominator` " +
+                             std::to_string(sharedParams.denominator.value()) +
+                             " requires " + std::to_string(expectedWeight) + ".", Here());
+    }
+  }
+
+  return memberMap;
+}
 
 /// Hybrid covariance block chain implementation
 template<typename MODEL>
@@ -197,6 +303,11 @@ SaberHybridBlockChain<MODEL>::SaberHybridBlockChain(const oops::Geometry<MODEL> 
   parallelHybrid_ = params.runInParallel;
   redistributionMethod_ = params.commRedistributionMethod;
 
+  if (params.sharedEnsemble.value() && !parallelHybrid_) {
+    throw eckit::UserError("`shared ensemble` requires `run in parallel: true`. Run serially "
+                           "and each component reads its own ensemble, as before.", Here());
+  }
+
   const eckit::mpi::Comm & defaultSpaceComm = geom.getComm();
   const size_t ntasks = defaultSpaceComm.size();
   const size_t nComponents = params.components.value().size();
@@ -246,6 +357,55 @@ SaberHybridBlockChain<MODEL>::SaberHybridBlockChain(const oops::Geometry<MODEL> 
         globalTaskOffsetPerComponent[component-1] + ntasksPerComponent[component-1];
     }
     globalTaskOffsetPerComponent[nComponents] = ntasks;
+
+    // Report the full task split. A component whose task count does not match
+    // the decomposition its central block expects (MGBF requires nxm*nym) will
+    // fail later inside that block, so make the numbers visible up front.
+    oops::Log::info() << "Info     : Hybrid task split over " << nComponents
+                      << " components:";
+    for (size_t component = 0; component < nComponents; ++component) {
+      oops::Log::info() << " " << ntasksPerComponent[component];
+    }
+    oops::Log::info() << " (total " << ntasks << ")" << std::endl;
+
+    // Shared ensemble: read once here, on the parent communicator, while every
+    // rank can still see every member. This must happen before the communicator
+    // split below, and in particular before setCommDefault: readEnsemble's
+    // other-geometry branch captures eckit::mpi::comm() as its geometry
+    // communicator, which the split is about to change underneath it.
+    std::unique_ptr<oops::FieldSets> sharedPerts;
+    std::vector<std::vector<size_t>> sharedMemberMap;
+    if (params.sharedEnsemble.value()) {
+      const auto & sharedParams = *params.sharedEnsemble.value();
+
+      // Validate the whole mapping before any I/O. Every rank holds the full
+      // component configuration, so this costs nothing and turns a silent
+      // mis-assignment into a named error.
+      sharedMemberMap = sharedEnsembleMemberMap(params.components.value(), sharedParams);
+
+      eckit::LocalConfiguration sharedConf;
+      sharedParams.serialize(sharedConf);
+
+      oops::Log::info() << "Info     : Reading shared ensemble on the parent communicator"
+                        << std::endl;
+      sharedPerts = std::make_unique<oops::FieldSets>(
+        readEnsemble(geom, currentOuterVars,
+                     fset4dXb.times(), fset4dXb.commTime(), fset4dXb.commEns(),
+                     sharedConf));
+
+      size_t nmembers = 0;
+      for (const auto & members : sharedMemberMap) nmembers += members.size();
+      if (sharedPerts->ens_size() != nmembers) {
+        throw eckit::UserError("The shared ensemble holds " +
+                               std::to_string(sharedPerts->ens_size()) + " members but "
+                               "`shared ensemble members` accounts for " +
+                               std::to_string(nmembers) + ".", Here());
+      }
+      oops::Log::info() << "Info     : Shared ensemble: " << nmembers << " members over "
+                        << nComponents << " components, common mean subtracted, "
+                        << "normalization 1/" << sharedParams.denominator.value()
+                        << " carried by the component weights" << std::endl;
+    }
 
     const eckit::mpi::Comm & initialDefaultComm = eckit::mpi::comm();
     ASSERT(initialDefaultComm.name() == defaultSpaceComm.name());
@@ -307,6 +467,55 @@ SaberHybridBlockChain<MODEL>::SaberHybridBlockChain(const oops::Geometry<MODEL> 
     }
     defaultSpaceComm.barrier();
 
+    // Slice the shared ensemble into the members belonging to this component.
+    //
+    // The loop runs over every global member on every parent rank, so the
+    // sequence of collectives is identical everywhere however the members are
+    // distributed; only the decision to keep a member is local. That is what
+    // allows components to hold different numbers of members.
+    SaberBlockChainContext context;
+    if (sharedPerts) {
+      const std::vector<size_t> & mine = sharedMemberMap[myComponent_];
+
+      // Original member identifiers are preserved so that diagnostics stay
+      // traceable to the ensemble numbering the user configured.
+      std::vector<int> memberIds;
+      memberIds.reserve(mine.size());
+      for (const size_t member : mine) memberIds.push_back(static_cast<int>(member));
+
+      auto myPerts = std::make_unique<oops::FieldSets>(
+        fset4dXb.times(), fset4dXb.commTime(), memberIds, fset4dXb.commEns());
+
+      for (size_t member = 0; member < sharedPerts->ens_size(); ++member) {
+        const auto itMine = std::find(mine.begin(), mine.end(), member + 1);
+        const bool keep = (itMine != mine.end());
+        const size_t localIndex = keep
+          ? static_cast<size_t>(std::distance(mine.begin(), itMine)) : 0;
+
+        // Allocated per member: the block chain keeps a reference to these
+        // fields, so reusing one buffer would alias every member together.
+        oops::FieldSet4D localMember(fset4dXb.times(), fset4dXb.commTime(),
+                                     localSpaceComm, *localHybridFs_, currentOuterVars);
+
+        for (size_t jtime = 0; jtime < fset4dXb.size(); jtime++) {
+          util::redistributeToSubcommunicator(redistributionMethod_,
+                                              (*sharedPerts)(jtime, member).fieldSet(),
+                                              localMember[jtime].fieldSet(),
+                                              *localHybridFs_);
+          if (keep) myPerts->emplace_back(jtime, localIndex, localMember[jtime]);
+        }
+      }
+
+      // The global container is no longer needed; release it before the
+      // component block chain is built.
+      sharedPerts.reset();
+      defaultSpaceComm.barrier();
+
+      oops::Log::info() << "Info     : Component " << myComponent_ + 1 << " received "
+                        << mine.size() << " shared ensemble members" << std::endl;
+      context = SaberBlockChainContext(std::move(myPerts));
+    }
+
     const auto & cmpParams = params.components.value()[myComponent_];
 
     // Initialize component outer variables
@@ -343,7 +552,8 @@ SaberHybridBlockChain<MODEL>::SaberHybridBlockChain(const oops::Geometry<MODEL> 
           cmpOuterVars,
           localFset4dXb,
           localFset4dFg,
-          cmpMergedConf));
+          cmpMergedConf,
+          std::move(context)));
 
     ASSERT(hybridBlockChain_.size() > 0);
 
