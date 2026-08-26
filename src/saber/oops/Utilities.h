@@ -128,7 +128,11 @@ oops::FieldSets readEnsemble(const oops::Geometry<MODEL> & geom,
     ++ensembleFound;
   }
 
-  // Increment ensemble from increments on disk on other geometry
+  // Increment ensemble from increments on disk on other geometry.
+  // Here `ensemble geometry` describes an atlas function space. Paired with
+  // `ensemble` instead, the same key describes a model geometry to read states
+  // on and convert from; see the `ensemble` branch below. The partner key is
+  // what distinguishes the two meanings.
   eckit::LocalConfiguration ensemblePertOtherGeomConf;
   eckit::LocalConfiguration ensembleGeomConf;
   if (inputConf.has("ensemble pert on other geometry") && inputConf.has("ensemble geometry")) {
@@ -153,8 +157,37 @@ oops::FieldSets readEnsemble(const oops::Geometry<MODEL> & geom,
     if (!ensembleConf.empty()) {
       oops::Log::info() << "Info     : Ensemble of states, perturbation using the mean"
                         << std::endl;
-      oops::StateSet<MODEL> tmp(geom, ensembleConf, commTime);
-      oops::IncrementSet<MODEL> ensemble(geom, vars, tmp, true);
+
+      // Optional online conversion. With `ensemble geometry`, the states are read
+      // on their own (model-native) geometry and every member is converted to
+      // `geom` before differencing, which is what a dual-resolution run needs:
+      // the model IO reads a file into the geometry it is given and never
+      // interpolates, so the files would otherwise have to match `geom` exactly.
+      //
+      // This mirrors oops::EnsembleCovariance, which uses the same key for the
+      // same purpose. Note that `ensemble geometry` paired with
+      // `ensemble pert on other geometry` below means something different - an
+      // atlas function space rather than a model geometry. The partner key
+      // distinguishes the two.
+      std::unique_ptr<oops::StateSet<MODEL>> tmp;
+      if (inputConf.has("ensemble geometry")) {
+        oops::Log::info() << "Info     : Reading ensemble on its native geometry and "
+                          << "converting to the covariance geometry" << std::endl;
+        const eckit::LocalConfiguration ensGeomConf(inputConf, "ensemble geometry");
+        const oops::Geometry<MODEL> ensGeom(ensGeomConf, geom.getComm(), geom.timeComm());
+
+        std::unique_ptr<oops::StateSet<MODEL>> native =
+          std::make_unique<oops::StateSet<MODEL>>(ensGeom, ensembleConf, commTime);
+        tmp = std::make_unique<oops::StateSet<MODEL>>(geom, *native);
+
+        // Release the native-resolution copy before differencing: both are
+        // resident at this point, which is the memory high-water mark.
+        native.reset();
+      } else {
+        tmp = std::make_unique<oops::StateSet<MODEL>>(geom, ensembleConf, commTime);
+      }
+
+      oops::IncrementSet<MODEL> ensemble(geom, vars, *tmp, true);
       ensemble -= ensemble.ens_mean();
       oops::FieldSets fsetEns(ensemble);
       return fsetEns;

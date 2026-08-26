@@ -89,6 +89,12 @@ class SharedEnsembleParameters : public oops::Parameters {
   /// because it is the only one for which readEnsemble subtracts a mean.
   oops::RequiredParameter<eckit::LocalConfiguration> ensemble{"ensemble", this};
 
+  /// Optional model geometry the states are read on, for a dual-resolution run.
+  /// Every member is converted to the covariance geometry before the common mean
+  /// is removed. Omit when the files are already on the covariance geometry.
+  oops::OptionalParameter<eckit::LocalConfiguration> ensembleGeometry{
+                        "ensemble geometry", this};
+
   /// Denominator of the ensemble covariance normalization, conventionally N-1.
   oops::RequiredParameter<double> denominator{"normalization denominator", this};
 
