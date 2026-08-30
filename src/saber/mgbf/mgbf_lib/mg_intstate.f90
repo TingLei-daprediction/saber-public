@@ -49,7 +49,9 @@ real(r_kind), allocatable,dimension(:,:,:):: VALL
 real(r_kind), allocatable,dimension(:,:,:):: HALL
 
 real(r_kind), allocatable,dimension(:,:,:):: a_diff_f
+real(r_kind), allocatable,dimension(:,:,:):: sqrt_a_diff_f
 real(r_kind), allocatable,dimension(:,:,:):: a_diff_h
+real(r_kind), allocatable,dimension(:,:,:):: sqrt_a_diff_h
 real(r_kind), allocatable,dimension(:,:,:):: b_diff_f
 real(r_kind), allocatable,dimension(:,:,:):: b_diff_h
 real(r_kind), allocatable, dimension(:,:,:,:):: weig_var ! 3D weights in each sub domain 
@@ -69,9 +71,20 @@ real(r_kind), allocatable,dimension(:,:):: p_rho
 
 real(r_kind), allocatable,dimension(:,:,:):: paspx
 real(r_kind), allocatable,dimension(:,:,:,:):: paspx4d
+! codex debug/develop for new jim's calibrated function
+real(r_kind), allocatable,dimension(:,:,:,:,:):: paspx4d_jim_new
+! codex debug/develop for new jim's calibrated function (wbfil variant)
+real(r_kind), allocatable,dimension(:,:,:,:,:):: paspx4d_jim_new_wbfil
 real(r_kind), allocatable,dimension(:,:,:):: paspy
 real(r_kind), allocatable,dimension(:,:,:,:):: paspy4d
+! codex debug/develop for new jim's calibrated function
+real(r_kind), allocatable,dimension(:,:,:,:,:):: paspy4d_jim_new
+! codex debug/develop for new jim's calibrated function (wbfil variant)
+real(r_kind), allocatable,dimension(:,:,:,:,:):: paspy4d_jim_new_wbfil
 real(r_kind), allocatable,dimension(:,:,:):: pasp1
+real(r_kind), allocatable,dimension(:,:,:):: pasp1_store
+real(r_kind), allocatable,dimension(:,:):: pasp1_jim_new
+real(r_kind), allocatable,dimension(:,:):: pasp1_jim_new_wbfil
 real(r_kind), allocatable,dimension(:,:,:,:):: pasp2
 real(r_kind), allocatable,dimension(:,:,:,:,:):: pasp3
 
@@ -180,6 +193,7 @@ contains
   generic :: downsending_loc => downsending_loc_g3,downsending_loc_g4
   procedure:: downsending_loc_g3,downsending_loc_g4
   procedure:: weighting_helm,weighting,weighting_highest,weighting_ens
+  procedure:: weighting_sqrt
   generic :: weighting_loc => weighting_loc_g3,weighting_loc_g4
   procedure:: weighting_loc_g3,weighting_loc_g4
   procedure:: adjoint,direct1
@@ -190,13 +204,17 @@ contains
 !from mg_filtering.f90
   procedure :: filtering_procedure
   procedure :: filtering_rad3,filtering_lin3
-  procedure :: filtering_rad2_bkg,filtering_lin2_bkg,filtering_fast_bkg
+  procedure :: filtering_rad2_bkg,filtering_lin2_bkg,filtering_fast_bkg,filtering_fast_bkg_new_jim
+  procedure :: filtering_fast_bkg_new_jim_new_order
+  procedure :: filtering_fast_bkg_new_jim_new_order_wbfil
   procedure :: filtering_rad2,filtering_lin2
   procedure :: filtering_rad2_ens,filtering_lin2_ens,filtering_fast_ens
   procedure :: filtering_rad_highest
   procedure :: sup_vrbeta1T,sup_vrbeta1,sup_vrbeta3T,sup_vrbeta3
   procedure :: sup_vrbeta1_ens,sup_vrbeta1T_ens
   procedure :: sup_vrbeta1_bkg,sup_vrbeta1T_bkg
+  procedure :: sup_vrbeta1_bkg_new_jim,sup_vrbeta1T_bkg_new_jim
+  procedure :: sup_vrbeta1_bkg_new_jim_wbfil,sup_vrbeta1T_bkg_new_jim_wbfil
 !from mg_transfer.f90
   procedure :: anal_to_filt_allmap,filt_to_anal_allmap
   procedure :: anal_to_filt_all,filt_to_anal_all
@@ -802,6 +820,13 @@ interface
      real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: V
      real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: H
    end subroutine
+   module subroutine weighting_sqrt &
+        (this,V,H)
+     implicit none
+     class (mg_intstate_type),target:: this
+     real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: V
+     real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: H
+   end subroutine
    module subroutine weighting_highest &
         (this,H)
      implicit none
@@ -943,6 +968,15 @@ interface
    module subroutine filtering_fast_bkg(this)
      class(mg_intstate_type),target::this
    end subroutine
+   module subroutine filtering_fast_bkg_new_jim(this)
+     class(mg_intstate_type),target::this
+   end subroutine
+   module subroutine filtering_fast_bkg_new_jim_new_order(this)
+     class(mg_intstate_type),target::this
+   end subroutine
+   module subroutine filtering_fast_bkg_new_jim_new_order_wbfil(this)
+     class(mg_intstate_type),target::this
+   end subroutine
    module subroutine filtering_rad2_ens(this,mg_filt_flag)
      class(mg_intstate_type),target::this
      integer(i_kind),intent(in):: mg_filt_flag
@@ -1010,6 +1044,17 @@ interface
      real(r_kind),dimension(1,1,1:lm), intent(in):: pasp
      real(r_kind),dimension(1:lm), intent(in):: ss
    end subroutine
+   module subroutine sup_vrbeta1_jim_new &
+   (this,km,km3,hx,hy,hz,im,jm,lm,pasp,elp,VALL)
+     implicit none
+     class(mg_intstate_type),target::this
+     integer(i_kind),intent(in):: km,km3,hx,hy,hz,im,jm,lm
+     real(r_kind),dimension(1:km,1-hx:im+hx,1-hy:jm+hy),intent(inout):: VALL
+     real(r_kind),dimension(1,1,1:lm), intent(in):: pasp
+     real(r_kind),dimension(0:1,1:lm), intent(in):: elp
+     real(r_kind),dimension(1-hz:lm+hz,1:km3):: W
+
+   end subroutine
    module subroutine sup_vrbeta1_bkg &
         (this,km,km3,hx,hy,hz,im,jm,lm,pasp,ss,VALL)
      implicit none
@@ -1027,6 +1072,42 @@ interface
      real(r_kind),dimension(1:km,1-hx:im+hx,1-hy:jm+hy),intent(inout):: VALL
      real(r_kind),dimension(1,1,1:lm), intent(in):: pasp
      real(r_kind),dimension(1:lm), intent(in):: ss
+   end subroutine
+   module subroutine sup_vrbeta1_bkg_new_jim &
+        (this,km,km3,hx,hy,hz,im,jm,lm,pasp1_store,elp,VALL)
+     implicit none
+     class(mg_intstate_type),target::this
+     integer(i_kind),intent(in):: km,km3,hx,hy,hz,im,jm,lm
+     real(r_kind),dimension(1:km,1-hx:im+hx,1-hy:jm+hy),intent(inout):: VALL
+     real(r_kind),dimension(1,1,1:lm), intent(in):: pasp1_store
+     real(r_kind),dimension(0:1,1:lm), intent(in):: elp
+   end subroutine
+   module subroutine sup_vrbeta1T_bkg_new_jim &
+        (this,km,km3,hx,hy,hz,im,jm,lm,pasp1_store,elp,VALL)
+     implicit none
+     class(mg_intstate_type),target::this
+     integer(i_kind),intent(in):: km,km3,hx,hy,hz,im,jm,lm
+     real(r_kind),dimension(1:km,1-hx:im+hx,1-hy:jm+hy),intent(inout):: VALL
+     real(r_kind),dimension(1,1,1:lm), intent(in):: pasp1_store
+     real(r_kind),dimension(0:1,1:lm), intent(in):: elp
+   end subroutine
+   module subroutine sup_vrbeta1_bkg_new_jim_wbfil &
+        (this,km,km3,hx,hy,hz,im,jm,lm,pasp1_store,elp,VALL)
+     implicit none
+     class(mg_intstate_type),target::this
+     integer(i_kind),intent(in):: km,km3,hx,hy,hz,im,jm,lm
+     real(r_kind),dimension(1:km,1-hx:im+hx,1-hy:jm+hy),intent(inout):: VALL
+     real(r_kind),dimension(1,1,1:lm), intent(in):: pasp1_store
+     real(r_kind),dimension(0:1,1:lm), intent(in):: elp
+   end subroutine
+   module subroutine sup_vrbeta1T_bkg_new_jim_wbfil &
+        (this,km,km3,hx,hy,hz,im,jm,lm,pasp1_store,elp,VALL)
+     implicit none
+     class(mg_intstate_type),target::this
+     integer(i_kind),intent(in):: km,km3,hx,hy,hz,im,jm,lm
+     real(r_kind),dimension(1:km,1-hx:im+hx,1-hy:jm+hy),intent(inout):: VALL
+     real(r_kind),dimension(1,1,1:lm), intent(in):: pasp1_store
+     real(r_kind),dimension(0:1,1:lm), intent(in):: elp
    end subroutine
 !from mg_transfer.f90
    module subroutine anal_to_filt_allmap(this,WORKA)
@@ -1130,7 +1211,9 @@ allocate(this%VALL(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%
 allocate(this%HALL(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this%HALL=0.
 
 allocate(this%a_diff_f(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this%a_diff_f=0. 
+allocate(this%sqrt_a_diff_f(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this%sqrt_a_diff_f=0. 
 allocate(this%a_diff_h(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this%a_diff_h=0. 
+allocate(this%sqrt_a_diff_h(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this%sqrt_a_diff_h=0. 
 allocate(this%b_diff_f(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this%b_diff_f=0. 
 allocate(this%b_diff_h(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this%b_diff_h=0. 
 
@@ -1141,10 +1224,21 @@ allocate(this%p_rho(1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy)) ; this
 
 allocate(this%paspx(1,1,1:this%im)) ; this%paspx=0.
 allocate(this%paspx4d(this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,2)) ; this%paspx4d=0.
+! codex debug/develop for new jim's calibrated function
+allocate(this%paspx4d_jim_new(0:1,this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,2)) ; this%paspx4d_jim_new=0.
+! codex debug/develop for new jim's calibrated function (wbfil variant)
+allocate(this%paspx4d_jim_new_wbfil(0:1,this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,2)) ; this%paspx4d_jim_new_wbfil=0.
 allocate(this%paspy(1,1,1:this%jm)) ; this%paspy=0.
 allocate(this%paspy4d(this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,2)) ; this%paspy4d=0.
+! codex debug/develop for new jim's calibrated function
+allocate(this%paspy4d_jim_new(0:1,this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,2)) ; this%paspy4d_jim_new=0.
+! codex debug/develop for new jim's calibrated function (wbfil variant)
+allocate(this%paspy4d_jim_new_wbfil(0:1,this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,2)) ; this%paspy4d_jim_new_wbfil=0.
 
 allocate(this%pasp1(1,1,1:this%lm))                     ; this%pasp1=0.
+allocate(this%pasp1_store(1,1,1:this%lm))                     ; this%pasp1_store=0.
+allocate(this%pasp1_jim_new(0:1,1:this%lm))                     ; this%pasp1_jim_new=0.
+allocate(this%pasp1_jim_new_wbfil(0:1,1:this%lm))               ; this%pasp1_jim_new_wbfil=0.
 allocate(this%pasp2(2,2,1:this%im,1:this%jm))           ; this%pasp2=0.
 allocate(this%pasp3(3,3,1:this%im,1:this%jm,1:this%lm)) ; this%pasp3=0.
 
@@ -1259,8 +1353,12 @@ integer(i_kind),optional,intent(in)::n_owned_anl
 real(r_kind),optional,intent(in)::lonlat1d_anl(:,:)
 !***********************************************************************
 integer(i_kind):: i,j,k,L
+! codex debug/develop for new jim's calibrated function
+integer(i_kind),allocatable :: hwork_jim(:)
 
 real(r_kind):: gen_fac
+! codex debug/develop for new jim's calibrated function
+real(r_kind):: xLb_jim,xmb_jim
 real(r_kind),allocatable, dimension(:,:,:,:):: weig_g
 real(r_kind),allocatable, dimension(:,:,:,:):: loc_a 
 real(r_kind),allocatable, dimension(:,:,:):: weigh_tmp 
@@ -1275,10 +1373,13 @@ integer :: rank, size, ierr, comm2d
 integer,allocatable,dimension(:) :: sendcounts, displs
 integer :: dims(2), periods(2), coords(2)
 integer(i_kind):: nxloc,nyloc,nz,nt,start_idx,end_idx
-integer(i_kind):: ig
+integer(i_kind):: ig,igbin
 character*72  tmpfilename
 real (r_kind)::rtem1,rtem2
 real (r_kind) :: dist_rad
+real(r_kind), allocatable,dimension(:,:,:,:):: loc_paspx4d
+real(r_kind), allocatable,dimension(:,:,:,:):: loc_paspy4d
+
 !-----------------------------------------------------------------------
 allocate(this%weig_var(this%km_all,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,this%gm))        ; this%weig_var=0.
 start_idx=Lbound(this%weig_var,4)
@@ -1294,6 +1395,7 @@ endif
     end if
   else
     this%l_constant_aspt2=.true.
+    write(6,*)'thinkdeb l_consant_aspt2 is set to true in def_mg_weights'
    
   end if
  if (present(n_owned_anl)) then
@@ -1439,9 +1541,15 @@ end select
 
 endif
 
+
+this%sqrt_a_diff_f=sqrt(this%a_diff_f)
+this%sqrt_a_diff_h=sqrt(this%a_diff_h)
+
 do L=1,this%lm
    this%pasp1(1,1,L)=this%pasp01
 enddo
+   this%pasp1_store=this%pasp1
+
 
 !tothink
 !cltorg do i=1,this%im
@@ -1461,6 +1569,8 @@ if (this%l_constant_aspt2 ) then
      this%paspx=this%pasp02
      this%paspy=this%pasp02  !paspx and paspy will be replaced by paspx4d/paspy4d when the x/y filter
                              ! is used ( filtering_fast_bkg ) 
+     this%paspx4d(:,:,:,:)=this%pasp02  !to avoid divided by  zero over unused elemement 
+     this%paspy4d(:,:,:,:)=this%pasp02  !to avoid divided by zeor over unused elements
    allocate (lonlat2d_anl(this%nm,this%mm,2))
    allocate (lonlat2d_filt(this%im,this%jm,2))
    lonlat2d_anl(:,:,1)=reshape(lonlat1d_anl(:,1),[size(lonlat2d_anl,1),size(lonlat2d_anl,2)])
@@ -1499,9 +1609,15 @@ if (this%l_constant_aspt2 ) then
       this%dyfm(i,j)=dist_rad*req
     enddo
    enddo
-      
-       
-      rtem1=this%pasp02  
+   write(6,*) 'thinkdeb dxfm min/max =',minval(this%dxfm(1:this%im,1:this%jm)), &
+              maxval(this%dxfm(1:this%im,1:this%jm)), &
+              ' dyfm min/max =',minval(this%dyfm(1:this%im,1:this%jm)), &
+              maxval(this%dyfm(1:this%im,1:this%jm)), &
+              ' dxfmctrl,dyfmctrl =',this%dxfmctrl,this%dyfmctrl
+   call flush(6)
+
+
+      rtem1=this%pasp02
       rtem2=this%pasp02
      
       do i=1,this%im
@@ -1638,11 +1754,84 @@ end do
    end if
 !cltorg  end if
 !cltthinkdeb10000
+   if(.not.this%l_constant_aspt2) then 
    call this%boco_2d(this%paspx4d(1:this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,1),this%lm,this%im,this%jm,this%hx,this%hy)
    call this%upsending_normalized(this%lm,this%paspx4d(:,:,:,1),this%paspx4d(:,:,:,2))
 
    call this%boco_2d(this%paspy4d(1:this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,1),this%lm,this%im,this%jm,this%hx,this%hy)
    call this%upsending_normalized(this%lm,this%paspy4d(:,:,:,1),this%paspy4d(:,:,:,2))
+   endif
+
+
+if (this%mgbf_proc .gt. 10) then
+! codex debug/develop for new jim's calibrated function
+! codex debug/develop for new jim's calibrated function: use the edge-cell aspect
+! values as the boundary-aspect inputs to rcalib1_jim_new until a separate
+! boundary aspect field is identified in the current mgbf_lib path.
+allocate(hwork_jim(max(this%im,this%jm,this%lm)))
+!cltthinkdeb should their halo points be defined too?
+allocate(loc_paspx4d(this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,2)) 
+allocate(loc_paspy4d(this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,2)) 
+call this%rcalib1_jim_new(this%hz,1,this%lm,.true.,.true., &
+     this%pasp1_store(1,1,1:this%lm),xLb_jim,xmb_jim, &
+     this%pasp1_jim_new(:,1:this%lm),hwork_jim(1:this%lm))
+loc_paspx4d=(1/this%paspx4d)**2  ! back to the square (L**2) definition
+loc_paspy4d=(1/this%paspy4d)**2  ! back to the square (L**2) definition
+do igbin=1,2
+   do k=1,this%lm
+     do j=1,this%jm
+       call this%rcalib1_jim_new(this%hx,1,this%im,this%Flwest(igbin),this%Fleast(igbin), &
+            loc_paspx4d(k,1:this%im,j,igbin),xLb_jim,xmb_jim, &
+            this%paspx4d_jim_new(:,k,1:this%im,j,igbin),hwork_jim(1:this%im))
+       if(k==1 .and. j==1 .and. igbin==1) then
+          write(*,'(A,I0,A,2E15.6)') 'DEBUG rcalib1_jim x-dir k=',k,' paspx4d_jim_new(0:1,k,1,j,igbin)=', &
+             this%paspx4d_jim_new(0,k,1,j,igbin), this%paspx4d_jim_new(1,k,1,j,igbin)
+       endif
+     enddo
+   enddo
+   do k=1,this%lm
+     do i=1,this%im
+       call this%rcalib1_jim_new(this%hy,1,this%jm,this%Flsouth(igbin),this%Flnorth(igbin), &
+            loc_paspy4d(k,i,1:this%jm,igbin),xLb_jim,xmb_jim, &
+            this%paspy4d_jim_new(:,k,i,1:this%jm,igbin),hwork_jim(1:this%jm))
+       if(k==1 .and. i==1 .and. igbin==1) then
+          write(*,'(A,I0,A,2E15.6)') 'DEBUG rcalib1_jim y-dir k=',k,' paspy4d_jim_new(0:1,k,i,1,igbin)=', &
+             this%paspy4d_jim_new(0,k,i,1,igbin), this%paspy4d_jim_new(1,k,i,1,igbin)
+       endif
+     enddo
+   enddo
+enddo
+write(6,*)'DBG-A after rcalib1_jim_new, rank ',this%mype; call flush(6)
+! codex debug/develop for new jim's calibrated function (wbfil variant)
+! Populate the separate wbfil coefficient arrays from the same L**2 aspect input
+! (loc_paspx4d/loc_paspy4d) using wbfil's exact, table-free calibration. wbfil's
+! rcalib1 carries no boundary (flip) arguments, so the existing _jim_new arrays
+! and their setup above are left untouched.
+call this%inip_jim_new_wbfil()
+! Vertical wbfil calibration: same L**2 aspect input (pasp1_store) as the
+! _jim_new vertical calibration above, but using wbfil's table-free rcalib1.
+call this%rcalib1_jim_new_wbfil(this%hz,1,this%lm, &
+     this%pasp1_store(1,1,1:this%lm), &
+     this%pasp1_jim_new_wbfil(:,1:this%lm),hwork_jim(1:this%lm))
+do igbin=1,2
+   do k=1,this%lm
+     do j=1,this%jm
+       call this%rcalib1_jim_new_wbfil(this%hx,1,this%im, &
+            loc_paspx4d(k,1:this%im,j,igbin), &
+            this%paspx4d_jim_new_wbfil(:,k,1:this%im,j,igbin),hwork_jim(1:this%im))
+     enddo
+   enddo
+   do k=1,this%lm
+     do i=1,this%im
+       call this%rcalib1_jim_new_wbfil(this%hy,1,this%jm, &
+            loc_paspy4d(k,i,1:this%jm,igbin), &
+            this%paspy4d_jim_new_wbfil(:,k,i,1:this%jm,igbin),hwork_jim(1:this%jm))
+     enddo
+   enddo
+enddo
+deallocate(loc_paspx4d,loc_paspy4d)
+deallocate(hwork_jim)
+endif !cltothink , the (::,2) should be obtained from (::1) through upsending_normlized as below
 
    call this%boco_2d(this%ssx4d(1:this%lm,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy,1),this%lm,this%im,this%jm,this%hx,this%hy)
    call this%upsending_normalized(this%lm,this%ssx4d(:,:,:,1),this%ssx4d(:,:,:,2))
@@ -1650,8 +1839,9 @@ end do
    call this%upsending_normalized(this%lm,this%ssy4d(:,:,:,1),this%ssy4d(:,:,:,2))
 
 
-deallocate(this%weig_var) 
+deallocate(this%weig_var)
 
+write(6,*)'DBG def_mg_weights completed on rank ',this%mype; call flush(6)
 
 !-----------------------------------------------------------------------
 endsubroutine def_mg_weights
@@ -1715,7 +1905,9 @@ deallocate(this%V)
 deallocate(this%HALL,this%VALL)
 
 deallocate(this%a_diff_f,this%b_diff_f)
+deallocate(this%sqrt_a_diff_f)
 deallocate(this%a_diff_h,this%b_diff_h)
+deallocate(this%sqrt_a_diff_h)
 deallocate(this%p_eps,this%p_del,this%p_sig,this%p_rho,this%pasp1,this%pasp2,this%pasp3,this%ss1,this%ss2,this%ss3)
 deallocate(this%dixs,this%diys)
 deallocate(this%dixs3,this%diys3,this%dizs3)

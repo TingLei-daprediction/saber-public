@@ -128,7 +128,7 @@ real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%
 real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: V
 logical, intent(in):: lquart
 !-----------------------------------------------------------------------
-
+        write(6,*)'thinkdeb990 in downsending_all lquaart ',lquart
         if(lquart) then
            call this%downsending2(H,V) 
         else
@@ -302,6 +302,7 @@ integer(i_kind):: iL,jL,i,j
           H(:,:,:)=0.
 
         call this%boco_2d(V_INT,this%km,this%imL,this%jmL,2,2)
+        write(6,*)'thinkdeb99 max vint ',maxval(v_int)
 
         call this%direct1(V_INT,V_PROX,this%km,1)
 
@@ -472,7 +473,6 @@ integer(i_kind):: iL,jL,i,j
           H(:,:,:)=0.
 
         call this%boco_2d(V_INT,this%km,this%imL,this%jmL,1,1)
-
         call this%direct2(V_INT,V_PROX,this%km,1)
 
           V(1:this%km,1:this%im,1:this%jm)=V     (1:this%km,1:this%im,1:this%jm) &
@@ -1183,6 +1183,46 @@ endif
 
 !-----------------------------------------------------------------------
 endsubroutine weighting 
+module subroutine weighting_sqrt &
+!***********************************************************************
+!                                                                      !
+!  Apply 2D differential operator to compound variable                 !
+!                                                                      !
+!***********************************************************************
+(this,V,H)
+!-----------------------------------------------------------------------
+implicit none
+class (mg_intstate_type),target:: this
+real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: V
+real(r_kind),dimension(this%km,1-this%hx:this%im+this%hx,1-this%hy:this%jm+this%hy),intent(inout):: H
+integer(i_kind):: i,j,l,k,imx,jmx
+!-----------------------------------------------------------------------
+
+!$omp parallel do private(i,j) schedule(static)
+     do j=1,this%jm
+     do i=1,this%im
+       V(:,i,j)=this%sqrt_a_diff_f(:,i,j)*V(:,i,j)                      
+     enddo
+     enddo
+!$omp end parallel do
+
+if(this%l_hgen) then
+
+   imx = this%im
+   jmx = this%jm
+
+!$omp parallel do private(i,j) schedule(static)
+     do j=1,jmx
+     do i=1,imx
+        H(:,i,j)=this%sqrt_a_diff_h(:,i,j)*H(:,i,j)                          
+     enddo
+     enddo
+!$omp end parallel do
+
+endif
+
+!-----------------------------------------------------------------------
+endsubroutine weighting_sqrt 
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine weighting_highest &

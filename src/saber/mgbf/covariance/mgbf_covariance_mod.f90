@@ -669,7 +669,81 @@ integer ::  loc(2)
              enddo
 !$omp end parallel do
              call etim(mg_reshape_to_mgbf_time)
-               
+             ! ##### DEBUG ONLY -- TEMPORARY, REMOVE LATER ##### (IMPULSE INJECT) #######
+             ! TODO(debug): delete this entire block before merge -- impulse response test.
+             ! On ranks 100 and 72 only, overwrite the input with a single point delta:
+             ! 1.0 at the center column (ic,jc), vertical level k=30; all other points on
+             ! that rank 0. Other ranks are left untouched. Runs for every jscale.
+             block
+               integer(kind=i_kind), parameter :: kimp_dbg = 30
+               integer(kind=i_kind) :: ic_dbg, jc_dbg
+               if (myrank == 100 .or. myrank == 72) then
+                 if (kimp_dbg <= nzloc) then
+                   ic_dbg = nxloc/2 + 1
+                   jc_dbg = nyloc/2 + 1
+                   work_mgbf = 0.0_r_kind
+                   work_mgbf(kimp_dbg,ic_dbg,jc_dbg) = 1.0_r_kind
+                   write(6,'(A,I4.4,A,I0,A,3(1X,I5))') &
+                     'DBG-MGBF[rank ',myrank,'] jscale=',jscale, &
+                     ' IMPULSE set 1.0 at (i,j,k)=',ic_dbg,jc_dbg,kimp_dbg
+                 else
+                   write(6,'(A,I4.4,A,I0,A,I0)') &
+                     'DBG-MGBF[rank ',myrank,'] jscale=',jscale, &
+                     ' IMPULSE SKIPPED: nzloc<kimp, nzloc=',nzloc
+                 endif
+                 call flush(6)
+               endif
+             end block
+             ! ##### DEBUG ONLY -- TEMPORARY, REMOVE LATER ##### (BEGIN INPUT TRACE) #####
+             ! TODO(debug): delete this entire block before merge -- impulse tracing only.
+             ! work_mgbf(k,i,j) now holds the input field on the MGBF (nxloc x nyloc)
+             ! grid for this scale, before any filtering. Print the 5 largest elements
+             ! (by magnitude, above a small threshold) with their (i,j,k), per MPI rank.
+             block
+               integer(kind=i_kind), parameter :: ntop_dbg = 5
+               real(kind=r_kind),    parameter :: thresh_dbg = 0.0001_r_kind
+               integer(kind=i_kind) :: i_dbg, j_dbg, k_dbg, n_dbg, m_dbg
+               integer(kind=i_kind) :: itop_dbg(ntop_dbg), jtop_dbg(ntop_dbg), ktop_dbg(ntop_dbg)
+               real(kind=r_kind)    :: vtop_dbg(ntop_dbg), vcur_dbg
+               ! Track the top-ntop_dbg elements by magnitude, above thresh_dbg.
+               ! vtop_dbg is kept sorted in descending order of |value|.
+               vtop_dbg = 0.0_r_kind ; itop_dbg = 0 ; jtop_dbg = 0 ; ktop_dbg = 0
+               do j_dbg = 1, nyloc
+                 do i_dbg = 1, nxloc
+                   do k_dbg = 1, nzloc
+                     vcur_dbg = work_mgbf(k_dbg,i_dbg,j_dbg)
+                     if (abs(vcur_dbg) <= thresh_dbg) cycle
+                     if (abs(vcur_dbg) <= abs(vtop_dbg(ntop_dbg))) cycle
+                     ! find insertion slot, then shift the smaller entries down
+                     do n_dbg = 1, ntop_dbg
+                       if (abs(vcur_dbg) > abs(vtop_dbg(n_dbg))) then
+                         do m_dbg = ntop_dbg, n_dbg+1, -1
+                           vtop_dbg(m_dbg) = vtop_dbg(m_dbg-1)
+                           itop_dbg(m_dbg) = itop_dbg(m_dbg-1)
+                           jtop_dbg(m_dbg) = jtop_dbg(m_dbg-1)
+                           ktop_dbg(m_dbg) = ktop_dbg(m_dbg-1)
+                         enddo
+                         vtop_dbg(n_dbg) = vcur_dbg
+                         itop_dbg(n_dbg) = i_dbg
+                         jtop_dbg(n_dbg) = j_dbg
+                         ktop_dbg(n_dbg) = k_dbg
+                         exit
+                       endif
+                     enddo
+                   enddo
+                 enddo
+               enddo
+               do n_dbg = 1, ntop_dbg
+                 if (itop_dbg(n_dbg) == 0) cycle   ! fewer than ntop_dbg above threshold
+                 write(6,'(A,I4.4,A,I0,A,I0,A,3(1X,I5),A,ES16.8)') &
+                   'DBG-MGBF[rank ',myrank,'] jscale=',jscale,' INPUT top#',n_dbg, &
+                   ' (i,j,k)=',itop_dbg(n_dbg),jtop_dbg(n_dbg),ktop_dbg(n_dbg), &
+                   ' value=',vtop_dbg(n_dbg)
+               enddo
+               call flush(6)
+             end block
+             ! ##### DEBUG ONLY -- TEMPORARY, REMOVE LATER ##### (END INPUT TRACE) #######
+
              if(self%intstate(jscale,ivargrp0)%km2.ne.n2d.and. .not.self%intstate(jscale,ivargrp0)%l_for_localization ) then 
                 write(6,*)'The numbers of 2d variables is different from  mgbf-expected ,stop'
                 stop   ! a better exception handling is to be added
@@ -750,6 +824,55 @@ integer ::  loc(2)
                call etim(mg_localization_mix_time)
                nullify(work1var_mgbf)
              endif
+             ! ##### DEBUG ONLY -- TEMPORARY, REMOVE LATER ##### (BEGIN OUTPUT TRACE) ####
+             ! TODO(debug): delete this entire block before merge -- response tracing only.
+             ! work_mgbf(k,i,j) now holds the filtered (and localized) response on the
+             ! MGBF grid for this scale, before reshaping back to fields. Print the
+             ! maximum value and its (i,j,k) index, per MPI rank.
+             block
+               integer(kind=i_kind), parameter :: ntop_dbg = 5
+               real(kind=r_kind),    parameter :: thresh_dbg = 0.0001_r_kind
+               integer(kind=i_kind) :: i_dbg, j_dbg, k_dbg, n_dbg, m_dbg
+               integer(kind=i_kind) :: itop_dbg(ntop_dbg), jtop_dbg(ntop_dbg), ktop_dbg(ntop_dbg)
+               real(kind=r_kind)    :: vtop_dbg(ntop_dbg), vcur_dbg
+               ! Track the top-ntop_dbg elements by magnitude, above thresh_dbg.
+               ! vtop_dbg is kept sorted in descending order of |value|.
+               vtop_dbg = 0.0_r_kind ; itop_dbg = 0 ; jtop_dbg = 0 ; ktop_dbg = 0
+               do j_dbg = 1, nyloc
+                 do i_dbg = 1, nxloc
+                   do k_dbg = 1, nzloc
+                     vcur_dbg = work_mgbf(k_dbg,i_dbg,j_dbg)
+                     if (abs(vcur_dbg) <= thresh_dbg) cycle
+                     if (abs(vcur_dbg) <= abs(vtop_dbg(ntop_dbg))) cycle
+                     ! find insertion slot, then shift the smaller entries down
+                     do n_dbg = 1, ntop_dbg
+                       if (abs(vcur_dbg) > abs(vtop_dbg(n_dbg))) then
+                         do m_dbg = ntop_dbg, n_dbg+1, -1
+                           vtop_dbg(m_dbg) = vtop_dbg(m_dbg-1)
+                           itop_dbg(m_dbg) = itop_dbg(m_dbg-1)
+                           jtop_dbg(m_dbg) = jtop_dbg(m_dbg-1)
+                           ktop_dbg(m_dbg) = ktop_dbg(m_dbg-1)
+                         enddo
+                         vtop_dbg(n_dbg) = vcur_dbg
+                         itop_dbg(n_dbg) = i_dbg
+                         jtop_dbg(n_dbg) = j_dbg
+                         ktop_dbg(n_dbg) = k_dbg
+                         exit
+                       endif
+                     enddo
+                   enddo
+                 enddo
+               enddo
+               do n_dbg = 1, ntop_dbg
+                 if (itop_dbg(n_dbg) == 0) cycle   ! fewer than ntop_dbg above threshold
+                 write(6,'(A,I4.4,A,I0,A,I0,A,3(1X,I5),A,ES16.8)') &
+                   'DBG-MGBF[rank ',myrank,'] jscale=',jscale,' OUTPUT response top#',n_dbg, &
+                   ' (i,j,k)=',itop_dbg(n_dbg),jtop_dbg(n_dbg),ktop_dbg(n_dbg), &
+                   ' value=',vtop_dbg(n_dbg)
+               enddo
+               call flush(6)
+             end block
+             ! ##### DEBUG ONLY -- TEMPORARY, REMOVE LATER ##### (END OUTPUT TRACE) ######
              call btim(mg_reshape_to_fields_time)
 !$omp parallel do private(k) schedule(static)
              do k=1,nzloc

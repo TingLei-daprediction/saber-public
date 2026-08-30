@@ -1586,7 +1586,7 @@ include "type_intstat_point2this.inc"
           jmax = jm_in
 
 !-----------------------------------------------------------------------
-      ndatay = km3_in*imax*nby*Lm
+      ndatay = km3_in*imax*nby*Lm_in
       ndatax = km3_in*(jmax+2*nby)*nbx*Lm_in
 
 
@@ -1982,8 +1982,8 @@ FILT_GRID:    if(l_sidesend) then
 
 
 !-----------------------------------------------------------------------
-      ndatay = km3_in*imax*nby*Lm
-      ndatax = km3_in*(jmax+2*nby)*nbx*Lm
+      ndatay = km3_in*imax*nby*Lm_in
+      ndatax = km3_in*(jmax+2*nby)*nbx*Lm_in
 
 !
 ! SEND boundaries to SOUTH and NORTH

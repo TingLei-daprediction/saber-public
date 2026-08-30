@@ -80,6 +80,12 @@ if(this%nxm*this%nym>1) then
 !clt      call this%filtering_lin2
    case(5)
       call this%filtering_fast_bkg
+   case(15)
+      call this%filtering_fast_bkg_new_jim
+   case(25)
+      call this%filtering_fast_bkg_new_jim_new_order
+   case(35)
+      call this%filtering_fast_bkg_new_jim_new_order_wbfil
    case(6)
       call this%filtering_rad2_ens(mg_filt_flag)
    case(7)
@@ -1194,7 +1200,1148 @@ include "type_intstat_point2this.inc"
   endif
 !-----------------------------------------------------------------------
 endsubroutine filtering_fast_bkg
+module subroutine filtering_fast_bkg_new_jim(this)
+!***********************************************************************
+!                                                                      !
+! Fast multigrid filtering procedure:                                  !
+!                                                                      !
+!     - Apply adjoint of vertical filter before and directec vertical  !
+!       filter after horizontal                                        !
+!     - 1d+1d horizontal filter                                        !
+!                                                                      !
+!***********************************************************************
+implicit none
+class (mg_intstate_type),target::this
+integer(i_kind) L,i,j,k,lev1,lev2
+real(r_kind):: aspx_jim_avg(2),aspy_jim_avg(2),xLb_jim_x(2),xmb_jim_x(2), &
+               xLb_jim_y(2),xmb_jim_y(2),as_jim_norm
+include "type_parameter_locpointer.inc"
+include "type_intstat_locpointer.inc"
+include "type_parameter_point2this.inc"
+include "type_intstat_point2this.inc"
+!-----------------------------------------------------------------------
+as_jim_norm=real(lm*im*jm,r_kind)
+aspx_jim_avg(1)=sum(this%paspx4d(1:lm,1:im,1:jm,1))/as_jim_norm
+aspy_jim_avg(1)=sum(this%paspy4d(1:lm,1:im,1:jm,1))/as_jim_norm
+aspx_jim_avg(2)=sum(this%paspx4d(1:lm,1:im,1:jm,2))/as_jim_norm
+aspy_jim_avg(2)=sum(this%paspy4d(1:lm,1:im,1:jm,2))/as_jim_norm
+xLb_jim_x=0.0_r_kind
+xmb_jim_x=0.0_r_kind
+xLb_jim_y=0.0_r_kind
+xmb_jim_y=0.0_r_kind
+where(aspx_jim_avg>0.0_r_kind)
+   xLb_jim_x=1.0_r_kind/sqrt(aspx_jim_avg)
+   xmb_jim_x=1.0_r_kind/sqrt(aspx_jim_avg)
+endwhere
+where(aspy_jim_avg>0.0_r_kind)
+   xLb_jim_y=1.0_r_kind/sqrt(aspy_jim_avg)
+   xmb_jim_y=1.0_r_kind/sqrt(aspy_jim_avg)
+endwhere
+!***
+!*** Adjoint of beta filter in vertical direction
+!***
+  if(l_vertical_filter) then
+                                                 call btim(vfiltT_tim)
+     call this%sup_vrbeta1T_bkg_new_jim(km,km3,hx,hy,hz,im,jm,lm,this%pasp1_store,this%pasp1_jim_new,VALL)
+                                                 call etim(vfiltT_tim)
+  endif
+!***
+!*** Adjoint interpolate and upsend 
+!***
+                                                 call btim(upsend_tim)
+     call this%upsending_all(VALL,HALL,lquart)
+                                                 call etim(upsend_tim)
+!***
+!*** Apply adjoint of Beta filter at all generations 
+!***
+                                                 call btim(hfiltT_tim)
+!$omp parallel do private(i,k,lev1,lev2) schedule(static)
+     do i=im,1,-1
+        do k=1,km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
+        
+          call this%rbeta3d_1T_jim_new(lm,hy,1,jm,this%paspy4d_jim_new(:,:,i,1:jm,1),VALL(lev1:lev2,i,:))
+        enddo
+ !cltorg       call this%rbetaT(km,hy,1,jm,paspy(1,i,1:jm),ssy(1,i,1:jm),VALL(:,i,:))
+!clt assuming 2d variables are suface variable
+        do k=1,km2
+          lev1=lev2+1
+          lev2=lev1
+          call this%rbeta3d_1T_jim_new(1,hy,1,jm,this%paspy4d_jim_new(:,lm:lm,i,1:jm,1),VALL(lev1:lev2,i,:))
+          lev1=lev1+1
+          lev2=lev2+1
+        enddo
+     enddo
+!$omp end parallel do
+                                                 call etim(hfiltT_tim)
+                                                 call btim(bocoT_tim)
+        call this%bocoTy(VALL,km,im,jm,hx,hy)
+                                                 call etim(bocoT_tim)
+!$omp parallel do private(i,k,lev1,lev2) schedule(static)
+     do i=im,1,-1
+        do k=1,km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
+          call this%rflip3d_1T_jim_new(lm,hy,1,jm,this%Flsouth(1),this%Flnorth(1), &
+               xLb_jim_y(1),xmb_jim_y(1),VALL(lev1:lev2,i,:))
+        enddo
+        do k=1,km2
+          lev1=lev2+1
+          lev2=lev1
+          call this%rflip3d_1T_jim_new(1,hy,1,jm,this%Flsouth(1),this%Flnorth(1), &
+               xLb_jim_y(1),xmb_jim_y(1),VALL(lev1:lev2,i,:))
+          lev1=lev1+1
+          lev2=lev2+1
+        enddo
+     enddo
+!$omp end parallel do
+                                                 call btim(hfiltT_tim)
+!$omp parallel do private(j,k,lev1,lev2) schedule(static)
+     do j=jm,1,-1
+        do k=1,km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
+        
+          call this%rbeta3d_1T_jim_new(lm,hx,1,im,this%paspx4d_jim_new(:,:,1:im,j,1),VALL(lev1:lev2,:,j))
+        enddo
+!cltorg        call this%rbetaT(km,hx,1,im,paspx(1,:,1:im,j),ssx(1,1:im,j),VALL(:,:,j))
+!clt assuming 2d variables are suface variable
+        do k=1,km2
+          lev1=lev2+1
+          lev2=lev1
+          call this%rbeta3d_1T_jim_new(1,hx,1,im,this%paspx4d_jim_new(:,lm:lm,1:im,j,1),VALL(lev1:lev2,:,j))
+          lev1=lev1+1
+          lev2=lev2+1
+        enddo
+     enddo
+!$omp end parallel do
+                                                 call etim(hfiltT_tim)
+                                                 call btim(bocoT_tim)
+        call this%bocoTx(VALL,km,im,jm,hx,hy)
+                                                 call etim(bocoT_tim)
+!$omp parallel do private(j,k,lev1,lev2) schedule(static)
+     do j=jm,1,-1
+        do k=1,km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
+          call this%rflip3d_1T_jim_new(lm,hx,1,im,this%Flwest(1),this%Fleast(1), &
+               xLb_jim_x(1),xmb_jim_x(1),VALL(lev1:lev2,:,j))
+        enddo
+        do k=1,km2
+          lev1=lev2+1
+          lev2=lev1
+          call this%rflip3d_1T_jim_new(1,hx,1,im,this%Flwest(1),this%Fleast(1), &
+               xLb_jim_x(1),xmb_jim_x(1),VALL(lev1:lev2,:,j))
+          lev1=lev1+1
+          lev2=lev2+1
+        enddo
+     enddo
+!$omp end parallel do
+  if(l_hgen) then
+                                                 call btim(hfiltT_tim)
+!$omp parallel do private(i,k,lev1,lev2) schedule(static)
+     do i=im,1,-1
+        do k=1,km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
+        
+          call this%rbeta3d_1T_jim_new(lm,hy,1,jm,this%paspy4d_jim_new(:,:,i,1:jm,2),HALL(lev1:lev2,i,:))
+        enddo
+!clt assuming 2d variables are suface variable
+        do k=1,km2
+          lev1=lev2+1
+          lev2=lev1
+          call this%rbeta3d_1T_jim_new(1,hy,1,jm,this%paspy4d_jim_new(:,lm:lm,i,1:jm,2),HALL(lev1:lev2,i,:))
+          lev1=lev1+1
+          lev2=lev2+1
+        enddo
+     enddo
+!$omp end parallel do
 
+                                                 call etim(hfiltT_tim)
+  endif
+                                                 call btim(bocoT_tim)
+        call this%bocoTy(HALL,km,im,jm,hx,hy,Fimax,Fjmax,2,gm)
+                                                 call etim(bocoT_tim)
+  if(l_hgen) then
+!$omp parallel do private(i,k,lev1,lev2) schedule(static)
+     do i=im,1,-1
+        do k=1,km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
+          call this%rflip3d_1T_jim_new(lm,hy,1,jm,this%Flsouth(2),this%Flnorth(2), &
+               xLb_jim_y(2),xmb_jim_y(2),HALL(lev1:lev2,i,:))
+        enddo
+        do k=1,km2
+          lev1=lev2+1
+          lev2=lev1
+          call this%rflip3d_1T_jim_new(1,hy,1,jm,this%Flsouth(2),this%Flnorth(2), &
+               xLb_jim_y(2),xmb_jim_y(2),HALL(lev1:lev2,i,:))
+          lev1=lev1+1
+          lev2=lev2+1
+        enddo
+     enddo
+!$omp end parallel do
+  endif
+  if(l_hgen) then
+                                                 call btim(hfiltT_tim)
+!$omp parallel do private(j,k,lev1,lev2) schedule(static)
+     do j=jm,1,-1
+        do k=1,km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
+        
+          call this%rbeta3d_1T_jim_new(lm,hx,1,im,this%paspx4d_jim_new(:,:,1:im,j,2),HALL(lev1:lev2,:,j))
+        enddo
+!cltorg        call this%rbetaT(km,hx,1,im,paspx(:,2),ssx(:,,HALL(:,:,j))
+        do k=1,km2
+          lev1=lev2+1
+          lev2=lev1
+          call this%rbeta3d_1T_jim_new(1,hx,1,im,this%paspx4d_jim_new(:,lm:lm,1:im,j,2),HALL(lev1:lev2,:,j))
+          lev1=lev1+1
+          lev2=lev2+1
+        enddo
+     enddo
+!$omp end parallel do
+                                                 call etim(hfiltT_tim)
+  endif
+                                                 call btim(bocoT_tim)
+        call this%bocoTx(HALL,km,im,jm,hx,hy,Fimax,Fjmax,2,gm)
+                                                 call etim(bocoT_tim)
+  if(l_hgen) then
+!$omp parallel do private(j,k,lev1,lev2) schedule(static)
+     do j=jm,1,-1
+        do k=1,km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
+          call this%rflip3d_1T_jim_new(lm,hx,1,im,this%Flwest(2),this%Fleast(2), &
+               xLb_jim_x(2),xmb_jim_x(2),HALL(lev1:lev2,:,j))
+        enddo
+        do k=1,km2
+          lev1=lev2+1
+          lev2=lev1
+          call this%rflip3d_1T_jim_new(1,hx,1,im,this%Flwest(2),this%Fleast(2), &
+               xLb_jim_x(2),xmb_jim_x(2),HALL(lev1:lev2,:,j))
+          lev1=lev1+1
+          lev2=lev2+1
+        enddo
+     enddo
+!$omp end parallel do
+  endif
+!***
+!*** Apply (a-b\nabla^2)
+!***
+                                                 call btim(weight_tim)
+     call this%weighting_all(VALL,HALL,lhelm)
+                                                 call etim(weight_tim)
+!***
+!*** Apply Beta filter at all generations
+!***
+                                                 call btim(boco_tim)
+        call this%bocox(VALL,km,im,jm,hx,hy)
+                                                 call etim(boco_tim)
+        write(*,'(A)') 'DEBUG: Starting direct x-pass filtering for VALL in filtering_fast_bkg_new_jim'
+                                                 call btim(hfilt_tim)
+!$omp parallel do private(j,k,lev1,lev2) schedule(static)
+     do j=1,jm
+        do k=1,km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
+
+          if(j==1 .and. k==1) then
+             write(*,'(A,E15.6,A,2E15.6)') 'DEBUG: VALL before x-filter at j=1,k=1: ', VALL(lev1,1,j), &
+                ' coeff=', this%paspx4d_jim_new(0,1,1,j,1), this%paspx4d_jim_new(1,1,1,j,1)
+          endif
+          call this%rflip3d_1_jim_new(lm,hx,1,im,this%Flwest(1),this%Fleast(1), &
+               xLb_jim_x(1),xmb_jim_x(1),VALL(lev1:lev2,:,j))
+          call this%rbeta3d_1_jim_new(lm,hx,1,im,this%paspx4d_jim_new(:,:,1:im,j,1),VALL(lev1:lev2,:,j))
+          if(j==1 .and. k==1) then
+             write(*,'(A,E15.6)') 'DEBUG: VALL after x-filter at j=1,k=1: ', VALL(lev1,1,j)
+          endif
+        enddo
+!cltorg        call this%rbeta(km,hx,1,im,paspx,ssx,VALL(:,:,j))
+        do k=1,km2
+          lev1=lev2+1
+          lev2=lev1
+          call this%rflip3d_1_jim_new(1,hx,1,im,this%Flwest(1),this%Fleast(1), &
+               xLb_jim_x(1),xmb_jim_x(1),VALL(lev1:lev2,:,j))
+          call this%rbeta3d_1_jim_new(1,hx,1,im,this%paspx4d_jim_new(:,lm:lm,1:im,j,1),VALL(lev1:lev2,:,j))
+          lev1=lev1+1
+          lev2=lev2+1
+        enddo
+     enddo
+!$omp end parallel do
+                                                 call etim(hfilt_tim)
+                                                 call btim(boco_tim)
+        call this%bocoy(VALL,km,im,jm,hx,hy)
+                                                 call etim(boco_tim)
+        write(*,'(A)') 'DEBUG: Starting direct y-pass filtering for VALL in filtering_fast_bkg_new_jim'
+                                                 call btim(hfilt_tim)
+!$omp parallel do private(i,k,lev1,lev2) schedule(static)
+     do i=1,im
+        do k=1,km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
+
+          if(i==1 .and. k==1) then
+             write(*,'(A,E15.6,A,2E15.6)') 'DEBUG: VALL before y-filter at i=1,k=1: ', VALL(lev1,i,1), &
+                ' coeff=', this%paspy4d_jim_new(0,1,i,1,1), this%paspy4d_jim_new(1,1,i,1,1)
+          endif
+          call this%rflip3d_1_jim_new(lm,hy,1,jm,this%Flsouth(1),this%Flnorth(1), &
+               xLb_jim_y(1),xmb_jim_y(1),VALL(lev1:lev2,i,:))
+          call this%rbeta3d_1_jim_new(lm,hy,1,jm,this%paspy4d_jim_new(:,:,i,1:jm,1),VALL(lev1:lev2,i,:))
+          if(i==1 .and. k==1) then
+             write(*,'(A,E15.6)') 'DEBUG: VALL after y-filter at i=1,k=1: ', VALL(lev1,i,1)
+          endif
+        enddo
+!cltorg        call this%rbeta(km,hy,1,jm,paspy,ssy,VALL(:,i,:))
+!clt assuming 2d variables are suface variable
+        do k=1,km2
+          lev1=lev2+1
+          lev2=lev1
+          call this%rflip3d_1_jim_new(1,hy,1,jm,this%Flsouth(1),this%Flnorth(1), &
+               xLb_jim_y(1),xmb_jim_y(1),VALL(lev1:lev2,i,:))
+          call this%rbeta3d_1_jim_new(1,hy,1,jm,this%paspy4d_jim_new(:,lm:lm,i,1:jm,1),VALL(lev1:lev2,i,:))
+          lev1=lev1+1
+          lev2=lev2+1
+        enddo
+     enddo
+!$omp end parallel do
+                                                 call etim(hfilt_tim)
+                                                 call btim(boco_tim)
+        call this%bocox(HALL,km,im,jm,hx,hy,Fimax,Fjmax,2,gm)
+                                                 call etim(boco_tim)
+  if(l_hgen)  then
+                                                 call btim(hfilt_tim)
+!$omp parallel do private(j,k,lev1,lev2) schedule(static)
+     do j=1,jm
+        do k=1,km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
+        
+          call this%rflip3d_1_jim_new(lm,hx,1,im,this%Flwest(2),this%Fleast(2), &
+               xLb_jim_x(2),xmb_jim_x(2),HALL(lev1:lev2,:,j))
+          call this%rbeta3d_1_jim_new(lm,hx,1,im,this%paspx4d_jim_new(:,:,1:im,j,2),HALL(lev1:lev2,:,j))
+        enddo
+!cltorg        call this%rbeta(km,hx,1,im,paspx,ssx,HALL(:,:,j))
+        do k=1,km2
+          lev1=lev2+1
+          lev2=lev1
+          call this%rflip3d_1_jim_new(1,hx,1,im,this%Flwest(2),this%Fleast(2), &
+               xLb_jim_x(2),xmb_jim_x(2),HALL(lev1:lev2,:,j))
+          call this%rbeta3d_1_jim_new(1,hx,1,im,this%paspx4d_jim_new(:,lm:lm,1:im,j,2),HALL(lev1:lev2,:,j))
+          lev1=lev1+1
+          lev2=lev2+1
+        enddo
+     enddo
+!$omp end parallel do
+                                                 call etim(hfilt_tim)
+  endif
+                                                 call btim(boco_tim)
+        call this%bocoy(HALL,km,im,jm,hx,hy,Fimax,Fjmax,2,gm)
+                                                 call etim(boco_tim)
+  if(l_hgen)  then
+                                                 call btim(hfilt_tim)
+!$omp parallel do private(i,k,lev1,lev2) schedule(static)
+     do i=1,im
+        do k=1,km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
+        
+          call this%rflip3d_1_jim_new(lm,hy,1,jm,this%Flsouth(2),this%Flnorth(2), &
+               xLb_jim_y(2),xmb_jim_y(2),HALL(lev1:lev2,i,:))
+          call this%rbeta3d_1_jim_new(lm,hy,1,jm,this%paspy4d_jim_new(:,:,i,1:jm,2),HALL(lev1:lev2,i,:))
+        enddo
+!cltorg        call this%rbeta(km,hy,1,jm,paspy,ssy,HALL(:,i,:))
+!clt assuming 2d variables are suface variable
+        do k=1,km2
+          lev1=lev2+1
+          lev2=lev1
+          call this%rflip3d_1_jim_new(1,hy,1,jm,this%Flsouth(2),this%Flnorth(2), &
+               xLb_jim_y(2),xmb_jim_y(2),HALL(lev1:lev2,i,:))
+          call this%rbeta3d_1_jim_new(1,hy,1,jm,this%paspy4d_jim_new(:,lm:lm,i,1:jm,2),HALL(lev1:lev2,i,:))
+          lev1=lev1+1
+          lev2=lev2+1
+        enddo
+     enddo
+!$omp end parallel do
+                                                 call etim(hfilt_tim)
+  endif
+!***
+!*** Downsend, interpolate and add, then zero high generations 
+!***
+                                                 call btim(dnsend_tim)
+     call this%downsending_all(HALL,VALL,lquart)
+                                                 call etim(dnsend_tim)
+!***
+!*** Apply beta filter in vertical direction
+!***
+!  write(6,*)'thinkdeb l_vertical_filter is ',l_vertical_filter
+  if(l_vertical_filter) then
+                                                 call btim(vfilt_tim)
+     call this%sup_vrbeta1_bkg_new_jim(km,km3,hx,hy,hz,im,jm,lm,this%pasp1_store,this%pasp1_jim_new,VALL)
+                                                 call etim(vfilt_tim)
+  endif
+!-----------------------------------------------------------------------
+endsubroutine filtering_fast_bkg_new_jim
+
+module subroutine filtering_fast_bkg_new_jim_new_order(this)
+!***********************************************************************
+!                                                                      !
+! Fast multigrid filtering procedure:                                  !
+!                                                                      !
+!     - Apply adjoint of vertical filter before and directec vertical  !
+!       filter after horizontal                                        !
+!     - 1d+1d horizontal filter                                        !
+!                                                                      !
+!***********************************************************************
+implicit none
+class (mg_intstate_type),target::this
+integer(i_kind) L,i,j,k,lev1,lev2
+real(r_kind):: aspx_jim_avg(2),aspy_jim_avg(2),xLb_jim_x(2),xmb_jim_x(2), &
+               xLb_jim_y(2),xmb_jim_y(2),as_jim_norm
+include "type_parameter_locpointer.inc"
+include "type_intstat_locpointer.inc"
+include "type_parameter_point2this.inc"
+include "type_intstat_point2this.inc"
+!-----------------------------------------------------------------------
+write(6,*)'thinkdeb1000  filtering_fast_bkg_new_jim_new_orde'
+as_jim_norm=real(lm*im*jm,r_kind)
+aspx_jim_avg(1)=sum(this%paspx4d(1:lm,1:im,1:jm,1))/as_jim_norm
+aspy_jim_avg(1)=sum(this%paspy4d(1:lm,1:im,1:jm,1))/as_jim_norm
+aspx_jim_avg(2)=sum(this%paspx4d(1:lm,1:im,1:jm,2))/as_jim_norm
+aspy_jim_avg(2)=sum(this%paspy4d(1:lm,1:im,1:jm,2))/as_jim_norm
+xLb_jim_x=0.0_r_kind
+xmb_jim_x=0.0_r_kind
+xLb_jim_y=0.0_r_kind
+xmb_jim_y=0.0_r_kind
+where(aspx_jim_avg>0.0_r_kind)
+   xLb_jim_x=1.0_r_kind/sqrt(aspx_jim_avg)
+   xmb_jim_x=1.0_r_kind/sqrt(aspx_jim_avg)
+endwhere
+where(aspy_jim_avg>0.0_r_kind)
+   xLb_jim_y=1.0_r_kind/sqrt(aspy_jim_avg)
+   xmb_jim_y=1.0_r_kind/sqrt(aspy_jim_avg)
+endwhere
+!***
+!*** Adjoint interpolate and upsend 
+!***
+                                                 call btim(upsend_tim)
+     call this%upsending_all(VALL,HALL,lquart)
+                                                 call etim(upsend_tim)
+!***
+!*** Apply (a-b\nabla^2)
+!***
+                                                 call btim(weight_tim)
+     call this%weighting_sqrt(VALL,HALL)
+                                                 call etim(weight_tim)
+!***
+!***
+!*** Apply adjoint of Beta filter at all generations 
+!***
+                                                 call btim(hfiltT_tim)
+!$omp parallel do private(i,k,lev1,lev2) schedule(static)
+     do i=im,1,-1
+        do k=1,km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
+        
+          call this%rbeta3d_1T_jim_new(lm,hy,1,jm,this%paspy4d_jim_new(:,:,i,1:jm,1),VALL(lev1:lev2,i,:))
+        enddo
+ !cltorg       call this%rbetaT(km,hy,1,jm,paspy(1,i,1:jm),ssy(1,i,1:jm),VALL(:,i,:))
+!clt assuming 2d variables are suface variable
+        do k=1,km2
+          lev1=lev2+1
+          lev2=lev1
+          call this%rbeta3d_1T_jim_new(1,hy,1,jm,this%paspy4d_jim_new(:,lm:lm,i,1:jm,1),VALL(lev1:lev2,i,:))
+          lev1=lev1+1
+          lev2=lev2+1
+        enddo
+     enddo
+!$omp end parallel do
+                                                 call etim(hfiltT_tim)
+                                                 call btim(bocoT_tim)
+        call this%bocoTy(VALL,km,im,jm,hx,hy)
+                                                 call etim(bocoT_tim)
+!$omp parallel do private(i,k,lev1,lev2) schedule(static)
+     do i=im,1,-1
+        do k=1,km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
+          call this%rflip3d_1T_jim_new(lm,hy,1,jm,this%Flsouth(1),this%Flnorth(1), &
+               xLb_jim_y(1),xmb_jim_y(1),VALL(lev1:lev2,i,:))
+        enddo
+        do k=1,km2
+          lev1=lev2+1
+          lev2=lev1
+          call this%rflip3d_1T_jim_new(1,hy,1,jm,this%Flsouth(1),this%Flnorth(1), &
+               xLb_jim_y(1),xmb_jim_y(1),VALL(lev1:lev2,i,:))
+          lev1=lev1+1
+          lev2=lev2+1
+        enddo
+     enddo
+!$omp end parallel do
+                                                 call btim(hfiltT_tim)
+!$omp parallel do private(j,k,lev1,lev2) schedule(static)
+     do j=jm,1,-1
+        do k=1,km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
+        
+          call this%rbeta3d_1T_jim_new(lm,hx,1,im,this%paspx4d_jim_new(:,:,1:im,j,1),VALL(lev1:lev2,:,j))
+        enddo
+!cltorg        call this%rbetaT(km,hx,1,im,paspx(1,:,1:im,j),ssx(1,1:im,j),VALL(:,:,j))
+!clt assuming 2d variables are suface variable
+        do k=1,km2
+          lev1=lev2+1
+          lev2=lev1
+          call this%rbeta3d_1T_jim_new(1,hx,1,im,this%paspx4d_jim_new(:,lm:lm,1:im,j,1),VALL(lev1:lev2,:,j))
+          lev1=lev1+1
+          lev2=lev2+1
+        enddo
+     enddo
+!$omp end parallel do
+                                                 call etim(hfiltT_tim)
+                                                 call btim(bocoT_tim)
+        call this%bocoTx(VALL,km,im,jm,hx,hy)
+                                                 call etim(bocoT_tim)
+!$omp parallel do private(j,k,lev1,lev2) schedule(static)
+     do j=jm,1,-1
+        do k=1,km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
+          call this%rflip3d_1T_jim_new(lm,hx,1,im,this%Flwest(1),this%Fleast(1), &
+               xLb_jim_x(1),xmb_jim_x(1),VALL(lev1:lev2,:,j))
+        enddo
+        do k=1,km2
+          lev1=lev2+1
+          lev2=lev1
+          call this%rflip3d_1T_jim_new(1,hx,1,im,this%Flwest(1),this%Fleast(1), &
+               xLb_jim_x(1),xmb_jim_x(1),VALL(lev1:lev2,:,j))
+          lev1=lev1+1
+          lev2=lev2+1
+        enddo
+     enddo
+!$omp end parallel do
+  if(l_hgen) then
+                                                 call btim(hfiltT_tim)
+!$omp parallel do private(i,k,lev1,lev2) schedule(static)
+     do i=im,1,-1
+        do k=1,km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
+        
+          call this%rbeta3d_1T_jim_new(lm,hy,1,jm,this%paspy4d_jim_new(:,:,i,1:jm,2),HALL(lev1:lev2,i,:))
+        enddo
+!clt assuming 2d variables are suface variable
+        do k=1,km2
+          lev1=lev2+1
+          lev2=lev1
+          call this%rbeta3d_1T_jim_new(1,hy,1,jm,this%paspy4d_jim_new(:,lm:lm,i,1:jm,2),HALL(lev1:lev2,i,:))
+          lev1=lev1+1
+          lev2=lev2+1
+        enddo
+     enddo
+!$omp end parallel do
+
+                                                 call etim(hfiltT_tim)
+  endif
+                                                 call btim(bocoT_tim)
+        call this%bocoTy(HALL,km,im,jm,hx,hy,Fimax,Fjmax,2,gm)
+                                                 call etim(bocoT_tim)
+  if(l_hgen) then
+!$omp parallel do private(i,k,lev1,lev2) schedule(static)
+     do i=im,1,-1
+        do k=1,km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
+          call this%rflip3d_1T_jim_new(lm,hy,1,jm,this%Flsouth(2),this%Flnorth(2), &
+               xLb_jim_y(2),xmb_jim_y(2),HALL(lev1:lev2,i,:))
+        enddo
+        do k=1,km2
+          lev1=lev2+1
+          lev2=lev1
+          call this%rflip3d_1T_jim_new(1,hy,1,jm,this%Flsouth(2),this%Flnorth(2), &
+               xLb_jim_y(2),xmb_jim_y(2),HALL(lev1:lev2,i,:))
+          lev1=lev1+1
+          lev2=lev2+1
+        enddo
+     enddo
+!$omp end parallel do
+  endif
+  if(l_hgen) then
+                                                 call btim(hfiltT_tim)
+!$omp parallel do private(j,k,lev1,lev2) schedule(static)
+     do j=jm,1,-1
+        do k=1,km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
+        
+          call this%rbeta3d_1T_jim_new(lm,hx,1,im,this%paspx4d_jim_new(:,:,1:im,j,2),HALL(lev1:lev2,:,j))
+        enddo
+!cltorg        call this%rbetaT(km,hx,1,im,paspx(:,2),ssx(:,,HALL(:,:,j))
+        do k=1,km2
+          lev1=lev2+1
+          lev2=lev1
+          call this%rbeta3d_1T_jim_new(1,hx,1,im,this%paspx4d_jim_new(:,lm:lm,1:im,j,2),HALL(lev1:lev2,:,j))
+          lev1=lev1+1
+          lev2=lev2+1
+        enddo
+     enddo
+!$omp end parallel do
+                                                 call etim(hfiltT_tim)
+  endif
+                                                 call btim(bocoT_tim)
+        call this%bocoTx(HALL,km,im,jm,hx,hy,Fimax,Fjmax,2,gm)
+                                                 call etim(bocoT_tim)
+  if(l_hgen) then
+!$omp parallel do private(j,k,lev1,lev2) schedule(static)
+     do j=jm,1,-1
+        do k=1,km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
+          call this%rflip3d_1T_jim_new(lm,hx,1,im,this%Flwest(2),this%Fleast(2), &
+               xLb_jim_x(2),xmb_jim_x(2),HALL(lev1:lev2,:,j))
+        enddo
+        do k=1,km2
+          lev1=lev2+1
+          lev2=lev1
+          call this%rflip3d_1T_jim_new(1,hx,1,im,this%Flwest(2),this%Fleast(2), &
+               xLb_jim_x(2),xmb_jim_x(2),HALL(lev1:lev2,:,j))
+          lev1=lev1+1
+          lev2=lev2+1
+        enddo
+     enddo
+!$omp end parallel do
+  endif
+  if(l_vertical_filter) then
+                                                 call btim(vfiltT_tim)
+     call this%sup_vrbeta1T_bkg_new_jim(km,km3,hx,hy,hz,im,jm,lm,this%pasp1_store,this%pasp1_jim_new,VALL)
+     call this%sup_vrbeta1_bkg_new_jim(km,km3,hx,hy,hz,im,jm,lm,this%pasp1_store,this%pasp1_jim_new,VALL)
+     if(this%l_hgen) then 
+       call this%sup_vrbeta1T_bkg_new_jim(km,km3,hx,hy,hz,im,jm,lm,this%pasp1_store,this%pasp1_jim_new,HALL)
+       call this%sup_vrbeta1_bkg_new_jim(km,km3,hx,hy,hz,im,jm,lm,this%pasp1_store,this%pasp1_jim_new,HALL)
+     endif
+  
+                                                 call etim(vfiltT_tim)
+  endif
+!***
+!*** Apply Beta filter at all generations
+!***
+                                                 call btim(boco_tim)
+        call this%bocox(VALL,km,im,jm,hx,hy)
+                                                 call etim(boco_tim)
+                                                 call btim(hfilt_tim)
+!$omp parallel do private(j,k,lev1,lev2) schedule(static)
+     do j=1,jm
+        do k=1,km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
+        
+          call this%rflip3d_1_jim_new(lm,hx,1,im,this%Flwest(1),this%Fleast(1), &
+               xLb_jim_x(1),xmb_jim_x(1),VALL(lev1:lev2,:,j))
+          call this%rbeta3d_1_jim_new(lm,hx,1,im,this%paspx4d_jim_new(:,:,1:im,j,1),VALL(lev1:lev2,:,j))
+        enddo
+!cltorg        call this%rbeta(km,hx,1,im,paspx,ssx,VALL(:,:,j))
+        do k=1,km2
+          lev1=lev2+1
+          lev2=lev1
+          call this%rflip3d_1_jim_new(1,hx,1,im,this%Flwest(1),this%Fleast(1), &
+               xLb_jim_x(1),xmb_jim_x(1),VALL(lev1:lev2,:,j))
+          call this%rbeta3d_1_jim_new(1,hx,1,im,this%paspx4d_jim_new(:,lm:lm,1:im,j,1),VALL(lev1:lev2,:,j))
+          lev1=lev1+1
+          lev2=lev2+1
+        enddo
+     enddo
+!$omp end parallel do
+                                                 call etim(hfilt_tim)
+                                                 call btim(boco_tim)
+        call this%bocoy(VALL,km,im,jm,hx,hy)
+                                                 call etim(boco_tim)
+                                                 call btim(hfilt_tim)
+!$omp parallel do private(i,k,lev1,lev2) schedule(static)
+     do i=1,im
+        do k=1,km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
+        
+          call this%rflip3d_1_jim_new(lm,hy,1,jm,this%Flsouth(1),this%Flnorth(1), &
+               xLb_jim_y(1),xmb_jim_y(1),VALL(lev1:lev2,i,:))
+          call this%rbeta3d_1_jim_new(lm,hy,1,jm,this%paspy4d_jim_new(:,:,i,1:jm,1),VALL(lev1:lev2,i,:))
+        enddo
+!cltorg        call this%rbeta(km,hy,1,jm,paspy,ssy,VALL(:,i,:))
+!clt assuming 2d variables are suface variable
+        do k=1,km2
+          lev1=lev2+1
+          lev2=lev1
+          call this%rflip3d_1_jim_new(1,hy,1,jm,this%Flsouth(1),this%Flnorth(1), &
+               xLb_jim_y(1),xmb_jim_y(1),VALL(lev1:lev2,i,:))
+          call this%rbeta3d_1_jim_new(1,hy,1,jm,this%paspy4d_jim_new(:,lm:lm,i,1:jm,1),VALL(lev1:lev2,i,:))
+          lev1=lev1+1
+          lev2=lev2+1
+        enddo
+     enddo
+!$omp end parallel do
+                                                 call etim(hfilt_tim)
+                                                 call btim(boco_tim)
+        call this%bocox(HALL,km,im,jm,hx,hy,Fimax,Fjmax,2,gm)
+                                                 call etim(boco_tim)
+  if(l_hgen)  then
+                                                 call btim(hfilt_tim)
+!$omp parallel do private(j,k,lev1,lev2) schedule(static)
+     do j=1,jm
+        do k=1,km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
+        
+          call this%rflip3d_1_jim_new(lm,hx,1,im,this%Flwest(2),this%Fleast(2), &
+               xLb_jim_x(2),xmb_jim_x(2),HALL(lev1:lev2,:,j))
+          call this%rbeta3d_1_jim_new(lm,hx,1,im,this%paspx4d_jim_new(:,:,1:im,j,2),HALL(lev1:lev2,:,j))
+        enddo
+!cltorg        call this%rbeta(km,hx,1,im,paspx,ssx,HALL(:,:,j))
+        do k=1,km2
+          lev1=lev2+1
+          lev2=lev1
+          call this%rflip3d_1_jim_new(1,hx,1,im,this%Flwest(2),this%Fleast(2), &
+               xLb_jim_x(2),xmb_jim_x(2),HALL(lev1:lev2,:,j))
+          call this%rbeta3d_1_jim_new(1,hx,1,im,this%paspx4d_jim_new(:,lm:lm,1:im,j,2),HALL(lev1:lev2,:,j))
+          lev1=lev1+1
+          lev2=lev2+1
+        enddo
+     enddo
+!$omp end parallel do
+                                                 call etim(hfilt_tim)
+  endif
+                                                 call btim(boco_tim)
+        call this%bocoy(HALL,km,im,jm,hx,hy,Fimax,Fjmax,2,gm)
+                                                 call etim(boco_tim)
+  if(l_hgen)  then
+                                                 call btim(hfilt_tim)
+!$omp parallel do private(i,k,lev1,lev2) schedule(static)
+     do i=1,im
+        do k=1,km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
+        
+          call this%rflip3d_1_jim_new(lm,hy,1,jm,this%Flsouth(2),this%Flnorth(2), &
+               xLb_jim_y(2),xmb_jim_y(2),HALL(lev1:lev2,i,:))
+          call this%rbeta3d_1_jim_new(lm,hy,1,jm,this%paspy4d_jim_new(:,:,i,1:jm,2),HALL(lev1:lev2,i,:))
+        enddo
+!cltorg        call this%rbeta(km,hy,1,jm,paspy,ssy,HALL(:,i,:))
+!clt assuming 2d variables are suface variable
+        do k=1,km2
+          lev1=lev2+1
+          lev2=lev1
+          call this%rflip3d_1_jim_new(1,hy,1,jm,this%Flsouth(2),this%Flnorth(2), &
+               xLb_jim_y(2),xmb_jim_y(2),HALL(lev1:lev2,i,:))
+          call this%rbeta3d_1_jim_new(1,hy,1,jm,this%paspy4d_jim_new(:,lm:lm,i,1:jm,2),HALL(lev1:lev2,i,:))
+          lev1=lev1+1
+          lev2=lev2+1
+        enddo
+     enddo
+!$omp end parallel do
+                                                 call etim(hfilt_tim)
+  endif
+                                                 call btim(weight_tim)
+     call this%weighting_sqrt(VALL,HALL)
+                                                 call etim(weight_tim)
+!***
+!*** Downsend, interpolate and add, then zero high generations 
+!***
+                                                 call btim(dnsend_tim)
+     call this%downsending_all(HALL,VALL,lquart)
+                                                 call etim(dnsend_tim)
+!***
+!*** Apply beta filter in vertical direction
+!***
+!  write(6,*)'thinkdeb l_vertical_filter is ',l_vertical_filter
+  if(l_vertical_filter) then
+                                                 call btim(vfilt_tim)
+                                                 call etim(vfilt_tim)
+  endif
+!-----------------------------------------------------------------------
+endsubroutine filtering_fast_bkg_new_jim_new_order
+
+module subroutine filtering_fast_bkg_new_jim_new_order_wbfil(this)
+! codex debug/develop: wbfil variant of filtering_fast_bkg_new_jim_new_order.
+! Horizontal beta filters use the *_jim_new_wbfil exact-calibration coefficients
+! (paspx4d_jim_new_wbfil / paspy4d_jim_new_wbfil); rflip boundary reflection and
+! the vertical filter remain on the existing *_jim_new path.
+!***********************************************************************
+!                                                                      !
+! Fast multigrid filtering procedure:                                  !
+!                                                                      !
+!     - Apply adjoint of vertical filter before and directec vertical  !
+!       filter after horizontal                                        !
+!     - 1d+1d horizontal filter                                        !
+!                                                                      !
+!***********************************************************************
+implicit none
+class (mg_intstate_type),target::this
+integer(i_kind) L,i,j,k,lev1,lev2
+real(r_kind):: aspx_jim_avg(2),aspy_jim_avg(2),xLb_jim_x(2),xmb_jim_x(2), &
+               xLb_jim_y(2),xmb_jim_y(2),as_jim_norm
+include "type_parameter_locpointer.inc"
+include "type_intstat_locpointer.inc"
+include "type_parameter_point2this.inc"
+include "type_intstat_point2this.inc"
+!-----------------------------------------------------------------------
+as_jim_norm=real(lm*im*jm,r_kind)
+aspx_jim_avg(1)=sum(this%paspx4d(1:lm,1:im,1:jm,1))/as_jim_norm
+aspy_jim_avg(1)=sum(this%paspy4d(1:lm,1:im,1:jm,1))/as_jim_norm
+aspx_jim_avg(2)=sum(this%paspx4d(1:lm,1:im,1:jm,2))/as_jim_norm
+aspy_jim_avg(2)=sum(this%paspy4d(1:lm,1:im,1:jm,2))/as_jim_norm
+xLb_jim_x=0.0_r_kind
+xmb_jim_x=0.0_r_kind
+xLb_jim_y=0.0_r_kind
+xmb_jim_y=0.0_r_kind
+where(aspx_jim_avg>0.0_r_kind)
+   xLb_jim_x=1.0_r_kind/sqrt(aspx_jim_avg)
+   xmb_jim_x=1.0_r_kind/sqrt(aspx_jim_avg)
+endwhere
+where(aspy_jim_avg>0.0_r_kind)
+   xLb_jim_y=1.0_r_kind/sqrt(aspy_jim_avg)
+   xmb_jim_y=1.0_r_kind/sqrt(aspy_jim_avg)
+endwhere
+!***
+!*** Adjoint interpolate and upsend 
+!***
+                                                 call btim(upsend_tim)
+     call this%upsending_all(VALL,HALL,lquart)
+                                                 call etim(upsend_tim)
+!***
+!*** Apply (a-b\nabla^2)
+!***
+                                                 call btim(weight_tim)
+     call this%weighting_sqrt(VALL,HALL)
+                                                 call etim(weight_tim)
+!***
+!***
+!*** Apply adjoint of Beta filter at all generations 
+!***
+                                                 call btim(hfiltT_tim)
+!$omp parallel do private(i,k,lev1,lev2) schedule(static)
+     do i=im,1,-1
+        do k=1,km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
+        
+          call this%rbeta3d_1T_jim_new_wbfil(lm,hy,1,jm,this%paspy4d_jim_new_wbfil(:,:,i,1:jm,1),VALL(lev1:lev2,i,:))
+        enddo
+ !cltorg       call this%rbetaT(km,hy,1,jm,paspy(1,i,1:jm),ssy(1,i,1:jm),VALL(:,i,:))
+!clt assuming 2d variables are suface variable
+        do k=1,km2
+          lev1=lev2+1
+          lev2=lev1
+          call this%rbeta3d_1T_jim_new_wbfil(1,hy,1,jm,this%paspy4d_jim_new_wbfil(:,lm:lm,i,1:jm,1),VALL(lev1:lev2,i,:))
+          lev1=lev1+1
+          lev2=lev2+1
+        enddo
+     enddo
+!$omp end parallel do
+                                                 call etim(hfiltT_tim)
+                                                 call btim(bocoT_tim)
+        call this%bocoTy(VALL,km,im,jm,hx,hy)
+                                                 call etim(bocoT_tim)
+!$omp parallel do private(i,k,lev1,lev2) schedule(static)
+     do i=im,1,-1
+        do k=1,km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
+          call this%rflip3d_1T_jim_new(lm,hy,1,jm,this%Flsouth(1),this%Flnorth(1), &
+               xLb_jim_y(1),xmb_jim_y(1),VALL(lev1:lev2,i,:))
+        enddo
+        do k=1,km2
+          lev1=lev2+1
+          lev2=lev1
+          call this%rflip3d_1T_jim_new(1,hy,1,jm,this%Flsouth(1),this%Flnorth(1), &
+               xLb_jim_y(1),xmb_jim_y(1),VALL(lev1:lev2,i,:))
+          lev1=lev1+1
+          lev2=lev2+1
+        enddo
+     enddo
+!$omp end parallel do
+                                                 call btim(hfiltT_tim)
+!$omp parallel do private(j,k,lev1,lev2) schedule(static)
+     do j=jm,1,-1
+        do k=1,km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
+        
+          call this%rbeta3d_1T_jim_new_wbfil(lm,hx,1,im,this%paspx4d_jim_new_wbfil(:,:,1:im,j,1),VALL(lev1:lev2,:,j))
+        enddo
+!cltorg        call this%rbetaT(km,hx,1,im,paspx(1,:,1:im,j),ssx(1,1:im,j),VALL(:,:,j))
+!clt assuming 2d variables are suface variable
+        do k=1,km2
+          lev1=lev2+1
+          lev2=lev1
+          call this%rbeta3d_1T_jim_new_wbfil(1,hx,1,im,this%paspx4d_jim_new_wbfil(:,lm:lm,1:im,j,1),VALL(lev1:lev2,:,j))
+          lev1=lev1+1
+          lev2=lev2+1
+        enddo
+     enddo
+!$omp end parallel do
+                                                 call etim(hfiltT_tim)
+                                                 call btim(bocoT_tim)
+        call this%bocoTx(VALL,km,im,jm,hx,hy)
+                                                 call etim(bocoT_tim)
+!$omp parallel do private(j,k,lev1,lev2) schedule(static)
+     do j=jm,1,-1
+        do k=1,km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
+          call this%rflip3d_1T_jim_new(lm,hx,1,im,this%Flwest(1),this%Fleast(1), &
+               xLb_jim_x(1),xmb_jim_x(1),VALL(lev1:lev2,:,j))
+        enddo
+        do k=1,km2
+          lev1=lev2+1
+          lev2=lev1
+          call this%rflip3d_1T_jim_new(1,hx,1,im,this%Flwest(1),this%Fleast(1), &
+               xLb_jim_x(1),xmb_jim_x(1),VALL(lev1:lev2,:,j))
+          lev1=lev1+1
+          lev2=lev2+1
+        enddo
+     enddo
+!$omp end parallel do
+  if(l_hgen) then
+                                                 call btim(hfiltT_tim)
+!$omp parallel do private(i,k,lev1,lev2) schedule(static)
+     do i=im,1,-1
+        do k=1,km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
+        
+          call this%rbeta3d_1T_jim_new_wbfil(lm,hy,1,jm,this%paspy4d_jim_new_wbfil(:,:,i,1:jm,2),HALL(lev1:lev2,i,:))
+        enddo
+!clt assuming 2d variables are suface variable
+        do k=1,km2
+          lev1=lev2+1
+          lev2=lev1
+          call this%rbeta3d_1T_jim_new_wbfil(1,hy,1,jm,this%paspy4d_jim_new_wbfil(:,lm:lm,i,1:jm,2),HALL(lev1:lev2,i,:))
+          lev1=lev1+1
+          lev2=lev2+1
+        enddo
+     enddo
+!$omp end parallel do
+
+                                                 call etim(hfiltT_tim)
+  endif
+                                                 call btim(bocoT_tim)
+        call this%bocoTy(HALL,km,im,jm,hx,hy,Fimax,Fjmax,2,gm)
+                                                 call etim(bocoT_tim)
+  if(l_hgen) then
+!$omp parallel do private(i,k,lev1,lev2) schedule(static)
+     do i=im,1,-1
+        do k=1,km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
+          call this%rflip3d_1T_jim_new(lm,hy,1,jm,this%Flsouth(2),this%Flnorth(2), &
+               xLb_jim_y(2),xmb_jim_y(2),HALL(lev1:lev2,i,:))
+        enddo
+        do k=1,km2
+          lev1=lev2+1
+          lev2=lev1
+          call this%rflip3d_1T_jim_new(1,hy,1,jm,this%Flsouth(2),this%Flnorth(2), &
+               xLb_jim_y(2),xmb_jim_y(2),HALL(lev1:lev2,i,:))
+          lev1=lev1+1
+          lev2=lev2+1
+        enddo
+     enddo
+!$omp end parallel do
+  endif
+  if(l_hgen) then
+                                                 call btim(hfiltT_tim)
+!$omp parallel do private(j,k,lev1,lev2) schedule(static)
+     do j=jm,1,-1
+        do k=1,km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
+        
+          call this%rbeta3d_1T_jim_new_wbfil(lm,hx,1,im,this%paspx4d_jim_new_wbfil(:,:,1:im,j,2),HALL(lev1:lev2,:,j))
+        enddo
+!cltorg        call this%rbetaT(km,hx,1,im,paspx(:,2),ssx(:,,HALL(:,:,j))
+        do k=1,km2
+          lev1=lev2+1
+          lev2=lev1
+          call this%rbeta3d_1T_jim_new_wbfil(1,hx,1,im,this%paspx4d_jim_new_wbfil(:,lm:lm,1:im,j,2),HALL(lev1:lev2,:,j))
+          lev1=lev1+1
+          lev2=lev2+1
+        enddo
+     enddo
+!$omp end parallel do
+                                                 call etim(hfiltT_tim)
+  endif
+                                                 call btim(bocoT_tim)
+        call this%bocoTx(HALL,km,im,jm,hx,hy,Fimax,Fjmax,2,gm)
+                                                 call etim(bocoT_tim)
+  if(l_hgen) then
+!$omp parallel do private(j,k,lev1,lev2) schedule(static)
+     do j=jm,1,-1
+        do k=1,km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
+          call this%rflip3d_1T_jim_new(lm,hx,1,im,this%Flwest(2),this%Fleast(2), &
+               xLb_jim_x(2),xmb_jim_x(2),HALL(lev1:lev2,:,j))
+        enddo
+        do k=1,km2
+          lev1=lev2+1
+          lev2=lev1
+          call this%rflip3d_1T_jim_new(1,hx,1,im,this%Flwest(2),this%Fleast(2), &
+               xLb_jim_x(2),xmb_jim_x(2),HALL(lev1:lev2,:,j))
+          lev1=lev1+1
+          lev2=lev2+1
+        enddo
+     enddo
+!$omp end parallel do
+  endif
+  if(l_vertical_filter) then
+                                                 call btim(vfiltT_tim)
+     call this%sup_vrbeta1T_bkg_new_jim_wbfil(km,km3,hx,hy,hz,im,jm,lm,this%pasp1_store,this%pasp1_jim_new_wbfil,VALL)
+     call this%sup_vrbeta1_bkg_new_jim_wbfil(km,km3,hx,hy,hz,im,jm,lm,this%pasp1_store,this%pasp1_jim_new_wbfil,VALL)
+     if(this%l_hgen) then
+       call this%sup_vrbeta1T_bkg_new_jim_wbfil(km,km3,hx,hy,hz,im,jm,lm,this%pasp1_store,this%pasp1_jim_new_wbfil,HALL)
+       call this%sup_vrbeta1_bkg_new_jim_wbfil(km,km3,hx,hy,hz,im,jm,lm,this%pasp1_store,this%pasp1_jim_new_wbfil,HALL)
+     endif
+
+                                                 call etim(vfiltT_tim)
+  endif
+!***
+!*** Apply Beta filter at all generations
+!***
+                                                 call btim(boco_tim)
+        call this%bocox(VALL,km,im,jm,hx,hy)
+                                                 call etim(boco_tim)
+                                                 call btim(hfilt_tim)
+!$omp parallel do private(j,k,lev1,lev2) schedule(static)
+     do j=1,jm
+        do k=1,km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
+
+          call this%rflip3d_1_jim_new(lm,hx,1,im,this%Flwest(1),this%Fleast(1), &
+               xLb_jim_x(1),xmb_jim_x(1),VALL(lev1:lev2,:,j))
+          call this%rbeta3d_1_jim_new_wbfil(lm,hx,1,im,this%paspx4d_jim_new_wbfil(:,:,1:im,j,1),VALL(lev1:lev2,:,j))
+        enddo
+!cltorg        call this%rbeta(km,hx,1,im,paspx,ssx,VALL(:,:,j))
+        do k=1,km2
+          lev1=lev2+1
+          lev2=lev1
+          call this%rflip3d_1_jim_new(1,hx,1,im,this%Flwest(1),this%Fleast(1), &
+               xLb_jim_x(1),xmb_jim_x(1),VALL(lev1:lev2,:,j))
+          call this%rbeta3d_1_jim_new_wbfil(1,hx,1,im,this%paspx4d_jim_new_wbfil(:,lm:lm,1:im,j,1),VALL(lev1:lev2,:,j))
+          lev1=lev1+1
+          lev2=lev2+1
+        enddo
+     enddo
+!$omp end parallel do
+                                                 call etim(hfilt_tim)
+                                                 call btim(boco_tim)
+        call this%bocoy(VALL,km,im,jm,hx,hy)
+                                                 call etim(boco_tim)
+                                                 call btim(hfilt_tim)
+!$omp parallel do private(i,k,lev1,lev2) schedule(static)
+     do i=1,im
+        do k=1,km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
+        
+          call this%rflip3d_1_jim_new(lm,hy,1,jm,this%Flsouth(1),this%Flnorth(1), &
+               xLb_jim_y(1),xmb_jim_y(1),VALL(lev1:lev2,i,:))
+          call this%rbeta3d_1_jim_new_wbfil(lm,hy,1,jm,this%paspy4d_jim_new_wbfil(:,:,i,1:jm,1),VALL(lev1:lev2,i,:))
+        enddo
+!cltorg        call this%rbeta(km,hy,1,jm,paspy,ssy,VALL(:,i,:))
+!clt assuming 2d variables are suface variable
+        do k=1,km2
+          lev1=lev2+1
+          lev2=lev1
+          call this%rflip3d_1_jim_new(1,hy,1,jm,this%Flsouth(1),this%Flnorth(1), &
+               xLb_jim_y(1),xmb_jim_y(1),VALL(lev1:lev2,i,:))
+          call this%rbeta3d_1_jim_new_wbfil(1,hy,1,jm,this%paspy4d_jim_new_wbfil(:,lm:lm,i,1:jm,1),VALL(lev1:lev2,i,:))
+          lev1=lev1+1
+          lev2=lev2+1
+        enddo
+     enddo
+!$omp end parallel do
+                                                 call etim(hfilt_tim)
+                                                 call btim(boco_tim)
+        call this%bocox(HALL,km,im,jm,hx,hy,Fimax,Fjmax,2,gm)
+                                                 call etim(boco_tim)
+  if(l_hgen)  then
+                                                 call btim(hfilt_tim)
+!$omp parallel do private(j,k,lev1,lev2) schedule(static)
+     do j=1,jm
+        do k=1,km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
+        
+          call this%rflip3d_1_jim_new(lm,hx,1,im,this%Flwest(2),this%Fleast(2), &
+               xLb_jim_x(2),xmb_jim_x(2),HALL(lev1:lev2,:,j))
+          call this%rbeta3d_1_jim_new_wbfil(lm,hx,1,im,this%paspx4d_jim_new_wbfil(:,:,1:im,j,2),HALL(lev1:lev2,:,j))
+        enddo
+!cltorg        call this%rbeta(km,hx,1,im,paspx,ssx,HALL(:,:,j))
+        do k=1,km2
+          lev1=lev2+1
+          lev2=lev1
+          call this%rflip3d_1_jim_new(1,hx,1,im,this%Flwest(2),this%Fleast(2), &
+               xLb_jim_x(2),xmb_jim_x(2),HALL(lev1:lev2,:,j))
+          call this%rbeta3d_1_jim_new_wbfil(1,hx,1,im,this%paspx4d_jim_new_wbfil(:,lm:lm,1:im,j,2),HALL(lev1:lev2,:,j))
+          lev1=lev1+1
+          lev2=lev2+1
+        enddo
+     enddo
+!$omp end parallel do
+                                                 call etim(hfilt_tim)
+  endif
+                                                 call btim(boco_tim)
+        call this%bocoy(HALL,km,im,jm,hx,hy,Fimax,Fjmax,2,gm)
+                                                 call etim(boco_tim)
+  if(l_hgen)  then
+                                                 call btim(hfilt_tim)
+!$omp parallel do private(i,k,lev1,lev2) schedule(static)
+     do i=1,im
+        do k=1,km3
+           lev1=(k-1)*lm+1
+           lev2=k*lm
+        
+          call this%rflip3d_1_jim_new(lm,hy,1,jm,this%Flsouth(2),this%Flnorth(2), &
+               xLb_jim_y(2),xmb_jim_y(2),HALL(lev1:lev2,i,:))
+          call this%rbeta3d_1_jim_new_wbfil(lm,hy,1,jm,this%paspy4d_jim_new_wbfil(:,:,i,1:jm,2),HALL(lev1:lev2,i,:))
+        enddo
+!cltorg        call this%rbeta(km,hy,1,jm,paspy,ssy,HALL(:,i,:))
+!clt assuming 2d variables are suface variable
+        do k=1,km2
+          lev1=lev2+1
+          lev2=lev1
+          call this%rflip3d_1_jim_new(1,hy,1,jm,this%Flsouth(2),this%Flnorth(2), &
+               xLb_jim_y(2),xmb_jim_y(2),HALL(lev1:lev2,i,:))
+          call this%rbeta3d_1_jim_new_wbfil(1,hy,1,jm,this%paspy4d_jim_new_wbfil(:,lm:lm,i,1:jm,2),HALL(lev1:lev2,i,:))
+          lev1=lev1+1
+          lev2=lev2+1
+        enddo
+     enddo
+!$omp end parallel do
+                                                 call etim(hfilt_tim)
+  endif
+                                                 call btim(weight_tim)
+     call this%weighting_sqrt(VALL,HALL)
+                                                 call etim(weight_tim)
+!***
+!*** Downsend, interpolate and add, then zero high generations 
+!***
+                                                 call btim(dnsend_tim)
+     call this%downsending_all(HALL,VALL,lquart)
+                                                 call etim(dnsend_tim)
+!***
+!*** Apply beta filter in vertical direction
+!***
+!  write(6,*)'thinkdeb l_vertical_filter is ',l_vertical_filter
+  if(l_vertical_filter) then
+                                                 call btim(vfilt_tim)
+                                                 call etim(vfilt_tim)
+  endif
+!-----------------------------------------------------------------------
+endsubroutine filtering_fast_bkg_new_jim_new_order_wbfil
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine filtering_rad2_ens(this,mg_filt_flag)
 !***********************************************************************
@@ -1692,8 +2839,6 @@ integer(i_kind):: i,j,L
   
 !----------------------------------------------------------------------
 endsubroutine sup_vrbeta1
-
-!&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine sup_vrbeta1T &
 !**********************************************************************
 !                                                                     *
@@ -2005,6 +3150,209 @@ integer(i_kind):: i,j,L,k,k_ind,kloc
 
 !----------------------------------------------------------------------
 endsubroutine sup_vrbeta1_bkg
+
+!&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+module subroutine sup_vrbeta1_bkg_new_jim &
+!**********************************************************************
+!                                                                     *
+!     conversion of vrbeta1 using Jim's calibrated 1D beta filter      *
+!                                                                     *
+!**********************************************************************
+(this,km,km3,hx,hy,hz,im,jm,lm,pasp1_store,elp,VALL)
+!----------------------------------------------------------------------
+implicit none
+class(mg_intstate_type),target::this
+integer(i_kind),intent(in):: km,km3,hx,hy,hz,im,jm,lm
+real(r_kind),dimension(1:km,1-hx:im+hx,1-hy:jm+hy),intent(inout):: VALL
+real(r_kind),dimension(1,1,1:lm), intent(in):: pasp1_store
+real(r_kind),dimension(0:1,1:lm), intent(in):: elp
+real(r_kind),dimension(1-hz:lm+hz,1:km3):: W
+real(r_kind):: xLb,xmb
+integer(i_kind):: i,j,L,k,k_ind,kloc
+!----------------------------------------------------------------------
+
+    xLb=0.0_r_kind
+    xmb=0.0_r_kind
+    if(pasp1_store(1,1,1)>0.0_r_kind) xLb=1.0_r_kind/sqrt(pasp1_store(1,1,1))
+    if(pasp1_store(1,1,lm)>0.0_r_kind) xmb=1.0_r_kind/sqrt(pasp1_store(1,1,lm))
+
+    do j=1,jm
+    do i=1,im
+      W=0.0_r_kind
+      do k=1,km3
+        k_ind=(k-1)*lm
+        do L=1,lm
+          kloc=k_ind+L
+          W(L,k)=VALL(kloc,i,j)
+        enddo
+        call this%rflip1_jim_new(hz,1,lm,.true.,.true.,xLb,xmb,W(1-hz:lm+hz,k))
+        call this%rbeta1_jim_new(hz,1,lm,elp,W(1-hz:lm+hz,k))
+      enddo
+      do k=1,km3
+        k_ind=(k-1)*lm
+        do L=1,lm
+          kloc=k_ind+L
+          VALL(kloc,i,j)=W(L,k)
+        enddo
+      enddo
+    enddo
+    enddo
+
+!----------------------------------------------------------------------
+endsubroutine sup_vrbeta1_bkg_new_jim
+
+!&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+module subroutine sup_vrbeta1T_bkg_new_jim &
+!**********************************************************************
+!                                                                     *
+!     Adjoint of sup_vrbeta1_bkg_new_jim                              *
+!                                                                     *
+!**********************************************************************
+(this,km,km3,hx,hy,hz,im,jm,lm,pasp1_store,elp,VALL)
+!----------------------------------------------------------------------
+implicit none
+class(mg_intstate_type),target::this
+integer(i_kind),intent(in):: km,km3,hx,hy,hz,im,jm,lm
+real(r_kind),dimension(1:km,1-hx:im+hx,1-hy:jm+hy),intent(inout):: VALL
+real(r_kind),dimension(1,1,1:lm), intent(in):: pasp1_store
+real(r_kind),dimension(0:1,1:lm), intent(in):: elp
+real(r_kind),dimension(1-hz:lm+hz,1:km3):: W
+real(r_kind):: xLb,xmb
+integer(i_kind):: i,j,L,k,k_ind,kloc
+!----------------------------------------------------------------------
+
+    xLb=0.0_r_kind
+    xmb=0.0_r_kind
+    if(pasp1_store(1,1,1)>0.0_r_kind) xLb=1.0_r_kind/sqrt(pasp1_store(1,1,1))
+    if(pasp1_store(1,1,lm)>0.0_r_kind) xmb=1.0_r_kind/sqrt(pasp1_store(1,1,lm))
+
+    do j=1,jm
+    do i=1,im
+      W=0.0_r_kind
+      do k=1,km3
+        k_ind=(k-1)*lm
+        do L=1,lm
+          kloc=k_ind+L
+          W(L,k)=VALL(kloc,i,j)
+        enddo
+        call this%rbeta1T_jim_new(hz,1,lm,elp,W(1-hz:lm+hz,k))
+        call this%rflip1T_jim_new(hz,1,lm,.true.,.true.,xLb,xmb,W(1-hz:lm+hz,k))
+      enddo
+      do k=1,km3
+        k_ind=(k-1)*lm
+        do L=1,lm
+          kloc=k_ind+L
+          VALL(kloc,i,j)=W(L,k)
+        enddo
+      enddo
+    enddo
+    enddo
+
+!----------------------------------------------------------------------
+endsubroutine sup_vrbeta1T_bkg_new_jim
+
+!&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+module subroutine sup_vrbeta1_bkg_new_jim_wbfil &
+!**********************************************************************
+!                                                                     *
+!     wbfil variant of sup_vrbeta1_bkg_new_jim: same structure, but    *
+!     the beta line filter is rbeta1_jim_new_wbfil (paired with the    *
+!     rcalib1_jim_new_wbfil calibrated elp). The boundary reflection   *
+!     rflip1_jim_new is kept (no wbfil flip exists in wbfil.f90).      *
+!                                                                     *
+!**********************************************************************
+(this,km,km3,hx,hy,hz,im,jm,lm,pasp1_store,elp,VALL)
+!----------------------------------------------------------------------
+implicit none
+class(mg_intstate_type),target::this
+integer(i_kind),intent(in):: km,km3,hx,hy,hz,im,jm,lm
+real(r_kind),dimension(1:km,1-hx:im+hx,1-hy:jm+hy),intent(inout):: VALL
+real(r_kind),dimension(1,1,1:lm), intent(in):: pasp1_store
+real(r_kind),dimension(0:1,1:lm), intent(in):: elp
+real(r_kind),dimension(1-hz:lm+hz,1:km3):: W
+real(r_kind):: xLb,xmb
+integer(i_kind):: i,j,L,k,k_ind,kloc
+!----------------------------------------------------------------------
+
+    xLb=0.0_r_kind
+    xmb=0.0_r_kind
+    if(pasp1_store(1,1,1)>0.0_r_kind) xLb=1.0_r_kind/sqrt(pasp1_store(1,1,1))
+    if(pasp1_store(1,1,lm)>0.0_r_kind) xmb=1.0_r_kind/sqrt(pasp1_store(1,1,lm))
+
+    do j=1,jm
+    do i=1,im
+      W=0.0_r_kind
+      do k=1,km3
+        k_ind=(k-1)*lm
+        do L=1,lm
+          kloc=k_ind+L
+          W(L,k)=VALL(kloc,i,j)
+        enddo
+        call this%rflip1_jim_new(hz,1,lm,.true.,.true.,xLb,xmb,W(1-hz:lm+hz,k))
+        call this%rbeta1_jim_new_wbfil(hz,1,lm,elp,W(1-hz:lm+hz,k))
+      enddo
+      do k=1,km3
+        k_ind=(k-1)*lm
+        do L=1,lm
+          kloc=k_ind+L
+          VALL(kloc,i,j)=W(L,k)
+        enddo
+      enddo
+    enddo
+    enddo
+
+!----------------------------------------------------------------------
+endsubroutine sup_vrbeta1_bkg_new_jim_wbfil
+
+!&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+module subroutine sup_vrbeta1T_bkg_new_jim_wbfil &
+!**********************************************************************
+!                                                                     *
+!     Adjoint of sup_vrbeta1_bkg_new_jim_wbfil                        *
+!                                                                     *
+!**********************************************************************
+(this,km,km3,hx,hy,hz,im,jm,lm,pasp1_store,elp,VALL)
+!----------------------------------------------------------------------
+implicit none
+class(mg_intstate_type),target::this
+integer(i_kind),intent(in):: km,km3,hx,hy,hz,im,jm,lm
+real(r_kind),dimension(1:km,1-hx:im+hx,1-hy:jm+hy),intent(inout):: VALL
+real(r_kind),dimension(1,1,1:lm), intent(in):: pasp1_store
+real(r_kind),dimension(0:1,1:lm), intent(in):: elp
+real(r_kind),dimension(1-hz:lm+hz,1:km3):: W
+real(r_kind):: xLb,xmb
+integer(i_kind):: i,j,L,k,k_ind,kloc
+!----------------------------------------------------------------------
+
+    xLb=0.0_r_kind
+    xmb=0.0_r_kind
+    if(pasp1_store(1,1,1)>0.0_r_kind) xLb=1.0_r_kind/sqrt(pasp1_store(1,1,1))
+    if(pasp1_store(1,1,lm)>0.0_r_kind) xmb=1.0_r_kind/sqrt(pasp1_store(1,1,lm))
+
+    do j=1,jm
+    do i=1,im
+      W=0.0_r_kind
+      do k=1,km3
+        k_ind=(k-1)*lm
+        do L=1,lm
+          kloc=k_ind+L
+          W(L,k)=VALL(kloc,i,j)
+        enddo
+        call this%rbeta1T_jim_new_wbfil(hz,1,lm,elp,W(1-hz:lm+hz,k))
+        call this%rflip1T_jim_new(hz,1,lm,.true.,.true.,xLb,xmb,W(1-hz:lm+hz,k))
+      enddo
+      do k=1,km3
+        k_ind=(k-1)*lm
+        do L=1,lm
+          kloc=k_ind+L
+          VALL(kloc,i,j)=W(L,k)
+        enddo
+      enddo
+    enddo
+    enddo
+
+!----------------------------------------------------------------------
+endsubroutine sup_vrbeta1T_bkg_new_jim_wbfil
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 module subroutine sup_vrbeta1T_bkg &
