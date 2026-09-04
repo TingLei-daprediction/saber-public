@@ -434,12 +434,44 @@ SaberHybridBlockChain<MODEL>::SaberHybridBlockChain(const oops::Geometry<MODEL> 
                       << " of Hybrid block using " << tasksPerComponent
                       << " MPI tasks." << std::endl;
 
-    // Create communicators for same component, for communications in space
+    // Create communicators for same component, for communications in space.
+    //
+    // Reuse the subcommunicator if it already exists rather than deleting and
+    // re-splitting. B is rebuilt every outer loop, and the new block chain is
+    // constructed while the previous one is still alive, so on every rebuild
+    // after the first the comm is already registered. Deleting it here is not
+    // safe: oops::CommRedistributionRepository caches redistribution objects by
+    // communicator *name* plus grid signature, and each object holds the
+    // communicator itself by reference. eckit::mpi::deleteComm frees the object,
+    // the re-split produces an identical cache key, and the next multiply hits
+    // the cache and dereferences a dangling communicator -- which is the
+    // comm-identity assertion in CommStraightRedistribution::broadcastToSubMembers
+    // on the second outer loop.
+    //
+    // The split colour and parent are deterministic across rebuilds, so an
+    // existing comm with this name has exactly the membership and rank order a
+    // fresh split would produce; the size check guards the one way that could
+    // stop being true. hasComm() is process-local, but every rank has executed
+    // the same history, so all ranks agree on whether to enter the collective
+    // split. Nothing else deletes this comm (the destructor is defaulted), so
+    // reusing it also spares rebuilding the redistribution routing tables on
+    // every outer loop.
     const auto spaceCommName = ("comm_space_" + std::to_string(myComponent_));
+    const eckit::mpi::Comm * localSpaceCommPtr = nullptr;
     if (eckit::mpi::hasComm(spaceCommName.c_str())) {
-      eckit::mpi::deleteComm(spaceCommName.c_str());
+      localSpaceCommPtr = &eckit::mpi::comm(spaceCommName.c_str());
+      if (localSpaceCommPtr->size() != tasksPerComponent) {
+        throw eckit::UserError("Existing subcommunicator " + spaceCommName + " has size " +
+                               std::to_string(localSpaceCommPtr->size()) +
+                               " but this component expects " +
+                               std::to_string(tasksPerComponent) +
+                               "; the parallel hybrid configuration changed between "
+                               "block chain constructions", Here());
+      }
+    } else {
+      localSpaceCommPtr = &defaultSpaceComm.split(myComponent_, spaceCommName.c_str());
     }
-    const auto & localSpaceComm = defaultSpaceComm.split(myComponent_, spaceCommName.c_str());
+    const auto & localSpaceComm = *localSpaceCommPtr;
 
     // Set up default MPI communicator for atlas
     eckit::mpi::setCommDefault(localSpaceComm.name().c_str());
