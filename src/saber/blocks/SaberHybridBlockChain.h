@@ -776,11 +776,14 @@ void SaberHybridBlockChain<MODEL>::multiply(oops::FieldSet4D & fset4d) const {
 
     // Create temporary FieldSet copy on communicator of this component
     oops::FieldSet4D fset4dCmp(fset4d.times(), fset4d.commTime(), localSpaceComm);
-    for (size_t jtime = 0; jtime < fset4dCmp.size(); jtime++) {
-      util::redistributeToSubcommunicator(redistributionMethod_,
-                                          fset4d[jtime].fieldSet(),
-                                          fset4dCmp[jtime].fieldSet(),
-                                          *localHybridFs_);
+    {
+      util::Timer timer("saber::SaberHybridBlockChain", "parallelScatter");
+      for (size_t jtime = 0; jtime < fset4dCmp.size(); jtime++) {
+        util::redistributeToSubcommunicator(redistributionMethod_,
+                                            fset4d[jtime].fieldSet(),
+                                            fset4dCmp[jtime].fieldSet(),
+                                            *localHybridFs_);
+      }
     }
 
     // Set up atlas MPI
@@ -797,7 +800,10 @@ void SaberHybridBlockChain<MODEL>::multiply(oops::FieldSet4D & fset4d) const {
     }
 
     // Apply covariance
-    hybridBlockChain_[0]->multiply(fset4dCmp);
+    {
+      util::Timer timer("saber::SaberHybridBlockChain", "parallelComponentMultiply");
+      hybridBlockChain_[0]->multiply(fset4dCmp);
+    }
 
     // Apply weight
     if (hybridScalarWeightSqrt_[0] != 1.0) {
@@ -810,15 +816,21 @@ void SaberHybridBlockChain<MODEL>::multiply(oops::FieldSet4D & fset4d) const {
     }
 
     // Wait for all components to have finished multiplying
-    defaultSpaceComm.barrier();
+    {
+      util::Timer timer("saber::SaberHybridBlockChain", "parallelBarrier");
+      defaultSpaceComm.barrier();
+    }
 
     // Gather and sum data across components
-    for (size_t jtime = 0; jtime < fset4dCmp.size(); jtime++) {
-      util::gatherAndSumFromSubcommunicator(redistributionMethod_,
-                                            fset4dCmp[jtime].fieldSet(),
-                                            fset4dSum[jtime].fieldSet(),
-                                            *localHybridFs_,
-                                            *globalHybridFs_);
+    {
+      util::Timer timer("saber::SaberHybridBlockChain", "parallelGatherAndSum");
+      for (size_t jtime = 0; jtime < fset4dCmp.size(); jtime++) {
+        util::gatherAndSumFromSubcommunicator(redistributionMethod_,
+                                              fset4dCmp[jtime].fieldSet(),
+                                              fset4dSum[jtime].fieldSet(),
+                                              *localHybridFs_,
+                                              *globalHybridFs_);
+      }
     }
 
     // Set back default MPI communicator

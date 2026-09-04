@@ -8,6 +8,7 @@
 #include "saber/blocks/SaberEnsembleBlockChain.h"
 
 #include "oops/util/RandomField.h"
+#include "oops/util/Timer.h"
 
 #include "saber/oops/Utilities.h"
 
@@ -45,6 +46,7 @@ size_t SaberEnsembleBlockChain::ctlVecSize() const {
 
 void SaberEnsembleBlockChain::multiply(oops::FieldSet4D & fset4d) const {
   oops::Log::trace() << "saber::SaberEnsembleBlockChain::multiply starting" << std::endl;
+  util::Timer timer("saber::SaberEnsembleBlockChain", "multiply");
 
   if (strategy_ == "separated") {
     // Outer blocks adjoint multiplication
@@ -94,7 +96,10 @@ void SaberEnsembleBlockChain::multiply(oops::FieldSet4D & fset4d) const {
           fset4dTmp *= fset4dMem;
 
           // Apply localization
-          scaleData.localization()->multiply(fset4dTmp);
+          {
+            util::Timer timer("saber::SaberEnsembleBlockChain", "localizationMultiply");
+            scaleData.localization()->multiply(fset4dTmp);
+          }
 
           // Second schur product
           fset4dTmp *= fset4dMem;
