@@ -11,6 +11,7 @@
 #include <iostream>
 #include <memory>
 #include <sstream>
+#include <string>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -24,6 +25,7 @@
 #include "oops/base/Geometry.h"
 #include "oops/base/GeometryData.h"
 #include "oops/interface/ModelData.h"
+#include "oops/util/Timer.h"
 
 #include "saber/blocks/SaberBlockParametersBase.h"
 #include "saber/blocks/SaberOuterBlockBase.h"
@@ -89,12 +91,15 @@ class SaberOuterBlockChain {
 
   /// @brief Forward multiplication by all outer blocks, 3D.
   void applyOuterBlocks(oops::FieldSet3D & fset3d) const {
+    util::Timer timer("saber::SaberOuterBlockChain", "applyOuterBlocks");
     for (auto it = outerBlocks_.rbegin(); it != outerBlocks_.rend(); ++it) {
       if (it->second) {
         // Right-inverse mode
+        util::Timer blockTimer(blockTimerName(*it->first), "rightInverseMultiply");
         it->first.get()->rightInverseMultiply(fset3d);
       } else {
         // Direct mode
+        util::Timer blockTimer(blockTimerName(*it->first), "multiply");
         it->first.get()->multiply(fset3d);
       }
     }
@@ -102,12 +107,14 @@ class SaberOuterBlockChain {
 
   /// @brief Adjoint multiplication by all outer blocks, 3D.
   void applyOuterBlocksAD(oops::FieldSet3D & fset3d) const {
+    util::Timer timer("saber::SaberOuterBlockChain", "applyOuterBlocksAD");
     for (auto it = outerBlocks_.begin(); it != outerBlocks_.end(); ++it) {
       if (it->second) {
         // Right-inverse mode
         throw eckit::Exception("not implemented yet, but it should be", Here());
       } else {
         // Direct mode
+        util::Timer blockTimer(blockTimerName(*it->first), "multiplyAD");
         it->first.get()->multiplyAD(fset3d);
       }
     }
@@ -225,6 +232,12 @@ class SaberOuterBlockChain {
                           const oops::GeometryData & outerGeometryData,
                           const oops::Variables & outerVars,
                           const oops::Variables & activeVars) const;
+
+  /// @brief Timer label for an individual outer block, so that per-block timings are
+  ///        grouped together in the timing statistics.
+  static std::string blockTimerName(const SaberOuterBlockBase & block) {
+    return "saber::OuterBlock::" + block.blockName();
+  }
 
   /// @brief Vector of all outer blocks, paired with a boolean to indicate the application mode:
   /// - true: right inverse mode
