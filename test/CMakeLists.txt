@@ -114,15 +114,15 @@ if( ENABLE_QUENCH )
       file( MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testdata/${_sat_name} )
 
       # Symlink yaml input file
-      execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
-                       ${CMAKE_CURRENT_SOURCE_DIR}/testinput/${_sat_name}.yaml
-                       ${CMAKE_CURRENT_BINARY_DIR}/testinput/${_sat_name}.yaml )
+      file( CREATE_LINK
+            ${CMAKE_CURRENT_SOURCE_DIR}/testinput/${_sat_name}.yaml
+            ${CMAKE_CURRENT_BINARY_DIR}/testinput/${_sat_name}.yaml SYMBOLIC )
 
       # Symlink reference file if it exists
       if( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/testref/${_sat_name}.ref )
-        execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
-                         ${CMAKE_CURRENT_SOURCE_DIR}/testref/${_sat_name}.ref
-                         ${CMAKE_CURRENT_BINARY_DIR}/testref/${_sat_name}.ref )
+        file( CREATE_LINK
+              ${CMAKE_CURRENT_SOURCE_DIR}/testref/${_sat_name}.ref
+              ${CMAKE_CURRENT_BINARY_DIR}/testref/${_sat_name}.ref SYMBOLIC )
       endif()
     endif()
 
@@ -137,9 +137,9 @@ if( ENABLE_QUENCH )
 
   foreach( data ${saber_data} )
       # Link to input data file
-      execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
-                       ${jedi_model_data_tier_1_saber}/${data}
-                       ${CMAKE_CURRENT_BINARY_DIR}/testdata/${data} )
+      file( CREATE_LINK
+            ${jedi_model_data_tier_1_saber}/${data}
+            ${CMAKE_CURRENT_BINARY_DIR}/testdata/${data} SYMBOLIC )
   endforeach()
 
   # --- Base tests ---
@@ -147,6 +147,9 @@ if( ENABLE_QUENCH )
 
   # --- Coupled tests ---
   include( ${CMAKE_CURRENT_LIST_DIR}/testlist/saber_coupled.cmake)
+
+  # --- Variance accessor tests ---
+  include( ${CMAKE_CURRENT_LIST_DIR}/testlist/saber_variance.cmake )
 
   # --- Fast LAM tests ---
   if( SABER_TEST_FASTLAM )

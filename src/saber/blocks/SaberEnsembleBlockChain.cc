@@ -7,12 +7,53 @@
 
 #include "saber/blocks/SaberEnsembleBlockChain.h"
 
+#include <map>
+#include <string>
+
+#include "oops/mpi/mpi.h"
 #include "oops/util/RandomField.h"
 #include "oops/util/Timer.h"
 
 #include "saber/oops/Utilities.h"
 
 namespace saber {
+
+// -----------------------------------------------------------------------------
+
+namespace {
+
+/// @brief Copy xb metadata to the variance fields so that outer blocks (e.g.
+///        Interpolation) can read field-level metadata such as "interp_type".
+void copyXbMetadata(const std::map<std::string, atlas::util::Metadata> & xbMetadata,
+                    oops::FieldSet3D & fset) {
+  for (auto & field : fset.fieldSet()) {
+    const auto it = xbMetadata.find(field.name());
+    if (it != xbMetadata.end()) {
+      field.metadata() = it->second;
+    }
+  }
+}
+
+/// @brief Squared ensemble member \p ie of \p scaleData, on the resolution where
+///        the Schur products with the localization are applied.
+oops::FieldSet3D squaredMember(const ScaleData & scaleData, const size_t ie) {
+  const oops::FieldSets & ensemble = *scaleData.ensemble();
+
+  if (scaleData.internalInterpolation()) {
+    // Members are interpolated to full resolution before the Schur products, so
+    // the diagonal has to be formed at full resolution too.
+    oops::FieldSet4D member(ensemble(0, ie));
+    scaleData.interpolator()->applyOuterBlocks(member);
+    member[0] *= member[0];
+    return member[0];
+  }
+
+  oops::FieldSet3D member(ensemble(0, ie));
+  member *= member;
+  return member;
+}
+
+}  // namespace
 
 // -----------------------------------------------------------------------------
 
@@ -28,6 +69,9 @@ size_t SaberEnsembleBlockChain::computeCtlVecSize() const {
     return ctlVecSize;
   }
 
+  // The crossed strategy maps every scale onto the same control vector slots.
+  // The constructor has already checked that all scales agree on the
+  // localization control vector size.
   ASSERT(strategy_ == "crossed");
   return scaleDataVec_[0].ensemble()->ens_size()
     * scaleDataVec_[0].localization()->ctlVecSize();
@@ -422,7 +466,11 @@ void SaberEnsembleBlockChain::multiplySqrtAD(const oops::FieldSet4D & fset4d,
   auto cvView = atlas::array::make_view<double, 1>(cv);
 
   // Initialize control vector
-  cvView.assign(0.0);
+  // Zero only this block chain's own window of the control vector: a non-zero
+  // offset must leave other components' contributions untouched.
+  for (size_t jcv = 0; jcv < ctlVecSize(); ++jcv) {
+    cvView(offset+jcv) = 0.0;
+  }
 
   for (const auto & scaleData : scaleDataVec_) {
     if (strategy_ == "crossed") {
@@ -469,6 +517,8 @@ void SaberEnsembleBlockChain::multiplySqrtAD(const oops::FieldSet4D & fset4d,
 
         // Apply localization square-root adjoint
         scaleData.localization()->multiplySqrtAD(fset4dTmp, cvScale, 0);
+
+        // Add component
         for (size_t jcv = 0; jcv < scaleData.localization()->ctlVecSize(); ++jcv) {
           cvView(index+jcv) += cvScaleView(jcv);
         }
@@ -484,6 +534,62 @@ void SaberEnsembleBlockChain::multiplySqrtAD(const oops::FieldSet4D & fset4d,
   }
 
   oops::Log::trace() << "saber::SaberEnsembleBlockChain::multiplySqrtAD done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+oops::FieldSet3D SaberEnsembleBlockChain::variance() const {
+  oops::Log::trace() << "saber::generic::SaberEnsembleBlockChain::variance starting"
+                     << std::endl;
+
+  if (strategy_ == "crossed") {
+    throw eckit::NotImplemented("SaberEnsembleBlockChain::variance not implemented for the "
+                                "\"crossed\" multiscale strategy", Here());
+  }
+
+  // Diagonal of one scale contribution. The localization drops out: we assume
+  // it is a correlation operator with unit diagonal, so
+  //   diag(sum_ie diag(e_ie) L diag(e_ie)) = sum_ie e_ie o e_ie.
+  const auto scaleVariance = [this](const ScaleData & scaleData) {
+    const oops::FieldSets & ensemble = *scaleData.ensemble();
+    if (ensemble.local_ens_size() == 0) {
+      throw eckit::BadParameter("SaberEnsembleBlockChain::variance needs a non-empty ensemble",
+                                Here());
+    }
+    oops::FieldSet3D variance = squaredMember(scaleData, 0);
+    for (size_t ie = 1; ie < ensemble.local_ens_size(); ++ie) {
+      variance += squaredMember(scaleData, ie);
+    }
+    if (ensemble.commEns().size() > 1) {
+      oops::mpi::allReduceInPlace(ensemble.commEns(), variance.fieldSet());
+    }
+
+    copyXbMetadata(centralXbMetadata_, variance);
+
+    if (scaleData.externalInterpolation()) {
+      // The scale contribution is formed at reduced resolution and interpolated
+      // to full resolution afterwards.
+      scaleData.interpolator()->applyBackgroundVariance(variance);
+    }
+    return variance;
+  };
+
+  // Sum the scale contributions, all of them on the full resolution by now.
+  oops::FieldSet3D variance = scaleVariance(scaleDataVec_[0]);
+  for (size_t js = 1; js < scaleDataVec_.size(); ++js) {
+    variance += scaleVariance(scaleDataVec_[js]);
+  }
+
+  copyXbMetadata(centralXbMetadata_, variance);
+
+  // Propagate variance through outer block chain (innermost -> outermost).
+  if (outerBlockChain_) {
+    outerBlockChain_->applyBackgroundVariance(variance);
+  }
+
+  oops::Log::trace() << "saber::generic::SaberEnsembleBlockChain::variance done"
+                     << std::endl;
+  return variance;
 }
 
 // -----------------------------------------------------------------------------

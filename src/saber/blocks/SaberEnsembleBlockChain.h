@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <map>
 #include <memory>
 #include <optional>
 #include <string>
@@ -14,6 +15,7 @@
 #include <vector>
 
 #include "atlas/field.h"
+#include "atlas/util/Metadata.h"
 
 #include "eckit/exception/Exceptions.h"
 
@@ -285,6 +287,13 @@ class SaberEnsembleBlockChain : public SaberBlockChainBase {
   /// @brief Multiply the increment by this B matrix square-root adjoint.
   void multiplySqrtAD(const oops::FieldSet4D &, atlas::Field &, const size_t &) const;
 
+  /// @brief Diagonal variance from the (inflated, scaled) ensemble, summed over
+  ///        scales and propagated through the outer block chain. Localization
+  ///        preserves the diagonal because it is a correlation operator with
+  ///        unit diagonal. Only the "separated" multiscale strategy is
+  ///        supported.
+  oops::FieldSet3D variance() const override;
+
   /// @brief Accessor to outer function space
   const atlas::FunctionSpace & outerFunctionSpace() const {return outerFunctionSpace_;}
   /// @brief Accessor to outer variables
@@ -316,6 +325,8 @@ class SaberEnsembleBlockChain : public SaberBlockChainBase {
   /// from independent streams for their sum to have the intended covariance.
   bool suppliedEnsemble_ = false;
   int seed_ = 7;  // For reproducibility
+  /// @brief Per-variable xb metadata for constructing new fields with correct metadata.
+  std::map<std::string, atlas::util::Metadata> centralXbMetadata_;
 };
 
 // -----------------------------------------------------------------------------
@@ -437,6 +448,14 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
   // Get active variables
   const oops::Variables activeVars = currentOuterVars;
   vars_ += activeVars;
+
+  // Save per-field metadata of the xb so that variance() can copy it to the
+  // variance fields.
+  for (const auto & var : activeVars) {
+    if (fset4dXb[0].fieldSet().has(var.name())) {
+      centralXbMetadata_[var.name()] = fset4dXb[0].fieldSet()[var.name()].metadata();
+    }
+  }
   // Check that active variables are present in variables
   for (const auto & var : activeVars) {
     if (!currentOuterVars.has(var)) {
