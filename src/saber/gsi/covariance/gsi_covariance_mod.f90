@@ -751,6 +751,18 @@ end subroutine multiply
       call afield%data(rank2)
       ier=0
    end if
+   if (trim(vname) == "dbz") then
+      ! Radar reflectivity is passed through GSI-B unchanged: no unit conversion
+      ! and no variable transform. This single branch serves both callers because
+      ! the met_guess usrname is set to "dbz", matching the cv/sv name, as qr/qs/
+      ! qg/qh above also require. Deliberately absent from cvfix_/svfix_: those
+      ! synthesize variables GSI needs but JEDI does not send, whereas dbz must
+      ! arrive filled from here.
+      if (.not.fields%has("equivalent_reflectivity_factor")) return
+      afield = fields%field("equivalent_reflectivity_factor")
+      call afield%data(rank2)
+      ier=0
+   end if
 !  if (trim(vname) == 'cw') then
 !     if (.not.fields%has('cloud_water')) return
 !     afield = fields%field('cloud_water')
