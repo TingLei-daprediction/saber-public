@@ -9,6 +9,8 @@ submodule(mg_parameter) jp_pbfil
 ! module history log:
 !   2023-04-19  lei     - object-oriented coding
 !   2024-02-20  yokota  - refactoring to apply for GSI
+!   2026-09-25  lei     - optional coefficient cache for vrbeta1/vrbeta1T
+!   2026-09-25          - horizontal coefficient reuse in rbeta3d_1/rbeta3d_1T
 !
 ! Subroutines Included:
 !   cholaspect1 -
@@ -409,7 +411,8 @@ do ix=Lx,Mx
 end do
 a=b
 end subroutine rbeta1
-module subroutine rbeta3d_1(this,nz,hx,lx,mx, el,ss, a)                    ! [rbeta]
+module subroutine rbeta3d_1(this,nz,hx,lx,mx, el,ss, a, &
+     rebuild,gx_lo,gx_hi,weights,same_levels)
 !=============================================================================
 !clt modified from rbeta1 to treat files of vertical dimension nz
 ! Perform a radial beta-function filter in 1D.
@@ -421,32 +424,81 @@ module subroutine rbeta3d_1(this,nz,hx,lx,mx, el,ss, a)                    ! [rb
 ! The output data occupy the central region
 ! Lx <= ix <= Mx.
 !=============================================================================
+use, intrinsic :: iso_fortran_env, only: int64
 class(mg_parameter_type),intent(inout)::this
 integer,                        intent(in   ):: nz,hx,Lx,mx
 real(dp),dimension(nz, Lx:Mx),   intent(in   ):: el
 real(dp),dimension(nz, Lx:Mx),   intent(in   ):: ss
 real(dp),dimension(nz,lx-hx:mx+hx),intent(inout):: a
-!-----------------------------------------------------------------------------
-real(dp),parameter             :: eps=1.e-12
+logical,optional,intent(in):: rebuild
+integer,dimension(lx:mx,nz),optional,intent(inout):: gx_lo,gx_hi
+real(dp),dimension(-hx:hx,lx:mx,nz),optional,intent(inout):: weights
+logical,optional,intent(inout):: same_levels
+! Cache layout is (offset,point,level); one cache per coefficient configuration.
+! same_levels is written only on rebuild. Reuse never modifies the cache.
+! Uncached/build modes share the coefficient loop; only build stores weights.
+! The conditional store preserves uncached arithmetic, not its exact control flow.
+real(dp),parameter:: eps=1.e-12
 real(dp),dimension(nz,lx-hx:mx+hx):: b
-real(dp)                       :: x,tb,s,rr,rrc,frow,exx
-integer                        :: ix,jx,gx,k
-!=============================================================================
+real(dp):: x,tb,s,rr,rrc,frow,exx
+integer:: ix,jx,gx,k,kc,glo,ghi
+logical:: use_cache,build,shared_levels
+
+call rbeta3d_cache_mode('rbeta3d_1',present(rebuild),present(gx_lo), &
+     present(gx_hi),present(weights),present(same_levels),use_cache)
+build=.false.
+shared_levels=.false.
+if(use_cache)then
+   build=rebuild
+   if(build)then
+      if(storage_size(0.0_dp)/=storage_size(0_int64)) &
+         error stop 'MGBF horizontal cache requires 64-bit reals'
+      same_levels=.true.
+      do k=2,nz
+         ! Array mold is essential: a scalar mold would compare only one word.
+         if(any(transfer(el(k,:),[0_int64])/=transfer(el(1,:),[0_int64])) .or. &
+            any(transfer(ss(k,:),[0_int64])/=transfer(ss(1,:),[0_int64])))then
+            same_levels=.false.
+            exit
+         endif
+      enddo
+   endif
+   shared_levels=same_levels
+endif
 b=0
 do k=1,nz
-do ix=Lx,Mx
-   tb=0; s=ss(k,ix)
-   exx=el(k,ix)*this%rmom2_1
-   x=u1/exx
-   do gx=ceiling(-x+eps),floor( x-eps)
-      jx=ix+gx;      x=gx
-      rr=(x*exx)**2; rrc=u1-rr
-      frow=s*rrc**this%p
-      tb=tb+frow*a(k,jx)
-   end do
+   kc=k
+   if(shared_levels)kc=1
+   do ix=lx,mx
+      tb=0
+      if(.not.use_cache .or. (build .and. (.not.shared_levels .or. k==1)))then
+         s=ss(k,ix)
+         exx=el(k,ix)*this%rmom2_1
+         x=u1/exx
+         glo=ceiling(-x+eps); ghi=floor(x-eps)
+         if(glo<-hx .or. ghi>hx)call vrbeta_support_abort('rbeta3d_1',ix,hx,glo,ghi)
+         if(use_cache)then
+            gx_lo(ix,kc)=glo; gx_hi(ix,kc)=ghi
+         endif
+         do gx=glo,ghi
+            jx=ix+gx; x=gx
+            rr=(x*exx)**2; rrc=u1-rr
+            frow=s*rrc**this%p
+            if(use_cache)weights(gx,ix,kc)=frow
+            tb=tb+frow*a(k,jx)
+         enddo
+      else
+         glo=gx_lo(ix,kc); ghi=gx_hi(ix,kc)
+         if(glo<-hx .or. ghi>hx)call vrbeta_support_abort('rbeta3d_1',ix,hx,glo,ghi)
+         do gx=glo,ghi
+            jx=ix+gx
+            frow=weights(gx,ix,kc)
+            tb=tb+frow*a(k,jx)
+         enddo
+      endif
    b(k,ix)=tb
-end do
-end do
+   enddo
+enddo
 a=b
 end subroutine rbeta3d_1
 !=============================================================================
@@ -718,7 +770,8 @@ do ix=Lx,Mx
 end do
 a=b
 end subroutine rbeta1t
-module subroutine rbeta3d_1T(this,nz,hx,lx,mx, el,ss, a)                  ! [rbetat]
+module subroutine rbeta3d_1T(this,nz,hx,lx,mx, el,ss, a, &
+     rebuild,gx_lo,gx_hi,weights,same_levels)
 !clt modified from rbeta1T to add a vertical dimension
 !=============================================================================
 ! Perform an ADJOINT radial beta-function filter in 1D.
@@ -729,33 +782,82 @@ module subroutine rbeta3d_1T(this,nz,hx,lx,mx, el,ss, a)                  ! [rbe
 ! the extended domain,
 ! Lx-hx <= jx <= mx+hx.
 !=============================================================================
+use, intrinsic :: iso_fortran_env, only: int64
 class(mg_parameter_type),intent(inout)::this
 integer,                        intent(in   )::nz, hx,Lx,mx
 real(dp),dimension(nz,Lx:Mx),  intent(in   ):: el
 real(dp),dimension(nz,  Lx:Mx),    intent(in   ):: ss
 real(dp),dimension(nz,lx-hx:mx+hx),intent(inout):: a
-!-----------------------------------------------------------------------------
-real(dp),parameter             :: eps=1.e-12
+logical,optional,intent(in):: rebuild
+integer,dimension(lx:mx,nz),optional,intent(inout):: gx_lo,gx_hi
+real(dp),dimension(-hx:hx,lx:mx,nz),optional,intent(inout):: weights
+logical,optional,intent(inout):: same_levels
+! Cache layout is (offset,point,level); one cache per coefficient configuration.
+! same_levels is written only on rebuild. Reuse never modifies the cache.
+! Uncached/build modes share the coefficient loop; only build stores weights.
+! The conditional store preserves uncached arithmetic, not its exact control flow.
+real(dp),parameter:: eps=1.e-12
 real(dp),dimension(nz,lx-hx:mx+hx):: b
-real(dp)                       :: ta,s,rr,rrc,frow,exx,x
-integer                        :: ix,jx,gx,k
-!=============================================================================
+real(dp):: x,ta,s,rr,rrc,frow,exx
+integer:: ix,jx,gx,k,kc,glo,ghi
+logical:: use_cache,build,shared_levels
+
+call rbeta3d_cache_mode('rbeta3d_1T',present(rebuild),present(gx_lo), &
+     present(gx_hi),present(weights),present(same_levels),use_cache)
+build=.false.
+shared_levels=.false.
+if(use_cache)then
+   build=rebuild
+   if(build)then
+      if(storage_size(0.0_dp)/=storage_size(0_int64)) &
+         error stop 'MGBF horizontal cache requires 64-bit reals'
+      same_levels=.true.
+      do k=2,nz
+         ! Array mold is essential: a scalar mold would compare only one word.
+         if(any(transfer(el(k,:),[0_int64])/=transfer(el(1,:),[0_int64])) .or. &
+            any(transfer(ss(k,:),[0_int64])/=transfer(ss(1,:),[0_int64])))then
+            same_levels=.false.
+            exit
+         endif
+      enddo
+   endif
+   shared_levels=same_levels
+endif
 b=0
 do k=1,nz
-do ix=Lx,Mx
-   ta=a(k,ix); s=ss(k,ix)
-   exx=el(k,ix)*this%rmom2_1
-   x=u1/exx
-   do gx=ceiling(-x+eps),floor( x-eps)
-      jx=ix+gx;      x=gx
-      rr=(x*exx)**2; rrc=u1-rr
-      frow=s*rrc**this%p
-      b(k,jx)=b(k,jx)+frow*ta
-   end do
-end do
-end do
+   kc=k
+   if(shared_levels)kc=1
+   do ix=lx,mx
+      ta=a(k,ix)
+      if(.not.use_cache .or. (build .and. (.not.shared_levels .or. k==1)))then
+         s=ss(k,ix)
+         exx=el(k,ix)*this%rmom2_1
+         x=u1/exx
+         glo=ceiling(-x+eps); ghi=floor(x-eps)
+         if(glo<-hx .or. ghi>hx)call vrbeta_support_abort('rbeta3d_1T',ix,hx,glo,ghi)
+         if(use_cache)then
+            gx_lo(ix,kc)=glo; gx_hi(ix,kc)=ghi
+         endif
+         do gx=glo,ghi
+            jx=ix+gx; x=gx
+            rr=(x*exx)**2; rrc=u1-rr
+            frow=s*rrc**this%p
+            if(use_cache)weights(gx,ix,kc)=frow
+            b(k,jx)=b(k,jx)+frow*ta
+         enddo
+      else
+         glo=gx_lo(ix,kc); ghi=gx_hi(ix,kc)
+         if(glo<-hx .or. ghi>hx)call vrbeta_support_abort('rbeta3d_1T',ix,hx,glo,ghi)
+         do gx=glo,ghi
+            jx=ix+gx
+            frow=weights(gx,ix,kc)
+            b(k,jx)=b(k,jx)+frow*ta
+         enddo
+      endif
+   enddo
+enddo
 a=b
-end subroutine rbeta3d_1t
+end subroutine rbeta3d_1T
 !=============================================================================
 module subroutine rbeta2T(this,hx,lx,mx, hy,ly,my, el,ss, a)        ! [rbetat]
 !=============================================================================
@@ -983,35 +1085,82 @@ end subroutine vrbeta4t
 
 ! Vector versions of the above routines:
 !=============================================================================
-module subroutine vrbeta1(this,nv,hx,lx,mx, el,ss, a)                ! [rbeta]
+module subroutine vrbeta1(this,nv,hx,lx,mx, el,ss, a, &                ! [rbeta]
+                          rebuild,gx_lo,gx_hi,weights)
 !=============================================================================
 ! Vector version of rbeta1 filtering nv fields at once.
+! Optional coefficient cache (all four present, or none): with rebuild true,
+! the stencil bounds and weights are computed, stored and applied; with
+! rebuild false, the stored ones are applied. A cache holds one coefficient
+! configuration (hx,lx,mx,el,ss,p,rmom2_1); the caller keeps it valid.
 !=============================================================================
 class(mg_parameter_type),intent(inout)::this
 integer,                           intent(in   ):: nv,hx,Lx,mx
 real(dp),dimension(1,1, Lx:Mx),    intent(in   ):: el
 real(dp),dimension(   Lx:Mx),      intent(in   ):: ss
 real(dp),dimension(nv,lx-hx:mx+hx),intent(inout):: a
+logical,                  optional,intent(in   ):: rebuild
+integer, dimension(Lx:Mx),optional,intent(inout):: gx_lo,gx_hi
+real(dp),dimension(-hx:hx,Lx:Mx),&
+                          optional,intent(inout):: weights
 !-----------------------------------------------------------------------------
 real(dp),parameter                :: eps=1.e-12
 real(dp),dimension(nv,lx-hx:mx+hx):: b
 real(dp),dimension(nv)            :: tb
 real(dp)                          :: x,s,rr,rrc,frow,exx
-integer                           :: ix,jx,gx
+integer                           :: ix,jx,gx,glo,ghi
+logical                           :: use_cache,build
 !=============================================================================
+call vrbeta_cache_mode('vrbeta1',present(rebuild),present(gx_lo), &
+                       present(gx_hi),present(weights),use_cache)
+build=.false.
+if(use_cache)build=rebuild
 b=0
-do ix=Lx,Mx
-   tb=0; s=ss(ix)
-   exx=el(1,1,ix)*this%rmom2_1
-   x=u1/exx
-   do gx=ceiling(-x+eps),floor( x-eps)
-      jx=ix+gx;      x=gx
-      rr=(x*exx)**2; rrc=u1-rr
-      frow=s*rrc**this%p
-      tb=tb+frow*a(:,jx)
+if(.not.use_cache)then
+   do ix=Lx,Mx
+      tb=0; s=ss(ix)
+      exx=el(1,1,ix)*this%rmom2_1
+      x=u1/exx
+      glo=ceiling(-x+eps); ghi=floor( x-eps)
+      if(glo<-hx .or. ghi>hx)call vrbeta_support_abort('vrbeta1',ix,hx,glo,ghi)
+      do gx=glo,ghi
+         jx=ix+gx;      x=gx
+         rr=(x*exx)**2; rrc=u1-rr
+         frow=s*rrc**this%p
+         tb=tb+frow*a(:,jx)
+      end do
+      b(:,ix)=tb
    end do
-   b(:,ix)=tb
-end do
+elseif(build)then
+   do ix=Lx,Mx
+      tb=0; s=ss(ix)
+      exx=el(1,1,ix)*this%rmom2_1
+      x=u1/exx
+      glo=ceiling(-x+eps); ghi=floor( x-eps)
+      if(glo<-hx .or. ghi>hx)call vrbeta_support_abort('vrbeta1',ix,hx,glo,ghi)
+      gx_lo(ix)=glo; gx_hi(ix)=ghi
+      do gx=glo,ghi
+         jx=ix+gx;      x=gx
+         rr=(x*exx)**2; rrc=u1-rr
+         frow=s*rrc**this%p
+         weights(gx,ix)=frow
+         tb=tb+frow*a(:,jx)
+      end do
+      b(:,ix)=tb
+   end do
+else
+   do ix=Lx,Mx
+      tb=0
+      glo=gx_lo(ix); ghi=gx_hi(ix)
+      if(glo<-hx .or. ghi>hx)call vrbeta_support_abort('vrbeta1',ix,hx,glo,ghi)
+      do gx=glo,ghi
+         jx=ix+gx
+         frow=weights(gx,ix)
+         tb=tb+frow*a(:,jx)
+      end do
+      b(:,ix)=tb
+   end do
+endif
 a=b
 end subroutine vrbeta1
 
@@ -1112,34 +1261,78 @@ end subroutine vrbeta3
 
 ! Vector versions of the above routines:
 !=============================================================================
-module subroutine vrbeta1T(this,nv, hx,lx,mx, el,ss, a)             ! [rbetat]
+module subroutine vrbeta1T(this,nv, hx,lx,mx, el,ss, a, &             ! [rbetat]
+                           rebuild,gx_lo,gx_hi,weights)
 !=============================================================================
 ! Vector version of rbeta1t filtering nv fields at once.
+! Optional coefficient cache: same contract as in vrbeta1. The cache is
+! indexed by the source level ix, so vrbeta1 and vrbeta1T caches built from
+! the same configuration hold identical contents.
 !=============================================================================
 class(mg_parameter_type),intent(inout)::this
 integer,                           intent(in   ):: nv,hx,Lx,mx
 real(dp),dimension(1,1,Lx:Mx),     intent(in   ):: el
 real(dp),dimension(   Lx:Mx),      intent(in   ):: ss
 real(dp),dimension(nv,lx-hx:mx+hx),intent(inout):: a
+logical,                  optional,intent(in   ):: rebuild
+integer, dimension(Lx:Mx),optional,intent(inout):: gx_lo,gx_hi
+real(dp),dimension(-hx:hx,Lx:Mx),&
+                          optional,intent(inout):: weights
 !-----------------------------------------------------------------------------
 real(dp),parameter                :: eps=1.e-12
 real(dp),dimension(nv,lx-hx:mx+hx):: b
 real(dp),dimension(nv)            :: ta
 real(dp)                          :: s,rr,rrc,frow,exx,x
-integer                           :: ix,jx,gx
+integer                           :: ix,jx,gx,glo,ghi
+logical                           :: use_cache,build
 !=============================================================================
+call vrbeta_cache_mode('vrbeta1T',present(rebuild),present(gx_lo), &
+                       present(gx_hi),present(weights),use_cache)
+build=.false.
+if(use_cache)build=rebuild
 b=0
-do ix=Lx,Mx
-   ta=a(:,ix); s=ss(ix)
-   exx=el(1,1,ix)*this%rmom2_1
-   x=u1/exx
-   do gx=ceiling(-x+eps),floor( x-eps)
-      jx=ix+gx;      x=gx
-      rr=(x*exx)**2; rrc=u1-rr
-      frow=s*rrc**this%p
-      b(:,jx)=b(:,jx)+frow*ta
+if(.not.use_cache)then
+   do ix=Lx,Mx
+      ta=a(:,ix); s=ss(ix)
+      exx=el(1,1,ix)*this%rmom2_1
+      x=u1/exx
+      glo=ceiling(-x+eps); ghi=floor( x-eps)
+      if(glo<-hx .or. ghi>hx)call vrbeta_support_abort('vrbeta1T',ix,hx,glo,ghi)
+      do gx=glo,ghi
+         jx=ix+gx;      x=gx
+         rr=(x*exx)**2; rrc=u1-rr
+         frow=s*rrc**this%p
+         b(:,jx)=b(:,jx)+frow*ta
+      end do
    end do
-end do
+elseif(build)then
+   do ix=Lx,Mx
+      ta=a(:,ix); s=ss(ix)
+      exx=el(1,1,ix)*this%rmom2_1
+      x=u1/exx
+      glo=ceiling(-x+eps); ghi=floor( x-eps)
+      if(glo<-hx .or. ghi>hx)call vrbeta_support_abort('vrbeta1T',ix,hx,glo,ghi)
+      gx_lo(ix)=glo; gx_hi(ix)=ghi
+      do gx=glo,ghi
+         jx=ix+gx;      x=gx
+         rr=(x*exx)**2; rrc=u1-rr
+         frow=s*rrc**this%p
+         weights(gx,ix)=frow
+         b(:,jx)=b(:,jx)+frow*ta
+      end do
+   end do
+else
+   do ix=Lx,Mx
+      ta=a(:,ix)
+      glo=gx_lo(ix); ghi=gx_hi(ix)
+      if(glo<-hx .or. ghi>hx)call vrbeta_support_abort('vrbeta1T',ix,hx,glo,ghi)
+      do gx=glo,ghi
+         jx=ix+gx
+         frow=weights(gx,ix)
+         b(:,jx)=b(:,jx)+frow*ta
+      end do
+   end do
+endif
 a=b
 end subroutine vrbeta1t
 !=============================================================================
@@ -1235,5 +1428,56 @@ do iz=Lz,Mz; do iy=Ly,My; do ix=Lx,Mx
 end do; end do; end do! ix, iy, iz
 a=b
 end subroutine vrbeta3t
+
+!=============================================================================
+subroutine vrbeta_cache_mode(rname,p_rebuild,p_gx_lo,p_gx_hi,p_weights, &
+                             use_cache)
+!=============================================================================
+! Coefficient-cache arguments must be all present or all absent.
+!=============================================================================
+character(len=*),intent(in ):: rname
+logical,         intent(in ):: p_rebuild,p_gx_lo,p_gx_hi,p_weights
+logical,         intent(out):: use_cache
+!-----------------------------------------------------------------------------
+use_cache=p_rebuild .and. p_gx_lo .and. p_gx_hi .and. p_weights
+if(use_cache)return
+if(p_rebuild .or. p_gx_lo .or. p_gx_hi .or. p_weights)then
+   write(error_unit,'(a,": partial coefficient cache arguments; present(",&
+        &"rebuild,gx_lo,gx_hi,weights)=",4l2)') &
+        rname,p_rebuild,p_gx_lo,p_gx_hi,p_weights
+   error stop 'MGBF vrbeta: coefficient cache arguments must all be present or all absent'
+endif
+end subroutine vrbeta_cache_mode
+
+!=============================================================================
+subroutine vrbeta_support_abort(rname,ix,hx,glo,ghi)
+!=============================================================================
+! The beta-filter stencil at source point ix does not fit in the halo hx.
+!=============================================================================
+character(len=*),intent(in):: rname
+integer,         intent(in):: ix,hx,glo,ghi
+!-----------------------------------------------------------------------------
+write(error_unit,'(a,": stencil support exceeds halo at ix=",i0,", hx=",i0,&
+     &", gx_lo=",i0,", gx_hi=",i0)') rname,ix,hx,glo,ghi
+error stop 'MGBF beta filter: stencil support exceeds halo width'
+end subroutine vrbeta_support_abort
+
+!=============================================================================
+subroutine rbeta3d_cache_mode(rname,p_rebuild,p_lo,p_hi,p_weights,p_same,use_cache)
+!=============================================================================
+! Horizontal cache arguments must be all present or all absent.
+! Presence is checked before a kernel references any optional argument.
+!=============================================================================
+character(len=*),intent(in):: rname
+logical,intent(in):: p_rebuild,p_lo,p_hi,p_weights,p_same
+logical,intent(out):: use_cache
+use_cache=p_rebuild.and.p_lo.and.p_hi.and.p_weights.and.p_same
+if(use_cache)return
+if(p_rebuild.or.p_lo.or.p_hi.or.p_weights.or.p_same)then
+   write(error_unit,'(a,": partial horizontal cache; present flags=",5l2)') &
+        rname,p_rebuild,p_lo,p_hi,p_weights,p_same
+   error stop 'MGBF horizontal cache: all five arguments must be present or absent'
+endif
+end subroutine rbeta3d_cache_mode
 
 end submodule jp_pbfil
