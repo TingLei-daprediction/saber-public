@@ -985,7 +985,11 @@ include "type_intstat_point2this.inc"
 !*** Adjoint interpolate and upsend 
 !***
                                                  call btim(upsend_tim)
+  if (gm > 1) then
      call this%upsending_all(VALL,HALL,lquart)
+  else
+     HALL = 0.0_r_kind
+  endif
                                                  call etim(upsend_tim)
 !***
 !*** Apply adjoint of Beta filter at all generations 
@@ -1348,7 +1352,9 @@ include "type_intstat_point2this.inc"
 !*** Downsend, interpolate and add, then zero high generations 
 !***
                                                  call btim(dnsend_tim)
+  if (gm > 1) then
      call this%downsending_all(HALL,VALL,lquart)
+  endif
                                                  call etim(dnsend_tim)
 !***
 !*** Apply beta filter in vertical direction
