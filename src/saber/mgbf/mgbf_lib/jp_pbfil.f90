@@ -412,7 +412,7 @@ end do
 a=b
 end subroutine rbeta1
 module subroutine rbeta3d_1(this,nz,hx,lx,mx, el,ss, a, &
-     rebuild,gx_lo,gx_hi,weights,same_levels)
+     rebuild,gx_lo,gx_hi,weights,same_over_levels)
 !=============================================================================
 !clt modified from rbeta1 to treat files of vertical dimension nz
 ! Perform a radial beta-function filter in 1D.
@@ -424,7 +424,7 @@ module subroutine rbeta3d_1(this,nz,hx,lx,mx, el,ss, a, &
 ! The output data occupy the central region
 ! Lx <= ix <= Mx.
 !=============================================================================
-use, intrinsic :: iso_fortran_env, only: int64
+use, intrinsic :: iso_fortran_env, only: int8
 class(mg_parameter_type),intent(inout)::this
 integer,                        intent(in   ):: nz,hx,Lx,mx
 real(dp),dimension(nz, Lx:Mx),   intent(in   ):: el
@@ -433,45 +433,45 @@ real(dp),dimension(nz,lx-hx:mx+hx),intent(inout):: a
 logical,optional,intent(in):: rebuild
 integer,dimension(lx:mx,nz),optional,intent(inout):: gx_lo,gx_hi
 real(dp),dimension(-hx:hx,lx:mx,nz),optional,intent(inout):: weights
-logical,optional,intent(inout):: same_levels
+logical,optional,intent(inout):: same_over_levels
 ! Cache layout is (offset,point,level); one cache per coefficient configuration.
-! same_levels is written only on rebuild. Reuse never modifies the cache.
+! same_over_levels: el and ss are bitwise identical across all vertical levels.
+! same_over_levels is written only on rebuild. Reuse never modifies the cache.
 ! Uncached/build modes share the coefficient loop; only build stores weights.
 ! The conditional store preserves uncached arithmetic, not its exact control flow.
 real(dp),parameter:: eps=1.e-12
 real(dp),dimension(nz,lx-hx:mx+hx):: b
 real(dp):: x,tb,s,rr,rrc,frow,exx
 integer:: ix,jx,gx,k,kc,glo,ghi
-logical:: use_cache,build,shared_levels
+! reuse_level1_coeffs: every level uses cache slot 1 when caching is active.
+logical:: use_cache,build,reuse_level1_coeffs
 
 call rbeta3d_cache_mode('rbeta3d_1',present(rebuild),present(gx_lo), &
-     present(gx_hi),present(weights),present(same_levels),use_cache)
+     present(gx_hi),present(weights),present(same_over_levels),use_cache)
 build=.false.
-shared_levels=.false.
+reuse_level1_coeffs=.false.
 if(use_cache)then
    build=rebuild
    if(build)then
-      if(storage_size(0.0_dp)/=storage_size(0_int64)) &
-         error stop 'MGBF horizontal cache requires 64-bit reals'
-      same_levels=.true.
+      same_over_levels=.true.
       do k=2,nz
-         ! Array mold is essential: a scalar mold would compare only one word.
-         if(any(transfer(el(k,:),[0_int64])/=transfer(el(1,:),[0_int64])) .or. &
-            any(transfer(ss(k,:),[0_int64])/=transfer(ss(1,:),[0_int64])))then
-            same_levels=.false.
+         ! Byte-array mold compares every bit, independent of real precision.
+         if(any(transfer(el(k,:),[0_int8])/=transfer(el(1,:),[0_int8])) .or. &
+            any(transfer(ss(k,:),[0_int8])/=transfer(ss(1,:),[0_int8])))then
+            same_over_levels=.false.
             exit
          endif
       enddo
    endif
-   shared_levels=same_levels
+   reuse_level1_coeffs=same_over_levels
 endif
 b=0
 do k=1,nz
    kc=k
-   if(shared_levels)kc=1
+   if(reuse_level1_coeffs)kc=1
    do ix=lx,mx
       tb=0
-      if(.not.use_cache .or. (build .and. (.not.shared_levels .or. k==1)))then
+      if(.not.use_cache .or. (build .and. (.not.reuse_level1_coeffs .or. k==1)))then
          s=ss(k,ix)
          exx=el(k,ix)*this%rmom2_1
          x=u1/exx
@@ -771,7 +771,7 @@ end do
 a=b
 end subroutine rbeta1t
 module subroutine rbeta3d_1T(this,nz,hx,lx,mx, el,ss, a, &
-     rebuild,gx_lo,gx_hi,weights,same_levels)
+     rebuild,gx_lo,gx_hi,weights,same_over_levels)
 !clt modified from rbeta1T to add a vertical dimension
 !=============================================================================
 ! Perform an ADJOINT radial beta-function filter in 1D.
@@ -782,7 +782,7 @@ module subroutine rbeta3d_1T(this,nz,hx,lx,mx, el,ss, a, &
 ! the extended domain,
 ! Lx-hx <= jx <= mx+hx.
 !=============================================================================
-use, intrinsic :: iso_fortran_env, only: int64
+use, intrinsic :: iso_fortran_env, only: int8
 class(mg_parameter_type),intent(inout)::this
 integer,                        intent(in   )::nz, hx,Lx,mx
 real(dp),dimension(nz,Lx:Mx),  intent(in   ):: el
@@ -791,45 +791,45 @@ real(dp),dimension(nz,lx-hx:mx+hx),intent(inout):: a
 logical,optional,intent(in):: rebuild
 integer,dimension(lx:mx,nz),optional,intent(inout):: gx_lo,gx_hi
 real(dp),dimension(-hx:hx,lx:mx,nz),optional,intent(inout):: weights
-logical,optional,intent(inout):: same_levels
+logical,optional,intent(inout):: same_over_levels
 ! Cache layout is (offset,point,level); one cache per coefficient configuration.
-! same_levels is written only on rebuild. Reuse never modifies the cache.
+! same_over_levels: el and ss are bitwise identical across all vertical levels.
+! same_over_levels is written only on rebuild. Reuse never modifies the cache.
 ! Uncached/build modes share the coefficient loop; only build stores weights.
 ! The conditional store preserves uncached arithmetic, not its exact control flow.
 real(dp),parameter:: eps=1.e-12
 real(dp),dimension(nz,lx-hx:mx+hx):: b
 real(dp):: x,ta,s,rr,rrc,frow,exx
 integer:: ix,jx,gx,k,kc,glo,ghi
-logical:: use_cache,build,shared_levels
+! reuse_level1_coeffs: every level uses cache slot 1 when caching is active.
+logical:: use_cache,build,reuse_level1_coeffs
 
 call rbeta3d_cache_mode('rbeta3d_1T',present(rebuild),present(gx_lo), &
-     present(gx_hi),present(weights),present(same_levels),use_cache)
+     present(gx_hi),present(weights),present(same_over_levels),use_cache)
 build=.false.
-shared_levels=.false.
+reuse_level1_coeffs=.false.
 if(use_cache)then
    build=rebuild
    if(build)then
-      if(storage_size(0.0_dp)/=storage_size(0_int64)) &
-         error stop 'MGBF horizontal cache requires 64-bit reals'
-      same_levels=.true.
+      same_over_levels=.true.
       do k=2,nz
-         ! Array mold is essential: a scalar mold would compare only one word.
-         if(any(transfer(el(k,:),[0_int64])/=transfer(el(1,:),[0_int64])) .or. &
-            any(transfer(ss(k,:),[0_int64])/=transfer(ss(1,:),[0_int64])))then
-            same_levels=.false.
+         ! Byte-array mold compares every bit, independent of real precision.
+         if(any(transfer(el(k,:),[0_int8])/=transfer(el(1,:),[0_int8])) .or. &
+            any(transfer(ss(k,:),[0_int8])/=transfer(ss(1,:),[0_int8])))then
+            same_over_levels=.false.
             exit
          endif
       enddo
    endif
-   shared_levels=same_levels
+   reuse_level1_coeffs=same_over_levels
 endif
 b=0
 do k=1,nz
    kc=k
-   if(shared_levels)kc=1
+   if(reuse_level1_coeffs)kc=1
    do ix=lx,mx
       ta=a(k,ix)
-      if(.not.use_cache .or. (build .and. (.not.shared_levels .or. k==1)))then
+      if(.not.use_cache .or. (build .and. (.not.reuse_level1_coeffs .or. k==1)))then
          s=ss(k,ix)
          exx=el(k,ix)*this%rmom2_1
          x=u1/exx

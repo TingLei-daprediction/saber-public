@@ -397,7 +397,7 @@ interface
      real(dp),dimension(lx-hx:mx+hx),intent(inout):: a
    end subroutine rbeta1
    module subroutine rbeta3d_1(this,nz,hx,lx,mx, el,ss, a, &
-        rebuild,gx_lo,gx_hi,weights,same_levels)
+        rebuild,gx_lo,gx_hi,weights,same_over_levels)
      use mgbf_kinds, only: dp=>r_kind
      implicit none
      class(mg_parameter_type), intent(inout) :: this
@@ -408,7 +408,7 @@ interface
      logical,optional,intent(in):: rebuild
      integer,dimension(lx:mx,nz),optional,intent(inout):: gx_lo,gx_hi
      real(dp),dimension(-hx:hx,lx:mx,nz),optional,intent(inout):: weights
-     logical,optional,intent(inout):: same_levels
+     logical,optional,intent(inout):: same_over_levels
    end subroutine rbeta3d_1
    module subroutine rbeta2(this,hx,lx,mx, hy,ly,my, el,ss, a)
      use mgbf_kinds, only: dp=>r_kind
@@ -447,7 +447,7 @@ interface
      real(dp),dimension(lx-hx:mx+hx),intent(inout):: a
    end subroutine rbeta1T
    module subroutine rbeta3d_1T(this,nz,hx,lx,mx, el,ss, a, &
-        rebuild,gx_lo,gx_hi,weights,same_levels)
+        rebuild,gx_lo,gx_hi,weights,same_over_levels)
      use mgbf_kinds, only: dp=>r_kind
      implicit none
      class(mg_parameter_type), intent(inout) :: this
@@ -458,7 +458,7 @@ interface
      logical,optional,intent(in):: rebuild
      integer,dimension(lx:mx,nz),optional,intent(inout):: gx_lo,gx_hi
      real(dp),dimension(-hx:hx,lx:mx,nz),optional,intent(inout):: weights
-     logical,optional,intent(inout):: same_levels
+     logical,optional,intent(inout):: same_over_levels
    end subroutine rbeta3d_1T
    module subroutine rbeta2T(this,hx,lx,mx, hy,ly,my, el,ss, a)
      use mgbf_kinds, only: dp=>r_kind

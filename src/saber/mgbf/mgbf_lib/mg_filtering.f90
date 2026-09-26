@@ -965,7 +965,7 @@ integer(i_kind),parameter:: ncfg=1
 integer(i_kind):: icfg,lsrc
 integer(i_kind),allocatable:: gx_lo(:,:,:),gx_hi(:,:,:)
 real(r_kind),allocatable:: weights(:,:,:,:)
-logical:: built(ncfg),surface_built(ncfg),same_levels(ncfg)
+logical:: built(ncfg),surface_built(ncfg),same_over_levels(ncfg)
 ! Each thread owns one cache per coefficient configuration, reset per line.
 ! Configuration and level slices below preserve contiguous leading dimensions.
 include "type_parameter_locpointer.inc"
@@ -991,7 +991,7 @@ include "type_intstat_point2this.inc"
 !*** Apply adjoint of Beta filter at all generations 
 !***
                                                  call btim(hfiltT_tim)
-!$omp parallel private(i,k,lev1,lev2,icfg,lsrc,gx_lo,gx_hi,weights,built,surface_built,same_levels)
+!$omp parallel private(i,k,lev1,lev2,icfg,lsrc,gx_lo,gx_hi,weights,built,surface_built,same_over_levels)
      allocate(gx_lo(1:jm,1:merge(lm,1,km3>0),ncfg), &
               gx_hi(1:jm,1:merge(lm,1,km3>0),ncfg), &
               weights(-hy:hy,1:jm,1:merge(lm,1,km3>0),ncfg))
@@ -1006,14 +1006,14 @@ include "type_intstat_point2this.inc"
            call this%rbetaT(lm,hy,1,jm,this%paspy4d(:,i,1:jm,1), &
                 this%ssy4d(:,i,1:jm,1),VALL(lev1:lev2,i,:), &
                 rebuild=.not.built(icfg),gx_lo=gx_lo(:,:,icfg),gx_hi=gx_hi(:,:,icfg), &
-                weights=weights(:,:,:,icfg),same_levels=same_levels(icfg))
+                weights=weights(:,:,:,icfg),same_over_levels=same_over_levels(icfg))
            built(icfg)=.true.
         enddo
         ! Surface coefficients are level lm of the 3D configuration.
         ! Reusing its cache for km2 variables relies on this assumption.
         lev2=km3*lm
         lsrc=1
-        if(built(icfg))lsrc=merge(1,lm,same_levels(icfg))
+        if(built(icfg))lsrc=merge(1,lm,same_over_levels(icfg))
         do k=1,km2
            lev1=lev2+1
            lev2=lev1
@@ -1021,7 +1021,7 @@ include "type_intstat_point2this.inc"
                 this%ssy4d(lm:lm,i,1:jm,1),VALL(lev1:lev2,i,:), &
                 rebuild=.not.(built(icfg).or.surface_built(icfg)), &
                 gx_lo=gx_lo(:,lsrc:lsrc,icfg),gx_hi=gx_hi(:,lsrc:lsrc,icfg), &
-                weights=weights(:,:,lsrc:lsrc,icfg),same_levels=same_levels(icfg))
+                weights=weights(:,:,lsrc:lsrc,icfg),same_over_levels=same_over_levels(icfg))
            surface_built(icfg)=.true.
         enddo
      enddo
@@ -1033,7 +1033,7 @@ include "type_intstat_point2this.inc"
         call this%bocoTy(VALL,km,im,jm,hx,hy)
                                                  call etim(bocoT_tim)
                                                  call btim(hfiltT_tim)
-!$omp parallel private(j,k,lev1,lev2,icfg,lsrc,gx_lo,gx_hi,weights,built,surface_built,same_levels)
+!$omp parallel private(j,k,lev1,lev2,icfg,lsrc,gx_lo,gx_hi,weights,built,surface_built,same_over_levels)
      allocate(gx_lo(1:im,1:merge(lm,1,km3>0),ncfg), &
               gx_hi(1:im,1:merge(lm,1,km3>0),ncfg), &
               weights(-hx:hx,1:im,1:merge(lm,1,km3>0),ncfg))
@@ -1048,14 +1048,14 @@ include "type_intstat_point2this.inc"
            call this%rbetaT(lm,hx,1,im,this%paspx4d(:,1:im,j,1), &
                 this%ssx4d(:,1:im,j,1),VALL(lev1:lev2,:,j), &
                 rebuild=.not.built(icfg),gx_lo=gx_lo(:,:,icfg),gx_hi=gx_hi(:,:,icfg), &
-                weights=weights(:,:,:,icfg),same_levels=same_levels(icfg))
+                weights=weights(:,:,:,icfg),same_over_levels=same_over_levels(icfg))
            built(icfg)=.true.
         enddo
         ! Surface coefficients are level lm of the 3D configuration.
         ! Reusing its cache for km2 variables relies on this assumption.
         lev2=km3*lm
         lsrc=1
-        if(built(icfg))lsrc=merge(1,lm,same_levels(icfg))
+        if(built(icfg))lsrc=merge(1,lm,same_over_levels(icfg))
         do k=1,km2
            lev1=lev2+1
            lev2=lev1
@@ -1063,7 +1063,7 @@ include "type_intstat_point2this.inc"
                 this%ssx4d(lm:lm,1:im,j,1),VALL(lev1:lev2,:,j), &
                 rebuild=.not.(built(icfg).or.surface_built(icfg)), &
                 gx_lo=gx_lo(:,lsrc:lsrc,icfg),gx_hi=gx_hi(:,lsrc:lsrc,icfg), &
-                weights=weights(:,:,lsrc:lsrc,icfg),same_levels=same_levels(icfg))
+                weights=weights(:,:,lsrc:lsrc,icfg),same_over_levels=same_over_levels(icfg))
            surface_built(icfg)=.true.
         enddo
      enddo
@@ -1076,7 +1076,7 @@ include "type_intstat_point2this.inc"
                                                  call etim(bocoT_tim)
   if(l_hgen) then
                                                  call btim(hfiltT_tim)
-!$omp parallel private(i,k,lev1,lev2,icfg,lsrc,gx_lo,gx_hi,weights,built,surface_built,same_levels)
+!$omp parallel private(i,k,lev1,lev2,icfg,lsrc,gx_lo,gx_hi,weights,built,surface_built,same_over_levels)
      allocate(gx_lo(1:jm,1:merge(lm,1,km3>0),ncfg), &
               gx_hi(1:jm,1:merge(lm,1,km3>0),ncfg), &
               weights(-hy:hy,1:jm,1:merge(lm,1,km3>0),ncfg))
@@ -1091,14 +1091,14 @@ include "type_intstat_point2this.inc"
            call this%rbetaT(lm,hy,1,jm,this%paspy4d(:,i,1:jm,2), &
                 this%ssy4d(:,i,1:jm,2),HALL(lev1:lev2,i,:), &
                 rebuild=.not.built(icfg),gx_lo=gx_lo(:,:,icfg),gx_hi=gx_hi(:,:,icfg), &
-                weights=weights(:,:,:,icfg),same_levels=same_levels(icfg))
+                weights=weights(:,:,:,icfg),same_over_levels=same_over_levels(icfg))
            built(icfg)=.true.
         enddo
         ! Surface coefficients are level lm of the 3D configuration.
         ! Reusing its cache for km2 variables relies on this assumption.
         lev2=km3*lm
         lsrc=1
-        if(built(icfg))lsrc=merge(1,lm,same_levels(icfg))
+        if(built(icfg))lsrc=merge(1,lm,same_over_levels(icfg))
         do k=1,km2
            lev1=lev2+1
            lev2=lev1
@@ -1106,7 +1106,7 @@ include "type_intstat_point2this.inc"
                 this%ssy4d(lm:lm,i,1:jm,2),HALL(lev1:lev2,i,:), &
                 rebuild=.not.(built(icfg).or.surface_built(icfg)), &
                 gx_lo=gx_lo(:,lsrc:lsrc,icfg),gx_hi=gx_hi(:,lsrc:lsrc,icfg), &
-                weights=weights(:,:,lsrc:lsrc,icfg),same_levels=same_levels(icfg))
+                weights=weights(:,:,lsrc:lsrc,icfg),same_over_levels=same_over_levels(icfg))
            surface_built(icfg)=.true.
         enddo
      enddo
@@ -1121,7 +1121,7 @@ include "type_intstat_point2this.inc"
                                                  call etim(bocoT_tim)
   if(l_hgen) then
                                                  call btim(hfiltT_tim)
-!$omp parallel private(j,k,lev1,lev2,icfg,lsrc,gx_lo,gx_hi,weights,built,surface_built,same_levels)
+!$omp parallel private(j,k,lev1,lev2,icfg,lsrc,gx_lo,gx_hi,weights,built,surface_built,same_over_levels)
      allocate(gx_lo(1:im,1:merge(lm,1,km3>0),ncfg), &
               gx_hi(1:im,1:merge(lm,1,km3>0),ncfg), &
               weights(-hx:hx,1:im,1:merge(lm,1,km3>0),ncfg))
@@ -1136,14 +1136,14 @@ include "type_intstat_point2this.inc"
            call this%rbetaT(lm,hx,1,im,this%paspx4d(:,1:im,j,2), &
                 this%ssx4d(:,1:im,j,2),HALL(lev1:lev2,:,j), &
                 rebuild=.not.built(icfg),gx_lo=gx_lo(:,:,icfg),gx_hi=gx_hi(:,:,icfg), &
-                weights=weights(:,:,:,icfg),same_levels=same_levels(icfg))
+                weights=weights(:,:,:,icfg),same_over_levels=same_over_levels(icfg))
            built(icfg)=.true.
         enddo
         ! Surface coefficients are level lm of the 3D configuration.
         ! Reusing its cache for km2 variables relies on this assumption.
         lev2=km3*lm
         lsrc=1
-        if(built(icfg))lsrc=merge(1,lm,same_levels(icfg))
+        if(built(icfg))lsrc=merge(1,lm,same_over_levels(icfg))
         do k=1,km2
            lev1=lev2+1
            lev2=lev1
@@ -1151,7 +1151,7 @@ include "type_intstat_point2this.inc"
                 this%ssx4d(lm:lm,1:im,j,2),HALL(lev1:lev2,:,j), &
                 rebuild=.not.(built(icfg).or.surface_built(icfg)), &
                 gx_lo=gx_lo(:,lsrc:lsrc,icfg),gx_hi=gx_hi(:,lsrc:lsrc,icfg), &
-                weights=weights(:,:,lsrc:lsrc,icfg),same_levels=same_levels(icfg))
+                weights=weights(:,:,lsrc:lsrc,icfg),same_over_levels=same_over_levels(icfg))
            surface_built(icfg)=.true.
         enddo
      enddo
@@ -1176,7 +1176,7 @@ include "type_intstat_point2this.inc"
         call this%bocox(VALL,km,im,jm,hx,hy)
                                                  call etim(boco_tim)
                                                  call btim(hfilt_tim)
-!$omp parallel private(j,k,lev1,lev2,icfg,lsrc,gx_lo,gx_hi,weights,built,surface_built,same_levels)
+!$omp parallel private(j,k,lev1,lev2,icfg,lsrc,gx_lo,gx_hi,weights,built,surface_built,same_over_levels)
      allocate(gx_lo(1:im,1:merge(lm,1,km3>0),ncfg), &
               gx_hi(1:im,1:merge(lm,1,km3>0),ncfg), &
               weights(-hx:hx,1:im,1:merge(lm,1,km3>0),ncfg))
@@ -1191,14 +1191,14 @@ include "type_intstat_point2this.inc"
            call this%rbeta(lm,hx,1,im,this%paspx4d(:,1:im,j,1), &
                 this%ssx4d(:,1:im,j,1),VALL(lev1:lev2,:,j), &
                 rebuild=.not.built(icfg),gx_lo=gx_lo(:,:,icfg),gx_hi=gx_hi(:,:,icfg), &
-                weights=weights(:,:,:,icfg),same_levels=same_levels(icfg))
+                weights=weights(:,:,:,icfg),same_over_levels=same_over_levels(icfg))
            built(icfg)=.true.
         enddo
         ! Surface coefficients are level lm of the 3D configuration.
         ! Reusing its cache for km2 variables relies on this assumption.
         lev2=km3*lm
         lsrc=1
-        if(built(icfg))lsrc=merge(1,lm,same_levels(icfg))
+        if(built(icfg))lsrc=merge(1,lm,same_over_levels(icfg))
         do k=1,km2
            lev1=lev2+1
            lev2=lev1
@@ -1206,7 +1206,7 @@ include "type_intstat_point2this.inc"
                 this%ssx4d(lm:lm,1:im,j,1),VALL(lev1:lev2,:,j), &
                 rebuild=.not.(built(icfg).or.surface_built(icfg)), &
                 gx_lo=gx_lo(:,lsrc:lsrc,icfg),gx_hi=gx_hi(:,lsrc:lsrc,icfg), &
-                weights=weights(:,:,lsrc:lsrc,icfg),same_levels=same_levels(icfg))
+                weights=weights(:,:,lsrc:lsrc,icfg),same_over_levels=same_over_levels(icfg))
            surface_built(icfg)=.true.
         enddo
      enddo
@@ -1218,7 +1218,7 @@ include "type_intstat_point2this.inc"
         call this%bocoy(VALL,km,im,jm,hx,hy)
                                                  call etim(boco_tim)
                                                  call btim(hfilt_tim)
-!$omp parallel private(i,k,lev1,lev2,icfg,lsrc,gx_lo,gx_hi,weights,built,surface_built,same_levels)
+!$omp parallel private(i,k,lev1,lev2,icfg,lsrc,gx_lo,gx_hi,weights,built,surface_built,same_over_levels)
      allocate(gx_lo(1:jm,1:merge(lm,1,km3>0),ncfg), &
               gx_hi(1:jm,1:merge(lm,1,km3>0),ncfg), &
               weights(-hy:hy,1:jm,1:merge(lm,1,km3>0),ncfg))
@@ -1233,14 +1233,14 @@ include "type_intstat_point2this.inc"
            call this%rbeta(lm,hy,1,jm,this%paspy4d(:,i,1:jm,1), &
                 this%ssy4d(:,i,1:jm,1),VALL(lev1:lev2,i,:), &
                 rebuild=.not.built(icfg),gx_lo=gx_lo(:,:,icfg),gx_hi=gx_hi(:,:,icfg), &
-                weights=weights(:,:,:,icfg),same_levels=same_levels(icfg))
+                weights=weights(:,:,:,icfg),same_over_levels=same_over_levels(icfg))
            built(icfg)=.true.
         enddo
         ! Surface coefficients are level lm of the 3D configuration.
         ! Reusing its cache for km2 variables relies on this assumption.
         lev2=km3*lm
         lsrc=1
-        if(built(icfg))lsrc=merge(1,lm,same_levels(icfg))
+        if(built(icfg))lsrc=merge(1,lm,same_over_levels(icfg))
         do k=1,km2
            lev1=lev2+1
            lev2=lev1
@@ -1248,7 +1248,7 @@ include "type_intstat_point2this.inc"
                 this%ssy4d(lm:lm,i,1:jm,1),VALL(lev1:lev2,i,:), &
                 rebuild=.not.(built(icfg).or.surface_built(icfg)), &
                 gx_lo=gx_lo(:,lsrc:lsrc,icfg),gx_hi=gx_hi(:,lsrc:lsrc,icfg), &
-                weights=weights(:,:,lsrc:lsrc,icfg),same_levels=same_levels(icfg))
+                weights=weights(:,:,lsrc:lsrc,icfg),same_over_levels=same_over_levels(icfg))
            surface_built(icfg)=.true.
         enddo
      enddo
@@ -1261,7 +1261,7 @@ include "type_intstat_point2this.inc"
                                                  call etim(boco_tim)
   if(l_hgen)  then
                                                  call btim(hfilt_tim)
-!$omp parallel private(j,k,lev1,lev2,icfg,lsrc,gx_lo,gx_hi,weights,built,surface_built,same_levels)
+!$omp parallel private(j,k,lev1,lev2,icfg,lsrc,gx_lo,gx_hi,weights,built,surface_built,same_over_levels)
      allocate(gx_lo(1:im,1:merge(lm,1,km3>0),ncfg), &
               gx_hi(1:im,1:merge(lm,1,km3>0),ncfg), &
               weights(-hx:hx,1:im,1:merge(lm,1,km3>0),ncfg))
@@ -1276,14 +1276,14 @@ include "type_intstat_point2this.inc"
            call this%rbeta(lm,hx,1,im,this%paspx4d(:,1:im,j,2), &
                 this%ssx4d(:,1:im,j,2),HALL(lev1:lev2,:,j), &
                 rebuild=.not.built(icfg),gx_lo=gx_lo(:,:,icfg),gx_hi=gx_hi(:,:,icfg), &
-                weights=weights(:,:,:,icfg),same_levels=same_levels(icfg))
+                weights=weights(:,:,:,icfg),same_over_levels=same_over_levels(icfg))
            built(icfg)=.true.
         enddo
         ! Surface coefficients are level lm of the 3D configuration.
         ! Reusing its cache for km2 variables relies on this assumption.
         lev2=km3*lm
         lsrc=1
-        if(built(icfg))lsrc=merge(1,lm,same_levels(icfg))
+        if(built(icfg))lsrc=merge(1,lm,same_over_levels(icfg))
         do k=1,km2
            lev1=lev2+1
            lev2=lev1
@@ -1291,7 +1291,7 @@ include "type_intstat_point2this.inc"
                 this%ssx4d(lm:lm,1:im,j,2),HALL(lev1:lev2,:,j), &
                 rebuild=.not.(built(icfg).or.surface_built(icfg)), &
                 gx_lo=gx_lo(:,lsrc:lsrc,icfg),gx_hi=gx_hi(:,lsrc:lsrc,icfg), &
-                weights=weights(:,:,lsrc:lsrc,icfg),same_levels=same_levels(icfg))
+                weights=weights(:,:,lsrc:lsrc,icfg),same_over_levels=same_over_levels(icfg))
            surface_built(icfg)=.true.
         enddo
      enddo
@@ -1305,7 +1305,7 @@ include "type_intstat_point2this.inc"
                                                  call etim(boco_tim)
   if(l_hgen)  then
                                                  call btim(hfilt_tim)
-!$omp parallel private(i,k,lev1,lev2,icfg,lsrc,gx_lo,gx_hi,weights,built,surface_built,same_levels)
+!$omp parallel private(i,k,lev1,lev2,icfg,lsrc,gx_lo,gx_hi,weights,built,surface_built,same_over_levels)
      allocate(gx_lo(1:jm,1:merge(lm,1,km3>0),ncfg), &
               gx_hi(1:jm,1:merge(lm,1,km3>0),ncfg), &
               weights(-hy:hy,1:jm,1:merge(lm,1,km3>0),ncfg))
@@ -1320,14 +1320,14 @@ include "type_intstat_point2this.inc"
            call this%rbeta(lm,hy,1,jm,this%paspy4d(:,i,1:jm,2), &
                 this%ssy4d(:,i,1:jm,2),HALL(lev1:lev2,i,:), &
                 rebuild=.not.built(icfg),gx_lo=gx_lo(:,:,icfg),gx_hi=gx_hi(:,:,icfg), &
-                weights=weights(:,:,:,icfg),same_levels=same_levels(icfg))
+                weights=weights(:,:,:,icfg),same_over_levels=same_over_levels(icfg))
            built(icfg)=.true.
         enddo
         ! Surface coefficients are level lm of the 3D configuration.
         ! Reusing its cache for km2 variables relies on this assumption.
         lev2=km3*lm
         lsrc=1
-        if(built(icfg))lsrc=merge(1,lm,same_levels(icfg))
+        if(built(icfg))lsrc=merge(1,lm,same_over_levels(icfg))
         do k=1,km2
            lev1=lev2+1
            lev2=lev1
@@ -1335,7 +1335,7 @@ include "type_intstat_point2this.inc"
                 this%ssy4d(lm:lm,i,1:jm,2),HALL(lev1:lev2,i,:), &
                 rebuild=.not.(built(icfg).or.surface_built(icfg)), &
                 gx_lo=gx_lo(:,lsrc:lsrc,icfg),gx_hi=gx_hi(:,lsrc:lsrc,icfg), &
-                weights=weights(:,:,lsrc:lsrc,icfg),same_levels=same_levels(icfg))
+                weights=weights(:,:,lsrc:lsrc,icfg),same_over_levels=same_over_levels(icfg))
            surface_built(icfg)=.true.
         enddo
      enddo
