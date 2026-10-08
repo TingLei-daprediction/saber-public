@@ -33,6 +33,7 @@ set( mgbf_lib_parent_src_files
   phint1.f90
   mg_timers.f90
   mg_tools.f90
+  mg_namelist_io.f90
   # parent modules (must come before their submodules)
   mg_parameter.f90
   mg_intstate.f90

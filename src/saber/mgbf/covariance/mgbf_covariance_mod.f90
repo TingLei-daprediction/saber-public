@@ -29,6 +29,7 @@ use random_mod
 ! saber
 use mg_intstate , only:            mg_intstate_type
 use mg_timers
+use mg_namelist_io, only: read_namelist_lines, nml_line_len
 use mpi
 use, intrinsic :: ieee_arithmetic
 implicit none
@@ -102,7 +103,7 @@ character(len=*), parameter :: myname_=myname//'*create'
 character(len=:), allocatable :: mgbf_nml,centralblockname
 logical :: central
 integer :: layout(2)
-integer :: myunit
+character(len=nml_line_len), allocatable :: nml_lines(:)
 integer :: iscale,ivargrp
 integer :: nscale=1, nvargrp=1
 type(atlas_field) :: afield, lonlat_field
@@ -145,9 +146,10 @@ endif
 call config%get_or_die("saber block name", centralblockname)
 if (config%has("mgbf sdl and vdl init namelist file")) then
      call config%get_or_die("mgbf sdl and vdl init namelist file",  mgbf_nml)
-  open(newunit=myunit,file=trim(mgbf_nml),status='old')
-  read(myunit,nml=parameters_mgbf_init)
-  close(unit=myunit)
+  ! Rank 0 reads the file; every rank parses the broadcast text
+  call read_namelist_lines(mgbf_nml, self%mp_comm_world, nml_lines)
+  read(nml_lines, nml=parameters_mgbf_init)
+  deallocate(nml_lines)
   self%nscale=nscale
   self%nvargrp=nvargrp
   allocate(self%mgbf_nml_group(nscale,nvargrp))

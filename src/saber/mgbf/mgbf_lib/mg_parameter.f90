@@ -10,6 +10,7 @@ module mg_parameter
 !   2023-04-19  lei     - object-oriented coding
 !   2024-01-11  rancic  - optimization for ensemble localization
 !   2024-02-20  yokota  - refactoring to apply for GSI
+!   2026-10-07  lei     - namelist read on rank 0 and broadcast
 !
 ! Subroutines Included:
 !   init_mg_parameter -
@@ -578,10 +579,12 @@ subroutine init_mg_parameter(this,inputfilename)
 ! Initialize ....                                                      !
 !                                                                      !
 !**********************************************************************!
+use mg_namelist_io, only: read_namelist_lines, nml_line_len
 implicit none
 class(mg_parameter_type), intent(inout), target :: this
 integer(i_kind):: g
 character(*), intent(in) :: inputfilename
+character(len=nml_line_len), allocatable :: nml_lines(:)
 
 ! Namelist parameters as local variable
 real(r_kind):: mg_ampl01,mg_ampl02,mg_ampl03
@@ -657,9 +660,10 @@ logical :: l_exist
                               ,nxPE,nyPE,im_filt,jm_filt ,              &
                               l_mg_weig_readin
 
-  open(unit=10,file=trim(inputfilename),status="old",action="read")
-  read(10,nml=parameters_mgbeta)
-  close(unit=10)
+  ! Rank 0 reads the file; every rank parses the broadcast text
+  call read_namelist_lines(inputfilename, this%mpi_comm_comp, nml_lines)
+  read(nml_lines, nml=parameters_mgbeta)
+  deallocate(nml_lines)
 !
   allocate(this%zofis(lm))
   allocate(this%isofz(lm_a))
