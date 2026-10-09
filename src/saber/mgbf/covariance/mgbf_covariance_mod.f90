@@ -64,9 +64,14 @@ type :: mgbf_covariance
   real(kind=r_kind), pointer :: vargrp_work_mgbf2(:,:,:)
   integer(kind=i_kind), pointer :: nlev_vargrp(:,:)
   integer(kind=i_kind), pointer :: varvlev_index(:,:,:)
-  integer(kind=i_kind) :: total_km_a_all = 0
+  integer(kind=i_kind) :: total_km_a_all = 0          ! sum of filter levels over groups
+  integer(kind=i_kind) :: nlev_packed = 0             ! levels of the packed all-variable work arrays
   integer(kind=i_kind) :: nvar = 0
   logical:: l_multiply_first_call(max_scales)=.true.
+  ! localization only: sum each group's variables and filter the sum once (l_loc_filter_once)
+  logical :: l_filter_once = .false.
+  integer(kind=i_kind), allocatable :: vargrp_first(:), vargrp_last(:)  ! variable range of each group
+  real(kind=r_kind), pointer :: vargrp_filtered(:,:,:) => null()        ! (nvargrp*nz3d, nm, mm)
 
   contains
     procedure, public :: create
@@ -268,15 +273,55 @@ do iscale=1,nscale
     endif
   enddo
 enddo
+! Filter-once mode (localization only): must be set before validation and allocation
+  self%l_filter_once = self%intstate(1,1)%l_loc_filter_once
+  do iscale=1,nscale
+    do ivargrp=1,nvargrp
+      if (self%intstate(iscale,ivargrp)%l_loc_filter_once .neqv. self%l_filter_once) &
+        call abort_filter_once_setup('l_loc_filter_once must be the same in every group namelist', &
+                                     iscale, ivargrp)
+      if (self%l_filter_once) then
+        if (.not. self%intstate(iscale,ivargrp)%l_for_localization) &
+          call abort_filter_once_setup('requires l_for_localization=.true.', iscale, ivargrp)
+        if (self%intstate(iscale,ivargrp)%n_ens /= 1) &
+          call abort_filter_once_setup('n_ens must be 1', iscale, ivargrp)
+        if (self%intstate(iscale,ivargrp)%nvar_in_group < 1) &
+          call abort_filter_once_setup('group must have at least one variable', iscale, ivargrp)
+        if (self%intstate(iscale,ivargrp)%nvar_in_group /= self%intstate(1,ivargrp)%nvar_in_group) &
+          call abort_filter_once_setup('variables in group differ from scale 1', iscale, ivargrp)
+      endif
+    enddo
+  enddo
+
   self%nvar = 0
   do ivargrp=1,nvargrp
-    self%nvar = self%nvar + self%intstate(1,ivargrp)%km2+self%intstate(1,ivargrp)%km3
+    self%nvar = self%nvar + self%intstate(1,ivargrp)%nvar_in_group   ! = km2+km3 when filter-once is off
   enddo
   nz3d=self%intstate(1,1)%lm_a
 
-  allocate(self%work_mgbf(self%total_km_a_all, self%intstate(1,1)%nm, self%intstate(1,1)%mm))
-  allocate(self%work_mgbf_tmp(self%total_km_a_all, self%intstate(1,1)%nm, self%intstate(1,1)%mm))
-  allocate(self%work2d_mgbf(self%total_km_a_all, self%intstate(1,1)%nm * self%intstate(1,1)%mm))
+  if (self%l_filter_once) then
+    ! group g holds variables vargrp_first(g):vargrp_last(g), contiguous in field order
+    allocate(self%vargrp_first(nvargrp), self%vargrp_last(nvargrp))
+    ii=0
+    do ivargrp=1,nvargrp
+      self%vargrp_first(ivargrp) = ii+1
+      ii = ii + self%intstate(1,ivargrp)%nvar_in_group
+      self%vargrp_last(ivargrp) = ii
+      if (nvargrp > 1 .and. self%vargrp_last(ivargrp) /= self%ivargroup(ivargrp)) &
+        call abort_filter_once_setup('readin_ivargroup does not match the km3 of the group namelists', &
+                                     1, ivargrp)
+    enddo
+  endif
+
+! Packed work arrays hold every variable; filter arrays hold one slab per group
+  self%nlev_packed = self%total_km_a_all
+  if (self%l_filter_once) self%nlev_packed = self%nvar*nz3d   ! every variable occupies nz3d levels
+
+  allocate(self%work_mgbf(self%nlev_packed, self%intstate(1,1)%nm, self%intstate(1,1)%mm))
+  allocate(self%work_mgbf_tmp(self%nlev_packed, self%intstate(1,1)%nm, self%intstate(1,1)%mm))
+  allocate(self%work2d_mgbf(self%nlev_packed, self%intstate(1,1)%nm * self%intstate(1,1)%mm))
+  if (self%l_filter_once) &
+    allocate(self%vargrp_filtered(nvargrp*nz3d, self%intstate(1,1)%nm, self%intstate(1,1)%mm))
   allocate(self%rnormalization(self%total_km_a_all, nvargrp,nscale))
   self%rnormalization(1:self%total_km_a_all,1:nvargrp,1:nscale)=0.0
   allocate(self%varvlev_index(self%nvar,3,nscale))
@@ -327,6 +372,9 @@ if (associated(self%work2d_mgbf)) deallocate(self%work2d_mgbf)
 if (associated(self%rnormalization)) deallocate(self%rnormalization)
 if (associated(self%nlev_vargrp)) deallocate(self%nlev_vargrp)
 if (associated(self%varvlev_index)) deallocate(self%varvlev_index)
+if (associated(self%vargrp_filtered)) deallocate(self%vargrp_filtered)
+if (allocated(self%vargrp_first)) deallocate(self%vargrp_first)
+if (allocated(self%vargrp_last)) deallocate(self%vargrp_last)
   deallocate(self%vargrp_work_mgbf,self%vargrp_work_mgbf2)
 
 ! Delete the grid
@@ -465,7 +513,7 @@ integer ::  loc(2)
              if (.not. associated(self%work_mgbf)) then
                error stop "MGBF workspace work_mgbf not allocated"
              endif
-            if (size(work_mgbf,1) /= self%total_km_a_all .or. &
+            if (size(work_mgbf,1) /= self%nlev_packed .or. &
                 size(work_mgbf,2) /= self%intstate(jscale,ivargrp0)%nm .or. &
                 size(work_mgbf,3) /= self%intstate(jscale,ivargrp0)%mm) then
               error stop "MGBF workspace work_mgbf does not match "
@@ -473,13 +521,13 @@ integer ::  loc(2)
             if (.not. associated(self%work_mgbf_tmp)) then
               error stop "MGBF workspace work_mgbf_tmp not allocated"
             endif
-            if (size(work_mgbf_tmp,1) /= self%total_km_a_all .or. &
+            if (size(work_mgbf_tmp,1) /= self%nlev_packed .or. &
                 size(work_mgbf_tmp,2) /= self%intstate(jscale,ivargrp0)%nm .or. &
                 size(work_mgbf_tmp,3) /= self%intstate(jscale,ivargrp0)%mm) then
               error stop "MGBF workspace work_mgbf_tmp does not match "
             endif
 
-            if (size(work2d_mgbf,1) /=  self%total_km_a_all .or. &
+            if (size(work2d_mgbf,1) /=  self%nlev_packed .or. &
                  size(work2d_mgbf,2) /= self%intstate(jscale,ivargrp0)%nm * &
                                            self%intstate(jscale,ivargrp0)%mm) then
                error stop "MGBF workspace work2d_mgbf too small for current scale"
@@ -546,7 +594,7 @@ integer ::  loc(2)
                     if(nz == 1) then
                         if(self%intstate(jscale,1)%l_for_localization) then
                              if( self%l_2dvar_last_vertical_level) then  !when used for localization,2dvars are put on the last vertical level
-                                if(ilev+nz3d-1 > self%total_km_a_all) then
+                                if(ilev+nz3d-1 > self%nlev_packed) then
                                    write(6,*)'MGBF abort 1 : the dimensions are not as expected'
                                    call flush(6)
                                    stop
@@ -559,7 +607,7 @@ integer ::  loc(2)
                                   work2d_mgbf(ilev:ilev+nz3d-2,:)=ptr_2d
                                 endif
                               else
-                                if(ilev+nz-1 > self%total_km_a_all) then
+                                if(ilev+nz-1 > self%nlev_packed) then
                                    write(6,*)'MGBF abort 2 : the dimensions are not as expected'
                                    call flush(6)
                                    stop
@@ -573,7 +621,7 @@ integer ::  loc(2)
                               endif
 
                         else
-                                if(ilev+nz-1 > self%total_km_a_all) then
+                                if(ilev+nz-1 > self%nlev_packed) then
                                    write(6,*)'MGBF abort 3 : the dimensions are not as expected'
                                    call flush(6)
                                    stop
@@ -585,7 +633,7 @@ integer ::  loc(2)
                             endif
                         endif
                      else
-                                if(ilev+nz-1 > self%total_km_a_all) then
+                                if(ilev+nz-1 > self%nlev_packed) then
                                    write(6,*)'MGBF abort 4 : the dimensions are not as expected'
                                    call flush(6)
                                    stop
@@ -649,6 +697,10 @@ integer ::  loc(2)
              endif
 
                 call etim(mg_preprocess_time)
+           if (self%l_filter_once) then
+             ! localization: sum each group's variables, filter once, combine (same result)
+             call filter_once_per_vargrp(self, jscale, nz3d, work_mgbf, varvlev_index, rnormalization)
+           else
              ii=1
              do ivargrp=1,nvargrp
                 vargrp_work_mgbf(1:nlev_vargrp(ivargrp),:,:) = work_mgbf(ii:ii+nlev_vargrp(ivargrp)-1,:,:)
@@ -709,6 +761,7 @@ integer ::  loc(2)
                endif
                nullify(work1var_mgbf)
              endif
+           endif ! l_filter_once
 !$omp parallel do private(k) schedule(static)
              do k=1,nzloc
                work2d_mgbf(k,:) = reshape(work_mgbf(k,:,:),[dim2d(2)])
@@ -828,6 +881,109 @@ function ivar2grp(self,ivar) result(jvargrp)
     enddo
 
 end function ivar2grp
+
+! --------------------------------------------------------------------------------------------------
+
+subroutine filter_once_per_vargrp(self, jscale, nz3d, work_mgbf, varvlev_index, rnormalization)
+! Localization with l_loc_filter_once: for each group g, filter the SUM of its variables once,
+!   f_g   = N_g^-1 F_g( sum_{i in g} x_i )
+! and give every variable j
+!   out_j = f_1                              (nvargrp == 1; multigrp_cor(1,1) ignored, as before)
+!   out_j = sum_g multigrp_cor(g(j),g) f_g   (nvargrp  > 1)
+! By linearity this equals filtering every variable and summing (the default path).
+! Timers mirror the default path: mg_postprocess_time is started before each normalization and
+! ended once by the caller after unpacking.
+
+class(mgbf_covariance), intent(inout) :: self
+integer(kind=i_kind),   intent(in)    :: jscale               ! scale of this member
+integer(kind=i_kind),   intent(in)    :: nz3d                 ! levels per variable slot
+real(kind=r_kind),      intent(inout) :: work_mgbf(:,:,:)     ! (nlev_packed,nm,mm) packed in, localized out
+integer(kind=i_kind),   intent(in)    :: varvlev_index(:,:)   ! (nvar,3) packed level range per variable
+real(kind=r_kind),      intent(in)    :: rnormalization(:,:)  ! (>=nz3d,nvargrp) per-level normalization
+
+integer(kind=i_kind) :: ivargrp, jvargrp, ivar, jvar, lev1, k, g0
+real(kind=r_kind), pointer :: gsum(:,:,:), gout(:,:,:), fgrp(:,:,:)
+
+gsum => self%vargrp_work_mgbf    ! (nz3d,nm,mm): every filter is nz3d levels in this mode
+gout => self%vargrp_work_mgbf2
+fgrp => self%vargrp_filtered     ! (nvargrp*nz3d,nm,mm)
+
+do ivargrp=1,self%nvargrp
+  ! 1. sum the group's variables
+  call btim(mg_preprocess_time)
+!$omp parallel do private(k,ivar,lev1) schedule(static)
+  do k=1,nz3d
+    gsum(k,:,:) = 0.0_r_kind
+    do ivar=self%vargrp_first(ivargrp),self%vargrp_last(ivargrp)
+      lev1 = varvlev_index(ivar,1)
+      gsum(k,:,:) = gsum(k,:,:) + work_mgbf(lev1+k-1,:,:)
+    enddo
+  enddo
+!$omp end parallel do
+  call etim(mg_preprocess_time)
+
+  ! 2. filter the sum once
+  call btim(mg_anal_to_filt_time)
+  call self%intstate(jscale,ivargrp)%anal_to_filt_allmap(gsum)
+  call etim(mg_anal_to_filt_time)
+  call btim(mg_filtering_time)
+  call self%intstate(jscale,ivargrp)%filtering_procedure(self%intstate(jscale,ivargrp)%mgbf_proc,1)
+  call etim(mg_filtering_time)
+  call btim(mg_filt_to_anal_time)
+  call self%intstate(jscale,ivargrp)%filt_to_anal_allmap(gout)
+  call etim(mg_filt_to_anal_time)
+
+  ! 3. normalize and keep f_g (post-processing timer ended by the caller)
+  call btim(mg_postprocess_time)
+  g0 = (ivargrp-1)*nz3d
+!$omp parallel do private(k) schedule(static)
+  do k=1,nz3d
+    fgrp(g0+k,:,:) = gout(k,:,:) / rnormalization(k,ivargrp)
+  enddo
+!$omp end parallel do
+enddo
+
+! 4. hand the filtered group fields back to the variables
+if (self%nvargrp == 1) then
+!$omp parallel do private(jvar,lev1) schedule(static)
+  do jvar=1,self%nvar
+    lev1 = varvlev_index(jvar,1)
+    work_mgbf(lev1:lev1+nz3d-1,:,:) = fgrp(1:nz3d,:,:)
+  enddo
+!$omp end parallel do
+else
+!$omp parallel do private(jvar,jvargrp,lev1,ivargrp,g0) schedule(static)
+  do jvar=1,self%nvar
+    jvargrp = self%ivar2grp(jvar)
+    lev1    = varvlev_index(jvar,1)
+    work_mgbf(lev1:lev1+nz3d-1,:,:) = 0.0_r_kind
+    do ivargrp=1,self%nvargrp
+      g0 = (ivargrp-1)*nz3d
+      work_mgbf(lev1:lev1+nz3d-1,:,:) = work_mgbf(lev1:lev1+nz3d-1,:,:) &
+           + self%multigrp_cor(jvargrp,ivargrp)*fgrp(g0+1:g0+nz3d,:,:)
+    enddo
+  enddo
+!$omp end parallel do
+endif
+
+nullify(gsum, gout, fgrp)
+
+end subroutine filter_once_per_vargrp
+
+! --------------------------------------------------------------------------------------------------
+
+subroutine abort_filter_once_setup(message, iscale, ivargrp)
+! Abort on an invalid l_loc_filter_once setup, naming the scale and variable group
+character(len=*),     intent(in) :: message
+integer(kind=i_kind), intent(in) :: iscale, ivargrp
+integer :: ierr
+
+write(6,'(a,a,a,i0,a,i0,a)') 'MGBF abort: l_loc_filter_once: ', trim(message), &
+                             ' (scale ', iscale, ', variable group ', ivargrp, ')'
+call flush(6)
+call MPI_Abort(MPI_COMM_WORLD, 1, ierr)
+
+end subroutine abort_filter_once_setup
 
 ! --------------------------------------------------------------------------------------------------
 

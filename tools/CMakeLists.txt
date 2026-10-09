@@ -2,6 +2,7 @@
 list( APPEND test_files
     saber_cpplint.py
     saber_compare_dirac_diagnostics.py
+    saber_compare_mgbf_filter_once.py
     saber_doc_overview.sh
 )
 

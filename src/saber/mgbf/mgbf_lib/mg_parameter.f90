@@ -44,6 +44,8 @@ type::  mg_parameter_type
 !-----------------------------------------------------------------------
 !***
 logical:: l_for_localization=.false.  !used for localizaiton while multiple variates need additional treeatment
+logical:: l_loc_filter_once=.false.   !localization only: sum the group's variables and filter the sum once
+integer(i_kind):: nvar_in_group=0     !analysis variables served by this filter (km3 as read when l_loc_filter_once)
 logical:: l_mgbf_inhomogeneous=.false.  !used inhomogeneous mgbf
 !*** Namelist parameters
 !***
@@ -596,6 +598,7 @@ logical, save :: lquart=.false.,lhelm=.false. !clt what should be the default
 logical, save :: ldelta=.false.
 logical, save :: l_for_localization=.false.
 logical, save :: l_mgbf_inhomogeneous=.false.
+logical :: l_loc_filter_once    ! no initializer (that would imply SAVE): reset before every read below
 
 integer(i_kind):: lm_a          ! number of vertical layers in analysis fields
 integer(i_kind):: lm            ! number of vertical layers in filter grids
@@ -655,10 +658,14 @@ logical :: l_exist
                               ,l_vert_stretched_filtgrid                     &
                               ,l_for_localization,ldelta,lquart,lhelm   &
                               , l_mgbf_inhomogeneous                    &
+                              ,l_loc_filter_once                        &
                               ,gm_max                                   &
                               ,nm0,mm0                                  &
                               ,nxPE,nyPE,im_filt,jm_filt ,              &
                               l_mg_weig_readin
+
+  ! Absent from the namelist means off, for every group file
+  l_loc_filter_once = .false.
 
   ! Rank 0 reads the file; every rank parses the broadcast text
   call read_namelist_lines(inputfilename, this%mpi_comm_comp, nml_lines)
@@ -747,6 +754,19 @@ logical :: l_exist
   this%l_constant_aspt2 = l_constant_aspt2
   this%km2=km2
   this%km3=km3
+  this%l_loc_filter_once=l_loc_filter_once
+  if (l_loc_filter_once) then
+     if (.not. l_for_localization) call abort_filter_once( &
+        'requires l_for_localization=.true.; a static B filters each variable with its own properties', &
+        inputfilename)
+     if (km2 /= 0)   call abort_filter_once('km2 must be 0', inputfilename)
+     if (km3 < 1)    call abort_filter_once('km3 (variables in this group) must be >= 1', inputfilename)
+     if (n_ens /= 1) call abort_filter_once('n_ens must be 1', inputfilename)
+     this%nvar_in_group = km3   ! variables summed into this filter
+     this%km3           = 1     ! the filter itself handles one 3D field
+  else
+     this%nvar_in_group = km2+km3
+  end if
   this%n_ens=n_ens
   this%l_loc=l_loc
   this%l_filt_g1=l_filt_g1
@@ -1126,6 +1146,27 @@ end subroutine convert_vert_varied_aspt
 
 !----------------------------------------------------------------------
 end subroutine init_mg_parameter
+
+!&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+subroutine abort_filter_once(message, inputfilename)
+!**********************************************************************!
+!                                                                      !
+! Abort on an invalid l_loc_filter_once setup, naming the namelist     !
+! file (init_mg_parameter knows the file, not the scale/group index)   !
+!                                                                      !
+!**********************************************************************!
+implicit none
+character(*), intent(in) :: message
+character(*), intent(in) :: inputfilename
+integer(i_kind) :: ierr
+!----------------------------------------------------------------------
+  ! one formatted line: list-directed output may wrap and split the message
+  write(6,'(a)') 'MGBF abort: l_loc_filter_once: '//trim(message)// &
+                 ' (namelist: '//trim(inputfilename)//')'
+  call flush(6)
+  call MPI_Abort(MPI_COMM_WORLD, 1, ierr)
+!----------------------------------------------------------------------
+end subroutine abort_filter_once
 
 !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 subroutine def_maxgen &
