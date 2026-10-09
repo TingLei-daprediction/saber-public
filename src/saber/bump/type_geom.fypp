@@ -203,6 +203,7 @@ integer,parameter :: nsmax = 1000000    !< Maximum sampling size
 logical,parameter :: parallel = .false. !< Parallel sampling (can be slow because of communications)
 integer,parameter :: ntry = 10          !< Number of random points generated for sampling selection
 real(kind_real),parameter :: frep = 0.2 !< Extra-points removal factor
+real(kind_real),parameter :: centroid_norm_min = 0.1_kind_real !< Minimum mean unit-vector norm for a regional domain
 
 private
 public :: geom_type
@@ -641,23 +642,32 @@ do imga=1,geom%nmga
    if (geom%owned_mga(imga,1)) call lonlatmod(geom%lon_mga(imga),geom%lat_mga(imga))
 end do
 
-! Get other grid properties
-if (mpl%main) then
-   lon0 = geom%lon_mga(1)
-   lat0 = geom%lat_mga(1)
-end if
-call mpl%f_comm%broadcast(lon0, mpl%rootproc-1)
-call mpl%f_comm%broadcast(lat0, mpl%rootproc-1)
-maxdist = zero
+! Get other grid properties: the domain is regional if all points lie within 90 degrees of their
+! centroid (testing the distance to the FIRST point flags large regional domains as global, e.g. a
+! 120x73 degrees rotated lon/lat grid, whose diagonal is 133 degrees)
+vtmp = zero
 do imga=1,geom%nmga
    if (geom%owned_mga(imga,1)) then
-      if (maxdist<pi) then
-         call sphere_dist(lon0,lat0,geom%lon_mga(imga),geom%lat_mga(imga),dist)
-         if (dist>maxdist) maxdist = dist
-      end if
+      call lonlat2xyz(mpl,geom%lon_mga(imga),geom%lat_mga(imga),v1(1),v1(2),v1(3))
+      vtmp = vtmp+v1
    end if
 end do
-call mpl%f_comm%allreduce(maxdist,fckit_mpi_max())
+call mpl%f_comm%allreduce(vtmp,fckit_mpi_sum())
+call mpl%f_comm%allreduce(count(geom%owned_mga),nmg_owned,fckit_mpi_sum())
+if (sqrt(sum(vtmp**2))<centroid_norm_min*real(nmg_owned,kind_real)) then
+   ! Points spread over all directions: no meaningful centroid
+   maxdist = pi
+else
+   call xyz2lonlat(mpl,vtmp(1),vtmp(2),vtmp(3),lon0,lat0)
+   maxdist = zero
+   do imga=1,geom%nmga
+      if (geom%owned_mga(imga,1)) then
+         call sphere_dist(lon0,lat0,geom%lon_mga(imga),geom%lat_mga(imga),dist)
+         maxdist = max(maxdist,dist)
+      end if
+   end do
+   call mpl%f_comm%allreduce(maxdist,fckit_mpi_max())
+end if
 if (supeq(maxdist,half*pi)) then
    ! Global domain
    geom%global = .true.
