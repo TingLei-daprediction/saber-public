@@ -118,7 +118,7 @@ logical,intent(in),optional :: order_list  !< Flag to reorder the list (default:
 ! Local variables
 integer :: i_s,i_e,ntmp,i
 integer,allocatable :: order_tmp(:)
-${ftype[dtype]}$ :: list1_tmp(n),list2_tmp(n)
+${ftype[dtype]}$,allocatable :: list1_tmp(:),list2_tmp(:)
 logical :: lorder_list,chain,diff
 
 ! Local flag
@@ -129,6 +129,10 @@ if (present(order_list)) lorder_list = order_list
 do i=1,n
   order(i) = i
 end do
+
+! Allocation (on the heap: n can be the global NICAS subgrid size, far too large for the stack)
+allocate(list1_tmp(n))
+allocate(list2_tmp(n))
 
 ! Copy first vector
 list1_tmp = list1
@@ -191,10 +195,16 @@ do i_e=2,n+1
 end do
 
 if (lorder_list) then
-   ! Reorder vectors
-   list1 = list1(order)
-   list2 = list2(order)
+   ! Reorder vectors (through the heap buffers: "list1 = list1(order)" needs a stack temporary)
+   list1_tmp = list1(order)
+   list1 = list1_tmp
+   list2_tmp = list2(order)
+   list2 = list2_tmp
 end if
+
+! Release memory
+deallocate(list1_tmp)
+deallocate(list2_tmp)
 
 end subroutine qsort_qsort_pair_${dtype}$
 #:endfor
