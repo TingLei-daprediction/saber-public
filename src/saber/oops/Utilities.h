@@ -36,7 +36,7 @@
 #include "oops/util/Logger.h"
 #include "oops/util/ParallelFieldSetIO.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
+#include "saber/blocks/BlockParametersBase.h"
 
 namespace oops {
   class FieldSet3D;
@@ -46,17 +46,17 @@ namespace saber {
 
 // -----------------------------------------------------------------------------
 
-oops::Variables getActiveVars(const SaberBlockParametersBase & params,
+oops::Variables getActiveVars(const BlockParametersBase & params,
                               const oops::Variables & defaultVars);
 
 // -----------------------------------------------------------------------------
 
-oops::Variables getUnionOfInnerActiveAndOuterVars(const SaberBlockParametersBase & params,
+oops::Variables getUnionOfInnerActiveAndOuterVars(const BlockParametersBase & params,
                                                   const oops::Variables & outerVars);
 
 // -----------------------------------------------------------------------------
 
-oops::Variables getInnerOnlyVars(const SaberBlockParametersBase & params,
+oops::Variables getInnerOnlyVars(const BlockParametersBase & params,
                                  const oops::Variables & outerVars);
 
 // -----------------------------------------------------------------------------
@@ -312,7 +312,7 @@ oops::FieldSets readAndScaleEnsemble(const oops::Geometry<MODEL> & geom,
     oops::Log::trace() << "readAndScaleEnsemble done" << std::endl;
     return ensemble;
   }
-  // Avoid division by zero before SaberEnsembleBlockChain reports its clearer
+  // Avoid division by zero before EnsembleBlockChain reports its clearer
   // one-member error, while preserving an explicitly configured denominator.
   if (ensemble.ens_size() == 1
       && !inputConf.has("denominator for normalizing ensemble covariance")) {

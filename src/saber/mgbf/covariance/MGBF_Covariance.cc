@@ -19,7 +19,7 @@ namespace mgbf {
 
 // -------------------------------------------------------------------------------------------------
 
-static SaberCentralBlockMaker<MGBF_Covariance> makerCovariance_("MGBF_covariance");
+static CentralBlockMaker<MGBF_Covariance> makerCovariance_("MGBF_covariance");
 
 // -------------------------------------------------------------------------------------------------
 
@@ -29,7 +29,7 @@ MGBF_Covariance::MGBF_Covariance(const oops::GeometryData & geometryData,
                                  const Parameters_ & params,
                                  const oops::FieldSet3D & xb,
                                  const oops::FieldSet3D & fg)
-  : SaberCentralBlockBase(params, xb.validTime(), geometryData, centralVars),
+  : CentralBlockBase(params, xb.validTime(), geometryData, centralVars),
      params_(params), variables_(params.activeVars.value().get_value_or(centralVars).variables()),
      mgbfGridFuncSpace_(geometryData.functionSpace()), comm_(&geometryData.comm())
 {

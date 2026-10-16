@@ -16,8 +16,8 @@
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberCentralBlockBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/CentralBlockBase.h"
 
 
 using atlas::option::levels;
@@ -34,8 +34,8 @@ typedef int MGBF_CovarianceKey;
 
 // -------------------------------------------------------------------------------------------------
 
-class MGBF_CovarianceParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(MGBF_CovarianceParameters, SaberBlockParametersBase)
+class MGBF_CovarianceParameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(MGBF_CovarianceParameters, BlockParametersBase)
 
  public:
   oops::OptionalParameter<std::string> SDL_MGBFNML{"mgbf sdl and vdl init namelist file", this};
@@ -49,7 +49,7 @@ class MGBF_CovarianceParameters : public SaberBlockParametersBase {
 
 // -------------------------------------------------------------------------------------------------
 
-class MGBF_Covariance : public SaberCentralBlockBase {
+class MGBF_Covariance : public CentralBlockBase {
  public:
   static const std::string classname() {return "saber::mgbf::Covariance";}
   typedef MGBF_CovarianceParameters Parameters_;
